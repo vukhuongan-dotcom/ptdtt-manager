@@ -1,0 +1,234 @@
+/* ===== SURGERY STATISTICS ===== */
+.sstats-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.sstats-period-tabs {
+    display: flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+}
+.sstats-period-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+.sstats-period-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+.sstats-period-btn.active {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(8,145,178,0.25);
+}
+
+.sstats-doctor-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Summary cards */
+.sstats-summary-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.sstats-summary-card {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    padding: 16px 20px;
+    text-align: center;
+}
+.sstats-summary-card.sstats-total {
+    background: linear-gradient(135deg, var(--primary), #0e7490);
+    border-color: transparent;
+    color: white;
+}
+.sstats-summary-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.sstats-total .sstats-summary-value { color: white; }
+.sstats-summary-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    color: var(--text-muted);
+}
+.sstats-total .sstats-summary-label { color: rgba(255,255,255,0.8); }
+
+/* Doctor section */
+.sstats-doctor-section {
+    margin-bottom: 24px;
+}
+.sstats-doctor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-bottom: 2px solid var(--primary);
+}
+.sstats-doctor-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sstats-doctor-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sstats-doctor-total {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    margin-right: 4px;
+}
+.sstats-type-chip {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Table */
+.sstats-table-wrap {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    overflow-x: auto;
+}
+.sstats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.sstats-table thead {
+    background: rgba(0,0,0,0.02);
+}
+.sstats-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+.sstats-th-stt { width: 45px; text-align: center; }
+.sstats-th-name { min-width: 160px; }
+.sstats-th-diag { min-width: 180px; }
+.sstats-th-method { min-width: 200px; }
+.sstats-th-num { text-align: center !important; width: 80px; }
+.sstats-th-total { background: rgba(8,145,178,0.06); }
+
+.sstats-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+}
+.sstats-table tbody tr:hover {
+    background: rgba(8,145,178,0.04);
+}
+.sstats-td-stt { text-align: center; color: var(--text-muted); font-weight: 600; }
+.sstats-td-patient { white-space: nowrap; }
+.sstats-td-diag, .sstats-td-method {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+.sstats-td-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sstats-doc-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+.sstats-doc-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+.sstats-doc-role {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+.sstats-td-num {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.sstats-td-total {
+    background: rgba(8,145,178,0.04);
+    color: var(--primary-dark);
+}
+
+.sstats-row-zero td {
+    opacity: 0.45;
+}
+
+/* Footer */
+.sstats-footer-row {
+    background: rgba(0,0,0,0.03);
+}
+.sstats-footer-row td {
+    border-bottom: none;
+    padding: 14px;
+}
+.sstats-td-footer-label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: right !important;
+    padding-right: 20px !important;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .sstats-table-wrap { overflow-x: auto; }
+    .sstats-summary-cards { flex-wrap: wrap; }
+    .sstats-summary-card { flex: 1 1 calc(33% - 8px); }
+}
+@media (max-width: 768px) {
+    .sstats-summary-card { flex: 1 1 calc(50% - 6px); }
+}

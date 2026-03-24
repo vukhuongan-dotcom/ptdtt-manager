@@ -1,0 +1,262 @@
+/* ===== SURGERY SCHEDULE ===== */
+.surgery-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.surgery-stats { display: flex; gap: 12px; }
+.surgery-stat-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+/* Week grid */
+.surgery-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.surgery-day {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+.surgery-day.today {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+.surgery-day.weekend { background: rgba(0,0,0,0.01); }
+
+.surgery-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.01);
+}
+.surgery-day.today .surgery-day-header {
+    background: rgba(8,145,178,0.06);
+}
+
+.surgery-day-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.surgery-day-count {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.surgery-day-body {
+    padding: 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Surgery card */
+.surgery-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 0.78rem;
+}
+.surgery-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+.surgery-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.surgery-card-order {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.surgery-type-badge {
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.surgery-card-patient {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+.surgery-card-patient strong {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.surgery-card-yob {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.surgery-card-diagnosis {
+    font-size: 0.72rem;
+    color: var(--primary-dark);
+    font-weight: 500;
+    margin-bottom: 3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.surgery-card-method {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.surgery-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+}
+.surgery-card-surgeons {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.surgery-card-duration {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.surgery-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    padding: 20px 0;
+    opacity: 0.5;
+}
+
+.surgery-add-btn {
+    margin-top: auto;
+    padding: 6px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+.surgery-add-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(8,145,178,0.04);
+}
+
+/* Detail modal */
+.surgery-detail { display: flex; flex-direction: column; gap: 12px; }
+.surgery-detail-row {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+}
+.surgery-detail-label {
+    flex: 0 0 140px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.surgery-detail-value {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+}
+/* Summary panel */
+.surgery-summary-panel {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.surgery-summary-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+.surgery-summary-chips {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+.surgery-summary-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+}
+.surgery-summary-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.surgery-summary-label { color: var(--text-secondary); }
+.surgery-summary-count {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+.surgery-summary-total {
+    padding-left: 16px;
+    border-left: 2px solid var(--border);
+}
+
+@media (max-width: 1200px) {
+    .surgery-week-grid { grid-template-columns: repeat(4, 1fr); }
+    .surgery-summary-panel { flex-direction: column; gap: 10px; align-items: flex-start; }
+}
+@media (max-width: 768px) {
+    .surgery-week-grid { grid-template-columns: 1fr; }
+    .surgery-summary-chips { flex-wrap: wrap; }
+}

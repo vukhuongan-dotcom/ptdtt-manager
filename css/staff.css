@@ -1,0 +1,27 @@
+.staff-filters { display: flex; gap: 12px; align-items: center; }
+.filter-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+.filter-btn.active {
+    background: rgba(6,182,212,0.15);
+    border-color: var(--primary);
+    color: var(--primary-light);
+}
+.staff-table-card { margin-top: 20px; }
+.staff-name-cell { display: flex; align-items: center; gap: 12px; }
+.staff-avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 0.75rem; color: white; flex-shrink: 0;
+}
+.staff-fullname { font-weight: 500; }
+.staff-actions { display: flex; gap: 6px; }

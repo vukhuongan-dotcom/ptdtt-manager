@@ -1,0 +1,26 @@
+.patient-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+}
+.patient-stat {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-sm);
+    padding: 16px;
+    text-align: center;
+}
+.patient-stat-value { font-size: 1.5rem; font-weight: 700; }
+.patient-stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+.patient-stat-value.cyan { color: var(--primary); }
+.patient-stat-value.green { color: var(--success); }
+.patient-stat-value.purple { color: var(--accent); }
+.patient-stat-value.amber { color: var(--warning); }
+
+.patient-table-card { margin-top: 0; }
+.patient-status { display: flex; align-items: center; gap: 6px; }
+.patient-status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.patient-status-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.patient-status-dot.pre-op { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+.patient-status-dot.post-op { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+.patient-status-dot.discharged { background: var(--text-dark); }
+
+@media (max-width: 1024px) { .patient-stats { grid-template-columns: repeat(2, 1fr); } }

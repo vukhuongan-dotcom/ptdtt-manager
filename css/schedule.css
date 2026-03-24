@@ -1,0 +1,171 @@
+/* ===== WEEKLY SCHEDULE ===== */
+.schedule-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.schedule-week-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 200px;
+    text-align: center;
+}
+
+.schedule-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.schedule-table thead th {
+    padding: 10px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    text-align: center;
+    background: rgba(0,0,0,0.03);
+}
+
+.schedule-pos-header {
+    width: 130px;
+    min-width: 130px;
+    text-align: left !important;
+    padding-left: 16px !important;
+}
+
+.schedule-day-header {
+    min-width: 100px;
+}
+.schedule-day-header.today {
+    color: var(--primary) !important;
+    background: rgba(8, 145, 178, 0.06) !important;
+}
+.schedule-day-header.weekend {
+    color: var(--danger) !important;
+}
+.schedule-day-name { display: block; font-size: 0.8rem; }
+.schedule-day-date { display: block; font-size: 0.7rem; opacity: 0.6; margin-top: 2px; }
+
+/* Position label */
+.schedule-pos-label {
+    padding: 8px 12px !important;
+    vertical-align: middle;
+    background: rgba(0,0,0,0.02);
+}
+.schedule-pos-name {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    display: block;
+}
+.schedule-pos-slots {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: block;
+}
+
+/* Cells */
+.schedule-cell {
+    padding: 3px 4px !important;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid rgba(0,0,0,0.03);
+    vertical-align: middle;
+    min-height: 32px;
+}
+.schedule-cell.weekend {
+    background: rgba(220, 38, 38, 0.03);
+}
+.schedule-cell.readonly {
+    padding: 6px 8px !important;
+}
+
+.schedule-pos-first td {
+    border-top: 1px solid var(--border-light);
+}
+
+.schedule-slot-label {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 1px;
+}
+
+/* Select in cells */
+.schedule-select {
+    width: 100%;
+    padding: 4px 2px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 9pt;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s ease;
+    text-align: center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.schedule-select:hover {
+    border-color: var(--border-light);
+    background: rgba(0,0,0,0.02);
+}
+.schedule-select:focus {
+    border-color: var(--primary);
+    background: rgba(8, 145, 178, 0.06);
+    color: var(--text-primary);
+}
+.schedule-select.has-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Lead position: bold first slot for Mổ and Trực khoa */
+.schedule-lead-slot .schedule-select.has-value,
+.schedule-lead-slot .schedule-name {
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+.schedule-lead-slot .schedule-select.has-value {
+    background: rgba(8, 145, 178, 0.06);
+}
+
+.schedule-name {
+    font-size: 9pt;
+    color: var(--text-secondary);
+}
+
+/* Notes */
+.schedule-notes {
+    padding: 16px 20px;
+}
+
+/* Robot Surgery */
+.robot-surgery-card {
+    padding: 16px 20px;
+    border-left: 3px solid var(--accent);
+}
+.robot-table thead th {
+    background: rgba(124, 58, 237, 0.06);
+}
+.robot-table td {
+    padding: 6px 8px !important;
+}
