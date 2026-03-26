@@ -16,6 +16,15 @@ const DAY_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Th�
 const SchedulePage = {
     weekOffset: 0,
 
+    // Staff with schedule editing permission (in addition to admins)
+    _scheduleEditors: [7], // staffId 7 = Phạm Vĩnh Phú
+
+    canEditSchedule() {
+        const session = Auth.getSession();
+        if (!session) return false;
+        return session.isAdmin || this._scheduleEditors.includes(session.staffId);
+    },
+
     // Timezone-safe YYYY-MM-DD formatter (avoids UTC shift from toISOString)
     _localDateStr(d) {
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -109,7 +118,7 @@ const SchedulePage = {
     },
 
     render() {
-        const isAdmin = Auth.getSession()?.isAdmin;
+        const isAdmin = this.canEditSchedule();
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
         const schedule = this.getScheduleData(weekKey);
@@ -241,7 +250,7 @@ const SchedulePage = {
     },
 
     saveSchedule() {
-        if (!Auth.getSession()?.isAdmin) return;
+        if (!this.canEditSchedule()) return;
 
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -359,7 +368,7 @@ const SchedulePage = {
     },
 
     addRobotEntry() {
-        if (!Auth.getSession()?.isAdmin) return;
+        if (!this.canEditSchedule()) return;
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
         const schedule = this.getScheduleData(weekKey);
@@ -376,7 +385,7 @@ const SchedulePage = {
     },
 
     removeRobotEntry(idx) {
-        if (!Auth.getSession()?.isAdmin) return;
+        if (!this.canEditSchedule()) return;
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
         const schedule = this.getScheduleData(weekKey);
@@ -426,9 +435,8 @@ const SchedulePage = {
     },
 
     copyFromPrevWeek() {
-        const session = Auth.getSession();
-        if (!session || !session.isAdmin) {
-            alert('Bạn cần quyền admin để sử dụng chức năng này.');
+        if (!this.canEditSchedule()) {
+            alert('Bạn không có quyền chỉnh sửa lịch phân công.');
             return;
         }
 
