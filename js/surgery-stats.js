@@ -65,7 +65,7 @@ const SurgeryStatsPage = {
 
     // Get surgeries in date range
     getSurgeriesInRange() {
-        const all = JSON.parse(localStorage.getItem('ptdtt_surgeries') || '[]');
+        const all = SurgeryPage.getAllSurgeries();
         const { start, end } = this.getDateRange();
         return all.filter(s => {
             const d = new Date(s.date);
