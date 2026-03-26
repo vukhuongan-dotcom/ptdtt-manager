@@ -119,6 +119,22 @@ const Notifications = {
         const mine = this.getForCurrentUser().filter(n => !n.read);
         mine.forEach(n => Store.update('notifications', n.id, { read: true }));
         this.updateBell();
+        this.refreshPanel();
+    },
+
+    deleteRead() {
+        const read = this.getForCurrentUser().filter(n => n.read);
+        read.forEach(n => Store.remove('notifications', n.id));
+        this.updateBell();
+        this.refreshPanel();
+    },
+
+    refreshPanel() {
+        if (this._panelOpen) {
+            const panel = document.getElementById('notif-panel');
+            if (panel) { panel.remove(); this._panelOpen = false; }
+            this.togglePanel('desktop');
+        }
     },
 
     // ===== BELL ICON RENDERING =====
@@ -148,6 +164,7 @@ const Notifications = {
         const notifications = this.getForCurrentUser()
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 20);
+        const readCount = this.getForCurrentUser().filter(n => n.read).length;
 
         const panel = document.createElement('div');
         panel.id = 'notif-panel';
@@ -155,7 +172,10 @@ const Notifications = {
         panel.innerHTML = `
             <div class="notif-panel-header">
                 <span class="notif-panel-title">🔔 Thông báo</span>
-                ${this.getUnreadCount() > 0 ? `<button class="notif-mark-all" onclick="Notifications.markAllRead()">Đánh dấu đã đọc</button>` : ''}
+                <div style="display:flex;gap:6px">
+                    ${readCount > 0 ? `<button class="notif-mark-all notif-delete-read" onclick="event.stopPropagation();Notifications.deleteRead()">🗑️ Xoá đã đọc</button>` : ''}
+                    ${this.getUnreadCount() > 0 ? `<button class="notif-mark-all" onclick="event.stopPropagation();Notifications.markAllRead()">Đánh dấu đã đọc</button>` : ''}
+                </div>
             </div>
             <div class="notif-panel-body">
                 ${notifications.length > 0 ? notifications.map(n => this.renderNotifItem(n)).join('') : 

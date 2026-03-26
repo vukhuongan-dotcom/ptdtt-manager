@@ -177,6 +177,14 @@
     transform: translateY(-1px);
 }
 
+.notif-delete-read {
+    background: rgba(239,68,68,0.1) !important;
+    color: #ef4444 !important;
+}
+.notif-delete-read:hover {
+    background: rgba(239,68,68,0.2) !important;
+}
+
 .notif-empty {
     padding: 32px 16px;
     text-align: center;
