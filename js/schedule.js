@@ -571,33 +571,101 @@ const SchedulePage = {
 
             document.body.removeChild(iframe);
 
-            // Build filename
+            // Helper: download image via server
+            const downloadImage = async (canvasEl, fname) => {
+                const dataUrl = canvasEl.toDataURL('image/jpeg', 0.92);
+                const resp = await fetch('/api/download-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataUrl, filename: fname })
+                });
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fname;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    await new Promise(r => setTimeout(r, 500));
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    throw new Error('Server download failed: ' + resp.status);
+                }
+            };
+
+            // Build filenames
             const pad = n => String(n).padStart(2, '0');
             const d0 = dates[0], d6 = dates[6];
             const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth()+1)}`;
             const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth()+1)}-${d6.getFullYear()}`;
-            const filename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
 
-            // Download via server for correct filename on all browsers
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-            const resp = await fetch('/api/download-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: dataUrl, filename })
-            });
+            // 1) Download schedule image
+            const scheduleFilename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
+            await downloadImage(canvas, scheduleFilename);
 
-            if (resp.ok) {
-                const blob = await resp.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-            } else {
-                throw new Error('Server download failed: ' + resp.status);
+            // 2) Build & download robot surgery image
+            const robotEntries = schedule?.robotSurgery || [];
+            if (robotEntries.length > 0) {
+                const robotRows = robotEntries.map(entry => {
+                    const dayDate = new Date(entry.day);
+                    const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
+                    const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
+                    const dayNum = dayDate.getDate();
+                    const dayMonth = dayDate.getMonth() + 1;
+                    const docs = [0,1,2].map(slot => {
+                        if (entry.doctors?.[slot]) {
+                            const member = staff.find(s => s.id === parseInt(entry.doctors[slot]));
+                            return member ? (this.getShortName(member.id) || member.name.split(' ').pop()) : '—';
+                        }
+                        return '—';
+                    });
+                    return `<tr>
+                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155">${dayLabel}, ${dayNum}/${dayMonth}</td>
+                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">Ca ${entry.session}</td>
+                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[0]}</td>
+                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[1]}</td>
+                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[2]}</td>
+                    </tr>`;
+                }).join('');
+
+                const robotHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+                <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
+                </head><body>
+                <div id="capture" style="padding:28px;width:800px;background:#fff">
+                    <div style="text-align:center;margin-bottom:18px">
+                        <h2 style="font-size:20px;color:#1e293b">🤖 LỊCH PHỤ MỔ ROBOT</h2>
+                        <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
+                        <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:12px">
+                        <thead><tr>
+                            <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 12px;text-align:left">Ngày mổ</th>
+                            <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:center;width:70px">Ca</th>
+                            <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 1</th>
+                            <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 2</th>
+                            <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 3</th>
+                        </tr></thead>
+                        <tbody>${robotRows}</tbody>
+                    </table>
+                    <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
+                </div></body></html>`;
+
+                const iframe2 = document.createElement('iframe');
+                iframe2.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:900px;height:600px;border:none;opacity:0;pointer-events:none';
+                document.body.appendChild(iframe2);
+                await new Promise(resolve => { iframe2.onload = resolve; iframe2.srcdoc = robotHtml; });
+                await new Promise(r => setTimeout(r, 500));
+
+                const robotCanvas = await html2canvas(iframe2.contentDocument.getElementById('capture'), {
+                    scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false
+                });
+                document.body.removeChild(iframe2);
+
+                const robotFilename = `Lich_mo_robot_${startFmt}_${endFmt}.jpg`;
+                await downloadImage(robotCanvas, robotFilename);
             }
 
         } catch (err) {
