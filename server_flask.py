@@ -9,7 +9,6 @@ import json
 import re
 import uuid
 import ssl
-import hashlib
 import threading
 from datetime import datetime
 from urllib.parse import urlencode
@@ -38,7 +37,6 @@ app = Flask(__name__, static_folder=None)
 
 # Thread-safe data lock
 _data_lock = threading.Lock()
-_data_hash = ''  # Quick hash for change detection
 
 # ────────────────────────────── Data helpers ──────────────────────────────
 def _ensure_data_dir():
@@ -47,15 +45,12 @@ def _ensure_data_dir():
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump({}, f)
 
-def _init_data_hash():
-    """Compute initial hash from existing data file on startup"""
-    global _data_hash
+def _get_file_version():
+    """Get file modification time as version string (works across all workers)"""
     try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            raw = f.read()
-        _data_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
+        return str(os.path.getmtime(DATA_FILE))
     except Exception:
-        _data_hash = 'init'
+        return '0'
 
 def load_data():
     _ensure_data_dir()
@@ -64,18 +59,13 @@ def load_data():
             return json.load(f)
 
 def save_data(data):
-    global _data_hash
     _ensure_data_dir()
-    # Add modification timestamp
     data['_lastModified'] = datetime.now().isoformat()
     with _data_lock:
-        # Write to temp then rename (atomic)
-        raw = json.dumps(data, ensure_ascii=False, indent=2)
         tmp = DATA_FILE + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
-            f.write(raw)
+            json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp, DATA_FILE)
-        _data_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
 
 # ────────────────────────────── Static files ──────────────────────────────
 @app.route('/')
@@ -84,7 +74,6 @@ def index():
 
 @app.route('/<path:path>')
 def static_files(path):
-    # Prevent path traversal
     full = os.path.normpath(os.path.join(BASE_DIR, path))
     if not full.startswith(BASE_DIR):
         abort(403)
@@ -98,23 +87,24 @@ def static_files(path):
 @app.route('/api/data', methods=['GET'])
 def get_data():
     """Return the entire JSON database"""
-    return jsonify(load_data())
+    data = load_data()
+    return jsonify(data)
 
 @app.route('/api/data', methods=['PUT'])
 def put_data():
     """Replace the entire JSON database"""
     data = request.get_json(force=True)
     save_data(data)
-    return jsonify({'ok': True, 'hash': _data_hash})
+    return jsonify({'ok': True, 'version': _get_file_version()})
 
 @app.route('/api/data/version', methods=['GET'])
 def get_data_version():
-    """Lightweight version check for polling (no full data transfer)"""
-    return jsonify({'hash': _data_hash})
+    """Lightweight version check — uses file mtime (works across all gunicorn workers)"""
+    return jsonify({'version': _get_file_version()})
 
 @app.route('/api/data/<collection>', methods=['GET'])
 def get_collection(collection):
-    """Return a single collection (e.g. /api/data/surgeries)"""
+    """Return a single collection"""
     data = load_data()
     return jsonify(data.get(collection, []))
 
@@ -221,21 +211,15 @@ def emr_proxy():
 def emr_status():
     return jsonify({'loggedIn': _emr_logged_in, 'user': EMR_USER})
 
-# ────────────────────────────── Init: compute hash on import (for gunicorn) ──
+# ────────────────────────────── Init ──────────────────────────────
 _ensure_data_dir()
-_init_data_hash()
 
-# ────────────────────────────── Main ──────────────────────────────
 if __name__ == '__main__':
     print(f'\n  🏥 PTDTT Manager Server (Flask)')
     print(f'  ================================')
-
-    # Try EMR login on startup (non-blocking)
     threading.Thread(target=emr_login, daemon=True).start()
-
     print(f'  🌐 http://0.0.0.0:{PORT}')
     print(f'  📡 EMR Proxy: /api/emr')
     print(f'  💾 Data API: /api/data')
     print(f'  Ctrl+C to stop\n')
-
     app.run(host='0.0.0.0', port=PORT, debug=False)

@@ -55,12 +55,11 @@ const Store = {
 
     // ── Server sync with real-time polling ──
     _pollTimer: null,
-    _serverHash: null,   // null = not yet initialized
+    _serverVersion: null,
     _syncing: false,
     _saveDebounce: null,
 
     _syncToServer() {
-        // Debounce: wait 300ms to batch rapid saves
         if (this._saveDebounce) clearTimeout(this._saveDebounce);
         this._saveDebounce = setTimeout(() => {
             fetch('/api/data', {
@@ -69,7 +68,8 @@ const Store = {
                 body: JSON.stringify(this._data)
             }).then(r => r.json()).then(res => {
                 this._serverAvailable = true;
-                if (res.hash) this._serverHash = res.hash;
+                if (res.version) this._serverVersion = res.version;
+                console.log('[Store] ✅ Saved to server, version:', res.version);
             }).catch(() => { this._serverAvailable = false; });
         }, 300);
     },
@@ -77,11 +77,7 @@ const Store = {
     _syncFromServer(quiet) {
         if (this._syncing) return;
         this._syncing = true;
-        // Fetch data AND version in parallel
-        Promise.all([
-            fetch('/api/data').then(r => r.json()),
-            fetch('/api/data/version').then(r => r.json()).catch(() => null)
-        ]).then(([serverData, versionInfo]) => {
+        fetch('/api/data').then(r => r.json()).then(serverData => {
             if (serverData && serverData._version) {
                 const oldJson = JSON.stringify(this._data);
                 const newJson = JSON.stringify(serverData);
@@ -89,16 +85,11 @@ const Store = {
                     this._data = serverData;
                     localStorage.setItem(STORE_KEY, newJson);
                     if (!quiet) console.log('[Store] Synced from server ✅');
-                    // Auto re-render the current page
                     if (typeof App !== 'undefined' && App.renderCurrentPage) {
                         App.renderCurrentPage();
                     }
                 }
                 this._serverAvailable = true;
-            }
-            // Track server hash
-            if (versionInfo && versionInfo.hash) {
-                this._serverHash = versionInfo.hash;
             }
             this._syncing = false;
         }).catch(() => {
@@ -106,14 +97,16 @@ const Store = {
             this._syncing = false;
             if (!quiet) console.log('[Store] Server not available, using localStorage');
         });
+        // Also update version tracking
+        fetch('/api/data/version').then(r => r.json()).then(v => {
+            if (v.version) this._serverVersion = v.version;
+        }).catch(() => {});
     },
 
-    // Lightweight polling: check version hash every 10s
     _startPolling() {
         if (this._pollTimer) clearInterval(this._pollTimer);
         this._pollTimer = setInterval(() => this._checkForUpdates(), 10000);
-
-        // Also sync when tab becomes visible (user switches back to this tab)
+        // Sync immediately when user returns to this tab
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) this._checkForUpdates();
         });
@@ -121,14 +114,16 @@ const Store = {
 
     _checkForUpdates() {
         fetch('/api/data/version').then(r => r.json()).then(v => {
-            if (v.hash && this._serverHash !== null && v.hash !== this._serverHash) {
-                // Data changed on server — pull full data
-                console.log('[Store] 🔄 New data detected, syncing...');
-                this._serverHash = v.hash;
+            if (!v.version) return;
+            if (this._serverVersion === null) {
+                // First check — just store the version
+                this._serverVersion = v.version;
+                return;
+            }
+            if (v.version !== this._serverVersion) {
+                console.log('[Store] 🔄 Data changed on server! Syncing...');
+                this._serverVersion = v.version;
                 this._syncFromServer(true);
-            } else if (v.hash) {
-                // Just track the hash (first poll or no change)
-                this._serverHash = v.hash;
             }
         }).catch(() => {});
     },
