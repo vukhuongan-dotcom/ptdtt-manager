@@ -77,16 +77,26 @@ const RoomsPage = {
 
     _getPatientCount(room, emrData) {
         if (!emrData || !emrData.byRoom) return null;
-        // Try exact match keys: "B7.705", "705", "B7705" etc
-        const keys = Object.keys(emrData.byRoom);
-        const roomNum = room.replace(/^0+/, '');
-        for (const k of keys) {
-            const kNorm = k.replace(/\s+/g, '');
-            if (kNorm === 'B7.' + roomNum || kNorm === roomNum || kNorm === 'B7' + roomNum || kNorm === 'B7.' + room || kNorm === room) {
-                return emrData.byRoom[k].length;
-            }
+        // Debug: log actual EMR room keys once
+        if (!this._debugLogged) {
+            console.log('[Rooms] EMR byRoom keys:', Object.keys(emrData.byRoom));
+            this._debugLogged = true;
         }
-        return 0;
+        let count = 0;
+        const roomNum = room.replace(/^0+/, '');
+        Object.keys(emrData.byRoom).forEach(k => {
+            const kClean = k.replace(/\s+/g, '').toUpperCase();
+            // Match: "B7.705", "B7705", "705", "P705", "P.705", "PHÒNG 705" etc
+            if (kClean === roomNum.toUpperCase() ||
+                kClean === 'B7.' + roomNum.toUpperCase() ||
+                kClean === 'B7' + roomNum.toUpperCase() ||
+                kClean === room.toUpperCase() ||
+                kClean === 'B7.' + room.toUpperCase() ||
+                kClean.endsWith(roomNum.toUpperCase()) && kClean.length <= roomNum.length + 4) {
+                count += emrData.byRoom[k].length;
+            }
+        });
+        return count;
     },
 
     afterRender() {
