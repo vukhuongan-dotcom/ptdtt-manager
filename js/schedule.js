@@ -484,39 +484,24 @@ const SchedulePage = {
         const btn = document.getElementById('export-pdf-btn');
         if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xuất...'; }
 
+        // Temporarily disable confirm/alert to prevent html2canvas triggering dialogs
+        const origConfirm = window.confirm;
+        const origAlert = window.alert;
+        window.confirm = () => false;
+
         try {
             const dates = this.getWeekDates(this.weekOffset);
             const weekKey = this.getWeekKey(dates);
             const schedule = this.getScheduleData(weekKey);
             const staff = Store.getAll('staff');
 
-            // Build clean HTML table for image
-            let html = `
-            <div style="font-family:'Inter',Arial,sans-serif;padding:28px;background:#fff;width:1120px">
-                <div style="text-align:center;margin-bottom:18px">
-                    <h2 style="margin:0;font-size:20px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
-                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
-                    <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dates[0].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})} – ${dates[6].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'})}</p>
-                </div>
-                <table style="width:100%;border-collapse:collapse;font-size:12px">
-                    <thead>
-                        <tr>
-                            <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px;font-size:12px">Vị trí</th>
-                            ${dates.map((d, i) => {
-                                return `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
-                                    <div style="font-weight:700;font-size:12px;color:#1e293b">${DAY_LABELS[i]}</div>
-                                    <div style="color:#64748b;font-size:11px">${d.getDate()}/${d.getMonth()+1}</div>
-                                </th>`;
-                            }).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
+            // Build standalone HTML page for iframe rendering
+            const tableRows = [];
             SCHEDULE_POSITIONS.forEach(pos => {
                 for (let slot = 0; slot < pos.slots; slot++) {
-                    html += `<tr>`;
+                    let row = '<tr>';
                     if (slot === 0) {
-                        html += `<td rowspan="${pos.slots}" style="border:1.5px solid #94a3b8;padding:8px 10px;background:${pos.color}15;font-weight:700;color:${pos.color};vertical-align:middle;font-size:12px">${pos.label}</td>`;
+                        row += `<td rowspan="${pos.slots}" style="border:1.5px solid #94a3b8;padding:8px 10px;background:${pos.color}15;font-weight:700;color:${pos.color};vertical-align:middle;font-size:12px">${pos.label}</td>`;
                     }
                     dates.forEach((d, dayIdx) => {
                         const dayKey = DAYS[dayIdx];
@@ -528,46 +513,73 @@ const SchedulePage = {
                             if (member) name = this.getShortName(member.id) || member.name.split(' ').pop();
                         }
                         const bg = dayIdx >= 5 ? '#fffbeb' : '#fff';
-                        html += `<td style="border:1px solid #cbd5e1;padding:6px 8px;text-align:center;background:${bg};font-size:11px;color:#334155">${name}</td>`;
+                        row += `<td style="border:1px solid #cbd5e1;padding:6px 8px;text-align:center;background:${bg};font-size:11px;color:#334155">${name}</td>`;
                     });
-                    html += `</tr>`;
+                    row += '</tr>';
+                    tableRows.push(row);
                 }
             });
 
             const notes = schedule?.notes || '';
-            html += `<tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:11px;color:#64748b">
-                <strong>Ghi chú:</strong> ${notes || '—'}
-            </td></tr>`;
+            const dateRange = `${dates[0].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})} – ${dates[6].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
 
-            html += `</tbody></table>
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+            <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
+            </head><body>
+            <div id="capture" style="padding:28px;width:1120px;background:#fff">
+                <div style="text-align:center;margin-bottom:18px">
+                    <h2 style="font-size:20px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
+                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
+                    <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    <thead><tr>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px">Vị trí</th>
+                        ${dates.map((d, i) => `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
+                            <div style="font-weight:700;font-size:12px;color:#1e293b">${DAY_LABELS[i]}</div>
+                            <div style="color:#64748b;font-size:11px">${d.getDate()}/${d.getMonth()+1}</div>
+                        </th>`).join('')}
+                    </tr></thead>
+                    <tbody>
+                        ${tableRows.join('')}
+                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:11px;color:#64748b"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
+                    </tbody>
+                </table>
                 <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
-            </div>`;
+            </div></body></html>`;
 
-            // Render off-screen
-            const container = document.createElement('div');
-            container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;z-index:-1';
-            container.innerHTML = html;
-            document.body.appendChild(container);
+            // Render in isolated iframe (prevents interaction with live DOM)
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1200px;height:900px;border:none;opacity:0;pointer-events:none';
+            document.body.appendChild(iframe);
 
-            const canvas = await html2canvas(container.firstElementChild, {
+            await new Promise((resolve) => {
+                iframe.onload = resolve;
+                iframe.srcdoc = fullHtml;
+            });
+
+            // Wait for fonts/styles to settle
+            await new Promise(r => setTimeout(r, 500));
+
+            const captureEl = iframe.contentDocument.getElementById('capture');
+            const canvas = await html2canvas(captureEl, {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 logging: false
             });
 
-            document.body.removeChild(container);
+            document.body.removeChild(iframe);
 
-            // Download as JPEG via server endpoint (for proper filename on iOS)
+            // Build filename
             const pad = n => String(n).padStart(2, '0');
             const d0 = dates[0], d6 = dates[6];
             const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth()+1)}`;
             const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth()+1)}-${d6.getFullYear()}`;
             const filename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
 
+            // Download via server for correct filename on all browsers
             const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-
-            // Send to server for proper file download
             const resp = await fetch('/api/download-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -583,15 +595,18 @@ const SchedulePage = {
                 a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();
-                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
             } else {
-                throw new Error('Server download failed');
+                throw new Error('Server download failed: ' + resp.status);
             }
 
         } catch (err) {
             console.error('Export error:', err);
+            window.alert = origAlert;
             alert('Lỗi khi xuất ảnh. Vui lòng thử lại.');
         } finally {
+            window.confirm = origConfirm;
+            window.alert = origAlert;
             if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh`; }
         }
     }
