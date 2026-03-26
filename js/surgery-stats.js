@@ -290,7 +290,7 @@ const SurgeryStatsPage = {
                         const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                         const room = this.getPatientRoom(s.patientName);
                         const dateObj = new Date(s.date);
-                        const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}`;
+                        const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
                         return `
                     <tr onclick="SurgeryPage.viewDetail(${s.id})" style="cursor:pointer" title="Xem chi tiết">
                         <td style="text-align:center;color:var(--text-muted);font-weight:600">${idx + 1}</td>
