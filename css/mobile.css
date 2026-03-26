@@ -139,7 +139,7 @@
     /* ---- Main Content ---- */
     .main-content {
         margin-left: 0 !important;
-        padding: 72px 14px 80px; /* top padding for mobile header, bottom for nav bar */
+        padding: 80px 14px 80px; /* top padding for mobile header, bottom for nav bar */
         height: auto;
         min-height: 100vh;
     }
