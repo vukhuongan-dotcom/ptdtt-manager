@@ -113,13 +113,12 @@ const DashboardPage = {
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="chart-card slide-up" style="animation-delay:0.2s">
+        <div class="chart-card slide-up" style="animation-delay:0.2s">
                 <div class="chart-header">
                     <h3 class="chart-title">Số lượng phẫu thuật</h3>
                 </div>
-                <div style="padding:0 20px 16px">
-                    <div style="margin-bottom:20px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 20px 16px">
+                    <div>
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                             <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Trong tuần (T2 → CN)</span>
                             <span style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">${weeklyS.total} ca</span>
@@ -136,7 +135,7 @@ const DashboardPage = {
                             </div>`;
                         }).join('')}
                     </div>
-                    <div style="border-top:1px solid var(--border);padding-top:20px">
+                    <div style="border-left:1px solid var(--border);padding-left:20px">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                             <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Tháng ${currentMonth}</span>
                             <span style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">${monthlyS.total} ca</span>
@@ -156,7 +155,7 @@ const DashboardPage = {
                 </div>
             </div>
 
-            <div class="sidebar-widgets">
+        <div class="duty-grid">
                 <div class="widget-card slide-up" style="animation-delay:0.25s">
                     <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
                     ${todayDutyKhoa.length > 0 ? (() => { const _c = ['#06b6d4','#8b5cf6','#f59e0b','#ec4899']; return todayDutyKhoa.map((item, i) => {
@@ -191,8 +190,8 @@ const DashboardPage = {
                     }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
                 </div>
 
-                <div class="widget-card slide-up" style="animation-delay:0.3s">
-                    <h3 class="widget-title">Hoạt động sắp tới</h3>
+                <div class="widget-card slide-up" style="animation-delay:0.35s">
+                    <h3 class="widget-title">📅 Hoạt động sắp tới</h3>
                     ${upcomingPlans.length > 0 ? upcomingPlans.map((p, i) => `
                     <div class="timeline-item">
                         <div class="timeline-dot ${dotColors[i % dotColors.length]}"></div>
@@ -204,7 +203,6 @@ const DashboardPage = {
                     `).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa có hoạt động nào sắp tới</p>'}
                 </div>
             </div>
-        </div>
         `;
     },
 
