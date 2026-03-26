@@ -1,0 +1,207 @@
+/* ===== MOBILE RESPONSIVE — max-width: 768px ===== */
+
+@media (max-width: 768px) {
+
+    /* ---- Body & App Layout ---- */
+    body { overflow: auto; height: auto; }
+    #app { flex-direction: column; height: auto; min-height: 100vh; }
+
+    /* ---- Sidebar → Bottom Nav ---- */
+    .sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        top: auto;
+        width: 100% !important;
+        height: auto;
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        z-index: 1000;
+        background: var(--bg-secondary);
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    }
+
+    .sidebar-logo { display: none; }
+    .sidebar-footer { display: none; }
+
+    .sidebar-nav {
+        flex-direction: row;
+        padding: 0;
+        gap: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        width: 100%;
+        justify-content: space-around;
+    }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+
+    .nav-item {
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 6px 6px;
+        font-size: 0.65rem;
+        min-width: 52px;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+        border-radius: 0;
+        flex-shrink: 0;
+    }
+    .nav-item::before { display: none; }
+    .nav-item svg { width: 20px; height: 20px; }
+    .nav-item span { display: block !important; font-size: 0.6rem; white-space: nowrap; }
+
+    .nav-item.active {
+        background: rgba(8,145,178,0.1);
+        border-top: 2px solid var(--primary);
+    }
+
+    /* ---- Main Content ---- */
+    .main-content {
+        margin-left: 0 !important;
+        padding: 16px 14px 80px; /* bottom padding for nav bar */
+        height: auto;
+        min-height: 100vh;
+    }
+
+    /* ---- Page Headers ---- */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .page-title { font-size: 1.35rem; }
+    .page-subtitle { font-size: 0.8rem; }
+
+    /* ---- Dashboard Stats ---- */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+    }
+    .stat-card { padding: 14px; }
+    .stat-value { font-size: 1.5rem; }
+    .stat-label { font-size: 0.7rem; }
+    .stat-icon { width: 32px; height: 32px; }
+    .stat-icon svg { width: 16px; height: 16px; }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+    .chart-container { height: 200px; }
+    .chart-card, .widget-card { padding: 16px; }
+
+    /* ---- Cards ---- */
+    .card { padding: 14px; }
+
+    /* ---- Tables ---- */
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    thead th { padding: 8px 10px; font-size: 0.7rem; white-space: nowrap; }
+    tbody td { padding: 10px; font-size: 0.82rem; }
+
+    /* ---- Search Box ---- */
+    .search-box { width: 100%; }
+
+    /* ---- Form ---- */
+    .form-row { grid-template-columns: 1fr !important; }
+    .form-input, .form-select, .form-textarea { font-size: 16px; } /* prevents iOS zoom */
+
+    /* ---- Buttons ---- */
+    .btn { padding: 8px 14px; font-size: 0.82rem; }
+    .btn-sm { padding: 6px 10px; font-size: 0.75rem; }
+
+    /* ---- Surgery Schedule ---- */
+    .surgery-week-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+    .surgery-day-card { margin-bottom: 4px; }
+    .surgery-controls { flex-direction: column; gap: 8px; }
+    .surgery-summary-panel { margin-top: 16px; }
+
+    /* ---- Schedule (Phân công tuần) ---- */
+    .schedule-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .schedule-table { min-width: 700px; }
+
+    /* ---- Staff Grid ---- */
+    .staff-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ---- Patient Stats ---- */
+    .patient-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+    }
+
+    /* ---- Room Map ---- */
+    .room-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+    }
+
+    /* ---- Plans ---- */
+    .plans-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ---- Tasks Kanban ---- */
+    .kanban-board {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ---- Modal ---- */
+    .modal-content {
+        width: 95% !important;
+        max-width: none !important;
+        margin: 10px;
+        max-height: 90vh;
+    }
+
+    /* ---- Login ---- */
+    .login-card {
+        width: 95% !important;
+        max-width: none !important;
+        padding: 24px 20px;
+    }
+
+    /* ---- Surgery Stats ---- */
+    .surgery-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .surgery-stats-charts {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ---- Calendar Nav ---- */
+    .calendar-nav {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .calendar-month-label { font-size: 0.85rem; }
+
+    /* ---- Patient Filter Buttons ---- */
+    .patient-room-filters {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .patient-room-filters .btn { font-size: 0.72rem; padding: 4px 8px; }
+
+    /* ---- Hide non-essential on mobile ---- */
+    .stat-change { display: none; }
+}
+
+/* ===== SMALL PHONES — max-width: 480px ===== */
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr !important; }
+    .patient-stats { grid-template-columns: 1fr !important; }
+    .room-grid { grid-template-columns: 1fr !important; }
+    .surgery-stats-grid { grid-template-columns: 1fr !important; }
+    .main-content { padding: 12px 10px 80px; }
+    .nav-item { min-width: 44px; padding: 6px 4px; }
+    .nav-item span { font-size: 0.55rem; }
+}
