@@ -6,7 +6,8 @@ const DashboardPage = {
         const tasks = Store.getAll('tasks');
         const plans = Store.getAll('plans');
         const pStats = Store.getPatientStats();
-        const today = new Date().toISOString().split('T')[0];
+        const _now = new Date();
+        const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
 
         // Surgery stats (live from SurgeryPage)
         SurgeryPage.init();
@@ -25,7 +26,7 @@ const DashboardPage = {
         const todayDutyKhoa = this.getTodayDutyByGroup(staff, today, 'khoa');
         const todayDutyCapCuu = this.getTodayDutyByGroup(staff, today, 'capcuu');
 
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = today;
         const upcomingPlans = plans
             .filter(p => p.date >= todayStr)
             .sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''))
