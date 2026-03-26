@@ -51,17 +51,28 @@ const SurgeryPage = {
     },
 
     getSurgeries() {
-        const all = JSON.parse(localStorage.getItem('ptdtt_surgeries') || '[]');
+        const all = this.getAllSurgeries();
         const weekDates = this.getWeekDates().map(d => this.dateStr(d));
         return all.filter(s => weekDates.includes(s.date));
     },
 
     getAllSurgeries() {
-        return JSON.parse(localStorage.getItem('ptdtt_surgeries') || '[]');
+        // Migration: move old localStorage data into Store (one-time)
+        const legacy = localStorage.getItem('ptdtt_surgeries');
+        if (legacy) {
+            const items = JSON.parse(legacy);
+            if (items.length > 0 && (!Store._data.surgeries || Store._data.surgeries.length === 0)) {
+                Store._data.surgeries = items;
+                Store.save();
+            }
+            localStorage.removeItem('ptdtt_surgeries');
+        }
+        return Store._data.surgeries || [];
     },
 
     saveSurgeries(all) {
-        localStorage.setItem('ptdtt_surgeries', JSON.stringify(all));
+        Store._data.surgeries = all;
+        Store.save();
     },
 
     render() {
