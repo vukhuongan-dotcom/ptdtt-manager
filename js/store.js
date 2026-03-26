@@ -70,14 +70,39 @@ const Store = {
     _syncToServer() {
         if (this._saveDebounce) clearTimeout(this._saveDebounce);
         this._saveDebounce = setTimeout(() => {
-            this._api('/api/data', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this._data)
+            // GET-merge-PUT: fetch server data first, merge surgeries, then push
+            this._api('/api/data').then(r => r.json()).then(serverData => {
+                const merged = JSON.parse(JSON.stringify(this._data));
+
+                // Merge surgeries: union by ID (keep both local + server entries)
+                if (serverData && serverData.surgeries && serverData.surgeries.length > 0) {
+                    const localSurgeries = merged.surgeries || [];
+                    const localIds = new Set(localSurgeries.map(s => s.id));
+                    serverData.surgeries.forEach(s => {
+                        if (!localIds.has(s.id)) localSurgeries.push(s);
+                    });
+                    merged.surgeries = localSurgeries;
+                }
+
+                // Merge externalDoctors: union by ID
+                if (serverData && serverData.externalDoctors && serverData.externalDoctors.length > 0) {
+                    const localExt = merged.externalDoctors || [];
+                    const localExtIds = new Set(localExt.map(d => d.id));
+                    serverData.externalDoctors.forEach(d => {
+                        if (!localExtIds.has(d.id)) localExt.push(d);
+                    });
+                    merged.externalDoctors = localExt;
+                }
+
+                return this._api('/api/data', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(merged)
+                });
             }).then(r => r.json()).then(res => {
                 this._serverAvailable = true;
                 if (res.version) this._serverVersion = res.version;
-                console.log('[Store] ✅ Saved to server, version:', res.version);
+                console.log('[Store] ✅ Merged & saved to server, version:', res.version);
             }).catch(() => { this._serverAvailable = false; });
         }, 300);
     },
