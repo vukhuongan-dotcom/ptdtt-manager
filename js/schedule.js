@@ -556,7 +556,8 @@ const SchedulePage = {
             const canvas = await html2canvas(container.firstElementChild, {
                 scale: 2,
                 useCORS: true,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                logging: false
             });
 
             document.body.removeChild(container);
@@ -570,9 +571,14 @@ const SchedulePage = {
             const imgW = pageW - margin * 2;
             const imgH = (canvas.height / canvas.width) * imgW;
 
-            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, Math.min(imgH, pageH - margin * 2));
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, Math.min(imgH, pageH - margin * 2));
 
-            const filename = `Phan_cong_tuan_${startStr.replace(/\//g,'-')}_${endStr.replace(/\//g,'-')}.pdf`;
+            // Format: Phan_cong_tuan_DD-MM_DD-MM-YYYY.pdf
+            const d0 = dates[0], d6 = dates[6];
+            const pad = n => String(n).padStart(2, '0');
+            const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth()+1)}`;
+            const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth()+1)}-${d6.getFullYear()}`;
+            const filename = `Phan_cong_tuan_${startFmt}_${endFmt}.pdf`;
             pdf.save(filename);
 
         } catch (err) {
