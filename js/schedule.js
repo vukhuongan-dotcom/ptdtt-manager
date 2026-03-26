@@ -127,7 +127,7 @@ const SchedulePage = {
             <div class="flex items-center gap-8">
                 <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                    Xuất PDF
+                    Xuất ảnh
                 </button>
                 ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -489,26 +489,23 @@ const SchedulePage = {
             const weekKey = this.getWeekKey(dates);
             const schedule = this.getScheduleData(weekKey);
             const staff = Store.getAll('staff');
-            const startStr = dates[0].toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit' });
-            const endStr = dates[6].toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
 
-            // Build clean HTML for PDF
+            // Build clean HTML table for image
             let html = `
-            <div style="font-family:'Inter',Arial,sans-serif;padding:24px;background:#fff;width:1120px">
-                <div style="text-align:center;margin-bottom:16px">
-                    <h2 style="margin:0;font-size:18px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
-                    <p style="margin:4px 0 0;font-size:13px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
-                    <p style="margin:2px 0 0;font-size:13px;color:#64748b">Từ ${startStr} đến ${endStr}</p>
+            <div style="font-family:'Inter',Arial,sans-serif;padding:28px;background:#fff;width:1120px">
+                <div style="text-align:center;margin-bottom:18px">
+                    <h2 style="margin:0;font-size:20px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
+                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
+                    <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dates[0].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})} – ${dates[6].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'})}</p>
                 </div>
-                <table style="width:100%;border-collapse:collapse;font-size:11px">
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
                     <thead>
                         <tr>
-                            <th style="border:1px solid #cbd5e1;background:#1e293b;color:#fff;padding:8px 6px;text-align:left;width:110px">Vị trí</th>
+                            <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px;font-size:12px">Vị trí</th>
                             ${dates.map((d, i) => {
-                                const dayNum = d.getDate();
-                                return `<th style="border:1px solid #cbd5e1;background:${i >= 5 ? '#fef3c7' : '#f1f5f9'};padding:8px 4px;text-align:center;font-size:10px">
-                                    <div style="font-weight:700">${DAY_LABELS[i]}</div>
-                                    <div style="color:#64748b;font-size:9px">${dayNum}/${d.getMonth()+1}</div>
+                                return `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
+                                    <div style="font-weight:700;font-size:12px;color:#1e293b">${DAY_LABELS[i]}</div>
+                                    <div style="color:#64748b;font-size:11px">${d.getDate()}/${d.getMonth()+1}</div>
                                 </th>`;
                             }).join('')}
                         </tr>
@@ -519,7 +516,7 @@ const SchedulePage = {
                 for (let slot = 0; slot < pos.slots; slot++) {
                     html += `<tr>`;
                     if (slot === 0) {
-                        html += `<td rowspan="${pos.slots}" style="border:1px solid #cbd5e1;padding:6px 8px;background:${pos.color}12;font-weight:700;color:${pos.color};vertical-align:middle;font-size:11px">${pos.label}</td>`;
+                        html += `<td rowspan="${pos.slots}" style="border:1.5px solid #94a3b8;padding:8px 10px;background:${pos.color}15;font-weight:700;color:${pos.color};vertical-align:middle;font-size:12px">${pos.label}</td>`;
                     }
                     dates.forEach((d, dayIdx) => {
                         const dayKey = DAYS[dayIdx];
@@ -531,20 +528,19 @@ const SchedulePage = {
                             if (member) name = this.getShortName(member.id) || member.name.split(' ').pop();
                         }
                         const bg = dayIdx >= 5 ? '#fffbeb' : '#fff';
-                        html += `<td style="border:1px solid #cbd5e1;padding:4px 6px;text-align:center;background:${bg};font-size:10px;color:#334155">${name}</td>`;
+                        html += `<td style="border:1px solid #cbd5e1;padding:6px 8px;text-align:center;background:${bg};font-size:11px;color:#334155">${name}</td>`;
                     });
                     html += `</tr>`;
                 }
             });
 
-            // Add notes row
             const notes = schedule?.notes || '';
-            html += `<tr><td colspan="8" style="border:1px solid #cbd5e1;padding:8px;font-size:10px;color:#64748b">
+            html += `<tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:11px;color:#64748b">
                 <strong>Ghi chú:</strong> ${notes || '—'}
             </td></tr>`;
 
             html += `</tbody></table>
-                <p style="text-align:right;font-size:9px;color:#94a3b8;margin-top:12px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
+                <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
             </div>`;
 
             // Render off-screen
@@ -562,30 +558,29 @@ const SchedulePage = {
 
             document.body.removeChild(container);
 
-            // Generate PDF (landscape A4)
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            const pageW = pdf.internal.pageSize.getWidth();
-            const pageH = pdf.internal.pageSize.getHeight();
-            const margin = 8;
-            const imgW = pageW - margin * 2;
-            const imgH = (canvas.height / canvas.width) * imgW;
-
-            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, Math.min(imgH, pageH - margin * 2));
-
-            // Format: Phan_cong_tuan_DD-MM_DD-MM-YYYY.pdf
-            const d0 = dates[0], d6 = dates[6];
+            // Download as JPEG
             const pad = n => String(n).padStart(2, '0');
+            const d0 = dates[0], d6 = dates[6];
             const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth()+1)}`;
             const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth()+1)}-${d6.getFullYear()}`;
-            const filename = `Phan_cong_tuan_${startFmt}_${endFmt}.pdf`;
-            pdf.save(filename);
+            const filename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
+
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/jpeg', 0.92);
 
         } catch (err) {
-            console.error('PDF export error:', err);
-            alert('Lỗi khi xuất PDF. Vui lòng thử lại.');
+            console.error('Export error:', err);
+            alert('Lỗi khi xuất ảnh. Vui lòng thử lại.');
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất PDF`; }
+            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh`; }
         }
     }
 };
