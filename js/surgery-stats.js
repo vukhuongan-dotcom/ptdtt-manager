@@ -1,6 +1,7 @@
 // ===== SURGERY STATISTICS PAGE =====
 const SurgeryStatsPage = {
-    period: 'week', // week | month | quarter | year
+    period: 'week', // week | month | quarter | year | all
+    offset: 0, // 0 = current, -1 = previous, 1 = next, etc.
     expandedDoctor: null, // id of the doctor whose detail is shown
 
     // Filter: BCN khoa + Bác sĩ chính + External doctors
@@ -17,50 +18,79 @@ const SurgeryStatsPage = {
         return [...internal, ...external];
     },
 
-    // Get date range for current period
+    // Get date range for current period + offset
     getDateRange() {
+        if (this.period === 'all') {
+            return this._getAllTimeRange();
+        }
+
         const now = new Date();
         let start, end;
 
         if (this.period === 'week') {
             const day = now.getDay();
             start = new Date(now);
-            start.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+            start.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + (this.offset * 7));
             start.setHours(0, 0, 0, 0);
             end = new Date(start);
             end.setDate(start.getDate() + 6);
             end.setHours(23, 59, 59, 999);
         } else if (this.period === 'month') {
-            start = new Date(now.getFullYear(), now.getMonth(), 1);
-            end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            const targetMonth = now.getMonth() + this.offset;
+            start = new Date(now.getFullYear(), targetMonth, 1);
+            end = new Date(now.getFullYear(), targetMonth + 1, 0, 23, 59, 59, 999);
         } else if (this.period === 'quarter') {
-            const q = Math.floor(now.getMonth() / 3);
-            start = new Date(now.getFullYear(), q * 3, 1);
-            end = new Date(now.getFullYear(), q * 3 + 3, 0, 23, 59, 59, 999);
-        } else { // year
-            start = new Date(now.getFullYear(), 0, 1);
-            end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            const currentQ = Math.floor(now.getMonth() / 3);
+            const targetQ = currentQ + this.offset;
+            const targetYear = now.getFullYear() + Math.floor(targetQ / 4) * (targetQ < 0 ? -1 : 0);
+            const qStart = ((targetQ % 4) + 4) % 4;
+            // Simpler: just offset by 3 months per step
+            const baseMonth = currentQ * 3 + this.offset * 3;
+            start = new Date(now.getFullYear(), baseMonth, 1);
+            end = new Date(now.getFullYear(), baseMonth + 3, 0, 23, 59, 59, 999);
+        } else if (this.period === 'year') {
+            const targetYear = now.getFullYear() + this.offset;
+            start = new Date(targetYear, 0, 1);
+            end = new Date(targetYear, 11, 31, 23, 59, 59, 999);
         }
 
         return { start, end };
     },
 
+    // Get the "all time" range: from first surgery date to now
+    _getAllTimeRange() {
+        const all = SurgeryPage.getAllSurgeries();
+        if (all.length === 0) {
+            const now = new Date();
+            return { start: new Date(now.getFullYear(), 0, 1), end: now };
+        }
+        const dates = all.map(s => new Date(s.date)).sort((a, b) => a - b);
+        const start = new Date(dates[0]);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        return { start, end };
+    },
+
     getPeriodLabel() {
-        const now = new Date();
-        const labels = {
-            week: (() => {
-                const day = now.getDay();
-                const mon = new Date(now);
-                mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-                const sun = new Date(mon);
-                sun.setDate(mon.getDate() + 6);
-                return `Tuần ${mon.getDate()}/${mon.getMonth()+1} — ${sun.getDate()}/${sun.getMonth()+1}/${sun.getFullYear()}`;
-            })(),
-            month: `Tháng ${now.getMonth()+1}/${now.getFullYear()}`,
-            quarter: `Quý ${Math.floor(now.getMonth()/3)+1}/${now.getFullYear()}`,
-            year: `Năm ${now.getFullYear()}`
-        };
-        return labels[this.period];
+        if (this.period === 'all') {
+            const { start, end } = this._getAllTimeRange();
+            const fmt = d => `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+            return `Toàn bộ (${fmt(start)} — ${fmt(end)})`;
+        }
+
+        const { start, end } = this.getDateRange();
+
+        if (this.period === 'week') {
+            return `Tuần ${start.getDate()}/${start.getMonth()+1} — ${end.getDate()}/${end.getMonth()+1}/${end.getFullYear()}`;
+        } else if (this.period === 'month') {
+            return `Tháng ${start.getMonth()+1}/${start.getFullYear()}`;
+        } else if (this.period === 'quarter') {
+            const q = Math.floor(start.getMonth() / 3) + 1;
+            return `Quý ${q}/${start.getFullYear()}`;
+        } else {
+            return `Năm ${start.getFullYear()}`;
+        }
     },
 
     // Get surgeries in date range
@@ -113,6 +143,7 @@ const SurgeryStatsPage = {
         const surgeries = this.getSurgeriesInRange();
         const totalAll = surgeries.length;
         const types = Object.keys(SURGERY_TYPES);
+        const isAllPeriod = this.period === 'all';
 
         // Grand totals by type
         const grandByType = {};
@@ -130,13 +161,26 @@ const SurgeryStatsPage = {
 
         <div class="sstats-controls">
             <div class="sstats-period-tabs">
-                ${['week','month','quarter','year'].map(p => `
+                ${['week','month','quarter','year','all'].map(p => `
                     <button class="sstats-period-btn ${this.period === p ? 'active' : ''}" onclick="SurgeryStatsPage.setPeriod('${p}')">
-                        ${{week:'Tuần',month:'Tháng',quarter:'Quý',year:'Năm'}[p]}
+                        ${{week:'Tuần',month:'Tháng',quarter:'Quý',year:'Năm',all:'Toàn bộ'}[p]}
                     </button>
                 `).join('')}
             </div>
         </div>
+
+        ${!isAllPeriod ? `
+        <div class="sstats-nav">
+            <button class="btn-icon" onclick="SurgeryStatsPage.prevPeriod()" title="Kỳ trước">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span class="sstats-nav-label">${this.getPeriodLabel()}</span>
+            <button class="btn-icon" onclick="SurgeryStatsPage.nextPeriod()" title="Kỳ sau">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            ${this.offset !== 0 ? `<button class="btn btn-secondary btn-sm" onclick="SurgeryStatsPage.resetPeriod()">Hiện tại</button>` : ''}
+        </div>
+        ` : ''}
 
         <div class="sstats-summary-cards">
             <div class="sstats-summary-card sstats-total">
@@ -272,6 +316,25 @@ const SurgeryStatsPage = {
 
     setPeriod(p) {
         this.period = p;
+        this.offset = 0;
+        this.expandedDoctor = null;
+        App.renderCurrentPage();
+    },
+
+    prevPeriod() {
+        this.offset--;
+        this.expandedDoctor = null;
+        App.renderCurrentPage();
+    },
+
+    nextPeriod() {
+        this.offset++;
+        this.expandedDoctor = null;
+        App.renderCurrentPage();
+    },
+
+    resetPeriod() {
+        this.offset = 0;
         this.expandedDoctor = null;
         App.renderCurrentPage();
     },
