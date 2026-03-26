@@ -40,8 +40,8 @@ const RoomsPage = {
                 return `
                 <div class="room-card">
                     <div class="room-card-header">
-                        <span class="room-number">B7.${r.room}</span>
-                        <span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(6,182,212,0.15);color:var(--primary);padding:2px 10px;border-radius:12px;font-weight:600' : ''}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>
+                        <span class="room-number">B${r.room}</span>
+                        <span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>
                     </div>
                     <div class="room-card-body">
                         ${r.doctors.map(d => {
