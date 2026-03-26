@@ -154,7 +154,7 @@ const TasksPage = {
 
     renderTrash() {
         const trash = this.getTrash();
-        const canDelete = this.isBCN();
+        const canDelete = Auth.getSession()?.isAdmin;
 
         return `
         <div class="page-header">
@@ -227,26 +227,24 @@ const TasksPage = {
     },
 
     permanentDelete(id) {
-        if (!this.isBCN()) {
+        if (!Auth.getSession()?.isAdmin) {
             alert('Chỉ BCN khoa mới có quyền xoá vĩnh viễn.');
             return;
         }
-        if (confirm('Xoá vĩnh viễn? Không thể khôi phục!')) {
-            const trash = this.getTrash();
-            this.setTrash(trash.filter(t => t.id !== id));
-            App.renderCurrentPage();
-        }
+        if (!confirm('Xoá vĩnh viễn? Không thể khôi phục!')) return;
+        const trash = this.getTrash();
+        this.setTrash(trash.filter(t => t.id !== id));
+        App.renderCurrentPage();
     },
 
     emptyTrash() {
-        if (!this.isBCN()) {
+        if (!Auth.getSession()?.isAdmin) {
             alert('Chỉ BCN khoa mới có quyền xoá vĩnh viễn.');
             return;
         }
-        if (confirm('Xoá tất cả công việc trong thùng rác vĩnh viễn?')) {
-            this.setTrash([]);
-            App.renderCurrentPage();
-        }
+        if (!confirm('Xoá tất cả công việc trong thùng rác vĩnh viễn?')) return;
+        this.setTrash([]);
+        App.renderCurrentPage();
     },
 
     // ===== DRAG & DROP =====
