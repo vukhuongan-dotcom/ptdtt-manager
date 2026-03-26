@@ -47,6 +47,16 @@ def _ensure_data_dir():
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump({}, f)
 
+def _init_data_hash():
+    """Compute initial hash from existing data file on startup"""
+    global _data_hash
+    try:
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            raw = f.read()
+        _data_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
+    except Exception:
+        _data_hash = 'init'
+
 def load_data():
     _ensure_data_dir()
     with _data_lock:
@@ -100,11 +110,7 @@ def put_data():
 @app.route('/api/data/version', methods=['GET'])
 def get_data_version():
     """Lightweight version check for polling (no full data transfer)"""
-    data = load_data()
-    return jsonify({
-        'hash': _data_hash,
-        'lastModified': data.get('_lastModified', ''),
-    })
+    return jsonify({'hash': _data_hash})
 
 @app.route('/api/data/<collection>', methods=['GET'])
 def get_collection(collection):
@@ -215,9 +221,12 @@ def emr_proxy():
 def emr_status():
     return jsonify({'loggedIn': _emr_logged_in, 'user': EMR_USER})
 
+# ────────────────────────────── Init: compute hash on import (for gunicorn) ──
+_ensure_data_dir()
+_init_data_hash()
+
 # ────────────────────────────── Main ──────────────────────────────
 if __name__ == '__main__':
-    _ensure_data_dir()
     print(f'\n  🏥 PTDTT Manager Server (Flask)')
     print(f'  ================================')
 
