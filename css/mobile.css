@@ -1,6 +1,83 @@
+/* ===== MOBILE HEADER — Hidden on desktop ===== */
+.mobile-header { display: none; }
+
 /* ===== MOBILE RESPONSIVE — max-width: 768px ===== */
 
 @media (max-width: 768px) {
+
+    /* ---- Mobile Header Bar ---- */
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 52px;
+        padding: 0 14px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        z-index: 1001;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .mobile-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary);
+    }
+    .mobile-header-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .mobile-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mobile-user-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .mobile-user-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .mobile-logout-btn {
+        background: none;
+        border: 1px solid rgba(239,68,68,0.3);
+        color: #ef4444;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+    }
+    .mobile-logout-btn:hover, .mobile-logout-btn:active {
+        background: rgba(239,68,68,0.1);
+    }
 
     /* ---- Body & App Layout ---- */
     body { overflow: auto; height: auto; }
@@ -62,7 +139,7 @@
     /* ---- Main Content ---- */
     .main-content {
         margin-left: 0 !important;
-        padding: 16px 14px 80px; /* bottom padding for nav bar */
+        padding: 66px 14px 80px; /* top padding for mobile header, bottom for nav bar */
         height: auto;
         min-height: 100vh;
     }
