@@ -167,6 +167,16 @@
     margin-top: 6px;
 }
 
+/* ===== CLICKABLE TASK CARDS ===== */
+.task-card-clickable {
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.15s;
+}
+.task-card-clickable:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
 .notif-empty {
     padding: 32px 16px;
     text-align: center;

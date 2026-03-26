@@ -114,9 +114,12 @@ const TasksPage = {
         const deadlineClass = days < 0 ? 'color:var(--danger)' : days <= 2 ? 'color:var(--warning)' : '';
         const cat = TASK_CATEGORIES[t.category] || TASK_CATEGORIES.other;
         const assignerName = t.assigner ? Utils.getStaffName(t.assigner) : '';
+        const session = Auth.getSession();
+        const isMyTask = session && t.assignee === session.staffId;
+        const clickable = isMyTask && !isAdmin;
 
         return `
-        <div class="task-card" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="TasksPage.dragStart(event,${t.id})" ondragend="TasksPage.dragEnd(event)">
+        <div class="task-card ${clickable ? 'task-card-clickable' : ''}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="TasksPage.dragStart(event,${t.id})" ondragend="TasksPage.dragEnd(event)" ${clickable ? `onclick="TasksPage.viewTask(${t.id})"` : ''}>
             <div class="priority-bar priority-${t.priority}"></div>
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
                 <div class="task-card-title">${t.title}</div>
@@ -127,6 +130,7 @@ const TasksPage = {
                 <span class="badge ${Utils.priorityBadge(t.priority)}">${Utils.priorityLabel(t.priority)}</span>
                 ${t.startDate ? `<span style="font-size:0.7rem;color:var(--text-muted)">📅 ${Utils.formatDateShort(t.startDate)}</span>` : ''}
                 ${assignerName ? `<span style="font-size:0.7rem;color:var(--text-muted)">👤 ${assignerName}</span>` : ''}
+                ${t.completedAt ? `<span style="font-size:0.7rem;color:var(--success)">✅ ${Utils.formatDateShort(t.completedAt)}</span>` : ''}
             </div>
             <div class="task-card-meta">
                 <div class="task-card-assignee">
@@ -377,5 +381,56 @@ const TasksPage = {
         this.moveToTrash(id);
     },
 
-    afterRender() {}
+    afterRender() {},
+
+    // ===== ASSIGNEE VIEW & COMPLETE =====
+    viewTask(id) {
+        const session = Auth.getSession();
+        if (!session) return;
+        const t = Store.getById('tasks', id);
+        if (!t || t.assignee !== session.staffId) return;
+
+        const cat = TASK_CATEGORIES[t.category] || TASK_CATEGORIES.other;
+        const assignerName = t.assigner ? Utils.getStaffName(t.assigner) : '—';
+        const deadlineText = t.deadline ? Utils.formatDateShort(t.deadline) : '—';
+        const statusLabel = { todo: 'Chờ xử lý', doing: 'Đang thực hiện', done: 'Hoàn thành' }[t.status] || t.status;
+
+        Modal.open('📋 Chi tiết công việc', `
+            <div class="notif-accept-modal">
+                <div class="notif-accept-header">
+                    <span class="notif-accept-badge">${cat.icon} ${cat.label}</span>
+                    <span class="badge ${Utils.priorityBadge(t.priority)}">${Utils.priorityLabel(t.priority)}</span>
+                    <span class="badge ${t.status === 'doing' ? 'badge-primary' : t.status === 'done' ? 'badge-success' : 'badge-warning'}">${statusLabel}</span>
+                </div>
+                <h3 class="notif-accept-title">${t.title}</h3>
+                ${t.desc ? `<p class="notif-accept-desc">${t.desc}</p>` : ''}
+                <div class="notif-accept-meta">
+                    <div><strong>Người giao:</strong> ${assignerName}</div>
+                    <div><strong>Ngày giao:</strong> ${t.startDate ? Utils.formatDateShort(t.startDate) : '—'}</div>
+                    <div><strong>Deadline:</strong> ${deadlineText}</div>
+                    ${t.completedAt ? `<div><strong>Ngày hoàn thành:</strong> <span style="color:var(--success)">✅ ${Utils.formatDateShort(t.completedAt)}</span></div>` : ''}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
+                    ${t.status === 'doing' ? `<button type="button" class="btn btn-primary" onclick="TasksPage.completeTask(${t.id})">✅ Hoàn thành công việc</button>` : ''}
+                </div>
+            </div>
+        `);
+    },
+
+    completeTask(id) {
+        const session = Auth.getSession();
+        if (!session) return;
+        const t = Store.getById('tasks', id);
+        if (!t || t.assignee !== session.staffId || t.status !== 'doing') return;
+
+        const completedAt = new Date().toISOString().split('T')[0];
+        Store.update('tasks', id, { status: 'done', completedAt });
+
+        // Notify assigner
+        Notifications.createTaskCompleted(t);
+
+        Modal.close();
+        App.renderCurrentPage();
+    }
 };

@@ -59,6 +59,24 @@ const Notifications = {
         Store.add('notifications', notif);
     },
 
+    createTaskCompleted(task) {
+        if (!task || !task.assigner) return;
+        const session = Auth.getSession();
+        const completerName = session ? `${session.title} ${session.name}` : '';
+
+        const notif = {
+            type: 'task_completed',
+            taskId: task.id,
+            fromStaffId: session?.staffId || null,
+            toStaffId: task.assigner,
+            message: `${completerName} đã hoàn thành: "${task.title}"`,
+            detail: '',
+            createdAt: new Date().toISOString(),
+            read: false
+        };
+        Store.add('notifications', notif);
+    },
+
     // ===== ACCEPT TASK =====
     acceptTask(notifId) {
         const notif = this.getAll().find(n => n.id === notifId);
@@ -165,7 +183,7 @@ const Notifications = {
     renderNotifItem(n) {
         const timeAgo = this.timeAgo(n.createdAt);
         const isAssigned = n.type === 'task_assigned';
-        const icon = isAssigned ? '📋' : '✅';
+        const icon = isAssigned ? '📋' : n.type === 'task_completed' ? '🎉' : '✅';
         const unreadClass = n.read ? '' : 'unread';
 
         return `
