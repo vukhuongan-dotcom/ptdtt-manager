@@ -158,36 +158,36 @@ const DashboardPage = {
             <div class="sidebar-widgets">
                 <div class="widget-card slide-up" style="animation-delay:0.25s">
                     <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
-                    ${todayDutyKhoa.length > 0 ? todayDutyKhoa.map(item => {
+                    ${todayDutyKhoa.length > 0 ? (() => { const _c = ['#06b6d4','#8b5cf6','#f59e0b','#ec4899']; return todayDutyKhoa.map((item, i) => {
                         const eff = StaffPage.getEffectiveStatus(item.staff, today);
                         const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
                         return `
                     <div class="duty-item">
-                        <div class="duty-avatar" style="background:${item.staff.color}">${Utils.getInitials(item.staff.name)}</div>
+                        <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
                         <div class="duty-info">
                             <div class="duty-name">${item.staff.title} ${item.staff.name}</div>
                             <div class="duty-role">${item.dutyType}</div>
                         </div>
                         <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                     </div>`;
-                    }).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
+                    }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
                 </div>
 
                 <div class="widget-card slide-up" style="animation-delay:0.3s">
                     <h3 class="widget-title">🚑 Trực cấp cứu hôm nay</h3>
-                    ${todayDutyCapCuu.length > 0 ? todayDutyCapCuu.map(item => {
+                    ${todayDutyCapCuu.length > 0 ? (() => { const _c = ['#ef4444','#3b82f6','#14b8a6','#f97316','#a855f7','#10b981']; return todayDutyCapCuu.map((item, i) => {
                         const eff = StaffPage.getEffectiveStatus(item.staff, today);
                         const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
                         return `
                     <div class="duty-item">
-                        <div class="duty-avatar" style="background:${item.staff.color}">${Utils.getInitials(item.staff.name)}</div>
+                        <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
                         <div class="duty-info">
                             <div class="duty-name">${item.staff.title} ${item.staff.name}</div>
                             <div class="duty-role">${item.dutyType}</div>
                         </div>
                         <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                     </div>`;
-                    }).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
+                    }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}}
                 </div>
 
                 <div class="widget-card slide-up" style="animation-delay:0.3s">
