@@ -26,12 +26,7 @@ const TasksPage = {
     },
 
     getTrash() {
-        const raw = localStorage.getItem('ptdtt_tasks_trash');
-        return raw ? JSON.parse(raw) : [];
-    },
-
-    setTrash(items) {
-        localStorage.setItem('ptdtt_tasks_trash', JSON.stringify(items));
+        return Store.getAll('tasksTrash') || [];
     },
 
     render() {
@@ -163,7 +158,7 @@ const TasksPage = {
                 <p class="page-subtitle">${trash.length} công việc đã xoá</p>
             </div>
             <div style="display:flex;gap:8px">
-                ${canDelete && trash.length > 0 ? `<button class="btn btn-danger" onclick="TasksPage.emptyTrash()">Xoá tất cả vĩnh viễn</button>` : ''}
+                ${canDelete && trash.length > 0 ? `<button class="btn btn-danger" onclick="TasksPage.confirmEmptyTrash()">Xoá tất cả vĩnh viễn</button>` : ''}
                 <button class="btn btn-secondary" onclick="TasksPage.toggleTrash()">← Quay lại</button>
             </div>
         </div>
@@ -189,7 +184,7 @@ const TasksPage = {
                             <td>
                                 <div style="display:flex;gap:4px">
                                     <button class="btn btn-sm btn-secondary" onclick="TasksPage.restore(${t.id})">Khôi phục</button>
-                                    ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="TasksPage.permanentDelete(${t.id})">Xoá</button>` : ''}
+                                    ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="TasksPage.confirmPermanentDelete(${t.id})">Xoá</button>` : ''}
                                 </div>
                             </td>
                         </tr>`;
@@ -203,47 +198,59 @@ const TasksPage = {
         if (!Auth.getSession()?.isAdmin) return;
         const task = Store.getById('tasks', id);
         if (!task) return;
-        // Move to trash directly
-        const trash = this.getTrash();
         const taskCopy = JSON.parse(JSON.stringify(task));
         taskCopy.deletedAt = new Date().toLocaleDateString('vi-VN');
-        trash.push(taskCopy);
-        this.setTrash(trash);
+        delete taskCopy.id;
+        Store.add('tasksTrash', taskCopy);
         Store.remove('tasks', id);
         App.renderCurrentPage();
     },
 
     restore(id) {
-        const trash = this.getTrash();
-        const task = trash.find(t => t.id === id);
+        const task = Store.getById('tasksTrash', id);
         if (!task) return;
-        // Remove from trash
-        this.setTrash(trash.filter(t => t.id !== id));
-        // Add back to store
-        const { deletedAt, ...restored } = task;
-        delete restored.id; // let store assign new id
+        const restored = JSON.parse(JSON.stringify(task));
+        delete restored.id;
+        delete restored.deletedAt;
         Store.add('tasks', restored);
+        Store.remove('tasksTrash', id);
         App.renderCurrentPage();
+    },
+
+    confirmPermanentDelete(id) {
+        Modal.open('⚠️ Xác nhận xoá', `
+            <div style="padding:8px 0">
+                <p style="margin-bottom:16px">Xoá vĩnh viễn công việc này? <strong>Không thể khôi phục!</strong></p>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="button" class="btn btn-danger" onclick="TasksPage.permanentDelete(${id})">🗑️ Xoá vĩnh viễn</button>
+                </div>
+            </div>
+        `);
     },
 
     permanentDelete(id) {
-        if (!Auth.getSession()?.isAdmin) {
-            alert('Chỉ BCN khoa mới có quyền xoá vĩnh viễn.');
-            return;
-        }
-        if (!confirm('Xoá vĩnh viễn? Không thể khôi phục!')) return;
-        const trash = this.getTrash();
-        this.setTrash(trash.filter(t => t.id !== id));
+        Store.remove('tasksTrash', id);
+        Modal.close();
         App.renderCurrentPage();
     },
 
+    confirmEmptyTrash() {
+        Modal.open('⚠️ Xác nhận xoá tất cả', `
+            <div style="padding:8px 0">
+                <p style="margin-bottom:16px">Xoá tất cả công việc trong thùng rác? <strong>Không thể khôi phục!</strong></p>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="button" class="btn btn-danger" onclick="TasksPage.emptyTrash()">🗑️ Xoá tất cả</button>
+                </div>
+            </div>
+        `);
+    },
+
     emptyTrash() {
-        if (!Auth.getSession()?.isAdmin) {
-            alert('Chỉ BCN khoa mới có quyền xoá vĩnh viễn.');
-            return;
-        }
-        if (!confirm('Xoá tất cả công việc trong thùng rác vĩnh viễn?')) return;
-        this.setTrash([]);
+        const trash = this.getTrash();
+        trash.forEach(t => Store.remove('tasksTrash', t.id));
+        Modal.close();
         App.renderCurrentPage();
     },
 
