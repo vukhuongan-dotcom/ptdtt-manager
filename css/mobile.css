@@ -278,7 +278,7 @@
     .patient-stats { grid-template-columns: 1fr !important; }
     .room-grid { grid-template-columns: 1fr !important; }
     .surgery-stats-grid { grid-template-columns: 1fr !important; }
-    .main-content { padding: 12px 10px 80px; }
+    .main-content { padding: 80px 10px 80px; }
     .nav-item { min-width: 44px; padding: 6px 4px; }
     .nav-item span { font-size: 0.55rem; }
 }
