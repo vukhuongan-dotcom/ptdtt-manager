@@ -7,7 +7,7 @@ const SCHEDULE_POSITIONS = [
     { key: 'mo', label: 'Mổ', slots: 8, staffFilter: 'bs', color: '#ef4444' },
     { key: 'trucBCN', label: 'Trực BCN khoa', slots: 1, staffFilter: 'bcn', color: '#14b8a6' },
     { key: 'trucBV', label: 'Trực BV', slots: 3, staffFilter: 'bs', color: '#3b82f6' },
-    { key: 'trucDD', label: 'Trực Đ.D', slots: 2, staffFilter: 'dd', color: '#f97316' },
+    { key: 'trucDD', label: 'Trực Đ.D', slots: 3, staffFilter: 'dd', color: '#f97316' },
 ];
 
 const DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
