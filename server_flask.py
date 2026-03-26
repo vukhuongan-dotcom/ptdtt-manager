@@ -16,7 +16,8 @@ from http.cookiejar import CookieJar
 import urllib.request
 import urllib.error
 
-from flask import Flask, request, jsonify, send_from_directory, abort
+from flask import Flask, request, jsonify, send_from_directory, abort, Response
+import base64
 
 # ────────────────────────────── Config ──────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
@@ -110,6 +111,28 @@ def put_data():
 def get_data_version():
     """Lightweight version check — uses file mtime (works across all gunicorn workers)"""
     return jsonify({'version': _get_file_version()})
+
+@app.route('/api/download-image', methods=['POST'])
+def download_image():
+    """Receive base64 image data, return as file download with proper filename"""
+    body = request.get_json(force=True)
+    data_url = body.get('image', '')
+    filename = body.get('filename', 'export.jpg')
+
+    # Parse data URL: data:image/jpeg;base64,/9j/4AAQ...
+    if ',' in data_url:
+        img_data = base64.b64decode(data_url.split(',', 1)[1])
+    else:
+        return jsonify({'error': 'Invalid image data'}), 400
+
+    return Response(
+        img_data,
+        mimetype='image/jpeg',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Content-Length': str(len(img_data))
+        }
+    )
 
 @app.route('/api/data/<collection>', methods=['GET'])
 def get_collection(collection):

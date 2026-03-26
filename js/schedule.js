@@ -558,23 +558,35 @@ const SchedulePage = {
 
             document.body.removeChild(container);
 
-            // Download as JPEG
+            // Download as JPEG via server endpoint (for proper filename on iOS)
             const pad = n => String(n).padStart(2, '0');
             const d0 = dates[0], d6 = dates[6];
             const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth()+1)}`;
             const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth()+1)}-${d6.getFullYear()}`;
             const filename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
 
-            canvas.toBlob(blob => {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+            // Send to server for proper file download
+            const resp = await fetch('/api/download-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataUrl, filename })
+            });
+
+            if (resp.ok) {
+                const blob = await resp.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = filename;
+                a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 'image/jpeg', 0.92);
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+            } else {
+                throw new Error('Server download failed');
+            }
 
         } catch (err) {
             console.error('Export error:', err);
