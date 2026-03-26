@@ -354,7 +354,21 @@ const TasksPage = {
             priority: form.get('priority'),
             status: form.get('status')
         };
-        if (id) Store.update('tasks', id, data); else Store.add('tasks', data);
+
+        if (id) {
+            const oldTask = Store.getById('tasks', id);
+            Store.update('tasks', id, data);
+            // Notify if assignee changed
+            if (oldTask && oldTask.assignee !== data.assignee && data.status === 'todo') {
+                Notifications.createTaskAssigned({ ...data, id });
+            }
+        } else {
+            const newTask = Store.add('tasks', data);
+            // Notify new assignee
+            if (data.status === 'todo') {
+                Notifications.createTaskAssigned(newTask);
+            }
+        }
         Modal.close(); App.renderCurrentPage();
     },
 

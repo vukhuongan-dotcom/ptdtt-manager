@@ -56,6 +56,7 @@ const App = {
         this.updateMobileHeader();
         this.bindNavigation();
         this.navigate('dashboard');
+        Notifications.startPolling();
     },
 
     // === Mobile Header (account info + logout) ===
@@ -65,6 +66,7 @@ const App = {
         if (!session || !area) return;
 
         area.innerHTML = `
+            ${Notifications.renderBellButton('mobile')}
             <div class="mobile-user-avatar" style="background:${session.color || 'var(--gradient-accent)'}">${Utils.getInitials(session.name)}</div>
             <span class="mobile-user-name">${session.name}</span>
             <button class="mobile-logout-btn" id="mobile-logout-btn">
@@ -85,6 +87,10 @@ const App = {
 
         const footer = document.getElementById('sidebar-footer');
         footer.innerHTML = `
+            <div class="sidebar-bell-area">
+                ${Notifications.renderBellButton('desktop')}
+                <span class="notif-bell-label">Thông báo</span>
+            </div>
             <div class="user-info" id="user-info-toggle">
                 <div class="user-avatar" style="background:${session.color || 'var(--gradient-accent)'}">${Utils.getInitials(session.name)}</div>
                 <div class="user-details">
@@ -152,6 +158,9 @@ const App = {
         if (pageModule.afterRender) {
             requestAnimationFrame(() => pageModule.afterRender());
         }
+
+        // Update notification bell badge
+        Notifications.updateBell();
     },
 
     // Helper: check if current user is admin

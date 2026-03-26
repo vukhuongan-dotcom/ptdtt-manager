@@ -34,6 +34,8 @@ const Store = {
             this._data = parsed;
             if (!this._data.schedules) this._data.schedules = [];
             if (!this._data.nextIds.schedules) this._data.nextIds.schedules = 1;
+            if (!this._data.notifications) this._data.notifications = [];
+            if (!this._data.nextIds.notifications) this._data.nextIds.notifications = 1;
             SAMPLE_SCHEDULES.forEach(sample => {
                 if (!this._data.schedules.find(s => s.weekKey === sample.weekKey)) {
                     const entry = JSON.parse(JSON.stringify(sample));
