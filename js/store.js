@@ -6,6 +6,11 @@ const Store = {
     _data: null,
     _serverAvailable: false,
 
+    // Save to localStorage only (no server push) — used during init
+    _saveLocal() {
+        localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+    },
+
     init() {
         const saved = localStorage.getItem(STORE_KEY);
         const parsed = saved ? JSON.parse(saved) : null;
@@ -22,16 +27,13 @@ const Store = {
                 schedules: [...SAMPLE_SCHEDULES],
                 nextIds: { staff: SAMPLE_STAFF.length + 1, externalDoctors: 200, tasks: SAMPLE_TASKS.length + 1, plans: SAMPLE_PLANS.length + 1, patients: SAMPLE_PATIENTS.length + 1, schedules: SAMPLE_SCHEDULES.length + 1 }
             };
-            this.save();
-            // Also clear old auth accounts so they regenerate from new staff
+            this._saveLocal(); // Only localStorage, NOT server
             localStorage.removeItem('ptdtt_accounts');
             localStorage.removeItem('ptdtt_session');
         } else {
             this._data = parsed;
-            // Ensure schedules collection exists and seed sample data
             if (!this._data.schedules) this._data.schedules = [];
             if (!this._data.nextIds.schedules) this._data.nextIds.schedules = 1;
-            // Merge sample schedules that don't already exist
             SAMPLE_SCHEDULES.forEach(sample => {
                 if (!this._data.schedules.find(s => s.weekKey === sample.weekKey)) {
                     const entry = JSON.parse(JSON.stringify(sample));
@@ -39,12 +41,11 @@ const Store = {
                     this._data.schedules.push(entry);
                 }
             });
-            this.save();
+            this._saveLocal(); // Only localStorage, NOT server
         }
 
-        // Try to load from server (async, non-blocking)
+        // Load from server FIRST, then start polling
         this._syncFromServer();
-        // Start real-time polling (every 10 seconds)
         this._startPolling();
     },
 
@@ -52,6 +53,7 @@ const Store = {
         localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
         this._syncToServer();
     },
+
 
     // ── Server sync with real-time polling ──
     _pollTimer: null,
