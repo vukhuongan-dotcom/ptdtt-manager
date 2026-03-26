@@ -21,8 +21,9 @@ const DashboardPage = {
             statusCounts[eff.status] = (statusCounts[eff.status] || 0) + 1;
         });
 
-        // Get today's duty staff from weekly schedule (Trực BV + Trực ĐD)
-        const todayDutyStaff = this.getTodayDutyFromSchedule(staff, today);
+        // Get today's duty staff from weekly schedule
+        const todayDutyKhoa = this.getTodayDutyByGroup(staff, today, 'khoa');
+        const todayDutyCapCuu = this.getTodayDutyByGroup(staff, today, 'capcuu');
 
         const todayStr = new Date().toISOString().split('T')[0];
         const upcomingPlans = plans
@@ -156,8 +157,8 @@ const DashboardPage = {
 
             <div class="sidebar-widgets">
                 <div class="widget-card slide-up" style="animation-delay:0.25s">
-                    <h3 class="widget-title">Nhân sự trực hôm nay</h3>
-                    ${todayDutyStaff.length > 0 ? todayDutyStaff.map(item => {
+                    <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
+                    ${todayDutyKhoa.length > 0 ? todayDutyKhoa.map(item => {
                         const eff = StaffPage.getEffectiveStatus(item.staff, today);
                         const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
                         return `
@@ -169,7 +170,24 @@ const DashboardPage = {
                         </div>
                         <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                     </div>`;
-                    }).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Không có lịch trực hôm nay</p>'}
+                    }).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
+                </div>
+
+                <div class="widget-card slide-up" style="animation-delay:0.3s">
+                    <h3 class="widget-title">🚑 Trực cấp cứu hôm nay</h3>
+                    ${todayDutyCapCuu.length > 0 ? todayDutyCapCuu.map(item => {
+                        const eff = StaffPage.getEffectiveStatus(item.staff, today);
+                        const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
+                        return `
+                    <div class="duty-item">
+                        <div class="duty-avatar" style="background:${item.staff.color}">${Utils.getInitials(item.staff.name)}</div>
+                        <div class="duty-info">
+                            <div class="duty-name">${item.staff.title} ${item.staff.name}</div>
+                            <div class="duty-role">${item.dutyType}</div>
+                        </div>
+                        <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
+                    </div>`;
+                    }).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
                 </div>
 
                 <div class="widget-card slide-up" style="animation-delay:0.3s">
@@ -252,30 +270,29 @@ const DashboardPage = {
         });
     },
 
-    getTodayDutyFromSchedule(allStaff, todayStr) {
+    getTodayDutyByGroup(allStaff, todayStr, group) {
         const DAYS = ['T2','T3','T4','T5','T6','T7','CN'];
         const now = new Date();
-        const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+        const dayOfWeek = now.getDay();
         const dayKey = dayOfWeek === 0 ? 'CN' : DAYS[dayOfWeek - 1];
 
-        // Get this week's Monday (local timezone)
         const monday = new Date(now);
         monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
         const weekKey = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
 
-        // Find schedule data for this week
         const schedules = Store.getAll('schedules');
         const schedule = schedules.find(s => s.weekKey === weekKey);
         if (!schedule || !schedule.positions) return [];
 
-        const result = [];
-        const dutyPositions = [
-            { key: 'trucKhoa', label: 'Trực khoa', slots: 4 },
-            { key: 'trucBV', label: 'Trực BV', slots: 3 },
-            { key: 'trucDD', label: 'Trực Đ.D', slots: 3 }
-        ];
+        const positions = group === 'khoa'
+            ? [{ key: 'trucKhoa', label: 'Trực khoa', slots: 4 }]
+            : [
+                { key: 'trucBV', label: 'Trực BV', slots: 3 },
+                { key: 'trucDD', label: 'Trực Đ.D', slots: 3 }
+              ];
 
-        dutyPositions.forEach(pos => {
+        const result = [];
+        positions.forEach(pos => {
             const posData = schedule.positions[pos.key];
             if (!posData) return;
             for (let slot = 0; slot < pos.slots; slot++) {
@@ -289,7 +306,6 @@ const DashboardPage = {
                 }
             }
         });
-
         return result;
     }
 };
