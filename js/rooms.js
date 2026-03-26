@@ -77,22 +77,17 @@ const RoomsPage = {
 
     _getPatientCount(room, emrData) {
         if (!emrData || !emrData.byRoom) return null;
-        // Debug: log actual EMR room keys once
-        if (!this._debugLogged) {
-            console.log('[Rooms] EMR byRoom keys:', Object.keys(emrData.byRoom));
-            this._debugLogged = true;
-        }
         let count = 0;
-        const roomNum = room.replace(/^0+/, '');
+        // ROOM_DATA room: "705","706",...,"712A","718","719"
+        // EMR byRoom keys: "B.7.05","B.7.06",...,"B.7.12A","B.7.18","B.7.19"
+        // Strategy: extract suffix after "B.7." → "05","06",...,"12A"
+        //           our room "705" → strip leading "7" → "05"
+        const roomSuffix = room.startsWith('7') ? room.slice(1) : room; // "705" → "05", "712A" → "12A"
         Object.keys(emrData.byRoom).forEach(k => {
-            const kClean = k.replace(/\s+/g, '').toUpperCase();
-            // Match: "B7.705", "B7705", "705", "P705", "P.705", "PHÒNG 705" etc
-            if (kClean === roomNum.toUpperCase() ||
-                kClean === 'B7.' + roomNum.toUpperCase() ||
-                kClean === 'B7' + roomNum.toUpperCase() ||
-                kClean === room.toUpperCase() ||
-                kClean === 'B7.' + room.toUpperCase() ||
-                kClean.endsWith(roomNum.toUpperCase()) && kClean.length <= roomNum.length + 4) {
+            // EMR key "B.7.05" → extract after last dot for suffix
+            const parts = k.split('.');
+            const emrSuffix = parts.length >= 3 ? parts.slice(2).join('.') : k;
+            if (emrSuffix.toUpperCase() === roomSuffix.toUpperCase()) {
                 count += emrData.byRoom[k].length;
             }
         });
