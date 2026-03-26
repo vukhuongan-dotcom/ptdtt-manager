@@ -35,6 +35,15 @@ EMR_PASS = os.environ.get('EMR_PASS', 'anmd3010')
 # ────────────────────────────── Flask App ──────────────────────────────
 app = Flask(__name__, static_folder=None)
 
+# Prevent caching on API responses
+@app.after_request
+def add_no_cache_headers(response):
+    if request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 # Thread-safe data lock
 _data_lock = threading.Lock()
 

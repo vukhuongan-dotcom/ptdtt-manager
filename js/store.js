@@ -59,10 +59,16 @@ const Store = {
     _syncing: false,
     _saveDebounce: null,
 
+    // Cache-busting: prevent browser/proxy from caching API calls
+    _api(url, opts) {
+        const sep = url.includes('?') ? '&' : '?';
+        return fetch(url + sep + '_t=' + Date.now(), opts);
+    },
+
     _syncToServer() {
         if (this._saveDebounce) clearTimeout(this._saveDebounce);
         this._saveDebounce = setTimeout(() => {
-            fetch('/api/data', {
+            this._api('/api/data', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this._data)
@@ -77,7 +83,7 @@ const Store = {
     _syncFromServer(quiet) {
         if (this._syncing) return;
         this._syncing = true;
-        fetch('/api/data').then(r => r.json()).then(serverData => {
+        this._api('/api/data').then(r => r.json()).then(serverData => {
             if (serverData && serverData._version) {
                 const oldJson = JSON.stringify(this._data);
                 const newJson = JSON.stringify(serverData);
@@ -98,7 +104,7 @@ const Store = {
             if (!quiet) console.log('[Store] Server not available, using localStorage');
         });
         // Also update version tracking
-        fetch('/api/data/version').then(r => r.json()).then(v => {
+        this._api('/api/data/version').then(r => r.json()).then(v => {
             if (v.version) this._serverVersion = v.version;
         }).catch(() => {});
     },
@@ -113,7 +119,7 @@ const Store = {
     },
 
     _checkForUpdates() {
-        fetch('/api/data/version').then(r => r.json()).then(v => {
+        this._api('/api/data/version').then(r => r.json()).then(v => {
             if (!v.version) return;
             if (this._serverVersion === null) {
                 // First check — just store the version
