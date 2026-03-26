@@ -258,10 +258,10 @@ const DashboardPage = {
         const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
         const dayKey = dayOfWeek === 0 ? 'CN' : DAYS[dayOfWeek - 1];
 
-        // Get this week's Monday
+        // Get this week's Monday (local timezone)
         const monday = new Date(now);
         monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        const weekKey = monday.toISOString().split('T')[0];
+        const weekKey = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
 
         // Find schedule data for this week
         const schedules = Store.getAll('schedules');
