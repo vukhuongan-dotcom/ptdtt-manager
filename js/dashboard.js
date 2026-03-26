@@ -24,9 +24,10 @@ const DashboardPage = {
         // Get today's duty staff from weekly schedule (Trực BV + Trực ĐD)
         const todayDutyStaff = this.getTodayDutyFromSchedule(staff, today);
 
+        const todayStr = new Date().toISOString().split('T')[0];
         const upcomingPlans = plans
-            .filter(p => new Date(p.date) >= new Date())
-            .sort((a,b) => new Date(a.date) - new Date(b.date))
+            .filter(p => p.date >= todayStr)
+            .sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''))
             .slice(0, 4);
 
         const dotColors = ['cyan', 'purple', 'green', 'cyan'];
@@ -173,7 +174,7 @@ const DashboardPage = {
 
                 <div class="widget-card slide-up" style="animation-delay:0.3s">
                     <h3 class="widget-title">Hoạt động sắp tới</h3>
-                    ${upcomingPlans.map((p, i) => `
+                    ${upcomingPlans.length > 0 ? upcomingPlans.map((p, i) => `
                     <div class="timeline-item">
                         <div class="timeline-dot ${dotColors[i % dotColors.length]}"></div>
                         <div class="timeline-content">
@@ -181,7 +182,7 @@ const DashboardPage = {
                             <div class="timeline-time">${Utils.formatDateShort(p.date)} · ${p.time}</div>
                         </div>
                     </div>
-                    `).join('')}
+                    `).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa có hoạt động nào sắp tới</p>'}
                 </div>
             </div>
         </div>
