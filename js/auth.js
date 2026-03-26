@@ -208,7 +208,7 @@ const LoginPage = {
                 <form class="login-form" id="login-form" onsubmit="LoginPage.handleLogin(event)">
                     <div class="form-group">
                         <label class="form-label">Tên đăng nhập</label>
-                        <input class="form-input" type="text" id="login-username" name="username" placeholder="vd: an.vk" required autofocus>
+                        <input class="form-input" type="text" id="login-username" name="username" placeholder="vd: vkan" required autofocus>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Mật khẩu</label>
