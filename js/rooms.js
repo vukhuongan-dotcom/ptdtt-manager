@@ -16,6 +16,9 @@ const ROOM_DATA = [
 const RoomsPage = {
     render() {
         const emrData = (typeof EMR !== 'undefined') ? EMR.getData() : null;
+        const emrStatus = (typeof EMR !== 'undefined') ? EMR.getStatus() : 'idle';
+        const totalPatients = emrData ? emrData.totalDept : null;
+        const lastUpdate = (typeof EMR !== 'undefined') ? EMR.getTimeSinceUpdate() : '';
 
         return `
         <div class="page-header">
@@ -23,16 +26,22 @@ const RoomsPage = {
                 <h1 class="page-title">Sơ đồ phòng bệnh</h1>
                 <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Tầng 7, Tòa B</p>
             </div>
+            ${totalPatients !== null ? `<div style="display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--border-radius);padding:10px 18px">
+                <span style="font-size:1.3rem;font-weight:700;color:var(--primary)">${totalPatients}</span>
+                <span style="font-size:0.85rem;color:var(--text-secondary)">bệnh nhân</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">· ${lastUpdate}</span>
+            </div>` : ''}
         </div>
 
         <div class="rooms-grid">
             ${ROOM_DATA.map(r => {
                 const patientCount = this._getPatientCount(r.room, emrData);
+                const hasPatients = patientCount !== null && patientCount > 0;
                 return `
                 <div class="room-card">
                     <div class="room-card-header">
                         <span class="room-number">B7.${r.room}</span>
-                        <span class="room-patient-count" title="Số BN">${patientCount !== null ? patientCount + ' BN' : ''}</span>
+                        <span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(6,182,212,0.15);color:var(--primary);padding:2px 10px;border-radius:12px;font-weight:600' : ''}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>
                     </div>
                     <div class="room-card-body">
                         ${r.doctors.map(d => {
@@ -67,13 +76,26 @@ const RoomsPage = {
     },
 
     _getPatientCount(room, emrData) {
-        if (!emrData || !emrData.patients) return null;
-        const roomKey = 'B7.' + room;
-        return emrData.patients.filter(p => {
-            const r = p.phong || p.room || '';
-            return r === roomKey || r === room || r.includes(room);
-        }).length;
+        if (!emrData || !emrData.byRoom) return null;
+        // Try exact match keys: "B7.705", "705", "B7705" etc
+        const keys = Object.keys(emrData.byRoom);
+        const roomNum = room.replace(/^0+/, '');
+        for (const k of keys) {
+            const kNorm = k.replace(/\s+/g, '');
+            if (kNorm === 'B7.' + roomNum || kNorm === roomNum || kNorm === 'B7' + roomNum || kNorm === 'B7.' + room || kNorm === room) {
+                return emrData.byRoom[k].length;
+            }
+        }
+        return 0;
     },
 
-    afterRender() {}
+    afterRender() {
+        // Re-render rooms when EMR data updates
+        if (!this._emrListener) {
+            this._emrListener = () => {
+                if (App.currentPage === 'rooms') App.renderCurrentPage();
+            };
+            window.addEventListener('emr-data-updated', this._emrListener);
+        }
+    }
 };
