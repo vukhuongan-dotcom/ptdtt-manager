@@ -117,7 +117,7 @@ const DashboardPage = {
                 <div class="chart-header">
                     <h3 class="chart-title">Số lượng phẫu thuật</h3>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 20px 16px">
+                <div class="surgery-stats-row" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 20px 16px">
                     <div>
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                             <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Trong tuần (T2 → CN)</span>
@@ -135,7 +135,7 @@ const DashboardPage = {
                             </div>`;
                         }).join('')}
                     </div>
-                    <div style="border-left:1px solid var(--border);padding-left:20px">
+                    <div class="surgery-month-col" style="border-left:1px solid var(--border);padding-left:20px">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                             <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Tháng ${currentMonth}</span>
                             <span style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">${monthlyS.total} ca</span>

@@ -176,4 +176,7 @@
     .duty-grid > .widget-card:last-child { grid-column: auto; }
     .sidebar-widgets { grid-template-columns: 1fr; }
     .sidebar-widgets > .widget-card:last-child { grid-column: auto; }
+    .chart-card .surgery-stats-row { grid-template-columns: 1fr !important; }
+    .surgery-month-col { border-left: none !important; padding-left: 0 !important; border-top: 1px solid var(--border); padding-top: 20px; }
+    .duty-name { white-space: normal; }
 }
