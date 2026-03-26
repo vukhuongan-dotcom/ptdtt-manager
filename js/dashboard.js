@@ -188,7 +188,7 @@ const DashboardPage = {
                         </div>
                         <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                     </div>`;
-                    }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}}
+                    }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
                 </div>
 
                 <div class="widget-card slide-up" style="animation-delay:0.3s">
