@@ -116,10 +116,10 @@ const TasksPage = {
         const assignerName = t.assigner ? Utils.getStaffName(t.assigner) : '';
         const session = Auth.getSession();
         const isMyTask = session && t.assignee === session.staffId;
-        const clickable = isMyTask && !isAdmin;
+        const canClick = (isMyTask && !isAdmin) || (t.status === 'done');
 
         return `
-        <div class="task-card ${clickable ? 'task-card-clickable' : ''}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="TasksPage.dragStart(event,${t.id})" ondragend="TasksPage.dragEnd(event)" ${clickable ? `onclick="TasksPage.viewTask(${t.id})"` : ''}>
+        <div class="task-card ${canClick ? 'task-card-clickable' : ''}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="TasksPage.dragStart(event,${t.id})" ondragend="TasksPage.dragEnd(event)" ${canClick ? `onclick="TasksPage.viewTask(${t.id})"` : ''}>
             <div class="priority-bar priority-${t.priority}"></div>
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
                 <div class="task-card-title">${t.title}</div>
@@ -388,12 +388,30 @@ const TasksPage = {
         const session = Auth.getSession();
         if (!session) return;
         const t = Store.getById('tasks', id);
-        if (!t || t.assignee !== session.staffId) return;
+        if (!t) return;
 
         const cat = TASK_CATEGORIES[t.category] || TASK_CATEGORIES.other;
         const assignerName = t.assigner ? Utils.getStaffName(t.assigner) : '—';
+        const assigneeName = Utils.getStaffName(t.assignee);
         const deadlineText = t.deadline ? Utils.formatDateShort(t.deadline) : '—';
         const statusLabel = { todo: 'Chờ xử lý', doing: 'Đang thực hiện', done: 'Hoàn thành' }[t.status] || t.status;
+
+        // Deadline vs completion comparison
+        let deadlineDiffHtml = '';
+        if (t.completedAt && t.deadline) {
+            const completed = new Date(t.completedAt);
+            const deadline = new Date(t.deadline);
+            const diffDays = Math.round((deadline - completed) / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) {
+                deadlineDiffHtml = `<div style="margin-top:8px;padding:8px 12px;background:rgba(16,185,129,0.1);border-radius:6px;color:var(--success);font-size:0.85rem;font-weight:600">🎯 Trước hạn ${diffDays} ngày</div>`;
+            } else if (diffDays === 0) {
+                deadlineDiffHtml = `<div style="margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--primary);font-size:0.85rem;font-weight:600">🎯 Đúng hạn</div>`;
+            } else {
+                deadlineDiffHtml = `<div style="margin-top:8px;padding:8px 12px;background:rgba(239,68,68,0.1);border-radius:6px;color:var(--danger);font-size:0.85rem;font-weight:600">⚠️ Trễ hạn ${-diffDays} ngày</div>`;
+            }
+        }
+
+        const isMyTask = t.assignee === session.staffId;
 
         Modal.open('📋 Chi tiết công việc', `
             <div class="notif-accept-modal">
@@ -406,13 +424,15 @@ const TasksPage = {
                 ${t.desc ? `<p class="notif-accept-desc">${t.desc}</p>` : ''}
                 <div class="notif-accept-meta">
                     <div><strong>Người giao:</strong> ${assignerName}</div>
+                    <div><strong>Người thực hiện:</strong> ${assigneeName}</div>
                     <div><strong>Ngày giao:</strong> ${t.startDate ? Utils.formatDateShort(t.startDate) : '—'}</div>
                     <div><strong>Deadline:</strong> ${deadlineText}</div>
                     ${t.completedAt ? `<div><strong>Ngày hoàn thành:</strong> <span style="color:var(--success)">✅ ${Utils.formatDateShort(t.completedAt)}</span></div>` : ''}
                 </div>
+                ${deadlineDiffHtml}
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
-                    ${t.status === 'doing' ? `<button type="button" class="btn btn-primary" onclick="TasksPage.completeTask(${t.id})">✅ Hoàn thành công việc</button>` : ''}
+                    ${t.status === 'doing' && isMyTask ? `<button type="button" class="btn btn-primary" onclick="TasksPage.completeTask(${t.id})">✅ Hoàn thành công việc</button>` : ''}
                 </div>
             </div>
         `);
