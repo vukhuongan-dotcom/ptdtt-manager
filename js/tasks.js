@@ -137,7 +137,7 @@ const TasksPage = {
                     <div class="task-card-assignee-avatar" style="background:${Utils.getStaffColor(t.assignee)}">${Utils.getInitials(Utils.getStaffName(t.assignee))}</div>
                     ${Utils.getStaffName(t.assignee)}
                 </div>
-                <span class="task-card-deadline" style="${deadlineClass}">${deadlineText}</span>
+                <span class="task-card-deadline" style="${t.status === 'done' ? 'color:var(--success)' : deadlineClass}">${t.status === 'done' && t.completedAt ? '✅ ' + Utils.formatDateShort(t.completedAt) : deadlineText}</span>
             </div>
             ${isAdmin ? `<div class="task-card-actions" onmousedown="event.stopPropagation()">
                 <button type="button" class="btn-icon btn-sm" draggable="false" onclick="event.preventDefault();event.stopPropagation();TasksPage.openForm(${t.id})">${Utils.editIcon()}</button>
