@@ -6,6 +6,15 @@ const SURGERY_TYPES = {
     'robot':       { label: 'Robot', color: '#1e3a5f' }
 };
 
+// Check if current user is a doctor (can edit surgery schedule)
+function canEditSurgery() {
+    const session = Auth.getSession();
+    if (!session) return false;
+    if (session.isAdmin) return true;
+    const role = session.role || '';
+    return role.includes('Bác sĩ') || role.includes('Trưởng khoa') || role.includes('Phó trưởng khoa');
+}
+
 const SurgeryPage = {
     currentWeekStart: null,
 
@@ -57,7 +66,7 @@ const SurgeryPage = {
 
     render() {
         if (!this.currentWeekStart) this.init();
-        const isAdmin = Auth.getSession()?.isAdmin;
+        const isAdmin = canEditSurgery();
         const weekDates = this.getWeekDates();
         const surgeries = this.getSurgeries();
         const today = new Date();
@@ -202,7 +211,7 @@ const SurgeryPage = {
         const all = this.getAllSurgeries();
         const s = all.find(x => x.id === id);
         if (!s) return;
-        const isAdmin = Auth.getSession()?.isAdmin;
+        const isAdmin = canEditSurgery();
         const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
 
         Modal.open('Chi tiết ca mổ', `
@@ -260,7 +269,7 @@ const SurgeryPage = {
 
     // Form
     openForm(id, date) {
-        if (!Auth.getSession()?.isAdmin) return;
+        if (!canEditSurgery()) return;
         const all = this.getAllSurgeries();
         const s = id ? all.find(x => x.id === id) : null;
         const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
@@ -350,7 +359,7 @@ const SurgeryPage = {
     },
 
     save(e, id) {
-        if (!Auth.getSession()?.isAdmin) return;
+        if (!canEditSurgery()) return;
         e.preventDefault();
         const f = new FormData(e.target);
         const data = {
@@ -381,7 +390,7 @@ const SurgeryPage = {
     },
 
     deleteSurgery(id) {
-        if (!Auth.getSession()?.isAdmin) return;
+        if (!canEditSurgery()) return;
         const all = this.getAllSurgeries();
         this.saveSurgeries(all.filter(x => x.id !== id));
         Modal.close();
