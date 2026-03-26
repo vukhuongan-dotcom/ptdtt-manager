@@ -9,6 +9,7 @@ import json
 import re
 import uuid
 import ssl
+import hashlib
 import threading
 from datetime import datetime
 from urllib.parse import urlencode
@@ -37,6 +38,7 @@ app = Flask(__name__, static_folder=None)
 
 # Thread-safe data lock
 _data_lock = threading.Lock()
+_data_hash = ''  # Quick hash for change detection
 
 # ────────────────────────────── Data helpers ──────────────────────────────
 def _ensure_data_dir():
@@ -52,13 +54,18 @@ def load_data():
             return json.load(f)
 
 def save_data(data):
+    global _data_hash
     _ensure_data_dir()
+    # Add modification timestamp
+    data['_lastModified'] = datetime.now().isoformat()
     with _data_lock:
         # Write to temp then rename (atomic)
+        raw = json.dumps(data, ensure_ascii=False, indent=2)
         tmp = DATA_FILE + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write(raw)
         os.replace(tmp, DATA_FILE)
+        _data_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
 
 # ────────────────────────────── Static files ──────────────────────────────
 @app.route('/')
@@ -88,7 +95,16 @@ def put_data():
     """Replace the entire JSON database"""
     data = request.get_json(force=True)
     save_data(data)
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'hash': _data_hash})
+
+@app.route('/api/data/version', methods=['GET'])
+def get_data_version():
+    """Lightweight version check for polling (no full data transfer)"""
+    data = load_data()
+    return jsonify({
+        'hash': _data_hash,
+        'lastModified': data.get('_lastModified', ''),
+    })
 
 @app.route('/api/data/<collection>', methods=['GET'])
 def get_collection(collection):

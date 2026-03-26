@@ -44,6 +44,8 @@ const Store = {
 
         // Try to load from server (async, non-blocking)
         this._syncFromServer();
+        // Start real-time polling (every 10 seconds)
+        this._startPolling();
     },
 
     save() {
@@ -51,29 +53,70 @@ const Store = {
         this._syncToServer();
     },
 
-    // ── Server sync ──
+    // ── Server sync with real-time polling ──
+    _pollTimer: null,
+    _serverHash: '',
+    _syncing: false,
+    _saveDebounce: null,
+
     _syncToServer() {
-        fetch('/api/data', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this._data)
-        }).then(() => { this._serverAvailable = true; })
-          .catch(() => { this._serverAvailable = false; });
+        // Debounce: wait 300ms to batch rapid saves
+        if (this._saveDebounce) clearTimeout(this._saveDebounce);
+        this._saveDebounce = setTimeout(() => {
+            fetch('/api/data', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this._data)
+            }).then(r => r.json()).then(res => {
+                this._serverAvailable = true;
+                if (res.hash) this._serverHash = res.hash;
+            }).catch(() => { this._serverAvailable = false; });
+        }, 300);
     },
 
-    _syncFromServer() {
+    _syncFromServer(quiet) {
+        if (this._syncing) return;
+        this._syncing = true;
         fetch('/api/data').then(r => r.json()).then(serverData => {
             if (serverData && serverData._version) {
-                // Server has data — use it if newer or same version
-                this._data = serverData;
-                localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+                const oldJson = JSON.stringify(this._data);
+                const newJson = JSON.stringify(serverData);
+                if (oldJson !== newJson) {
+                    this._data = serverData;
+                    localStorage.setItem(STORE_KEY, newJson);
+                    if (!quiet) console.log('[Store] Synced from server ✅');
+                    // Auto re-render the current page
+                    if (typeof App !== 'undefined' && App.renderCurrentPage) {
+                        App.renderCurrentPage();
+                    }
+                }
                 this._serverAvailable = true;
-                console.log('[Store] Synced from server ✅');
             }
+            this._syncing = false;
         }).catch(() => {
             this._serverAvailable = false;
-            console.log('[Store] Server not available, using localStorage');
+            this._syncing = false;
+            if (!quiet) console.log('[Store] Server not available, using localStorage');
         });
+    },
+
+    // Lightweight polling: check version hash every 10s
+    _startPolling() {
+        if (this._pollTimer) clearInterval(this._pollTimer);
+        this._pollTimer = setInterval(() => {
+            fetch('/api/data/version').then(r => r.json()).then(v => {
+                if (v.hash && v.hash !== this._serverHash) {
+                    // Data changed on server — pull full data
+                    this._serverHash = v.hash;
+                    this._syncFromServer(true);
+                    console.log('[Store] 🔄 New data from another device');
+                }
+            }).catch(() => {});
+        }, 10000); // every 10 seconds
+    },
+
+    _stopPolling() {
+        if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
     },
 
     // Generic CRUD
