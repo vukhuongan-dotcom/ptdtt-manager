@@ -513,7 +513,7 @@ const SchedulePage = {
                             if (member) name = this.getShortName(member.id) || member.name.split(' ').pop();
                         }
                         const bg = dayIdx >= 5 ? '#fffbeb' : '#fff';
-                        row += `<td style="border:1px solid #cbd5e1;padding:6px 8px;text-align:center;background:${bg};font-size:11px;color:#334155">${name}</td>`;
+                        row += `<td style="border:1px solid #cbd5e1;padding:6px 8px;text-align:center;background:${bg};font-size:12px;color:#334155">${name}</td>`;
                     });
                     row += '</tr>';
                     tableRows.push(row);
@@ -537,7 +537,7 @@ const SchedulePage = {
                         <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px">Vị trí</th>
                         ${dates.map((d, i) => `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
                             <div style="font-weight:700;font-size:12px;color:#1e293b">${DAY_LABELS[i]}</div>
-                            <div style="color:#64748b;font-size:11px">${d.getDate()}/${d.getMonth()+1}</div>
+                            <div style="color:#64748b;font-size:12px">${d.getDate()}/${d.getMonth()+1}</div>
                         </th>`).join('')}
                     </tr></thead>
                     <tbody>
