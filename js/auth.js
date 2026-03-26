@@ -189,11 +189,6 @@ const LoginPage = {
                     <button type="submit" class="login-btn">Đăng nhập</button>
                 </form>
 
-                <div class="login-info">
-                    <strong>🔍 Tra cứu tài khoản:</strong><br>
-                    <input class="form-input" type="text" id="account-lookup" placeholder="Nhập tên của bạn..." oninput="LoginPage.lookupAccount(this.value)" style="margin-top:8px;padding:8px 12px;font-size:0.82rem">
-                    <div id="lookup-result" style="margin-top:6px;font-size:0.82rem;min-height:20px"></div>
-                </div>
 
                 <div class="login-footer">
                     © 2026 Khoa Phẫu thuật Đại trực tràng · BV Bình Dân
@@ -203,27 +198,7 @@ const LoginPage = {
         `;
     },
 
-    lookupAccount(query) {
-        const resultEl = document.getElementById('lookup-result');
-        if (!query || query.length < 2) {
-            resultEl.innerHTML = '';
-            return;
-        }
-        const accounts = Auth.getAccountList();
-        const q = query.toLowerCase();
-        const matches = accounts.filter(a => a.name.toLowerCase().includes(q));
 
-        if (matches.length === 0) {
-            resultEl.innerHTML = '<span style="color:var(--text-dark)">Không tìm thấy</span>';
-        } else {
-            resultEl.innerHTML = matches.slice(0, 3).map(a =>
-                `<div style="padding:4px 0;color:var(--text-light)">
-                    ${a.name} → <strong style="color:var(--primary-light)">${a.username}</strong> / <strong style="color:var(--primary-light)">${a.password}</strong>
-                    ${a.isAdmin ? '<span style="color:var(--warning-light);font-size:0.75rem"> (Admin)</span>' : ''}
-                </div>`
-            ).join('');
-        }
-    },
 
     handleLogin(e) {
         e.preventDefault();
