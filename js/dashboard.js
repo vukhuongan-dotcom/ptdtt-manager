@@ -270,6 +270,7 @@ const DashboardPage = {
 
         const result = [];
         const dutyPositions = [
+            { key: 'trucKhoa', label: 'Trực khoa', slots: 4 },
             { key: 'trucBV', label: 'Trực BV', slots: 3 },
             { key: 'trucDD', label: 'Trực Đ.D', slots: 3 }
         ];
