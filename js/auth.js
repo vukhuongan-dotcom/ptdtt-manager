@@ -2,10 +2,14 @@
 const Auth = {
     SESSION_KEY: 'ptdtt_session',
     ACCOUNTS_KEY: 'ptdtt_accounts',
+    ACCOUNTS_VERSION: 2, // Increment to force account regeneration
 
     init() {
-        if (!localStorage.getItem(this.ACCOUNTS_KEY)) {
+        const storedVer = localStorage.getItem('ptdtt_accounts_ver');
+        if (!localStorage.getItem(this.ACCOUNTS_KEY) || storedVer != this.ACCOUNTS_VERSION) {
             this.generateAccounts();
+            localStorage.setItem('ptdtt_accounts_ver', this.ACCOUNTS_VERSION);
+            localStorage.removeItem(this.SESSION_KEY); // force re-login
         }
     },
 
@@ -44,12 +48,14 @@ const Auth = {
         return accounts;
     },
 
-    // Generate username from Vietnamese name: lowercase, no diacritics, dots between parts
+    // Generate username: initials of surname+middle + full first name, lowercase, no diacritics
+    // e.g. "Vũ Khương An" → "vkan"
     generateUsername(fullName) {
         const parts = fullName.trim().split(/\s+/);
-        const last = parts[parts.length - 1];
+        if (parts.length === 1) return this.removeDiacritics(parts[0].toLowerCase());
         const initials = parts.slice(0, -1).map(p => p[0]).join('');
-        return this.removeDiacritics(last.toLowerCase() + '.' + initials.toLowerCase());
+        const firstName = parts[parts.length - 1];
+        return this.removeDiacritics((initials + firstName).toLowerCase());
     },
 
     // Generate simple password: first name lowercase + '123'
