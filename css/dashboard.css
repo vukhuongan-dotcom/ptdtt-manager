@@ -156,12 +156,19 @@
 .timeline-time { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
 
 .sidebar-widgets {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
+}
+.sidebar-widgets > .widget-card:last-child {
+    grid-column: 1 / -1;
 }
 
 @media (max-width: 1200px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .dashboard-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .sidebar-widgets { grid-template-columns: 1fr; }
+    .sidebar-widgets > .widget-card:last-child { grid-column: auto; }
 }
