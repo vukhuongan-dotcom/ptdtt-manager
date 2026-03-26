@@ -276,9 +276,7 @@ const SurgeryStatsPage = {
                     <tr>
                         <th style="width:40px;text-align:center">STT</th>
                         <th style="min-width:140px">Họ tên BN</th>
-                        <th>Số NV</th>
                         <th>Năm sinh</th>
-                        <th>Phòng</th>
                         <th style="min-width:160px">Chẩn đoán trước mổ</th>
                         <th style="min-width:180px">PP phẫu thuật</th>
                         <th>Ngày mổ</th>
@@ -295,9 +293,7 @@ const SurgeryStatsPage = {
                     <tr onclick="SurgeryPage.viewDetail(${s.id})" style="cursor:pointer" title="Xem chi tiết">
                         <td style="text-align:center;color:var(--text-muted);font-weight:600">${idx + 1}</td>
                         <td><strong>${s.patientName}</strong></td>
-                        <td>${s.admissionId || '—'}</td>
                         <td>${s.birthYear || '—'}</td>
-                        <td>${room}</td>
                         <td style="font-size:0.78rem;color:var(--text-secondary)">${s.diagnosis || '—'}</td>
                         <td style="font-size:0.78rem;color:var(--text-secondary)">${s.method || '—'}</td>
                         <td>${dateStr}</td>
