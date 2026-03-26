@@ -125,6 +125,10 @@ const SchedulePage = {
                 <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — ${startStr} – ${endStr}</p>
             </div>
             <div class="flex items-center gap-8">
+                <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                    Xuất PDF
+                </button>
                 ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     Sao chép tuần trước
@@ -473,5 +477,109 @@ const SchedulePage = {
         document.querySelectorAll('.schedule-select').forEach(sel => {
             if (sel.value) sel.classList.add('has-value');
         });
+    },
+
+    // ===== PDF EXPORT =====
+    async exportPDF() {
+        const btn = document.getElementById('export-pdf-btn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xuất...'; }
+
+        try {
+            const dates = this.getWeekDates(this.weekOffset);
+            const weekKey = this.getWeekKey(dates);
+            const schedule = this.getScheduleData(weekKey);
+            const staff = Store.getAll('staff');
+            const startStr = dates[0].toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit' });
+            const endStr = dates[6].toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+            // Build clean HTML for PDF
+            let html = `
+            <div style="font-family:'Inter',Arial,sans-serif;padding:24px;background:#fff;width:1120px">
+                <div style="text-align:center;margin-bottom:16px">
+                    <h2 style="margin:0;font-size:18px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
+                    <p style="margin:4px 0 0;font-size:13px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
+                    <p style="margin:2px 0 0;font-size:13px;color:#64748b">Từ ${startStr} đến ${endStr}</p>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:11px">
+                    <thead>
+                        <tr>
+                            <th style="border:1px solid #cbd5e1;background:#1e293b;color:#fff;padding:8px 6px;text-align:left;width:110px">Vị trí</th>
+                            ${dates.map((d, i) => {
+                                const dayNum = d.getDate();
+                                return `<th style="border:1px solid #cbd5e1;background:${i >= 5 ? '#fef3c7' : '#f1f5f9'};padding:8px 4px;text-align:center;font-size:10px">
+                                    <div style="font-weight:700">${DAY_LABELS[i]}</div>
+                                    <div style="color:#64748b;font-size:9px">${dayNum}/${d.getMonth()+1}</div>
+                                </th>`;
+                            }).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            SCHEDULE_POSITIONS.forEach(pos => {
+                for (let slot = 0; slot < pos.slots; slot++) {
+                    html += `<tr>`;
+                    if (slot === 0) {
+                        html += `<td rowspan="${pos.slots}" style="border:1px solid #cbd5e1;padding:6px 8px;background:${pos.color}12;font-weight:700;color:${pos.color};vertical-align:middle;font-size:11px">${pos.label}</td>`;
+                    }
+                    dates.forEach((d, dayIdx) => {
+                        const dayKey = DAYS[dayIdx];
+                        const cellKey = `${dayKey}_${slot}`;
+                        const staffId = schedule?.positions?.[pos.key]?.[cellKey];
+                        let name = '';
+                        if (staffId) {
+                            const member = staff.find(s => s.id === parseInt(staffId));
+                            if (member) name = this.getShortName(member.id) || member.name.split(' ').pop();
+                        }
+                        const bg = dayIdx >= 5 ? '#fffbeb' : '#fff';
+                        html += `<td style="border:1px solid #cbd5e1;padding:4px 6px;text-align:center;background:${bg};font-size:10px;color:#334155">${name}</td>`;
+                    });
+                    html += `</tr>`;
+                }
+            });
+
+            // Add notes row
+            const notes = schedule?.notes || '';
+            html += `<tr><td colspan="8" style="border:1px solid #cbd5e1;padding:8px;font-size:10px;color:#64748b">
+                <strong>Ghi chú:</strong> ${notes || '—'}
+            </td></tr>`;
+
+            html += `</tbody></table>
+                <p style="text-align:right;font-size:9px;color:#94a3b8;margin-top:12px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
+            </div>`;
+
+            // Render off-screen
+            const container = document.createElement('div');
+            container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;z-index:-1';
+            container.innerHTML = html;
+            document.body.appendChild(container);
+
+            const canvas = await html2canvas(container.firstElementChild, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+
+            document.body.removeChild(container);
+
+            // Generate PDF (landscape A4)
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const margin = 8;
+            const imgW = pageW - margin * 2;
+            const imgH = (canvas.height / canvas.width) * imgW;
+
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, Math.min(imgH, pageH - margin * 2));
+
+            const filename = `Phan_cong_tuan_${startStr.replace(/\//g,'-')}_${endStr.replace(/\//g,'-')}.pdf`;
+            pdf.save(filename);
+
+        } catch (err) {
+            console.error('PDF export error:', err);
+            alert('Lỗi khi xuất PDF. Vui lòng thử lại.');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất PDF`; }
+        }
     }
 };
