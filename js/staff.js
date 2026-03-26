@@ -44,7 +44,9 @@ const StaffPage = {
     renderInternal() {
         const allStaff = Store.getAll('staff');
         const staff = this.getFiltered();
-        const isAdmin = Auth.getSession()?.isAdmin;
+        const session = Auth.getSession();
+        const isAdmin = session?.isAdmin;
+        const myStaffId = session?.staffId;
         const today = new Date().toISOString().split('T')[0];
 
         const roleDefs = [
@@ -92,7 +94,7 @@ const StaffPage = {
                         <th>Điện thoại</th>
                         <th>Email</th>
                         <th>Trạng thái</th>
-                        ${isAdmin ? '<th style="width:100px">Thao tác</th>' : ''}
+                        <th style="width:100px">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,17 +120,21 @@ const StaffPage = {
                                 ${dateRange}
                             </div>
                         </td>
-                        ${isAdmin ? `<td>
+                        <td>
                             <div class="staff-actions">
+                                ${isAdmin ? `
                                 <button class="btn-icon" onclick="StaffPage.openStatusForm(${s.id})" title="Trạng thái">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                                 </button>
                                 <button class="btn-icon" onclick="StaffPage.openForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
                                 <button class="btn-icon" onclick="StaffPage.delete(${s.id})" title="Xoá">${Utils.deleteIcon()}</button>
+                                ` : (s.id === myStaffId ? `
+                                <button class="btn-icon" onclick="StaffPage.openContactForm(${s.id})" title="Cập nhật SĐT / Email">${Utils.editIcon()}</button>
+                                ` : '')}
                             </div>
-                        </td>` : ''}
+                        </td>
                     </tr>`;
-                    }).join('') : `<tr><td colspan="${isAdmin ? 7 : 6}"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
+                    }).join('') : `<tr><td colspan="7"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
                 </tbody>
             </table>
         </div>
@@ -414,6 +420,43 @@ const StaffPage = {
             Modal.close();
             App.renderCurrentPage();
         }
+    },
+
+    // ===== SELF-EDIT CONTACT (Phone & Email) =====
+    openContactForm(id) {
+        const session = Auth.getSession();
+        if (!session || session.staffId !== id) return;
+        const s = Store.getById('staff', id);
+        if (!s) return;
+        Modal.open(`Cập nhật liên lạc — ${s.name}`, `
+            <form onsubmit="StaffPage.saveContact(event, ${id})">
+                <div class="form-group">
+                    <label class="form-label">Điện thoại</label>
+                    <input class="form-input" name="phone" value="${s.phone || ''}" placeholder="0901234567">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input class="form-input" type="email" name="email" value="${s.email || ''}" placeholder="nguyenvana@binhdan.vn">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                </div>
+            </form>
+        `);
+    },
+
+    saveContact(e, id) {
+        const session = Auth.getSession();
+        if (!session || session.staffId !== id) return;
+        e.preventDefault();
+        const form = new FormData(e.target);
+        Store.update('staff', id, {
+            phone: form.get('phone'),
+            email: form.get('email')
+        });
+        Modal.close();
+        App.renderCurrentPage();
     },
 
     // ===== EXTERNAL DOCTOR CRUD =====
