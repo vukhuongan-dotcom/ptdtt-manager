@@ -28,6 +28,18 @@ const Auth = {
             };
         });
 
+        // Add guest account (view-only, like medical secretary)
+        accounts['guest'] = {
+            staffId: 0,
+            username: 'guest',
+            password: '12345',
+            name: 'Khách',
+            role: 'Khách tham quan',
+            title: '',
+            isAdmin: false,
+            color: '#94a3b8'
+        };
+
         localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
         return accounts;
     },
@@ -55,7 +67,17 @@ const Auth = {
     // Get all accounts
     getAccounts() {
         const saved = localStorage.getItem(this.ACCOUNTS_KEY);
-        return saved ? JSON.parse(saved) : this.generateAccounts();
+        const accounts = saved ? JSON.parse(saved) : this.generateAccounts();
+        // Ensure guest account always exists
+        if (!accounts['guest']) {
+            accounts['guest'] = {
+                staffId: 0, username: 'guest', password: '12345',
+                name: 'Khách', role: 'Khách tham quan', title: '',
+                isAdmin: false, color: '#94a3b8'
+            };
+            localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        }
+        return accounts;
     },
 
     // Login
