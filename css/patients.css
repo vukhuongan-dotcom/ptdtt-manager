@@ -23,4 +23,24 @@
 .patient-status-dot.post-op { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
 .patient-status-dot.discharged { background: var(--text-dark); }
 
+.patient-min-max-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+.patient-min-max-badge.min {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+.patient-min-max-badge.max {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
 @media (max-width: 1024px) { .patient-stats { grid-template-columns: repeat(2, 1fr); } }

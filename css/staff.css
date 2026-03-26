@@ -1,3 +1,52 @@
+/* ===== Staff Sub-tabs ===== */
+.staff-subtabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    width: fit-content;
+}
+.staff-subtab {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.staff-subtab:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+.staff-subtab.active {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(8,145,178,0.3);
+}
+.staff-subtab-count {
+    background: rgba(255,255,255,0.2);
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.staff-subtab:not(.active) .staff-subtab-count {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+}
+
+/* ===== Staff Filters & Table ===== */
 .staff-filters { display: flex; gap: 12px; align-items: center; }
 .filter-btn {
     padding: 8px 16px;

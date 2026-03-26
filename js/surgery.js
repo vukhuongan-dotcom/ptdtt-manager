@@ -99,7 +99,9 @@ const SurgeryPage = {
             ${weekDates.map(d => {
                 const ds = this.dateStr(d);
                 const isToday = d.getTime() === today.getTime();
-                const daySurgeries = surgeries.filter(s => s.date === ds);
+                const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
+                const daySurgeries = surgeries.filter(s => s.date === ds)
+                    .sort((a, b) => (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9));
 
                 return `
                 <div class="surgery-day ${isToday ? 'today' : ''} ${d.getDay() === 0 || d.getDay() === 6 ? 'weekend' : ''}">
@@ -263,6 +265,7 @@ const SurgeryPage = {
         const s = id ? all.find(x => x.id === id) : null;
         const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
         const staff = Store.getAll('staff').filter(st => st.role.includes('Bác sĩ') || st.role.includes('Trưởng khoa') || st.role.includes('Phó trưởng khoa'));
+        const extDocs = Store.getAll('externalDoctors') || [];
 
         Modal.open(s ? 'Chỉnh sửa ca mổ' : 'Thêm ca mổ', `
             <form onsubmit="SurgeryPage.save(event, ${id || 0})">
@@ -305,14 +308,24 @@ const SurgeryPage = {
                         <label class="form-label">BS mổ chính</label>
                         <select class="form-select" name="mainSurgeon">
                             <option value="">— Chọn —</option>
+                            <optgroup label="BS trong khoa">
                             ${staff.map(st => `<option value="${st.id}" ${s?.mainSurgeon == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                            </optgroup>
+                            ${extDocs.length ? `<optgroup label="BS ngoài khoa">
+                            ${extDocs.map(d => `<option value="${d.id}" ${s?.mainSurgeon == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
+                            </optgroup>` : ''}
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">BS phụ 1</label>
                         <select class="form-select" name="assistSurgeon1">
                             <option value="">— Chọn —</option>
+                            <optgroup label="BS trong khoa">
                             ${staff.map(st => `<option value="${st.id}" ${s?.assistSurgeon1 == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                            </optgroup>
+                            ${extDocs.length ? `<optgroup label="BS ngoài khoa">
+                            ${extDocs.map(d => `<option value="${d.id}" ${s?.assistSurgeon1 == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
+                            </optgroup>` : ''}
                         </select>
                     </div>
                 </div>

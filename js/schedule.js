@@ -187,7 +187,7 @@ const SchedulePage = {
 
         let rows = '';
         for (let slot = 0; slot < pos.slots; slot++) {
-            rows += `<tr class="${slot === 0 ? 'schedule-pos-first' : 'schedule-pos-sub'}">`;
+            rows += `<tr class="${slot === 0 ? 'schedule-pos-first' : 'schedule-pos-sub'}" data-group="${pos.key}">`;
 
             // Position label (only on first slot, rowspan)
             if (slot === 0) {

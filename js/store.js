@@ -1,9 +1,10 @@
-// ===== LOCAL STORAGE STORE =====
+// ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
-const DATA_VERSION = 6; // Increment this when SAMPLE data changes
+const DATA_VERSION = 7; // Increment this when SAMPLE data changes
 
 const Store = {
     _data: null,
+    _serverAvailable: false,
 
     init() {
         const saved = localStorage.getItem(STORE_KEY);
@@ -14,11 +15,12 @@ const Store = {
             this._data = {
                 _version: DATA_VERSION,
                 staff: [...SAMPLE_STAFF],
+                externalDoctors: [...SAMPLE_EXTERNAL_DOCTORS],
                 tasks: [...SAMPLE_TASKS],
                 plans: [...SAMPLE_PLANS],
                 patients: [...SAMPLE_PATIENTS],
                 schedules: [...SAMPLE_SCHEDULES],
-                nextIds: { staff: SAMPLE_STAFF.length + 1, tasks: SAMPLE_TASKS.length + 1, plans: SAMPLE_PLANS.length + 1, patients: SAMPLE_PATIENTS.length + 1, schedules: SAMPLE_SCHEDULES.length + 1 }
+                nextIds: { staff: SAMPLE_STAFF.length + 1, externalDoctors: 200, tasks: SAMPLE_TASKS.length + 1, plans: SAMPLE_PLANS.length + 1, patients: SAMPLE_PATIENTS.length + 1, schedules: SAMPLE_SCHEDULES.length + 1 }
             };
             this.save();
             // Also clear old auth accounts so they regenerate from new staff
@@ -39,10 +41,39 @@ const Store = {
             });
             this.save();
         }
+
+        // Try to load from server (async, non-blocking)
+        this._syncFromServer();
     },
 
     save() {
         localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+        this._syncToServer();
+    },
+
+    // ── Server sync ──
+    _syncToServer() {
+        fetch('/api/data', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this._data)
+        }).then(() => { this._serverAvailable = true; })
+          .catch(() => { this._serverAvailable = false; });
+    },
+
+    _syncFromServer() {
+        fetch('/api/data').then(r => r.json()).then(serverData => {
+            if (serverData && serverData._version) {
+                // Server has data — use it if newer or same version
+                this._data = serverData;
+                localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+                this._serverAvailable = true;
+                console.log('[Store] Synced from server ✅');
+            }
+        }).catch(() => {
+            this._serverAvailable = false;
+            console.log('[Store] Server not available, using localStorage');
+        });
     },
 
     // Generic CRUD

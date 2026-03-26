@@ -65,12 +65,16 @@ const Utils = {
 
     getStaffName(id) {
         const s = Store.getById('staff', id);
-        return s ? s.name : 'N/A';
+        if (s) return s.name;
+        const ext = (Store.getAll('externalDoctors') || []).find(d => d.id === id);
+        return ext ? ext.name : 'N/A';
     },
 
     getStaffColor(id) {
         const s = Store.getById('staff', id);
-        return s ? s.color : '#64748b';
+        if (s) return s.color;
+        const ext = (Store.getAll('externalDoctors') || []).find(d => d.id === id);
+        return ext ? ext.color : '#64748b';
     },
 
     randomColor() {

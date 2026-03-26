@@ -39,11 +39,11 @@ const PatientsPage = {
             : deptPatients.filter(p => p.phong === this.roomFilter);
 
         if (this.searchQuery) {
-            const q = this.searchQuery.toLowerCase();
+            const q = this._normalize(this.searchQuery);
             filtered = filtered.filter(p =>
-                p.hoTen.toLowerCase().includes(q) ||
-                p.maNhapVien.includes(q) ||
-                p.phong.toLowerCase().includes(q)
+                this._normalize(p.hoTen).includes(q) ||
+                p.maNhapVien.includes(this.searchQuery) ||
+                this._normalize(p.phong).includes(q)
             );
         }
 
@@ -67,12 +67,20 @@ const PatientsPage = {
                 <div class="patient-stat-value green">${roomKeys.length}</div>
                 <div class="patient-stat-label">Số phòng</div>
             </div>
-            ${roomKeys.slice(0, 2).map(r => `
-            <div class="patient-stat">
-                <div class="patient-stat-value amber">${rooms[r].length}</div>
-                <div class="patient-stat-label">${r}</div>
-            </div>
-            `).join('')}
+            ${(() => {
+                const counts = roomKeys.map(r => ({ room: r, count: rooms[r].length }));
+                const minRoom = counts.reduce((a, b) => a.count <= b.count ? a : b);
+                const maxRoom = counts.reduce((a, b) => a.count >= b.count ? a : b);
+                return `
+                <div class="patient-stat">
+                    <div class="patient-stat-value" style="color:#10b981">${minRoom.count}</div>
+                    <div class="patient-stat-label">${minRoom.room} <span class="patient-min-max-badge min">Min</span></div>
+                </div>
+                <div class="patient-stat">
+                    <div class="patient-stat-value" style="color:#ef4444">${maxRoom.count}</div>
+                    <div class="patient-stat-label">${maxRoom.room} <span class="patient-min-max-badge max">Max</span></div>
+                </div>`;
+            })()}
         </div>
 
         <div class="flex justify-between items-center" style="margin-bottom:16px">
@@ -84,7 +92,7 @@ const PatientsPage = {
             </div>
             <div class="search-box">
                 ${Utils.searchIcon()}
-                <input type="text" placeholder="Tìm BN theo tên, mã..." value="${this.searchQuery}" oninput="PatientsPage.search(this.value)">
+                <input type="text" id="patient-search" placeholder="Tìm BN theo tên, mã..." value="${this.searchQuery}" oninput="PatientsPage.search(this.value)">
             </div>
         </div>
 
@@ -116,9 +124,45 @@ const PatientsPage = {
     },
 
     setFilter(room) { this.roomFilter = room; App.renderCurrentPage(); },
-    search(q) { this.searchQuery = q; App.renderCurrentPage(); },
+
+    _composing: false,
+    _searchTimer: null,
+
+    search(q) {
+        // Don't re-render while IME is composing (Telex/VNI)
+        if (this._composing) return;
+        this.searchQuery = q;
+        // Debounce: wait 300ms after last keystroke before re-rendering
+        clearTimeout(this._searchTimer);
+        this._searchTimer = setTimeout(() => {
+            App.renderCurrentPage();
+        }, 300);
+    },
+
+    // Vietnamese diacritic-insensitive normalization
+    _normalize(str) {
+        return str.toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D');
+    },
 
     afterRender() {
+        // Bind IME composition events to prevent re-render during Telex input
+        const el = document.getElementById('patient-search');
+        if (el) {
+            el.addEventListener('compositionstart', () => { this._composing = true; });
+            el.addEventListener('compositionend', (e) => {
+                this._composing = false;
+                this.search(e.target.value);
+            });
+            // Re-focus if user was searching
+            if (this.searchQuery) {
+                el.focus();
+                el.setSelectionRange(el.value.length, el.value.length);
+            }
+        }
         // Auto-refresh when EMR data updates
         if (!this._emrListener) {
             this._emrListener = () => {

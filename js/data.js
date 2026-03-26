@@ -42,6 +42,13 @@ const SAMPLE_STAFF = [
     { id: 40, name: 'Nguyễn Thị Hoa', role: 'Thư ký', title: 'TK', phone: '', status: 'active', color: '#f59e0b', cơHữu: true },
 ];
 
+// ===== EXTERNAL DOCTORS (BS ngoài khoa hỗ trợ) =====
+const SAMPLE_EXTERNAL_DOCTORS = [
+    { id: 101, name: 'Lương Thanh Tùng', title: 'BSCKII', position: 'Phó Giám đốc', department: 'Ban Giám đốc', note: 'Phó giám đốc', color: '#6366f1' },
+    { id: 102, name: 'Hoàng Vĩnh Chúc', title: 'BSCKII', position: 'BS Tham vấn', department: 'Khoa PTĐTT', note: '', color: '#0ea5e9' },
+    { id: 103, name: 'Trần Thiện Hoà', title: 'BS', position: 'Bác sĩ', department: 'Ngoại Tiêu hoá', note: 'Ngoại Tiêu hoá', color: '#22c55e' },
+];
+
 const SAMPLE_TASKS = [
     { id: 1, title: 'Chuẩn bị hội chẩn ca BN Nguyễn Văn A', desc: 'Ung thư trực tràng T3N1M0', assignee: 1, priority: 'high', deadline: '2026-03-24', status: 'todo' },
     { id: 2, title: 'Hoàn thành báo cáo ca mổ robot tháng 3', desc: 'Tổng hợp số liệu 15 ca mổ robot', assignee: 2, priority: 'medium', deadline: '2026-03-28', status: 'todo' },

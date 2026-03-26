@@ -5,6 +5,7 @@ const App = {
     pages: {
         dashboard: DashboardPage,
         staff: StaffPage,
+        rooms: RoomsPage,
         tasks: TasksPage,
         plans: PlansPage,
         patients: PatientsPage,
