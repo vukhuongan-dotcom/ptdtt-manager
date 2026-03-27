@@ -161,6 +161,7 @@ const SurgeryPage = {
                                 </div>
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</div>
+                                    ${s.duration ? `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">⏱ ${s.duration} phút</div>` : ''}
                                     ${s.diagnosis ? `<div class="surgery-card-diagnosis">${s.diagnosis}</div>` : ''}
                                     ${s.method ? `<div class="surgery-card-method">${s.method}</div>` : ''}
                                     <div class="surgery-card-footer">
