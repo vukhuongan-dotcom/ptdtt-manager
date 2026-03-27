@@ -112,12 +112,14 @@
     padding: 10px 12px;
     background: var(--card-bg);
     border-bottom: 2px solid var(--border);
+    border-right: 2px solid var(--border);
     font-weight: 600;
     min-width: 180px;
     position: sticky;
     left: 0;
     z-index: 10;
     color: var(--text-primary);
+    box-shadow: 4px 0 8px rgba(0,0,0,0.08);
 }
 
 .st-day-header {
@@ -161,10 +163,12 @@
 .st-staff-cell {
     padding: 8px 12px;
     border-bottom: 1px solid var(--border);
+    border-right: 2px solid var(--border);
     position: sticky;
     left: 0;
     background: var(--card-bg);
     z-index: 5;
+    box-shadow: 4px 0 8px rgba(0,0,0,0.08);
 }
 
 .st-staff-info {
