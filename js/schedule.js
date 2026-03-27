@@ -8,6 +8,7 @@ const SCHEDULE_POSITIONS = [
     { key: 'trucBCN', label: 'Trực BCN khoa', slots: 1, staffFilter: 'bcn', color: '#14b8a6' },
     { key: 'trucBV', label: 'Trực BV', slots: 3, staffFilter: 'bs', color: '#3b82f6' },
     { key: 'trucDD', label: 'Trực Đ.D', slots: 3, staffFilter: 'dd', color: '#f97316' },
+    { key: 'trucHL', label: 'Trực Hộ lý', slots: 1, staffFilter: 'hl', color: '#84cc16' },
 ];
 
 const DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -67,6 +68,10 @@ const SchedulePage = {
             case 'dd':
                 return staff.filter(s =>
                     s.role.includes('Điều dưỡng') || s.role === 'Điều dưỡng trưởng'
+                );
+            case 'hl':
+                return staff.filter(s =>
+                    s.role.includes('Hộ lý')
                 );
             default:
                 return staff;

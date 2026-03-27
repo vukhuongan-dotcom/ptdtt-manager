@@ -288,7 +288,8 @@ const DashboardPage = {
             ? [{ key: 'trucKhoa', label: 'Trực khoa', slots: 4 }]
             : [
                 { key: 'trucBV', label: 'Trực BV', slots: 3 },
-                { key: 'trucDD', label: 'Trực Đ.D', slots: 3 }
+                { key: 'trucDD', label: 'Trực Đ.D', slots: 3 },
+                { key: 'trucHL', label: 'Trực Hộ lý', slots: 1 }
               ];
 
         const result = [];
