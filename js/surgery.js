@@ -96,6 +96,9 @@ const SurgeryPage = {
                 <p class="page-subtitle">Lịch phẫu thuật khoa PT Đại trực tràng</p>
             </div>
             <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary" onclick="SurgeryPage.exportTodayImage()">
+                    📷 Xuất DS hôm nay
+                </button>
                 ${isAdmin ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()">
                     ${Utils.plusIcon()} Thêm ca mổ
                 </button>` : ''}
@@ -447,5 +450,103 @@ const SurgeryPage = {
         App.renderCurrentPage();
     },
 
-    afterRender() {}
+    afterRender() {},
+
+    // ===== EXPORT TODAY'S SURGERY LIST AS JPEG =====
+    exportTodayImage() {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const ds = this.dateStr(today);
+        const surgeries = this.getAllSurgeries();
+        const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
+        const todaySurgeries = surgeries.filter(s => s.date === ds)
+            .sort((a, b) => (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9));
+
+        const dateLabel = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+        const dayNames = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
+        const dayName = dayNames[today.getDay()];
+
+        // Build clean HTML table
+        let rows = '';
+        if (todaySurgeries.length === 0) {
+            rows = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Không có ca mổ hôm nay</td></tr>';
+        } else {
+            todaySurgeries.forEach((s, i) => {
+                const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                rows += `<tr>
+                    <td style="text-align:center;font-weight:700">${i+1}</td>
+                    <td><strong>${s.patientName}</strong></td>
+                    <td style="text-align:center">${s.birthYear || ''}</td>
+                    <td>${s.diagnosis || ''}</td>
+                    <td>${s.method || ''}</td>
+                    <td style="text-align:center"><span style="background:${typeInfo.color};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${typeInfo.label}</span></td>
+                    <td>${Utils.getStaffName(s.mainSurgeon) || ''}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</td>
+                </tr>`;
+            });
+        }
+
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+        container.innerHTML = `
+        <div id="surgery-export-target" style="width:1000px;padding:30px 36px;background:#fff;font-family:'Inter',sans-serif;color:#1a1a2e;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #0891b2">
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#0891b2">KHOA PTĐTT</div>
+                    <div style="font-size:13px;color:#64748b;margin-top:2px">Phẫu thuật Đại trực tràng</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:18px;font-weight:700;color:#1a1a2e">LỊCH MỔ NGÀY ${dateLabel}</div>
+                    <div style="font-size:13px;color:#64748b">${dayName}</div>
+                </div>
+            </div>
+            <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:8px 16px;margin-bottom:16px;font-size:13px;color:#0d9488;font-weight:600">
+                📋 Tổng số: ${todaySurgeries.length} ca
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead>
+                    <tr style="background:#0891b2;color:#fff">
+                        <th style="padding:10px 8px;text-align:center;width:35px">STT</th>
+                        <th style="padding:10px 8px;text-align:left">Bệnh nhân</th>
+                        <th style="padding:10px 8px;text-align:center;width:55px">NS</th>
+                        <th style="padding:10px 8px;text-align:left">Chẩn đoán</th>
+                        <th style="padding:10px 8px;text-align:left">Phương pháp PT</th>
+                        <th style="padding:10px 8px;text-align:center;width:85px">Loại</th>
+                        <th style="padding:10px 8px;text-align:left">Ê-kíp mổ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+            <div style="margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8">
+                <span>PTDTT Manager — ptdtt.vukhuongan.id.vn</span>
+                <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')}</span>
+            </div>
+        </div>`;
+        document.body.appendChild(container);
+
+        // Style table rows with alternating colors
+        const trs = container.querySelectorAll('tbody tr');
+        trs.forEach((tr, i) => {
+            tr.style.cssText = 'border-bottom:1px solid #e2e8f0;' + (i % 2 === 1 ? 'background:#f8fafc;' : '');
+            tr.querySelectorAll('td').forEach(td => { td.style.padding = '9px 8px'; });
+        });
+
+        const target = container.querySelector('#surgery-export-target');
+        html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Lich_mo_${ds.replace(/-/g,'')}.jpg`;
+                a.click();
+                URL.revokeObjectURL(url);
+                document.body.removeChild(container);
+            }, 'image/jpeg', 0.95);
+        }).catch(err => {
+            console.error('Export failed:', err);
+            alert('Không thể xuất ảnh. Vui lòng thử lại.');
+            document.body.removeChild(container);
+        });
+    }
 };
