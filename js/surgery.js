@@ -466,71 +466,103 @@ const SurgeryPage = {
         const dayNames = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
         const dayName = dayNames[today.getDay()];
 
-        // Build clean HTML table
+        // Count by type
+        const typeCounts = {};
+        Object.keys(SURGERY_TYPES).forEach(k => { typeCounts[k] = todaySurgeries.filter(s => s.surgeryType === k).length; });
+
+        // Build surgery rows - complete info
         let rows = '';
         if (todaySurgeries.length === 0) {
-            rows = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Không có ca mổ hôm nay</td></tr>';
+            rows = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#94a3b8;font-style:italic">Không có ca mổ hôm nay</td></tr>';
         } else {
             todaySurgeries.forEach((s, i) => {
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
-                rows += `<tr>
-                    <td style="text-align:center;font-weight:700">${i+1}</td>
-                    <td><strong>${s.patientName}</strong></td>
-                    <td style="text-align:center">${s.birthYear || ''}</td>
-                    <td>${s.diagnosis || ''}</td>
-                    <td>${s.method || ''}</td>
-                    <td style="text-align:center"><span style="background:${typeInfo.color};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${typeInfo.label}</span></td>
-                    <td>${Utils.getStaffName(s.mainSurgeon) || ''}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</td>
+                const bgColor = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+                rows += `<tr style="background:${bgColor};border-bottom:1px solid #e2e8f0">
+                    <td style="padding:10px 8px;text-align:center;font-weight:700;color:#475569;font-size:13px">${i+1}</td>
+                    <td style="padding:10px 8px;font-size:13px"><strong style="color:#1e293b">${s.patientName}</strong></td>
+                    <td style="padding:10px 8px;text-align:center;font-size:12px;color:#64748b">${s.birthYear || '—'}</td>
+                    <td style="padding:10px 8px;font-size:12px;color:#64748b">${s.admissionId || '—'}</td>
+                    <td style="padding:10px 8px;font-size:12px;color:#1e40af;font-weight:500">${s.diagnosis || '—'}</td>
+                    <td style="padding:10px 8px;font-size:12px;color:#475569;font-style:italic">${s.method || '—'}</td>
+                    <td style="padding:10px 8px;text-align:center"><span style="background:${typeInfo.color};color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">${typeInfo.label}</span></td>
+                    <td style="padding:10px 8px;font-size:12px;color:#475569">${Utils.getStaffName(s.mainSurgeon) || '—'}${s.assistSurgeon1 ? '<br><span style="color:#94a3b8;font-size:11px">Phụ: ' + Utils.getStaffName(s.assistSurgeon1) + '</span>' : ''}</td>
+                    <td style="padding:10px 8px;text-align:center;font-size:12px;color:#475569">${s.duration ? s.duration + 'p' : '—'}</td>
                 </tr>`;
+                // Notes row if exists
+                if (s.notes) {
+                    rows += `<tr style="background:${bgColor};border-bottom:1px solid #e2e8f0">
+                        <td style="padding:0"></td>
+                        <td colspan="8" style="padding:0 8px 8px;font-size:11px;color:#94a3b8"><em>📝 ${s.notes}</em></td>
+                    </tr>`;
+                }
             });
         }
+
+        // Type summary chips
+        let typeChips = '';
+        Object.entries(SURGERY_TYPES).forEach(([key, t]) => {
+            if (typeCounts[key] > 0) {
+                typeChips += `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:12px;color:#475569">
+                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${t.color}"></span>
+                    ${t.label}: <strong>${typeCounts[key]}</strong>
+                </span>`;
+            }
+        });
 
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `
-        <div id="surgery-export-target" style="width:1000px;padding:30px 36px;background:#fff;font-family:'Inter',sans-serif;color:#1a1a2e;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #0891b2">
+        <div id="surgery-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Inter',sans-serif;color:#1e293b;">
+            <!-- Header with dark navy background for high contrast -->
+            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
                 <div>
-                    <div style="font-size:20px;font-weight:800;color:#0891b2">KHOA PTĐTT</div>
-                    <div style="font-size:13px;color:#64748b;margin-top:2px">Phẫu thuật Đại trực tràng</div>
+                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PTĐTT</div>
+                    <div style="font-size:13px;color:#94a3b8;margin-top:3px">Phẫu thuật Đại trực tràng — BV Chợ Rẫy</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-size:18px;font-weight:700;color:#1a1a2e">LỊCH MỔ NGÀY ${dateLabel}</div>
-                    <div style="font-size:13px;color:#64748b">${dayName}</div>
+                    <div style="font-size:20px;font-weight:700;color:#ffffff">LỊCH MỔ NGÀY ${dateLabel}</div>
+                    <div style="font-size:13px;color:#67e8f9;font-weight:500">${dayName}</div>
                 </div>
             </div>
-            <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:8px 16px;margin-bottom:16px;font-size:13px;color:#0d9488;font-weight:600">
-                📋 Tổng số: ${todaySurgeries.length} ca
+
+            <!-- Summary bar -->
+            <div style="padding:14px 36px;background:#f0f9ff;border-bottom:1px solid #bae6fd;display:flex;justify-content:space-between;align-items:center">
+                <div style="font-size:14px;font-weight:700;color:#0c4a6e">
+                    📋 Tổng số: ${todaySurgeries.length} ca phẫu thuật
+                </div>
+                <div>${typeChips}</div>
             </div>
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead>
-                    <tr style="background:#0891b2;color:#fff">
-                        <th style="padding:10px 8px;text-align:center;width:35px">STT</th>
-                        <th style="padding:10px 8px;text-align:left">Bệnh nhân</th>
-                        <th style="padding:10px 8px;text-align:center;width:55px">NS</th>
-                        <th style="padding:10px 8px;text-align:left">Chẩn đoán</th>
-                        <th style="padding:10px 8px;text-align:left">Phương pháp PT</th>
-                        <th style="padding:10px 8px;text-align:center;width:85px">Loại</th>
-                        <th style="padding:10px 8px;text-align:left">Ê-kíp mổ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rows}
-                </tbody>
-            </table>
-            <div style="margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8">
+
+            <!-- Table -->
+            <div style="padding:0 36px 20px">
+                <table style="width:100%;border-collapse:collapse;margin-top:16px">
+                    <thead>
+                        <tr style="background:#0f172a">
+                            <th style="padding:11px 8px;text-align:center;color:#f1f5f9;font-size:12px;font-weight:600;width:36px">STT</th>
+                            <th style="padding:11px 8px;text-align:left;color:#f1f5f9;font-size:12px;font-weight:600;min-width:110px">BỆNH NHÂN</th>
+                            <th style="padding:11px 8px;text-align:center;color:#f1f5f9;font-size:12px;font-weight:600;width:46px">NS</th>
+                            <th style="padding:11px 8px;text-align:left;color:#f1f5f9;font-size:12px;font-weight:600;width:82px">SỐ NV</th>
+                            <th style="padding:11px 8px;text-align:left;color:#f1f5f9;font-size:12px;font-weight:600">CHẨN ĐOÁN</th>
+                            <th style="padding:11px 8px;text-align:left;color:#f1f5f9;font-size:12px;font-weight:600">PHƯƠNG PHÁP PT</th>
+                            <th style="padding:11px 8px;text-align:center;color:#f1f5f9;font-size:12px;font-weight:600;width:85px">LOẠI</th>
+                            <th style="padding:11px 8px;text-align:left;color:#f1f5f9;font-size:12px;font-weight:600;min-width:110px">Ê-KÍP MỔ</th>
+                            <th style="padding:11px 8px;text-align:center;color:#f1f5f9;font-size:12px;font-weight:600;width:46px">TG</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:12px 36px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;background:#f8fafc">
                 <span>PTDTT Manager — ptdtt.vukhuongan.id.vn</span>
-                <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')}</span>
+                <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} ngày ${dateLabel}</span>
             </div>
         </div>`;
         document.body.appendChild(container);
-
-        // Style table rows with alternating colors
-        const trs = container.querySelectorAll('tbody tr');
-        trs.forEach((tr, i) => {
-            tr.style.cssText = 'border-bottom:1px solid #e2e8f0;' + (i % 2 === 1 ? 'background:#f8fafc;' : '');
-            tr.querySelectorAll('td').forEach(td => { td.style.padding = '9px 8px'; });
-        });
 
         const target = container.querySelector('#surgery-export-target');
         html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
