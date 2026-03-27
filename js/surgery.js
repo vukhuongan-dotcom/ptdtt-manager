@@ -437,8 +437,11 @@ const SurgeryPage = {
     deleteSurgery(id) {
         if (!canEditSurgery()) return;
         const all = this.getAllSurgeries();
+        const s = all.find(x => x.id === id);
+        if (!s) return;
+        if (!confirm(`Xác nhận xoá ca mổ của BN "${s.patientName}"?`)) return;
         this.saveSurgeries(all.filter(x => x.id !== id));
-        Modal.close();
+        if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
     },
 
