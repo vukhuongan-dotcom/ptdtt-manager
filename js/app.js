@@ -98,6 +98,10 @@ const App = {
                     <span class="user-role">${session.role}</span>
                 </div>
             </div>
+            ${session.isAdmin ? `<div style="display:flex;gap:6px;margin:6px 0">
+                <button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openChangePassword()">🔑 Đổi mật khẩu</button>
+                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openManagePasswords()">👥 Quản lý MK</button>` : ''}
+            </div>` : ''}
             <button class="logout-btn" id="logout-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Đăng xuất

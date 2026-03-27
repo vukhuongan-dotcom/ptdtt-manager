@@ -2,6 +2,8 @@
 const Auth = {
     SESSION_KEY: 'ptdtt_session',
     ACCOUNTS_KEY: 'ptdtt_accounts',
+    CUSTOM_PASSWORDS_KEY: 'ptdtt_custom_passwords',
+    SUPERADMIN_USERNAME: 'vkan',
     ACCOUNTS_VERSION: 2, // Increment to force account regeneration
 
     init() {
@@ -34,15 +36,24 @@ const Auth = {
 
         // Add guest account (view-only, like medical secretary)
         accounts['guest'] = {
-            staffId: 0,
-            username: 'guest',
-            password: '12345',
-            name: 'Khách',
-            role: 'Khách tham quan',
-            title: '',
-            isAdmin: false,
-            color: '#94a3b8'
+            staffId: 0, username: 'guest', password: '12345',
+            name: 'Khách', role: 'Khách tham quan', title: '',
+            isAdmin: false, isSuperAdmin: false, color: '#94a3b8'
         };
+
+        // Mark super admin
+        if (accounts[this.SUPERADMIN_USERNAME]) {
+            accounts[this.SUPERADMIN_USERNAME].isSuperAdmin = true;
+        }
+
+        // Restore custom passwords if any
+        const customPw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
+        if (customPw) {
+            const pwMap = JSON.parse(customPw);
+            Object.keys(pwMap).forEach(u => {
+                if (accounts[u]) accounts[u].password = pwMap[u];
+            });
+        }
 
         localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
         return accounts;
@@ -102,6 +113,7 @@ const Auth = {
             role: account.role,
             title: account.title,
             isAdmin: account.isAdmin,
+            isSuperAdmin: account.isSuperAdmin || false,
             color: account.color,
             loginTime: new Date().toISOString()
         };
@@ -182,8 +194,156 @@ const Auth = {
             password: a.password,
             name: a.name,
             role: a.role,
-            isAdmin: a.isAdmin
+            isAdmin: a.isAdmin,
+            isSuperAdmin: a.isSuperAdmin || false
         }));
+    },
+
+    // ===== PASSWORD CHANGE =====
+    // Change own password
+    changePassword(currentPw, newPw) {
+        const session = this.getSession();
+        if (!session) return { success: false, error: 'Chưa đăng nhập' };
+        const accounts = this.getAccounts();
+        const account = accounts[session.username];
+        if (!account) return { success: false, error: 'Tài khoản không tồn tại' };
+        if (account.password !== currentPw) return { success: false, error: 'Mật khẩu hiện tại không đúng' };
+        if (newPw.length < 4) return { success: false, error: 'Mật khẩu mới phải có ít nhất 4 ký tự' };
+
+        account.password = newPw;
+        localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        this._saveCustomPassword(session.username, newPw);
+        return { success: true };
+    },
+
+    // Super admin changes another user's password
+    changeUserPassword(targetUsername, newPw) {
+        const session = this.getSession();
+        if (!session || !session.isSuperAdmin) return { success: false, error: 'Không có quyền' };
+        const accounts = this.getAccounts();
+        if (!accounts[targetUsername]) return { success: false, error: 'Tài khoản không tồn tại' };
+        if (newPw.length < 4) return { success: false, error: 'Mật khẩu mới phải có ít nhất 4 ký tự' };
+
+        accounts[targetUsername].password = newPw;
+        localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        this._saveCustomPassword(targetUsername, newPw);
+        return { success: true };
+    },
+
+    // Persist custom password so it survives account regeneration
+    _saveCustomPassword(username, password) {
+        const raw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
+        const pwMap = raw ? JSON.parse(raw) : {};
+        pwMap[username] = password;
+        localStorage.setItem(this.CUSTOM_PASSWORDS_KEY, JSON.stringify(pwMap));
+    },
+
+    // ===== PASSWORD CHANGE UI =====
+    openChangePassword() {
+        const session = this.getSession();
+        if (!session || !session.isAdmin) return;
+        Modal.open('Đổi mật khẩu', `
+            <form onsubmit="Auth.handleChangePassword(event)">
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu hiện tại</label>
+                    <input class="form-input" type="password" id="pw-current" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu mới</label>
+                    <input class="form-input" type="password" id="pw-new" required minlength="4">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Xác nhận mật khẩu mới</label>
+                    <input class="form-input" type="password" id="pw-confirm" required minlength="4">
+                </div>
+                <div id="pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                </div>
+            </form>
+        `);
+    },
+
+    handleChangePassword(e) {
+        e.preventDefault();
+        const current = document.getElementById('pw-current').value;
+        const newPw = document.getElementById('pw-new').value;
+        const confirm = document.getElementById('pw-confirm').value;
+        const errEl = document.getElementById('pw-error');
+
+        if (newPw !== confirm) { errEl.textContent = 'Mật khẩu xác nhận không khớp'; return; }
+        const result = this.changePassword(current, newPw);
+        if (result.success) {
+            Modal.close();
+            alert('Đổi mật khẩu thành công!');
+        } else {
+            errEl.textContent = result.error;
+        }
+    },
+
+    // Super admin: manage all admin passwords
+    openManagePasswords() {
+        const session = this.getSession();
+        if (!session || !session.isSuperAdmin) return;
+        const accounts = this.getAccountList().filter(a => a.isAdmin || a.isSuperAdmin);
+
+        const rows = accounts.map(a => `
+            <tr>
+                <td style="padding:8px"><strong>${a.name}</strong></td>
+                <td style="padding:8px;color:var(--text-secondary)">${a.username}</td>
+                <td style="padding:8px">${a.role}</td>
+                <td style="padding:8px;text-align:center">
+                    ${a.username !== this.SUPERADMIN_USERNAME ? 
+                        `<button class="btn btn-secondary btn-sm" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">Đổi MK</button>` :
+                        '<span style="color:var(--text-secondary);font-size:0.8rem">Super Admin</span>'
+                    }
+                </td>
+            </tr>
+        `).join('');
+
+        Modal.open('Quản lý mật khẩu Admin', `
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+                <thead><tr style="border-bottom:2px solid var(--border)">
+                    <th style="padding:8px;text-align:left">Họ tên</th>
+                    <th style="padding:8px;text-align:left">Username</th>
+                    <th style="padding:8px;text-align:left">Chức vụ</th>
+                    <th style="padding:8px;text-align:center">Hành động</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="Modal.close()">Đóng</button>
+            </div>
+        `);
+    },
+
+    openResetPasswordFor(username, name) {
+        Modal.open(`Đổi mật khẩu: ${name}`, `
+            <form onsubmit="Auth.handleResetPassword(event, '${username}')">
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu mới cho <strong>${name}</strong> (${username})</label>
+                    <input class="form-input" type="password" id="reset-pw-new" required minlength="4" placeholder="Nhập mật khẩu mới">
+                </div>
+                <div id="reset-pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Auth.openManagePasswords()">Quay lại</button>
+                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                </div>
+            </form>
+        `);
+    },
+
+    handleResetPassword(e, username) {
+        e.preventDefault();
+        const newPw = document.getElementById('reset-pw-new').value;
+        const result = this.changeUserPassword(username, newPw);
+        if (result.success) {
+            alert(`Đã đổi mật khẩu thành công cho ${username}!`);
+            this.openManagePasswords();
+        } else {
+            document.getElementById('reset-pw-error').textContent = result.error;
+        }
     }
 };
 
