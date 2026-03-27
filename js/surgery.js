@@ -96,8 +96,8 @@ const SurgeryPage = {
                 <p class="page-subtitle">Lịch phẫu thuật khoa PT Đại trực tràng</p>
             </div>
             <div style="display:flex;gap:8px">
-                <button class="btn btn-secondary" onclick="SurgeryPage.exportTodayImage()">
-                    📷 Xuất DS hôm nay
+                <button class="btn btn-secondary" onclick="SurgeryPage.exportTomorrowImage()">
+                    📷 Xuất DS ngày mai
                 </button>
                 ${isAdmin ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()">
                     ${Utils.plusIcon()} Thêm ca mổ
@@ -452,19 +452,21 @@ const SurgeryPage = {
 
     afterRender() {},
 
-    // ===== EXPORT TODAY'S SURGERY LIST AS JPEG =====
-    exportTodayImage() {
+    // ===== EXPORT TOMORROW'S SURGERY LIST AS JPEG =====
+    exportTomorrowImage() {
         const today = new Date();
-        today.setHours(0,0,0,0);
-        const ds = this.dateStr(today);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        tomorrow.setHours(0,0,0,0);
+        const ds = this.dateStr(tomorrow);
         const surgeries = this.getAllSurgeries();
         const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
         const todaySurgeries = surgeries.filter(s => s.date === ds)
             .sort((a, b) => (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9));
 
-        const dateLabel = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
+        const dateLabel = `${tomorrow.getDate()}/${tomorrow.getMonth()+1}/${tomorrow.getFullYear()}`;
         const dayNames = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
-        const dayName = dayNames[today.getDay()];
+        const dayName = dayNames[tomorrow.getDay()];
 
         // Count by type
         const typeCounts = {};
