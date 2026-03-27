@@ -2,6 +2,7 @@
 const StaffTrackingPage = {
     viewMode: 'week', // 'week' | 'month'
     offset: 0,
+    currentFilter: 'all',
 
     _localDateStr(d) {
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -56,7 +57,8 @@ const StaffTrackingPage = {
     render() {
         const session = Auth.getSession();
         const isAdmin = session?.isAdmin;
-        const staff = Store.getAll('staff');
+        const allStaff = Store.getAll('staff');
+        const staff = this._getFilteredStaff(allStaff);
         const today = this._localDateStr(new Date());
 
         const dates = this.viewMode === 'week'
@@ -123,6 +125,25 @@ const StaffTrackingPage = {
             </tr>`;
         }).join('');
 
+        // Role filters (same as staff page)
+        const roleDefs = [
+            { key: 'all', label: 'Tất cả' },
+            { key: 'BCN', label: 'BCN khoa' },
+            { key: 'Bác sĩ chính', label: 'BS chính' },
+            { key: 'học viên', label: 'BS học viên' },
+            { key: 'Điều dưỡng', label: 'ĐD' },
+            { key: 'Hộ lý', label: 'Hộ lý' },
+            { key: 'Thư ký', label: 'Thư ký' }
+        ];
+        const getCatCount = (key) => {
+            if (key === 'all') return allStaff.length;
+            if (key === 'BCN') return allStaff.filter(s => s.role.includes('Trưởng khoa') || s.role.includes('Phó trưởng khoa') || s.role === 'Điều dưỡng trưởng').length;
+            return allStaff.filter(s => s.role.includes(key)).length;
+        };
+        const filterBtns = roleDefs.map(r =>
+            `<button class="filter-btn ${this.currentFilter===r.key?'active':''}" onclick="StaffTrackingPage.setFilter('${r.key}')">${r.label} (${getCatCount(r.key)})</button>`
+        ).join('');
+
         return `
         <div class="page-header">
             <div>
@@ -144,6 +165,9 @@ const StaffTrackingPage = {
             </div>
             <div class="st-legend">${legend}</div>
         </div>
+
+        <!-- Filters -->
+        <div class="staff-filters" style="margin-bottom:12px">${filterBtns}</div>
 
         <!-- Summary -->
         <div class="st-summary">${summary}</div>
@@ -204,6 +228,18 @@ const StaffTrackingPage = {
         this.viewMode = mode;
         this.offset = 0;
         App.renderCurrentPage();
+    },
+
+    setFilter(key) {
+        this.currentFilter = key;
+        App.renderCurrentPage();
+    },
+
+    _getFilteredStaff(allStaff) {
+        const f = this.currentFilter;
+        if (f === 'all') return allStaff;
+        if (f === 'BCN') return allStaff.filter(s => s.role.includes('Trưởng khoa') || s.role.includes('Phó trưởng khoa') || s.role === 'Điều dưỡng trưởng');
+        return allStaff.filter(s => s.role.includes(f));
     },
 
     prev() { this.offset--; App.renderCurrentPage(); },
