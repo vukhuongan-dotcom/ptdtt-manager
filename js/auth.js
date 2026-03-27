@@ -239,23 +239,36 @@ const Auth = {
     },
 
     // ===== PASSWORD CHANGE UI =====
+    _pwField(id, label, extra = '') {
+        const eyeOn = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const eyeOff = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+        return `<div class="form-group">
+            <label class="form-label">${label}</label>
+            <div style="position:relative">
+                <input class="form-input" type="password" id="${id}" ${extra} style="padding-right:40px">
+                <button type="button" onclick="Auth._togglePw('${id}',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);padding:4px;display:flex;align-items:center" title="Hiện/ẩn mật khẩu">
+                    <span class="eye-on">${eyeOn}</span><span class="eye-off" style="display:none">${eyeOff}</span>
+                </button>
+            </div>
+        </div>`;
+    },
+
+    _togglePw(inputId, btn) {
+        const inp = document.getElementById(inputId);
+        if (!inp) return;
+        const isPassword = inp.type === 'password';
+        inp.type = isPassword ? 'text' : 'password';
+        btn.querySelector('.eye-on').style.display = isPassword ? 'none' : '';
+        btn.querySelector('.eye-off').style.display = isPassword ? '' : 'none';
+    },
     openChangePassword() {
         const session = this.getSession();
         if (!session || !session.isAdmin) return;
         Modal.open('Đổi mật khẩu', `
             <form onsubmit="Auth.handleChangePassword(event)">
-                <div class="form-group">
-                    <label class="form-label">Mật khẩu hiện tại</label>
-                    <input class="form-input" type="password" id="pw-current" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Mật khẩu mới</label>
-                    <input class="form-input" type="password" id="pw-new" required minlength="4">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Xác nhận mật khẩu mới</label>
-                    <input class="form-input" type="password" id="pw-confirm" required minlength="4">
-                </div>
+                ${this._pwField('pw-current', 'Mật khẩu hiện tại', 'required')}
+                ${this._pwField('pw-new', 'Mật khẩu mới', 'required minlength="4"')}
+                ${this._pwField('pw-confirm', 'Xác nhận mật khẩu mới', 'required minlength="4"')}
                 <div id="pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
@@ -321,10 +334,7 @@ const Auth = {
     openResetPasswordFor(username, name) {
         Modal.open(`Đổi mật khẩu: ${name}`, `
             <form onsubmit="Auth.handleResetPassword(event, '${username}')">
-                <div class="form-group">
-                    <label class="form-label">Mật khẩu mới cho <strong>${name}</strong> (${username})</label>
-                    <input class="form-input" type="password" id="reset-pw-new" required minlength="4" placeholder="Nhập mật khẩu mới">
-                </div>
+                ${this._pwField('reset-pw-new', `Mật khẩu mới cho <strong>${name}</strong> (${username})`, 'required minlength="4" placeholder="Nhập mật khẩu mới"')}
                 <div id="reset-pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Auth.openManagePasswords()">Quay lại</button>
