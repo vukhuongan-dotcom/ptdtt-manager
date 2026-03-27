@@ -551,7 +551,7 @@ const SurgeryPage = {
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
                 <div>
                     <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PTĐTT</div>
-                    <div style="font-size:13px;color:#94a3b8;margin-top:3px">Phẫu thuật Đại trực tràng — BV Chợ Rẫy</div>
+                    <div style="font-size:13px;color:#94a3b8;margin-top:3px">Phẫu thuật Đại trực tràng — BV Bình Dân</div>
                 </div>
                 <div style="text-align:right">
                     <div style="font-size:20px;font-weight:700;color:#ffffff">LỊCH MỔ NGÀY ${dateLabel}</div>
