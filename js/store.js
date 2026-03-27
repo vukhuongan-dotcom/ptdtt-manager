@@ -5,6 +5,7 @@ const DATA_VERSION = 7; // Increment this when SAMPLE data changes
 const Store = {
     _data: null,
     _serverAvailable: false,
+    _deletedIds: new Set(),
 
     // Save to localStorage only (no server push) — used during init
     _saveLocal() {
@@ -78,12 +79,12 @@ const Store = {
             this._api('/api/data').then(r => r.json()).then(serverData => {
                 const merged = JSON.parse(JSON.stringify(this._data));
 
-                // Merge surgeries: union by ID (keep both local + server entries)
+                // Merge surgeries: union by ID, but SKIP deleted IDs
                 if (serverData && serverData.surgeries && serverData.surgeries.length > 0) {
                     const localSurgeries = merged.surgeries || [];
                     const localIds = new Set(localSurgeries.map(s => s.id));
                     serverData.surgeries.forEach(s => {
-                        if (!localIds.has(s.id)) localSurgeries.push(s);
+                        if (!localIds.has(s.id) && !this._deletedIds.has(s.id)) localSurgeries.push(s);
                     });
                     merged.surgeries = localSurgeries;
                 }
@@ -106,6 +107,8 @@ const Store = {
             }).then(r => r.json()).then(res => {
                 this._serverAvailable = true;
                 if (res.version) this._serverVersion = res.version;
+                // Clear deleted IDs after successful push
+                this._deletedIds.clear();
                 console.log('[Store] ✅ Merged & saved to server, version:', res.version);
             }).catch(() => { this._serverAvailable = false; });
         }, 300);
@@ -116,6 +119,10 @@ const Store = {
         this._syncing = true;
         this._api('/api/data').then(r => r.json()).then(serverData => {
             if (serverData && serverData._version) {
+                // Remove any locally-deleted IDs from server data before applying
+                if (this._deletedIds.size > 0 && serverData.surgeries) {
+                    serverData.surgeries = serverData.surgeries.filter(s => !this._deletedIds.has(s.id));
+                }
                 const oldJson = JSON.stringify(this._data);
                 const newJson = JSON.stringify(serverData);
                 if (oldJson !== newJson) {
@@ -194,6 +201,7 @@ const Store = {
     },
 
     remove(collection, id) {
+        this._deletedIds.add(id);
         this._data[collection] = this._data[collection].filter(item => item.id !== id);
         this.save();
     },
