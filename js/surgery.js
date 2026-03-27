@@ -99,6 +99,9 @@ const SurgeryPage = {
                 <button class="btn btn-secondary" onclick="SurgeryPage.exportTomorrowImage()">
                     📷 Xuất DS ngày mai
                 </button>
+                <button class="btn btn-secondary" onclick="SurgeryPage.exportCustomDateImage()">
+                    📅 Xuất theo ngày
+                </button>
                 ${isAdmin ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()">
                     ${Utils.plusIcon()} Thêm ca mổ
                 </button>` : ''}
@@ -452,21 +455,49 @@ const SurgeryPage = {
 
     afterRender() {},
 
-    // ===== EXPORT TOMORROW'S SURGERY LIST AS JPEG =====
+    // ===== EXPORT SURGERY LIST AS JPEG =====
     exportTomorrowImage() {
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
         tomorrow.setHours(0,0,0,0);
-        const ds = this.dateStr(tomorrow);
+        this._exportImageForDate(tomorrow);
+    },
+
+    exportCustomDateImage() {
+        // Show a modal with date picker
+        Modal.open('Xuất lịch mổ theo ngày', `
+            <div style="padding:8px 0">
+                <label class="form-label">Chọn ngày cần xuất:</label>
+                <input class="form-input" type="date" id="export-date-picker" value="${new Date().toISOString().split('T')[0]}" style="font-size:16px;padding:10px">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                <button type="button" class="btn btn-primary" onclick="SurgeryPage._doCustomExport()">Xuất JPEG</button>
+            </div>
+        `);
+    },
+
+    _doCustomExport() {
+        const val = document.getElementById('export-date-picker')?.value;
+        if (!val) return;
+        const parts = val.split('-');
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        d.setHours(0,0,0,0);
+        Modal.close();
+        this._exportImageForDate(d);
+    },
+
+    _exportImageForDate(targetDate) {
+        const ds = this.dateStr(targetDate);
         const surgeries = this.getAllSurgeries();
         const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
         const todaySurgeries = surgeries.filter(s => s.date === ds)
             .sort((a, b) => (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9));
 
-        const dateLabel = `${tomorrow.getDate()}/${tomorrow.getMonth()+1}/${tomorrow.getFullYear()}`;
+        const dateLabel = `${targetDate.getDate()}/${targetDate.getMonth()+1}/${targetDate.getFullYear()}`;
         const dayNames = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
-        const dayName = dayNames[tomorrow.getDay()];
+        const dayName = dayNames[targetDate.getDay()];
 
         // Count by type
         const typeCounts = {};
