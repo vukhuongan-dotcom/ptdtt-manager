@@ -8,22 +8,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/variables.css?v=27031514">
-    <link rel="stylesheet" href="css/base.css?v=27031514">
-    <link rel="stylesheet" href="css/sidebar.css?v=27031514">
-    <link rel="stylesheet" href="css/dashboard.css?v=27031514">
-    <link rel="stylesheet" href="css/staff.css?v=27031514">
-    <link rel="stylesheet" href="css/tasks.css?v=27031514">
-    <link rel="stylesheet" href="css/plans.css?v=27031514">
-    <link rel="stylesheet" href="css/patients.css?v=27031514">
-    <link rel="stylesheet" href="css/schedule.css?v=27031514">
-    <link rel="stylesheet" href="css/surgery.css?v=27031514">
-    <link rel="stylesheet" href="css/surgery-stats.css?v=27031514">
-    <link rel="stylesheet" href="css/mobile.css?v=27031514">
-    <link rel="stylesheet" href="css/rooms.css?v=27031514">
-    <link rel="stylesheet" href="css/modal.css?v=27031514">
-    <link rel="stylesheet" href="css/login.css?v=27031514">
-    <link rel="stylesheet" href="css/notifications.css?v=27031514">
+    <link rel="stylesheet" href="css/variables.css?v=27031524">
+    <link rel="stylesheet" href="css/base.css?v=27031524">
+    <link rel="stylesheet" href="css/sidebar.css?v=27031524">
+    <link rel="stylesheet" href="css/dashboard.css?v=27031524">
+    <link rel="stylesheet" href="css/staff.css?v=27031524">
+    <link rel="stylesheet" href="css/tasks.css?v=27031524">
+    <link rel="stylesheet" href="css/plans.css?v=27031524">
+    <link rel="stylesheet" href="css/patients.css?v=27031524">
+    <link rel="stylesheet" href="css/schedule.css?v=27031524">
+    <link rel="stylesheet" href="css/surgery.css?v=27031524">
+    <link rel="stylesheet" href="css/surgery-stats.css?v=27031524">
+    <link rel="stylesheet" href="css/mobile.css?v=27031524">
+    <link rel="stylesheet" href="css/rooms.css?v=27031524">
+    <link rel="stylesheet" href="css/modal.css?v=27031524">
+    <link rel="stylesheet" href="css/login.css?v=27031524">
+    <link rel="stylesheet" href="css/notifications.css?v=27031524">
+    <link rel="stylesheet" href="css/staff-tracking.css?v=27031524">
     <style>@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
 </head>
 <body>
@@ -58,6 +59,10 @@
                 <a href="#" class="nav-item" data-page="staff" id="nav-staff">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <span>Nhân sự</span>
+                </a>
+                <a href="#" class="nav-item" data-page="staff-tracking" id="nav-staff-tracking">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/><circle cx="6" cy="14" r="1.5" fill="currentColor"/><circle cx="12" cy="8" r="1.5" fill="currentColor"/><circle cx="18" cy="2" r="1.5" fill="currentColor"/></svg>
+                    <span>Theo dõi NV</span>
                 </a>
                 <a href="#" class="nav-item" data-page="rooms" id="nav-rooms">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -111,21 +116,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="js/data.js?v=27031514"></script>
-    <script src="js/store.js?v=27031514"></script>
-    <script src="js/auth.js?v=27031514"></script>
-    <script src="js/utils.js?v=27031514"></script>
-    <script src="js/dashboard.js?v=27031514"></script>
-    <script src="js/staff.js?v=27031514"></script>
-    <script src="js/tasks.js?v=27031514"></script>
-    <script src="js/plans.js?v=27031514"></script>
-    <script src="js/patients.js?v=27031514"></script>
-    <script src="js/schedule.js?v=27031514"></script>
-    <script src="js/surgery.js?v=27031514"></script>
-    <script src="js/emr.js?v=27031514"></script>
-    <script src="js/surgery-stats.js?v=27031514"></script>
-    <script src="js/rooms.js?v=27031514"></script>
-    <script src="js/notifications.js?v=27031514"></script>
-    <script src="js/app.js?v=27031514"></script>
+    <script src="js/data.js?v=27031524"></script>
+    <script src="js/store.js?v=27031524"></script>
+    <script src="js/auth.js?v=27031524"></script>
+    <script src="js/utils.js?v=27031524"></script>
+    <script src="js/dashboard.js?v=27031524"></script>
+    <script src="js/staff.js?v=27031524"></script>
+    <script src="js/staff-tracking.js?v=27031524"></script>
+    <script src="js/tasks.js?v=27031524"></script>
+    <script src="js/plans.js?v=27031524"></script>
+    <script src="js/patients.js?v=27031524"></script>
+    <script src="js/schedule.js?v=27031524"></script>
+    <script src="js/surgery.js?v=27031524"></script>
+    <script src="js/emr.js?v=27031524"></script>
+    <script src="js/surgery-stats.js?v=27031524"></script>
+    <script src="js/rooms.js?v=27031524"></script>
+    <script src="js/notifications.js?v=27031524"></script>
+    <script src="js/app.js?v=27031524"></script>
 </body>
 </html>

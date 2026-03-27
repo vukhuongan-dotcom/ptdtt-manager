@@ -16,7 +16,7 @@ const DashboardPage = {
         const currentMonth = new Date().toLocaleDateString('vi-VN', { month: 'long' });
 
         // Calculate staff status counts
-        const statusCounts = { active: 0, leave: 0, sick: 0, business: 0 };
+        const statusCounts = { active: 0, leave: 0, sick: 0, business: 0, dayoff: 0 };
         staff.forEach(s => {
             const eff = StaffPage.getEffectiveStatus(s, today);
             statusCounts[eff.status] = (statusCounts[eff.status] || 0) + 1;
@@ -34,11 +34,12 @@ const DashboardPage = {
 
         const dotColors = ['cyan', 'purple', 'green', 'cyan'];
 
-        const absentCount = statusCounts.leave + statusCounts.sick + statusCounts.business;
+        const absentCount = statusCounts.leave + statusCounts.sick + statusCounts.business + statusCounts.dayoff;
         const staffParts = [];
         if (statusCounts.leave > 0) staffParts.push(`${statusCounts.leave} nghỉ phép`);
         if (statusCounts.sick > 0) staffParts.push(`${statusCounts.sick} bệnh`);
         if (statusCounts.business > 0) staffParts.push(`${statusCounts.business} công tác`);
+        if (statusCounts.dayoff > 0) staffParts.push(`${statusCounts.dayoff} nghỉ bù`);
         const staffSummary = absentCount > 0
             ? `${statusCounts.active} hoạt động · ${staffParts.join(' · ')}`
             : `● Tất cả đang hoạt động`;

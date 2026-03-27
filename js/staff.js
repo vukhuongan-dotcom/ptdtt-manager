@@ -3,7 +3,8 @@ const STAFF_STATUSES = {
     'active':    { label: 'Hoạt động', badge: 'badge-success', icon: '🟢' },
     'leave':     { label: 'Nghỉ phép', badge: 'badge-warning', icon: '🟡' },
     'sick':      { label: 'Bệnh ốm',  badge: 'badge-danger',  icon: '🔴' },
-    'business':  { label: 'Công tác',  badge: 'badge-accent',  icon: '🟣' }
+    'business':  { label: 'Công tác',  badge: 'badge-accent',  icon: '🟣' },
+    'dayoff':    { label: 'Nghỉ bù',   badge: 'badge-info',    icon: '🔵' }
 };
 
 const StaffPage = {
