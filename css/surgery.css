@@ -251,14 +251,14 @@
 }
 /* Summary panel */
 .surgery-summary-panel {
-    margin-top: 20px;
-    padding: 16px 20px;
+    margin-bottom: 16px;
+    padding: 10px 20px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
 }
 .surgery-summary-title {
     font-size: 0.9rem;

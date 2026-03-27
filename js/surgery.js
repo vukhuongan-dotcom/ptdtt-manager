@@ -110,11 +110,27 @@ const SurgeryPage = {
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.thisWeek()">Tuần này</button>
             </div>
             <div class="surgery-stats">
-                <span class="surgery-stat-chip">📋 ${totalCases} ca trong tuần</span>
                 <span class="surgery-stat-chip">📅 ${todayCases} ca hôm nay</span>
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả">
                     <span id="surgery-toggle-icon">📂</span> <span id="surgery-toggle-text">Mở rộng</span>
                 </button>
+            </div>
+        </div>
+
+        <div class="surgery-summary-panel">
+            <div class="surgery-summary-chips">
+                ${Object.entries(SURGERY_TYPES).map(([key, t]) => {
+                    const cnt = surgeries.filter(s => s.surgeryType === key).length;
+                    return `<div class="surgery-summary-chip">
+                        <span class="surgery-summary-dot" style="background:${t.color}"></span>
+                        <span class="surgery-summary-label">${t.label}</span>
+                        <span class="surgery-summary-count">${cnt}</span>
+                    </div>`;
+                }).join('')}
+                <div class="surgery-summary-chip surgery-summary-total">
+                    <span class="surgery-summary-label"><strong>Tổng tuần</strong></span>
+                    <span class="surgery-summary-count"><strong>${totalCases}</strong></span>
+                </div>
             </div>
         </div>
 
@@ -163,24 +179,6 @@ const SurgeryPage = {
                     </div>
                 </div>`;
             }).join('')}
-        </div>
-
-        <div class="surgery-summary-panel">
-            <h3 class="surgery-summary-title">📊 Thống kê ca mổ trong tuần</h3>
-            <div class="surgery-summary-chips">
-                ${Object.entries(SURGERY_TYPES).map(([key, t]) => {
-                    const cnt = surgeries.filter(s => s.surgeryType === key).length;
-                    return `<div class="surgery-summary-chip">
-                        <span class="surgery-summary-dot" style="background:${t.color}"></span>
-                        <span class="surgery-summary-label">${t.label}</span>
-                        <span class="surgery-summary-count">${cnt}</span>
-                    </div>`;
-                }).join('')}
-                <div class="surgery-summary-chip surgery-summary-total">
-                    <span class="surgery-summary-label"><strong>Tổng</strong></span>
-                    <span class="surgery-summary-count"><strong>${totalCases}</strong></span>
-                </div>
-            </div>
         </div>
         `;
     },
