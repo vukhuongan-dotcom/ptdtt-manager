@@ -112,6 +112,9 @@ const SurgeryPage = {
             <div class="surgery-stats">
                 <span class="surgery-stat-chip">📋 ${totalCases} ca trong tuần</span>
                 <span class="surgery-stat-chip">📅 ${todayCases} ca hôm nay</span>
+                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả">
+                    <span id="surgery-toggle-icon">📂</span> <span id="surgery-toggle-text">Mở rộng</span>
+                </button>
             </div>
         </div>
 
@@ -133,20 +136,25 @@ const SurgeryPage = {
                         ${daySurgeries.length ? daySurgeries.map((s, idx) => {
                             const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                             return `
-                            <div class="surgery-card" onclick="SurgeryPage.viewDetail(${s.id})">
-                                <div class="surgery-card-header">
+                            <div class="surgery-card surgery-compact" data-surgery-id="${s.id}" onclick="SurgeryPage.toggleCard(this, event)">
+                                <div class="surgery-card-compact-row">
                                     <span class="surgery-card-order">${idx + 1}</span>
-                                    <span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span>
-                                </div>
-                                <div class="surgery-card-patient">
-                                    <strong>${s.patientName}</strong>
+                                    <span class="surgery-type-dot" style="background:${typeInfo.color}" title="${typeInfo.label}"></span>
+                                    <span class="surgery-card-compact-name">${s.patientName}</span>
                                     <span class="surgery-card-yob">${s.birthYear || ''}</span>
                                 </div>
-                                <div class="surgery-card-diagnosis">${s.diagnosis || ''}</div>
-                                <div class="surgery-card-method">${s.method || ''}</div>
-                                <div class="surgery-card-footer">
-                                    <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
-                                    ${s.duration ? `<span class="surgery-card-duration">⏱ ${s.duration}p</span>` : ''}
+                                <div class="surgery-card-detail">
+                                    <div class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</div>
+                                    ${s.diagnosis ? `<div class="surgery-card-diagnosis">${s.diagnosis}</div>` : ''}
+                                    ${s.method ? `<div class="surgery-card-method">${s.method}</div>` : ''}
+                                    <div class="surgery-card-footer">
+                                        <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
+                                        ${s.duration ? `<span class="surgery-card-duration">⏱ ${s.duration}p</span>` : ''}
+                                    </div>
+                                    ${isAdmin ? `<div style="margin-top:6px;display:flex;gap:4px">
+                                        <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
+                                        <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px;color:var(--danger)" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
+                                    </div>` : ''}
                                 </div>
                             </div>`;
                         }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
@@ -189,6 +197,33 @@ const SurgeryPage = {
         this.currentWeekStart = null;
         this.init();
         App.renderCurrentPage();
+    },
+
+    // Card expand/collapse
+    toggleCard(el, event) {
+        event.stopPropagation();
+        el.classList.toggle('surgery-compact');
+        el.classList.toggle('surgery-expanded');
+    },
+
+    toggleAllCards() {
+        const cards = document.querySelectorAll('.surgery-card');
+        const allExpanded = [...cards].every(c => c.classList.contains('surgery-expanded'));
+        cards.forEach(c => {
+            if (allExpanded) {
+                c.classList.add('surgery-compact');
+                c.classList.remove('surgery-expanded');
+            } else {
+                c.classList.remove('surgery-compact');
+                c.classList.add('surgery-expanded');
+            }
+        });
+        const icon = document.getElementById('surgery-toggle-icon');
+        const text = document.getElementById('surgery-toggle-text');
+        if (icon && text) {
+            if (allExpanded) { icon.textContent = '📂'; text.textContent = 'Mở rộng'; }
+            else { icon.textContent = '📁'; text.textContent = 'Thu gọn'; }
+        }
     },
 
     // ===== STATS HELPERS =====
