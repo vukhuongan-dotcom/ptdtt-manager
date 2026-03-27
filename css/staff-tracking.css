@@ -116,7 +116,7 @@
     min-width: 180px;
     position: sticky;
     left: 0;
-    z-index: 3;
+    z-index: 10;
     color: var(--text-primary);
 }
 
@@ -164,7 +164,7 @@
     position: sticky;
     left: 0;
     background: var(--card-bg);
-    z-index: 1;
+    z-index: 5;
 }
 
 .st-staff-info {
