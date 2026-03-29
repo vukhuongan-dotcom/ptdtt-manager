@@ -304,6 +304,10 @@ const SurgeryPage = {
                     <div class="surgery-detail-label">Loại phẫu thuật</div>
                     <div class="surgery-detail-value"><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></div>
                 </div>
+                <div class="surgery-detail-row">
+                    <div class="surgery-detail-label">Đường mổ</div>
+                    <div class="surgery-detail-value">${({mo:'Mổ mở',noisoi:'Nội soi',robot:'Robot'})[s.approachType] || '—'}</div>
+                </div>
                 ${s.notes ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Ghi chú</div>
                     <div class="surgery-detail-value">${s.notes}</div>
@@ -347,10 +351,21 @@ const SurgeryPage = {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại phẫu thuật</label>
-                        <select class="form-select" name="surgeryType">
+                        <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)">
                             ${Object.entries(SURGERY_TYPES).map(([key, t]) =>
                                 `<option value="${key}" ${(s?.surgeryType || 'chuongtrinh') === key ? 'selected' : ''}>${t.label}</option>`
                             ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Mổ mở / Nội soi / Robot <span style="color:var(--danger)">*</span></label>
+                        <select class="form-select" name="approachType" id="surgery-approach" required ${(s?.surgeryType || 'chuongtrinh') === 'robot' ? 'disabled' : ''}>
+                            <option value="">— Chọn —</option>
+                            <option value="mo" ${s?.approachType === 'mo' ? 'selected' : ''}>Mổ mở</option>
+                            <option value="noisoi" ${s?.approachType === 'noisoi' ? 'selected' : ''}>Nội soi</option>
+                            <option value="robot" ${s?.approachType === 'robot' || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
                         </select>
                     </div>
                 </div>
@@ -414,11 +429,19 @@ const SurgeryPage = {
         if (!canEditSurgery()) return;
         e.preventDefault();
         const f = new FormData(e.target);
+        // approachType: if surgeryType is robot, force 'robot' (select may be disabled)
+        const surgeryType = f.get('surgeryType');
+        const approachType = surgeryType === 'robot' ? 'robot' : f.get('approachType');
+        if (!approachType) {
+            alert('Vui lòng chọn Mổ mở / Nội soi / Robot');
+            return;
+        }
         const data = {
             patientName: f.get('patientName'),
             birthYear: f.get('birthYear'),
             admissionId: f.get('admissionId'),
-            surgeryType: f.get('surgeryType'),
+            surgeryType: surgeryType,
+            approachType: approachType,
             date: f.get('date'),
             duration: f.get('duration'),
             mainSurgeon: f.get('mainSurgeon') ? parseInt(f.get('mainSurgeon')) : null,
@@ -451,6 +474,19 @@ const SurgeryPage = {
         this.saveSurgeries(all.filter(x => x.id !== id));
         if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
+    },
+
+    // Auto-select approach when surgery type changes
+    _onSurgeryTypeChange(sel) {
+        const approach = document.getElementById('surgery-approach');
+        if (!approach) return;
+        if (sel.value === 'robot') {
+            approach.value = 'robot';
+            approach.disabled = true;
+        } else {
+            approach.disabled = false;
+            if (approach.value === 'robot') approach.value = '';
+        }
     },
 
     afterRender() {},
