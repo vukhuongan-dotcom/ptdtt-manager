@@ -204,7 +204,6 @@ const SurgeryStatsPage = {
                     <div class="sstats-summary-label">${info.label}</div>
                 </div>`;
             }).join('')}
-            <div class="sstats-summary-divider"></div>
             ${Object.entries(APPROACH_TYPES).map(([k, info]) => {
                 return `<div class="sstats-summary-card">
                     <div class="sstats-summary-value" style="color:${info.color}">${grandByApproach[k]}</div>
