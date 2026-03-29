@@ -46,13 +46,19 @@ const Auth = {
             accounts[this.SUPERADMIN_USERNAME].isSuperAdmin = true;
         }
 
-        // Restore custom passwords if any
-        const customPw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
-        if (customPw) {
-            const pwMap = JSON.parse(customPw);
+        // Restore custom passwords: server-synced Store data first, then localStorage fallback
+        const serverPw = (Store._data && Store._data.customPasswords) ? Store._data.customPasswords : null;
+        const localPw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
+        const pwMap = serverPw || (localPw ? JSON.parse(localPw) : {});
+        if (Object.keys(pwMap).length > 0) {
             Object.keys(pwMap).forEach(u => {
                 if (accounts[u]) accounts[u].password = pwMap[u];
             });
+            // Sync to both storage locations
+            localStorage.setItem(this.CUSTOM_PASSWORDS_KEY, JSON.stringify(pwMap));
+            if (Store._data) {
+                Store._data.customPasswords = pwMap;
+            }
         }
 
         localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
@@ -230,12 +236,18 @@ const Auth = {
         return { success: true };
     },
 
-    // Persist custom password so it survives account regeneration
+    // Persist custom password so it survives account regeneration AND server sync
     _saveCustomPassword(username, password) {
         const raw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
         const pwMap = raw ? JSON.parse(raw) : {};
         pwMap[username] = password;
+        // Save to localStorage
         localStorage.setItem(this.CUSTOM_PASSWORDS_KEY, JSON.stringify(pwMap));
+        // Save to server-synced Store data
+        if (Store._data) {
+            Store._data.customPasswords = pwMap;
+            Store.save();
+        }
     },
 
     // ===== PASSWORD CHANGE UI =====
