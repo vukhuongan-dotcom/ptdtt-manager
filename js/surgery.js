@@ -133,6 +133,14 @@ const SurgeryPage = {
                         <span class="surgery-summary-count">${cnt}</span>
                     </div>`;
                 }).join('')}
+                ${[{key:'mo',label:'Mổ mở',color:'#e11d48'},{key:'noisoi',label:'Nội soi',color:'#16a34a'}].map(a => {
+                    const cnt = surgeries.filter(s => s.approachType === a.key).length;
+                    return `<div class="surgery-summary-chip">
+                        <span class="surgery-summary-dot" style="background:${a.color}"></span>
+                        <span class="surgery-summary-label">${a.label}</span>
+                        <span class="surgery-summary-count">${cnt}</span>
+                    </div>`;
+                }).join('')}
                 <div class="surgery-summary-chip surgery-summary-total">
                     <span class="surgery-summary-label"><strong>Tổng tuần</strong></span>
                     <span class="surgery-summary-count"><strong>${totalCases}</strong></span>

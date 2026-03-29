@@ -268,18 +268,20 @@
 }
 .surgery-summary-chips {
     display: flex;
-    gap: 16px;
+    gap: 14px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 .surgery-summary-chip {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.82rem;
+    gap: 5px;
+    font-size: 0.8rem;
 }
 .surgery-summary-dot {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     display: inline-block;
 }
@@ -287,10 +289,10 @@
 .surgery-summary-count {
     font-weight: 700;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 .surgery-summary-total {
-    padding-left: 16px;
+    padding-left: 14px;
     border-left: 2px solid var(--border);
 }
 
