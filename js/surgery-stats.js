@@ -151,6 +151,16 @@ const SurgeryStatsPage = {
             grandByType[t] = surgeries.filter(s => s.surgeryType === t).length;
         });
 
+        // Grand totals by approach
+        const APPROACH_TYPES = {
+            mo: { label: 'Mổ mở', color: '#e11d48' },
+            noisoi: { label: 'Nội soi', color: '#16a34a' },
+        };
+        const grandByApproach = {};
+        Object.keys(APPROACH_TYPES).forEach(a => {
+            grandByApproach[a] = surgeries.filter(s => s.approachType === a).length;
+        });
+
         return `
         <div class="page-header">
             <div>
@@ -191,6 +201,13 @@ const SurgeryStatsPage = {
                 const info = SURGERY_TYPES[t];
                 return `<div class="sstats-summary-card">
                     <div class="sstats-summary-value" style="color:${info.color}">${grandByType[t]}</div>
+                    <div class="sstats-summary-label">${info.label}</div>
+                </div>`;
+            }).join('')}
+            <div class="sstats-summary-divider"></div>
+            ${Object.entries(APPROACH_TYPES).map(([k, info]) => {
+                return `<div class="sstats-summary-card">
+                    <div class="sstats-summary-value" style="color:${info.color}">${grandByApproach[k]}</div>
                     <div class="sstats-summary-label">${info.label}</div>
                 </div>`;
             }).join('')}

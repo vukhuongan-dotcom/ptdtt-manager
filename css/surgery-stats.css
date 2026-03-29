@@ -75,30 +75,40 @@
 /* Summary cards */
 .sstats-summary-cards {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 24px;
+    align-items: stretch;
 }
 .sstats-summary-card {
     flex: 1;
+    min-width: 0;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
-    padding: 16px 20px;
+    padding: 12px 8px;
     text-align: center;
 }
 .sstats-summary-card.sstats-total {
     background: linear-gradient(135deg, var(--primary), #0e7490);
     border-color: transparent;
     color: white;
+    flex: 1.15;
+}
+.sstats-summary-divider {
+    width: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    align-self: stretch;
+    margin: 4px 4px;
 }
 .sstats-summary-value {
-    font-size: 1.6rem;
+    font-size: 1.35rem;
     font-weight: 800;
     line-height: 1.2;
 }
 .sstats-total .sstats-summary-value { color: white; }
 .sstats-summary-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
