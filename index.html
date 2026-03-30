@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khoa Phẫu thuật Đại trực tràng | Quản lý Khoa</title>
     <meta name="description" content="Hệ thống quản lý Khoa Phẫu thuật Đại trực tràng - Bệnh viện Bình Dân">
+    <meta name="theme-color" content="#0891b2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="img/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -145,5 +150,29 @@
     <script src="js/search.js?v=30032200"></script>
     <script src="js/onboarding.js?v=30032200"></script>
     <script src="js/app.js?v=30032200"></script>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;text-align:center;padding:8px 16px;font-size:0.82rem;font-weight:600;font-family:Inter,system-ui,sans-serif">
+        ⚠️ Đang offline — Dữ liệu có thể chưa cập nhật. Kiểm tra kết nối mạng.
+    </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+        // Offline/Online banner
+        function updateOnlineStatus() {
+            const banner = document.getElementById('offline-banner');
+            if (banner) banner.style.display = navigator.onLine ? 'none' : 'block';
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        window.addEventListener('load', updateOnlineStatus);
+    </script>
 </body>
 </html>
