@@ -19,6 +19,12 @@ const StaffPage = {
                 <h1 class="page-title">Nhân sự</h1>
                 <p class="page-subtitle">Quản lý nhân viên khoa Phẫu thuật Đại trực tràng</p>
             </div>
+            <div style="display:flex;gap:8px">
+                <button class="export-btn" onclick="StaffPage.exportExcel()" title="Xuất danh sách nhân sự">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    Xuất Excel
+                </button>
+            </div>
         </div>
 
         <div class="staff-subtabs">
@@ -553,5 +559,40 @@ const StaffPage = {
                 el.setSelectionRange(el.value.length, el.value.length);
             }
         }
+    },
+
+    exportExcel() {
+        if (typeof XLSX === 'undefined') {
+            Toast.error('Thư viện Excel chưa được tải. Vui lòng thử lại.');
+            return;
+        }
+        const wb = XLSX.utils.book_new();
+        const staff = Store.getAll('staff');
+        const external = Store.getAll('externalDoctors') || [];
+
+        // Sheet 1: Internal staff
+        const headers1 = ['STT', 'Họ tên', 'Chức danh', 'Vai trò', 'Cơ hữu', 'SĐT', 'Ghi chú'];
+        const data1 = [headers1];
+        staff.forEach((s, i) => {
+            data1.push([i+1, s.name, s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.note || '']);
+        });
+        const ws1 = XLSX.utils.aoa_to_sheet(data1);
+        ws1['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:22},{wch:8},{wch:14},{wch:20}];
+        XLSX.utils.book_append_sheet(wb, ws1, 'Nhân viên khoa');
+
+        // Sheet 2: External doctors
+        if (external.length > 0) {
+            const headers2 = ['STT', 'Họ tên', 'Chức danh', 'Vị trí', 'Khoa/Phòng', 'Ghi chú'];
+            const data2 = [headers2];
+            external.forEach((d, i) => {
+                data2.push([i+1, d.name, d.title, d.position || '', d.department || '', d.note || '']);
+            });
+            const ws2 = XLSX.utils.aoa_to_sheet(data2);
+            ws2['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:18},{wch:20},{wch:20}];
+            XLSX.utils.book_append_sheet(wb, ws2, 'BS ngoài khoa');
+        }
+
+        XLSX.writeFile(wb, 'DanhSach_NhanSu_KhoaPTDTT.xlsx');
+        Toast.success('Đã xuất danh sách nhân sự thành công!');
     }
 };

@@ -155,9 +155,33 @@ const DashboardPage = {
                                 <span style="flex:0 0 28px;text-align:right;font-size:0.88rem;font-weight:700;color:var(--text-primary)">${val}</span>
                             </div>`;
                         }).join('')}
-                    </div>
                 </div>
             </div>
+
+        <div class="trend-chart-card slide-up" style="animation-delay:0.22s">
+            <div class="trend-chart-header">
+                <div>
+                    <div class="trend-chart-title">📈 Xu hướng phẫu thuật 6 tháng</div>
+                    <div class="trend-chart-subtitle">Số ca PT theo tháng — phân loại theo loại phẫu thuật</div>
+                </div>
+            </div>
+            <div class="trend-chart-container" id="trend-chart-wrap">
+                <canvas id="trend-chart"></canvas>
+                <div class="trend-chart-tooltip" id="trend-tooltip"></div>
+            </div>
+            <div class="trend-chart-legend">
+                ${Object.entries(SURGERY_TYPES).map(([k,t]) => `
+                    <div class="trend-legend-item">
+                        <div class="trend-legend-dot" style="background:${t.color}"></div>
+                        ${t.label}
+                    </div>
+                `).join('')}
+                <div class="trend-legend-item">
+                    <div class="trend-legend-dot" style="background:var(--text-primary)"></div>
+                    Tổng
+                </div>
+            </div>
+        </div>
 
         <div class="duty-grid">
                 <div class="widget-card slide-up" style="animation-delay:0.25s">
@@ -223,6 +247,9 @@ const DashboardPage = {
         updateClock();
         this._clockInterval = setInterval(updateClock, 1000);
 
+        // Render trend chart
+        setTimeout(() => this.renderTrendChart(), 50);
+
         // Listen for EMR data updates to re-render dashboard
         if (!this._emrListener) {
             this._emrListener = () => {
@@ -232,57 +259,126 @@ const DashboardPage = {
         }
     },
 
-    renderChart() {
-        const canvas = document.getElementById('surgeryChart');
+    renderChart() { /* legacy - replaced by renderTrendChart */ },
+
+    // Get surgery data grouped by last 6 months
+    getMonthlyTrendData() {
+        const all = SurgeryPage.getAllSurgeries();
+        const types = Object.keys(SURGERY_TYPES);
+        const now = new Date();
+        const months = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const start = new Date(d.getFullYear(), d.getMonth(), 1);
+            const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+            const label = `T${d.getMonth()+1}/${d.getFullYear()}`;
+            const shortLabel = `T${d.getMonth()+1}`;
+            const monthSurgeries = all.filter(s => {
+                const sd = new Date(s.date);
+                return sd >= start && sd <= end;
+            });
+            const byType = {};
+            types.forEach(t => { byType[t] = monthSurgeries.filter(s => s.surgeryType === t).length; });
+            months.push({ label, shortLabel, total: monthSurgeries.length, byType });
+        }
+        return months;
+    },
+
+    renderTrendChart() {
+        const canvas = document.getElementById('trend-chart');
         if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const w = canvas.parentElement.clientWidth;
-        const h = canvas.parentElement.clientHeight;
-        canvas.width = w * 2; canvas.height = h * 2;
+        const wrap = document.getElementById('trend-chart-wrap');
+        const w = wrap.clientWidth;
+        const h = wrap.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = w * dpr; canvas.height = h * dpr;
         canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-        ctx.scale(2, 2);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
 
-        const data = MONTHLY_SURGERIES;
-        const max = Math.max(...data) + 5;
-        const barW = (w - 80) / data.length;
-        const chartH = h - 50;
+        const data = this.getMonthlyTrendData();
+        const types = Object.keys(SURGERY_TYPES);
+        const pad = { top: 20, right: 20, bottom: 35, left: 42 };
+        const cW = w - pad.left - pad.right;
+        const cH = h - pad.top - pad.bottom;
 
-        // Grid lines
-        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-        ctx.lineWidth = 1;
+        const allV = data.map(m => m.total);
+        types.forEach(t => data.forEach(m => allV.push(m.byType[t])));
+        const nMax = Math.ceil(Math.max(...allV, 5) / 5) * 5;
+
+        const yOf = v => pad.top + cH - (v / nMax) * cH;
+        const xOf = i => pad.left + (i / Math.max(data.length - 1, 1)) * cW;
+
+        // Grid
+        ctx.strokeStyle = 'rgba(148,163,184,0.15)'; ctx.lineWidth = 1;
+        ctx.font = '11px Inter, system-ui'; ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8';
         for (let i = 0; i <= 4; i++) {
-            const y = 20 + (chartH / 4) * i;
-            ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w - 20, y); ctx.stroke();
-            ctx.fillStyle = '#64748b'; ctx.font = '11px Inter'; ctx.textAlign = 'right';
-            ctx.fillText(Math.round(max - (max/4)*i), 35, y + 4);
+            const val = Math.round((nMax / 4) * i);
+            const y = yOf(val);
+            ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+            ctx.fillText(val, pad.left - 8, y + 4);
+        }
+        // X labels
+        ctx.textAlign = 'center'; ctx.fillStyle = '#94a3b8';
+        data.forEach((m, i) => { ctx.fillText(m.shortLabel, xOf(i), h - 8); });
+
+        // Draw smooth bezier line
+        const drawLine = (values, color, lw) => {
+            if (values.every(v => v === 0)) return;
+            ctx.strokeStyle = color; ctx.lineWidth = lw;
+            ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash([]);
+            ctx.beginPath();
+            values.forEach((v, i) => {
+                const x = xOf(i), y = yOf(v);
+                if (i === 0) ctx.moveTo(x, y);
+                else { const cpX = (xOf(i-1) + x) / 2; ctx.bezierCurveTo(cpX, yOf(values[i-1]), cpX, y, x, y); }
+            });
+            ctx.stroke();
+            // Dots
+            values.forEach((v, i) => {
+                ctx.beginPath(); ctx.arc(xOf(i), yOf(v), 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff'; ctx.fill();
+                ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+            });
+        };
+
+        // Area fill for total
+        const totalVals = data.map(m => m.total);
+        if (totalVals.some(v => v > 0)) {
+            ctx.beginPath();
+            totalVals.forEach((v, i) => {
+                if (i === 0) ctx.moveTo(xOf(i), yOf(v));
+                else { const cpX = (xOf(i-1)+xOf(i))/2; ctx.bezierCurveTo(cpX, yOf(totalVals[i-1]), cpX, yOf(v), xOf(i), yOf(v)); }
+            });
+            ctx.lineTo(xOf(data.length-1), yOf(0)); ctx.lineTo(xOf(0), yOf(0)); ctx.closePath();
+            const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+            grad.addColorStop(0, 'rgba(15,23,42,0.08)'); grad.addColorStop(1, 'rgba(15,23,42,0)');
+            ctx.fillStyle = grad; ctx.fill();
         }
 
-        // Bars
-        data.forEach((val, i) => {
-            const barH = (val / max) * chartH;
-            const x = 50 + i * barW;
-            const y = 20 + chartH - barH;
+        // Lines per type + total
+        types.forEach(t => drawLine(data.map(m => m.byType[t]), SURGERY_TYPES[t].color, 2));
+        drawLine(totalVals, '#0f172a', 2.5);
 
-            const gradient = ctx.createLinearGradient(x, y, x, y + barH);
-            gradient.addColorStop(0, '#06b6d4');
-            gradient.addColorStop(1, '#8b5cf6');
-            ctx.fillStyle = gradient;
-
-            const r = 4;
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.lineTo(x + barW - 12 - r, y);
-            ctx.quadraticCurveTo(x + barW - 12, y, x + barW - 12, y + r);
-            ctx.lineTo(x + barW - 12, y + barH);
-            ctx.lineTo(x, y + barH);
-            ctx.lineTo(x, y + r);
-            ctx.quadraticCurveTo(x, y, x + r, y);
-            ctx.fill();
-
-            // Label
-            ctx.fillStyle = '#64748b'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
-            ctx.fillText(MONTH_LABELS[i], x + (barW - 12) / 2, 20 + chartH + 18);
-        });
+        // Tooltip on hover
+        canvas.onmousemove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const tooltip = document.getElementById('trend-tooltip');
+            if (!tooltip) return;
+            let closest = -1, minD = Infinity;
+            data.forEach((_, i) => { const d = Math.abs(mx - xOf(i)); if (d < minD) { minD = d; closest = i; } });
+            if (closest >= 0 && minD < cW / data.length) {
+                const m = data[closest];
+                tooltip.innerHTML = `<div class="trend-tooltip-title">${m.label}</div>` +
+                    types.map(t => `<div class="trend-tooltip-row"><span class="trend-tooltip-label"><span class="trend-legend-dot" style="background:${SURGERY_TYPES[t].color};width:7px;height:7px"></span> ${SURGERY_TYPES[t].label}</span><strong>${m.byType[t]}</strong></div>`).join('') +
+                    `<div class="trend-tooltip-row" style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px"><strong>Tổng</strong><strong>${m.total}</strong></div>`;
+                tooltip.classList.add('visible');
+                tooltip.style.left = (xOf(closest) > w/2 ? xOf(closest)-150 : xOf(closest)+15) + 'px';
+                tooltip.style.top = '10px';
+            } else { tooltip.classList.remove('visible'); }
+        };
+        canvas.onmouseleave = () => { const t = document.getElementById('trend-tooltip'); if (t) t.classList.remove('visible'); };
     },
 
     getTodayDutyByGroup(allStaff, todayStr, group) {
