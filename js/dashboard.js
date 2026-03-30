@@ -50,8 +50,11 @@ const DashboardPage = {
                 <h1 class="page-title">Tổng quan</h1>
                 <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
             </div>
-            <div class="flex items-center gap-12">
-                <span style="color:var(--text-primary); font-size:16px; font-weight:600">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})}</span>
+            <div class="flex items-center gap-12" style="text-align:right">
+                <div>
+                    <div style="color:var(--text-primary); font-size:16px; font-weight:600">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})}</div>
+                    <div id="live-clock" style="font-size:22px; font-weight:700; color:var(--primary); font-variant-numeric:tabular-nums; letter-spacing:1px; margin-top:2px"></div>
+                </div>
             </div>
         </div>
 
@@ -208,6 +211,18 @@ const DashboardPage = {
     },
 
     afterRender() {
+        // Live clock
+        if (this._clockInterval) clearInterval(this._clockInterval);
+        const updateClock = () => {
+            const el = document.getElementById('live-clock');
+            if (el) {
+                const now = new Date();
+                el.textContent = now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+            }
+        };
+        updateClock();
+        this._clockInterval = setInterval(updateClock, 1000);
+
         // Listen for EMR data updates to re-render dashboard
         if (!this._emrListener) {
             this._emrListener = () => {
