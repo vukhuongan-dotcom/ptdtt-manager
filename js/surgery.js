@@ -441,7 +441,7 @@ const SurgeryPage = {
         const surgeryType = f.get('surgeryType');
         const approachType = surgeryType === 'robot' ? 'robot' : f.get('approachType');
         if (!approachType) {
-            alert('Vui lòng chọn Mổ mở / Nội soi / Robot');
+            Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
             return;
         }
         const data = {
@@ -472,16 +472,25 @@ const SurgeryPage = {
         App.renderCurrentPage();
     },
 
-    deleteSurgery(id) {
+    async deleteSurgery(id) {
         if (!canEditSurgery()) return;
         const all = this.getAllSurgeries();
         const s = all.find(x => x.id === id);
         if (!s) return;
-        if (!confirm(`Xác nhận xoá ca mổ của BN "${s.patientName}"?`)) return;
+        const confirmed = await Confirm.show({
+            title: 'Xóa ca mổ',
+            message: `Bạn có chắc chắn muốn xóa ca mổ của BN <strong>${s.patientName}</strong>?<br>Hành động này không thể hoàn tác.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xóa ca mổ',
+            cancelText: 'Giữ lại'
+        });
+        if (!confirmed) return;
         Store._deletedIds.add(id);
         this.saveSurgeries(all.filter(x => x.id !== id));
         if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
+        Toast.success(`Đã xóa ca mổ của BN ${s.patientName}`);
     },
 
     // Auto-select approach when surgery type changes
@@ -654,7 +663,7 @@ const SurgeryPage = {
             }, 'image/jpeg', 0.95);
         }).catch(err => {
             console.error('Export failed:', err);
-            alert('Không thể xuất ảnh. Vui lòng thử lại.');
+            Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
             document.body.removeChild(container);
         });
     }

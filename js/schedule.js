@@ -290,13 +290,7 @@ const SchedulePage = {
         }
 
         // Show saved feedback
-        const btn = document.querySelector('.page-header .btn-primary');
-        if (btn) {
-            const orig = btn.innerHTML;
-            btn.innerHTML = '✓ Đã lưu!';
-            btn.style.background = 'var(--success)';
-            setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1500);
-        }
+        Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
     },
 
     prevWeek() { this.weekOffset--; App.renderCurrentPage(); },
@@ -441,7 +435,7 @@ const SchedulePage = {
 
     copyFromPrevWeek() {
         if (!this.canEditSchedule()) {
-            alert('Bạn không có quyền chỉnh sửa lịch phân công.');
+            Toast.warning('Bạn không có quyền chỉnh sửa lịch phân công.');
             return;
         }
 
@@ -453,7 +447,7 @@ const SchedulePage = {
         if (!prevSchedule || !prevSchedule.positions) {
             const prevStart = prevDates[0].toLocaleDateString('vi-VN');
             const prevEnd = prevDates[6].toLocaleDateString('vi-VN');
-            alert(`Không có dữ liệu lịch tuần trước (${prevStart} – ${prevEnd}) để sao chép.`);
+            Toast.warning(`Không có dữ liệu lịch tuần trước (${prevStart} – ${prevEnd}) để sao chép.`);
             return;
         }
 
@@ -684,7 +678,7 @@ const SchedulePage = {
         } catch (err) {
             console.error('Export error:', err);
             window.alert = origAlert;
-            alert('Lỗi khi xuất ảnh. Vui lòng thử lại.');
+            Toast.error('Lỗi khi xuất ảnh. Vui lòng thử lại.');
         } finally {
             window.confirm = origConfirm;
             window.alert = origAlert;

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <defs>
+    <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#388E3C"/>
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#0277BD"/>
+      <stop offset="40%" stop-color="#0288D1"/>
+      <stop offset="100%" stop-color="#4FC3F7"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E7D32"/>
+      <stop offset="50%" stop-color="#43A047"/>
+      <stop offset="100%" stop-color="#81C784"/>
+    </linearGradient>
+    <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E7D32"/>
+      <stop offset="100%" stop-color="#43A047"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer green arc (open at bottom-left, ~280 degrees) -->
+  <path d="M58,185 A95,95 0 1,1 42,155" 
+        fill="none" stroke="url(#arcGrad)" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Blue shape - stylized head/cloud profile facing right -->
+  <path d="M95,60 
+           C80,62 68,72 65,85
+           C62,98 65,112 72,122
+           C78,130 82,136 80,145
+           C78,155 82,162 90,168
+           L105,155
+           C100,148 98,140 100,130
+           C102,122 108,115 108,105
+           C108,95 102,88 100,80
+           C98,72 96,65 95,60Z" 
+        fill="url(#blueGrad)"/>
+  
+  <!-- Blue cloud bumps at top -->
+  <path d="M95,60
+           C88,55 82,58 80,65
+           C75,60 68,62 67,70
+           C62,68 58,73 60,80
+           C56,80 55,88 62,92
+           C65,85 65,78 68,73
+           C70,68 75,65 80,65
+           C82,62 88,58 95,60Z"
+        fill="url(#blueGrad)"/>
+
+  <!-- Green leaf shape (right side) -->
+  <path d="M118,52
+           C135,55 155,70 165,90
+           C175,110 172,135 162,155
+           C155,168 142,178 130,182
+           L120,172
+           C130,165 140,152 145,138
+           C152,120 150,100 140,85
+           C133,74 125,65 118,52Z"
+        fill="url(#greenGrad)"/>
+
+  <!-- Leaf stem curving down -->
+  <path d="M130,182 C122,190 110,195 100,192 C92,190 88,184 90,168"
+        fill="none" stroke="url(#stemGrad)" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- White starburst/sun between leaves -->
+  <g transform="translate(108,108)">
+    <!-- Central star shape -->
+    <polygon points="0,-18 5,-7 17,-10 9,0 17,10 5,7 0,18 -5,7 -17,10 -9,0 -17,-10 -5,-7" 
+             fill="white" opacity="0.95"/>
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="5" fill="white"/>
+  </g>
+
+  <!-- White medical cross on green leaf -->
+  <g transform="translate(148,110)">
+    <rect x="-5" y="-14" width="10" height="28" rx="2" fill="white"/>
+    <rect x="-14" y="-5" width="28" height="10" rx="2" fill="white"/>
+  </g>
+
+  <!-- Small green circle with white cross at top-right -->
+  <circle cx="145" cy="52" r="10" fill="#43A047"/>
+  <rect x="142" y="45" width="6" height="14" rx="1" fill="white"/>
+  <rect x="138" y="49" width="14" height="6" rx="1" fill="white"/>
+</svg>

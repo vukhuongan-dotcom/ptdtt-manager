@@ -319,7 +319,7 @@ const Auth = {
         const result = this.changePassword(current, newPw);
         if (result.success) {
             Modal.close();
-            alert('Đổi mật khẩu thành công!');
+            Toast.success('Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại trên các thiết bị khác.', 'Đổi mật khẩu thành công');
         } else {
             errEl.textContent = result.error;
         }
@@ -379,7 +379,7 @@ const Auth = {
         const newPw = document.getElementById('reset-pw-new').value;
         const result = this.changeUserPassword(username, newPw);
         if (result.success) {
-            alert(`Đã đổi mật khẩu thành công cho ${username}!`);
+            Toast.success(`Đã đổi mật khẩu thành công cho ${username}!`);
             this.openManagePasswords();
         } else {
             document.getElementById('reset-pw-error').textContent = result.error;

@@ -118,3 +118,147 @@ const Modal = {
         document.getElementById('modal-overlay').classList.remove('active');
     }
 };
+
+// ===== TOAST NOTIFICATIONS =====
+const Toast = {
+    _container: null,
+    _queue: [],
+
+    _getContainer() {
+        if (!this._container) {
+            this._container = document.createElement('div');
+            this._container.className = 'toast-container';
+            this._container.id = 'toast-container';
+            document.body.appendChild(this._container);
+        }
+        return this._container;
+    },
+
+    _icons: {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    },
+
+    _titles: {
+        success: 'Thành công',
+        error: 'Lỗi',
+        warning: 'Cảnh báo',
+        info: 'Thông tin'
+    },
+
+    show(message, type = 'info', duration = 4000, title = null) {
+        const container = this._getContainer();
+        const toast = document.createElement('div');
+        toast.className = `toast toast--${type}`;
+        toast.style.position = 'relative';
+
+        const displayTitle = title || this._titles[type];
+
+        toast.innerHTML = `
+            <div class="toast-icon">${this._icons[type]}</div>
+            <div class="toast-body">
+                <div class="toast-title">${displayTitle}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
+            <div class="toast-progress">
+                <div class="toast-progress-bar" style="animation-duration:${duration}ms"></div>
+            </div>
+        `;
+
+        container.appendChild(toast);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+
+        // Auto remove
+        const timer = setTimeout(() => {
+            toast.classList.remove('show');
+            toast.classList.add('hide');
+            setTimeout(() => toast.remove(), 400);
+        }, duration);
+
+        // Clear timer if manually closed
+        toast.querySelector('.toast-close').addEventListener('click', () => {
+            clearTimeout(timer);
+        });
+
+        return toast;
+    },
+
+    success(message, title) { return this.show(message, 'success', 3500, title); },
+    error(message, title) { return this.show(message, 'error', 5000, title); },
+    warning(message, title) { return this.show(message, 'warning', 4500, title); },
+    info(message, title) { return this.show(message, 'info', 4000, title); }
+};
+
+// ===== CONFIRM DIALOG =====
+const Confirm = {
+    show({ title = 'Xác nhận', message = '', icon = '⚠', type = 'danger', confirmText = 'Xác nhận', cancelText = 'Hủy' } = {}) {
+        return new Promise((resolve) => {
+            // Remove existing overlay if any
+            const existing = document.getElementById('confirm-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.id = 'confirm-overlay';
+
+            const iconClass = type === 'danger' ? 'confirm-icon--danger' :
+                              type === 'warning' ? 'confirm-icon--warning' : 'confirm-icon--info';
+            const btnClass = type === 'danger' ? 'confirm-btn-danger' : 'confirm-btn-primary';
+
+            overlay.innerHTML = `
+                <div class="confirm-dialog">
+                    <div class="confirm-icon ${iconClass}">${icon}</div>
+                    <div class="confirm-title">${title}</div>
+                    <div class="confirm-message">${message}</div>
+                    <div class="confirm-actions">
+                        <button class="btn confirm-btn-cancel" id="confirm-cancel">${cancelText}</button>
+                        <button class="btn ${btnClass}" id="confirm-ok">${confirmText}</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            // Trigger animation
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            const cleanup = (result) => {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 250);
+                resolve(result);
+            };
+
+            overlay.querySelector('#confirm-cancel').addEventListener('click', () => cleanup(false));
+            overlay.querySelector('#confirm-ok').addEventListener('click', () => cleanup(true));
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) cleanup(false);
+            });
+
+            // Keyboard support
+            const keyHandler = (e) => {
+                if (e.key === 'Escape') { cleanup(false); document.removeEventListener('keydown', keyHandler); }
+                if (e.key === 'Enter') { cleanup(true); document.removeEventListener('keydown', keyHandler); }
+            };
+            document.addEventListener('keydown', keyHandler);
+        });
+    },
+
+    // Shorthand for delete confirmations
+    async delete(itemName) {
+        return this.show({
+            title: 'Xác nhận xóa',
+            message: `Bạn có chắc chắn muốn xóa <strong>${itemName}</strong>?<br>Hành động này không thể hoàn tác.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xóa',
+            cancelText: 'Giữ lại'
+        });
+    }
+};

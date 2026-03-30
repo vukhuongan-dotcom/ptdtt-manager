@@ -403,23 +403,28 @@ const StaffPage = {
             Modal.close();
             App.renderCurrentPage();
             // Show account info
-            setTimeout(() => {
-                alert(`Đã tạo nhân sự mới!\n\nTài khoản: ${cred.username}\nMật khẩu: ${cred.password}`);
-            }, 300);
+            Toast.success(`Tài khoản: <strong>${cred.username}</strong><br>Mật khẩu: <strong>${cred.password}</strong>`, 'Đã tạo nhân sự mới');
         }
     },
 
-    delete(id) {
+    async delete(id) {
         if (!Auth.getSession()?.isAdmin) return;
         const s = Store.getById('staff', id);
         if (!s) return;
-        if (confirm(`Xác nhận xoá nhân sự "${s.name}"?\nTài khoản đăng nhập sẽ bị vô hiệu hoá.`)) {
-            // Remove from store
+        const confirmed = await Confirm.show({
+            title: 'Xóa nhân sự',
+            message: `Bạn có chắc chắn muốn xóa <strong>${s.name}</strong>?<br>Tài khoản đăng nhập sẽ bị vô hiệu hoá.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xóa',
+            cancelText: 'Giữ lại'
+        });
+        if (confirmed) {
             Store.remove('staff', id);
-            // Disable account (remove from accounts list)
             Auth.removeAccount(id);
             Modal.close();
             App.renderCurrentPage();
+            Toast.success(`Đã xóa nhân sự ${s.name}`);
         }
     },
 
@@ -522,14 +527,16 @@ const StaffPage = {
         App.renderCurrentPage();
     },
 
-    deleteExternal(id) {
+    async deleteExternal(id) {
         if (!Auth.getSession()?.isAdmin) return;
         const docs = Store.getAll('externalDoctors') || [];
         const d = docs.find(x => x.id === id);
         if (!d) return;
-        if (confirm(`Xác nhận xoá BS ngoài khoa "${d.name}"?`)) {
+        const confirmed = await Confirm.delete(d.name);
+        if (confirmed) {
             Store.remove('externalDoctors', id);
             App.renderCurrentPage();
+            Toast.success(`Đã xóa BS ngoài khoa ${d.name}`);
         }
     },
 

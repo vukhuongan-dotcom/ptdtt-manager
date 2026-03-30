@@ -157,15 +157,36 @@ const App = {
         if (!pageModule) return;
 
         const mainContent = document.getElementById('main-content');
-        mainContent.innerHTML = pageModule.render();
 
-        // Run post-render hooks
-        if (pageModule.afterRender) {
-            requestAnimationFrame(() => pageModule.afterRender());
-        }
+        // Show loading briefly for visual feedback
+        mainContent.style.opacity = '0';
+        mainContent.style.transform = 'translateY(8px)';
 
-        // Update notification bell badge
-        Notifications.updateBell();
+        requestAnimationFrame(() => {
+            mainContent.innerHTML = pageModule.render();
+
+            // Add data freshness timestamp
+            const timestamp = document.createElement('div');
+            timestamp.className = 'data-timestamp';
+            timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
+            timestamp.style.cssText = 'text-align:right;padding:12px 0 4px;font-size:0.75rem;color:var(--text-muted);opacity:0.6;';
+            mainContent.appendChild(timestamp);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                mainContent.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                mainContent.style.opacity = '1';
+                mainContent.style.transform = 'translateY(0)';
+            });
+
+            // Run post-render hooks
+            if (pageModule.afterRender) {
+                requestAnimationFrame(() => pageModule.afterRender());
+            }
+
+            // Update notification bell badge
+            Notifications.updateBell();
+        });
     },
 
     // Helper: check if current user is admin
