@@ -377,11 +377,9 @@ const LoginPage = {
             <div class="login-card">
                 <div class="login-logo">
                     <div class="login-logo-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                        </svg>
+                        <img src="img/logo-khoa.jpg" alt="Logo">
                     </div>
-                    <h1>Khoa PT Đại trực tràng</h1>
+                    <h1>Khoa Phẫu thuật Đại trực tràng</h1>
                     <p>Bệnh viện Bình Dân — Đăng nhập hệ thống</p>
                 </div>
 
@@ -401,7 +399,7 @@ const LoginPage = {
 
 
                 <div class="login-footer">
-                    © 2026 Khoa Phẫu thuật Đại trực tràng · BV Bình Dân
+                    © 2026 Khoa Phẫu thuật Đại trực tràng · Bệnh viện Bình Dân
                 </div>
             </div>
         </div>

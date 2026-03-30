@@ -542,7 +542,7 @@ const SchedulePage = {
             <div id="capture" style="padding:28px;width:1120px;background:#fff">
                 <div style="text-align:center;margin-bottom:18px">
                     <h2 style="font-size:20px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
-                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
+                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
                     <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
                 </div>
                 <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -558,7 +558,7 @@ const SchedulePage = {
                         <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:11px;color:#64748b"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
                     </tbody>
                 </table>
-                <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
+                <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa Phẫu thuật Đại trực tràng — ${new Date().toLocaleDateString('vi-VN')}</p>
             </div></body></html>`;
 
             // Render in isolated iframe (prevents interaction with live DOM)
@@ -650,7 +650,7 @@ const SchedulePage = {
                 <div id="capture" style="padding:28px;width:800px;background:#fff">
                     <div style="text-align:center;margin-bottom:18px">
                         <h2 style="font-size:20px;color:#1e293b">🤖 LỊCH PHỤ MỔ ROBOT</h2>
-                        <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — BV Bình Dân</p>
+                        <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
                         <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
                     </div>
                     <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -663,7 +663,7 @@ const SchedulePage = {
                         </tr></thead>
                         <tbody>${robotRows}</tbody>
                     </table>
-                    <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa PT ĐTT — ${new Date().toLocaleDateString('vi-VN')}</p>
+                    <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa Phẫu thuật Đại trực tràng — ${new Date().toLocaleDateString('vi-VN')}</p>
                 </div></body></html>`;
 
                 const iframe2 = document.createElement('iframe');
