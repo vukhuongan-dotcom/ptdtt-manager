@@ -250,14 +250,14 @@
 .sidebar-bell-area {
     display: flex;
     align-items: center;
-    padding: 8px 16px;
-    border-top: 1px solid var(--border);
+    padding: 6px 12px;
+    margin-bottom: 4px;
 }
 .sidebar-bell-area .notif-bell-btn {
-    margin-right: 8px;
+    margin-right: 6px;
 }
 .sidebar-bell-area .notif-bell-label {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: var(--text-secondary);
     font-weight: 500;
 }
