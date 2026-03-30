@@ -87,7 +87,7 @@ const Auth = {
             .replace(/đ/g, 'd').replace(/Đ/g, 'D');
     },
 
-    // Get all accounts
+    // Get all accounts — always re-apply latest customPasswords from server-synced Store
     getAccounts() {
         const saved = localStorage.getItem(this.ACCOUNTS_KEY);
         const accounts = saved ? JSON.parse(saved) : this.generateAccounts();
@@ -98,8 +98,26 @@ const Auth = {
                 name: 'Khách', role: 'Khách tham quan', title: '',
                 isAdmin: false, color: '#94a3b8'
             };
-            localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
         }
+
+        // Always re-apply latest customPasswords from server-synced data
+        // This ensures password changes from other devices take effect immediately
+        const serverPw = (Store._data && Store._data.customPasswords) ? Store._data.customPasswords : null;
+        const localPw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
+        const pwMap = serverPw || (localPw ? JSON.parse(localPw) : null);
+        if (pwMap) {
+            let changed = false;
+            Object.keys(pwMap).forEach(u => {
+                if (accounts[u] && accounts[u].password !== pwMap[u]) {
+                    accounts[u].password = pwMap[u];
+                    changed = true;
+                }
+            });
+            if (changed) {
+                localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+            }
+        }
+
         return accounts;
     },
 
