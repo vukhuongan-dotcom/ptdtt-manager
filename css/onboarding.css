@@ -1,0 +1,115 @@
+/* ===== ONBOARDING TOUR ===== */
+.onboarding-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 10000;
+    pointer-events: none;
+}
+.onboarding-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(15,23,42,0.6);
+    pointer-events: auto;
+    z-index: 10001;
+}
+.onboarding-spotlight {
+    position: fixed;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(15,23,42,0.6);
+    z-index: 10002;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+.onboarding-tooltip {
+    position: fixed;
+    width: 340px;
+    max-width: 90vw;
+    background: var(--bg-secondary);
+    border-radius: 14px;
+    padding: 20px;
+    z-index: 10003;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    pointer-events: auto;
+    animation: onb-fade 0.3s ease;
+}
+@keyframes onb-fade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.onb-step-icon {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+}
+.onb-step-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+.onb-step-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+.onb-step-counter {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+.onb-progress {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+.onb-progress-dot {
+    width: 24px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.2s;
+}
+.onb-progress-dot.active {
+    background: var(--primary);
+}
+.onb-progress-dot.done {
+    background: #10b981;
+}
+.onb-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.onb-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+.onb-btn-skip {
+    background: transparent;
+    color: var(--text-muted);
+}
+.onb-btn-skip:hover { color: var(--text-primary); }
+.onb-btn-next {
+    background: var(--primary);
+    color: white;
+}
+.onb-btn-next:hover { filter: brightness(1.1); }
+.onb-btn-prev {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+.onb-btn-prev:hover { background: var(--border); }
+
+@media (max-width: 768px) {
+    .onboarding-tooltip { width: 280px; padding: 16px; }
+}

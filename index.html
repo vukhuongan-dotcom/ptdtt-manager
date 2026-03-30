@@ -27,6 +27,8 @@
     <link rel="stylesheet" href="css/staff-tracking.css?v=30032200">
     <link rel="stylesheet" href="css/toast.css?v=30032200">
     <link rel="stylesheet" href="css/charts.css?v=30032200">
+    <link rel="stylesheet" href="css/search.css?v=30032200">
+    <link rel="stylesheet" href="css/onboarding.css?v=30032200">
     <style>@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
 </head>
 <body>
@@ -53,6 +55,12 @@
                 </div>
             </div>
             <nav class="sidebar-nav">
+                <!-- Search button -->
+                <button class="sidebar-search-btn" onclick="GlobalSearch.open()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Tìm kiếm...
+                    <span class="search-shortcut">⌘K</span>
+                </button>
                 <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                     <span>Tổng quan</span>
@@ -134,6 +142,8 @@
     <script src="js/surgery-stats.js?v=30032200"></script>
     <script src="js/rooms.js?v=30032200"></script>
     <script src="js/notifications.js?v=30032200"></script>
+    <script src="js/search.js?v=30032200"></script>
+    <script src="js/onboarding.js?v=30032200"></script>
     <script src="js/app.js?v=30032200"></script>
 </body>
 </html>
