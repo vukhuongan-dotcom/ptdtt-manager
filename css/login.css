@@ -59,7 +59,7 @@
     object-fit: cover;
 }
 .login-logo h1 {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 700;
     text-align: center;
     background: var(--gradient-primary);
@@ -69,8 +69,9 @@
 }
 .login-logo p {
     color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-top: 4px;
+    font-size: 0.95rem;
+    margin-top: 6px;
+    font-weight: 500;
 }
 
 .login-form .form-group { margin-bottom: 20px; }
