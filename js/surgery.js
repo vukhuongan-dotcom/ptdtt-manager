@@ -133,7 +133,7 @@ const SurgeryPage = {
                         <span class="surgery-summary-count">${cnt}</span>
                     </div>`;
                 }).join('')}
-                ${[{key:'mo',label:'Mổ mở',color:'#e11d48'},{key:'noisoi',label:'Nội soi',color:'#16a34a'}].map(a => {
+                ${[{key:'mo',label:'Mổ mở',color:'#e11d48'},{key:'noisoi',label:'Nội soi',color:'#16a34a'},{key:'nsth',label:'NSTH',color:'#8b5cf6'}].map(a => {
                     const cnt = surgeries.filter(s => s.approachType === a.key).length;
                     return `<div class="surgery-summary-chip">
                         <span class="surgery-summary-dot" style="background:${a.color}"></span>
@@ -314,7 +314,7 @@ const SurgeryPage = {
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Đường mổ</div>
-                    <div class="surgery-detail-value">${({mo:'Mổ mở',noisoi:'Nội soi',robot:'Robot'})[s.approachType] || '—'}</div>
+                    <div class="surgery-detail-value">${({mo:'Mổ mở',noisoi:'Nội soi',nsth:'Nội soi tiêu hoá',robot:'Robot'})[s.approachType] || '—'}</div>
                 </div>
                 ${s.notes ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Ghi chú</div>
@@ -368,11 +368,12 @@ const SurgeryPage = {
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Mổ mở / Nội soi / Robot <span style="color:var(--danger)">*</span></label>
+                        <label class="form-label">Đường mổ <span style="color:var(--danger)">*</span></label>
                         <select class="form-select" name="approachType" id="surgery-approach" required ${(s?.surgeryType || 'chuongtrinh') === 'robot' ? 'disabled' : ''}>
                             <option value="">— Chọn —</option>
                             <option value="mo" ${s?.approachType === 'mo' ? 'selected' : ''}>Mổ mở</option>
                             <option value="noisoi" ${s?.approachType === 'noisoi' ? 'selected' : ''}>Nội soi</option>
+                            <option value="nsth" ${s?.approachType === 'nsth' ? 'selected' : ''}>Nội soi tiêu hoá</option>
                             <option value="robot" ${s?.approachType === 'robot' || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
                         </select>
                     </div>

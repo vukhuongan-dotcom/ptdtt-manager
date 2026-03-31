@@ -155,6 +155,7 @@ const SurgeryStatsPage = {
         const APPROACH_TYPES = {
             mo: { label: 'Mổ mở', color: '#e11d48' },
             noisoi: { label: 'Nội soi', color: '#16a34a' },
+            nsth: { label: 'NSTH', color: '#8b5cf6' },
         };
         const grandByApproach = {};
         Object.keys(APPROACH_TYPES).forEach(a => {
