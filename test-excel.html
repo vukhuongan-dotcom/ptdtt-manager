@@ -4,7 +4,9 @@
 body{font-family:system-ui;padding:20px;max-width:600px;margin:0 auto}
 button{display:block;width:100%;padding:15px;margin:10px 0;font-size:16px;cursor:pointer;border:2px solid #0891b2;background:#e0f7fa;border-radius:8px}
 button:active{background:#b2ebf2}
-#log{background:#f0f0f0;padding:15px;border-radius:8px;font-size:13px;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow:auto}
+.fix-btn{background:#dc2626;color:white;border-color:#991b1b;font-weight:bold;font-size:18px;padding:20px}
+.fix-btn:active{background:#b91c1c}
+#log{background:#f0f0f0;padding:15px;border-radius:8px;font-size:13px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow:auto}
 .status{font-size:18px;font-weight:bold;padding:10px;border-radius:8px;margin:10px 0}
 .ok{background:#d4edda;color:#155724}
 .err{background:#f8d7da;color:#721c24}
@@ -13,13 +15,14 @@ button:active{background:#b2ebf2}
 <body>
 <h2>🧪 Test Excel Export</h2>
 <div id="status" class="status">Đang tải SheetJS...</div>
-<div id="ua" style="font-size:11px;color:#666"></div>
 
+<button class="fix-btn" onclick="fixApp()">🔧 SỬA LỖI APP CHÍNH — Bấm đây rồi reload app</button>
+<p style="color:#dc2626;text-align:center;font-weight:bold">⬆️ Bấm nút đỏ trước, đợi 3 giây, rồi mở lại app chính</p>
+
+<hr>
 <button onclick="testBlob()">1️⃣ Blob + a.click()</button>
 <button onclick="testWriteFile()">2️⃣ XLSX.writeFile()</button>
 <button onclick="testBase64()">3️⃣ Base64 Data URI</button>
-<button onclick="testWindowOpen()">4️⃣ window.open (Blob)</button>
-<button onclick="testNavigator()">5️⃣ navigator.msSaveBlob</button>
 
 <h3>📋 Log:</h3>
 <pre id="log"></pre>
@@ -30,10 +33,26 @@ function log(msg) {
     var ts = new Date().toLocaleTimeString();
     logEl.textContent = '[' + ts + '] ' + msg + '\n' + logEl.textContent;
 }
-document.getElementById('ua').textContent = 'UA: ' + navigator.userAgent;
+
+function fixApp() {
+    log('🔧 Bắt đầu sửa lỗi...');
+    var p1 = navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); log('✅ Unregistered SW: ' + r.scope); });
+        if (regs.length === 0) log('⚠️ Không có SW nào để xóa');
+    });
+    var p2 = caches.keys().then(function(names) {
+        return Promise.all(names.map(function(n) { return caches.delete(n).then(function() { log('✅ Xóa cache: ' + n); }); }));
+    });
+    Promise.all([p1, p2]).then(function() {
+        log('🎉 HOÀN TẤT! Chuyển sang app chính sau 3 giây...');
+        setTimeout(function() {
+            window.location.href = 'https://khoaptdtt.info.vn/?cachebust=' + Date.now();
+        }, 3000);
+    });
+}
 </script>
 
-<script src="js/xlsx.full.min.js" onerror="log('❌ SheetJS FAILED to load!'); document.getElementById('status').className='status err'; document.getElementById('status').textContent='❌ SheetJS không tải được!'"></script>
+<script src="js/xlsx.full.min.js" onerror="log('❌ SheetJS FAILED to load!')"></script>
 
 <script>
 window.onload = function() {
@@ -45,20 +64,18 @@ window.onload = function() {
     } else {
         s.className = 'status err';
         s.textContent = '❌ SheetJS KHÔNG TẢI ĐƯỢC';
-        log('❌ XLSX undefined after page load');
+        log('❌ XLSX undefined');
     }
 };
 
 function makeWB() {
     var wb = XLSX.utils.book_new();
-    var data = [['STT','Tên','Số'],  [1,'Test A',10], [2,'Test B',20], ['','TỔNG',30]];
+    var data = [['STT','Ten','So'],  [1,'Test A',10], [2,'Test B',20], ['','TONG',30]];
     var ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:5},{wch:15},{wch:8}];
     XLSX.utils.book_append_sheet(wb, ws, 'Data');
     return wb;
 }
 
-// Method 1: Blob + a.click
 function testBlob() {
     log('--- Method 1: Blob + a.click ---');
     try {
@@ -66,21 +83,15 @@ function testBlob() {
         var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
         log('XLSX.write OK, bytes: ' + wbout.byteLength);
         var blob = new Blob([wbout], {type:'application/octet-stream'});
-        log('Blob size: ' + blob.size);
         var url = URL.createObjectURL(blob);
-        log('URL: ' + url.substring(0,50) + '...');
         var a = document.createElement('a');
-        a.href = url;
-        a.download = 'test_blob.xlsx';
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
+        a.href = url; a.download = 'test_blob.xlsx'; a.style.display = 'none';
+        document.body.appendChild(a); a.click();
         log('✅ a.click() done — kiểm tra Downloads');
         setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     } catch(e) { log('❌ Error: ' + e.message); }
 }
 
-// Method 2: XLSX.writeFile
 function testWriteFile() {
     log('--- Method 2: XLSX.writeFile ---');
     try {
@@ -90,65 +101,17 @@ function testWriteFile() {
     } catch(e) { log('❌ Error: ' + e.message); }
 }
 
-// Method 3: Base64 data URI
 function testBase64() {
-    log('--- Method 3: Base64 Data URI ---');
+    log('--- Method 3: Base64 ---');
     try {
         var wb = makeWB();
         var b64 = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
-        log('Base64 length: ' + b64.length);
         var a = document.createElement('a');
         a.href = 'data:application/octet-stream;base64,' + b64;
         a.download = 'test_base64.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        log('✅ Base64 click done — kiểm tra Downloads');
+        document.body.appendChild(a); a.click();
+        log('✅ Base64 click done');
         setTimeout(function(){ document.body.removeChild(a); }, 500);
-    } catch(e) { log('❌ Error: ' + e.message); }
-}
-
-// Method 4: window.open with blob URL
-function testWindowOpen() {
-    log('--- Method 4: window.open ---');
-    try {
-        var wb = makeWB();
-        var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-        var blob = new Blob([wbout], {type:'application/octet-stream'});
-        var url = URL.createObjectURL(blob);
-        log('Blob URL: ' + url.substring(0,50));
-        window.open(url, '_blank');
-        log('✅ window.open done');
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
-    } catch(e) { log('❌ Error: ' + e.message); }
-}
-
-// Method 5: msSaveBlob (IE/Edge legacy)
-function testNavigator() {
-    log('--- Method 5: navigator.msSaveBlob ---');
-    try {
-        if (navigator.msSaveBlob) {
-            var wb = makeWB();
-            var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-            var blob = new Blob([wbout], {type:'application/octet-stream'});
-            navigator.msSaveBlob(blob, 'test_mssave.xlsx');
-            log('✅ msSaveBlob done');
-        } else {
-            log('⚠️ msSaveBlob không khả dụng trên trình duyệt này');
-            log('Thử dùng FileSaver fallback...');
-            var wb = makeWB();
-            var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-            var blob = new Blob([wbout], {type:'application/octet-stream'});
-            // FileSaver.js polyfill approach
-            var reader = new FileReader();
-            reader.onloadend = function() {
-                var a = document.createElement('a');
-                a.href = reader.result;
-                a.download = 'test_filesaver.xlsx';
-                a.click();
-                log('✅ FileReader approach done');
-            };
-            reader.readAsDataURL(blob);
-        }
     } catch(e) { log('❌ Error: ' + e.message); }
 }
 </script>
