@@ -365,43 +365,55 @@ const SurgeryStatsPage = {
             Toast.error('Thư viện Excel chưa được tải. Vui lòng thử lại.');
             return;
         }
-        const allStats = this.computeDetailedStats();
-        const surgeries = this.getSurgeriesInRange();
-        const types = Object.keys(SURGERY_TYPES);
-        const periodLabel = this.getPeriodLabel();
-        const wb = XLSX.utils.book_new();
+        try {
+            const allStats = this.computeDetailedStats();
+            const surgeries = this.getSurgeriesInRange();
+            const types = Object.keys(SURGERY_TYPES);
+            const approaches = ['mo', 'noisoi', 'nsth'];
+            const approachLabels = { mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'NSTH' };
+            const periodLabel = this.getPeriodLabel();
+            const wb = XLSX.utils.book_new();
 
-        // Sheet 1: Summary by doctor
-        const summaryHeaders = ['STT', 'BS mổ chính', 'Chức vụ', ...types.map(t => SURGERY_TYPES[t].label), 'Tổng'];
-        const summaryData = [summaryHeaders];
-        allStats.forEach((d, i) => {
-            summaryData.push([i+1, d.doctor.name, d.doctor.role, ...types.map(t => d.byType[t]), d.total]);
-        });
-        // Footer totals
-        const grandByType = {};
-        types.forEach(t => { grandByType[t] = surgeries.filter(s => s.surgeryType === t).length; });
-        summaryData.push(['', 'TỔNG CỘNG', '', ...types.map(t => grandByType[t]), surgeries.length]);
+            // Sheet 1: Summary by doctor
+            const summaryHeaders = ['STT', 'BS mổ chính', 'Chức vụ', ...types.map(t => SURGERY_TYPES[t].label), ...approaches.map(a => approachLabels[a]), 'Tổng'];
+            const summaryData = [summaryHeaders];
+            allStats.forEach((d, i) => {
+                const approachCounts = approaches.map(a => d.cases.filter(s => s.approachType === a).length);
+                summaryData.push([i+1, d.doctor.name, d.doctor.role, ...types.map(t => d.byType[t]), ...approachCounts, d.total]);
+            });
+            // Footer totals
+            const grandByType = {};
+            types.forEach(t => { grandByType[t] = surgeries.filter(s => s.surgeryType === t).length; });
+            const grandByApproach = approaches.map(a => surgeries.filter(s => s.approachType === a).length);
+            summaryData.push(['', 'TỔNG CỘNG', '', ...types.map(t => grandByType[t]), ...grandByApproach, surgeries.length]);
 
-        const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
-        ws1['!cols'] = [{wch:5},{wch:25},{wch:20},...types.map(()=>({wch:12})),{wch:8}];
-        XLSX.utils.book_append_sheet(wb, ws1, 'Tổng hợp');
+            const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+            ws1['!cols'] = [{wch:5},{wch:25},{wch:20},...types.map(()=>({wch:12})),...approaches.map(()=>({wch:10})),{wch:8}];
+            XLSX.utils.book_append_sheet(wb, ws1, 'Tong hop');
 
-        // Sheet 2: Detail all surgeries
-        const detailHeaders = ['STT', 'Ngày mổ', 'Họ tên BN', 'Năm sinh', 'Chẩn đoán', 'PP phẫu thuật', 'Loại PT', 'BS mổ chính'];
-        const detailData = [detailHeaders];
-        const allDocs = this.getEligibleDoctors();
-        surgeries.sort((a,b) => a.date.localeCompare(b.date)).forEach((s, i) => {
-            const doc = allDocs.find(d => d.id === s.mainSurgeon);
-            const typeInfo = SURGERY_TYPES[s.surgeryType] || { label: s.surgeryType };
-            const dateObj = new Date(s.date);
-            const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
-            detailData.push([i+1, dateStr, s.patientName, s.birthYear||'', s.diagnosis||'', s.method||'', typeInfo.label, doc ? doc.name : '']);
-        });
-        const ws2 = XLSX.utils.aoa_to_sheet(detailData);
-        ws2['!cols'] = [{wch:5},{wch:12},{wch:22},{wch:10},{wch:30},{wch:35},{wch:14},{wch:22}];
-        XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết');
+            // Sheet 2: Detail all surgeries
+            const detailHeaders = ['STT', 'Ngày mổ', 'Họ tên BN', 'Năm sinh', 'Chẩn đoán', 'PP phẫu thuật', 'Loại PT', 'Đường mổ', 'BS mổ chính'];
+            const detailData = [detailHeaders];
+            const allDocs = this.getEligibleDoctors();
+            const approachMap = { mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' };
+            surgeries.sort((a,b) => a.date.localeCompare(b.date)).forEach((s, i) => {
+                const doc = allDocs.find(d => d.id === s.mainSurgeon);
+                const typeInfo = SURGERY_TYPES[s.surgeryType] || { label: s.surgeryType };
+                const dateObj = new Date(s.date);
+                const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
+                detailData.push([i+1, dateStr, s.patientName, s.birthYear||'', s.diagnosis||'', s.method||'', typeInfo.label, approachMap[s.approachType]||'', doc ? doc.name : '']);
+            });
+            const ws2 = XLSX.utils.aoa_to_sheet(detailData);
+            ws2['!cols'] = [{wch:5},{wch:12},{wch:22},{wch:10},{wch:30},{wch:35},{wch:14},{wch:16},{wch:22}];
+            XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiet');
 
-        XLSX.writeFile(wb, `ThongKe_PT_${periodLabel.replace(/[\s\/]/g,'_')}.xlsx`);
-        Toast.success('Đã xuất file Excel thành công!');
+            // Safe filename: remove special chars
+            const safeLabel = periodLabel.replace(/[—–\/\\:*?"<>|]/g, '-').replace(/\s+/g, '_');
+            XLSX.writeFile(wb, `ThongKe_PT_${safeLabel}.xlsx`);
+            Toast.success('Đã xuất file Excel thành công!');
+        } catch (e) {
+            console.error('Export Excel error:', e);
+            Toast.error('Lỗi xuất Excel: ' + e.message);
+        }
     }
 };

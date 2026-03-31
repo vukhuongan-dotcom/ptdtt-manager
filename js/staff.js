@@ -566,33 +566,38 @@ const StaffPage = {
             Toast.error('Thư viện Excel chưa được tải. Vui lòng thử lại.');
             return;
         }
-        const wb = XLSX.utils.book_new();
-        const staff = Store.getAll('staff');
-        const external = Store.getAll('externalDoctors') || [];
+        try {
+            const wb = XLSX.utils.book_new();
+            const staff = Store.getAll('staff');
+            const external = Store.getAll('externalDoctors') || [];
 
-        // Sheet 1: Internal staff
-        const headers1 = ['STT', 'Họ tên', 'Chức danh', 'Vai trò', 'Cơ hữu', 'SĐT', 'Ghi chú'];
-        const data1 = [headers1];
-        staff.forEach((s, i) => {
-            data1.push([i+1, s.name, s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.note || '']);
-        });
-        const ws1 = XLSX.utils.aoa_to_sheet(data1);
-        ws1['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:22},{wch:8},{wch:14},{wch:20}];
-        XLSX.utils.book_append_sheet(wb, ws1, 'Nhân viên khoa');
-
-        // Sheet 2: External doctors
-        if (external.length > 0) {
-            const headers2 = ['STT', 'Họ tên', 'Chức danh', 'Vị trí', 'Khoa/Phòng', 'Ghi chú'];
-            const data2 = [headers2];
-            external.forEach((d, i) => {
-                data2.push([i+1, d.name, d.title, d.position || '', d.department || '', d.note || '']);
+            // Sheet 1: Internal staff
+            const headers1 = ['STT', 'Họ tên', 'Chức danh', 'Vai trò', 'Cơ hữu', 'SĐT', 'Ghi chú'];
+            const data1 = [headers1];
+            staff.forEach((s, i) => {
+                data1.push([i+1, s.name, s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.note || '']);
             });
-            const ws2 = XLSX.utils.aoa_to_sheet(data2);
-            ws2['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:18},{wch:20},{wch:20}];
-            XLSX.utils.book_append_sheet(wb, ws2, 'BS ngoài khoa');
-        }
+            const ws1 = XLSX.utils.aoa_to_sheet(data1);
+            ws1['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:22},{wch:8},{wch:14},{wch:20}];
+            XLSX.utils.book_append_sheet(wb, ws1, 'Nhan vien khoa');
 
-        XLSX.writeFile(wb, 'DanhSach_NhanSu_KhoaPTDTT.xlsx');
-        Toast.success('Đã xuất danh sách nhân sự thành công!');
+            // Sheet 2: External doctors
+            if (external.length > 0) {
+                const headers2 = ['STT', 'Họ tên', 'Chức danh', 'Vị trí', 'Khoa/Phòng', 'Ghi chú'];
+                const data2 = [headers2];
+                external.forEach((d, i) => {
+                    data2.push([i+1, d.name, d.title, d.position || '', d.department || '', d.note || '']);
+                });
+                const ws2 = XLSX.utils.aoa_to_sheet(data2);
+                ws2['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:18},{wch:20},{wch:20}];
+                XLSX.utils.book_append_sheet(wb, ws2, 'BS ngoai khoa');
+            }
+
+            XLSX.writeFile(wb, 'DanhSach_NhanSu_KhoaPTDTT.xlsx');
+            Toast.success('Đã xuất danh sách nhân sự thành công!');
+        } catch (e) {
+            console.error('Export Excel error:', e);
+            Toast.error('Lỗi xuất Excel: ' + e.message);
+        }
     }
 };
