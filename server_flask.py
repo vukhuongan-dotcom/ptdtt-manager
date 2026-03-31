@@ -19,12 +19,18 @@ import urllib.error
 
 from flask import Flask, request, jsonify, send_from_directory, abort, Response
 import base64
+import jwt as pyjwt
+import bcrypt
+from functools import wraps
 
 # ────────────────────────────── Config ──────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR  = os.path.join(BASE_DIR, 'data')
 DATA_FILE = os.path.join(DATA_DIR, 'db.json')
 LOG_DIR   = os.path.join(BASE_DIR, 'logs')
+AUTH_FILE = os.path.join(DATA_DIR, 'auth.json')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'ptdtt-secret-key-' + str(uuid.uuid4())[:8])
+JWT_EXPIRY_DAYS = 30
 PORT      = int(os.environ.get('PORT', 5000))
 
 # EMR
@@ -213,6 +219,323 @@ def get_audit_logs():
     logs.sort(key=lambda x: x.get('ts', ''), reverse=True)
     return jsonify({'logs': logs, 'total': len(logs)})
 
+# ────────────────────────────── Auth Helpers ──────────────────────────────
+_auth_lock = threading.Lock()
+
+def _load_auth():
+    """Load auth data from auth.json"""
+    if not os.path.exists(AUTH_FILE):
+        return {'users': {}}
+    with _auth_lock:
+        with open(AUTH_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+def _save_auth(data):
+    """Save auth data to auth.json"""
+    _ensure_data_dir()
+    with _auth_lock:
+        tmp = AUTH_FILE + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, AUTH_FILE)
+
+def _hash_password(password):
+    """Hash a password with bcrypt"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def _check_password(password, hashed):
+    """Check a password against its bcrypt hash"""
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def _create_jwt(username, user_data):
+    """Create a JWT token for a user"""
+    payload = {
+        'sub': username,
+        'name': user_data.get('name', ''),
+        'role': user_data.get('role', ''),
+        'isAdmin': user_data.get('isAdmin', False),
+        'isSuperAdmin': user_data.get('isSuperAdmin', False),
+        'staffId': user_data.get('staffId', 0),
+        'exp': datetime.utcnow() + timedelta(days=JWT_EXPIRY_DAYS),
+        'iat': datetime.utcnow()
+    }
+    return pyjwt.encode(payload, JWT_SECRET, algorithm='HS256')
+
+def _verify_jwt(token):
+    """Verify and decode a JWT token"""
+    try:
+        return pyjwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+    except pyjwt.ExpiredSignatureError:
+        return None
+    except pyjwt.InvalidTokenError:
+        return None
+
+def _init_auth_from_db():
+    """Initialize auth.json from existing client-side accounts (one-time migration)"""
+    auth = _load_auth()
+    if auth.get('users') and len(auth['users']) > 0:
+        return  # Already initialized
+
+    # Read custom passwords from db.json
+    db_data = load_data()
+    custom_pw = db_data.get('customPasswords', {})
+    custom_admins = db_data.get('customAdmins', {})
+    disabled = db_data.get('disabledAccounts', [])
+
+    # Read staff to generate default accounts
+    staff = db_data.get('staff', [])
+    users = {}
+
+    for s in staff:
+        # Generate username same way as client-side Auth.generateUsername
+        name = s.get('name', '')
+        parts = name.split()
+        if len(parts) >= 2:
+            username = ''.join(p[0].lower() for p in parts[:-1]) + parts[-1].lower()
+            # Remove Vietnamese diacritics
+            import unicodedata
+            username = ''.join(
+                c for c in unicodedata.normalize('NFD', username)
+                if unicodedata.category(c) != 'Mn'
+            )
+            username = username.replace('đ', 'd').replace('Đ', 'D')
+        else:
+            username = name.lower()
+
+        # Default password = first letter of each word (lowercase, no diacritics) + last word
+        default_pw = username  # Simple: same as username for default
+        # Use custom password if set
+        password = custom_pw.get(username, default_pw)
+
+        is_admin = s.get('role', '').find('Trưởng khoa') >= 0 or \
+                   s.get('role', '').find('Phó trưởng khoa') >= 0 or \
+                   s.get('role', '') == 'Điều dưỡng trưởng'
+
+        # Apply custom admin status
+        if username in custom_admins:
+            is_admin = custom_admins[username]
+
+        users[username] = {
+            'passwordHash': _hash_password(password),
+            'name': s.get('name', ''),
+            'role': s.get('role', ''),
+            'title': s.get('title', ''),
+            'staffId': s.get('id', 0),
+            'isAdmin': is_admin,
+            'isSuperAdmin': username == 'vkan',
+            'disabled': s.get('id', 0) in disabled,
+            'color': s.get('color', '#6366f1')
+        }
+
+    # Add guest account
+    users['guest'] = {
+        'passwordHash': _hash_password('12345'),
+        'name': 'Khách',
+        'role': 'Khách tham quan',
+        'title': '',
+        'staffId': 0,
+        'isAdmin': False,
+        'isSuperAdmin': False,
+        'disabled': False,
+        'color': '#94a3b8'
+    }
+
+    auth['users'] = users
+    auth['_initialized'] = datetime.now().isoformat()
+    _save_auth(auth)
+    print(f'[Auth] ✅ Initialized {len(users)} accounts from db.json')
+
+# ────────────────────────────── Auth API ──────────────────────────────
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    """Authenticate user, return JWT token"""
+    body = request.get_json(force=True)
+    username = body.get('username', '').strip().lower()
+    password = body.get('password', '')
+
+    auth = _load_auth()
+    user = auth.get('users', {}).get(username)
+
+    if not user:
+        audit_log(username, 'auth.login.fail', {'reason': 'not_found'})
+        return jsonify({'error': 'Tài khoản không tồn tại'}), 401
+
+    if user.get('disabled'):
+        audit_log(username, 'auth.login.fail', {'reason': 'disabled'})
+        return jsonify({'error': 'Tài khoản đã bị vô hiệu hoá. Liên hệ quản trị viên.'}), 403
+
+    if not _check_password(password, user['passwordHash']):
+        audit_log(username, 'auth.login.fail', {'reason': 'wrong_password'})
+        return jsonify({'error': 'Mật khẩu không đúng'}), 401
+
+    token = _create_jwt(username, user)
+    audit_log(username, 'auth.login.success')
+
+    return jsonify({
+        'token': token,
+        'user': {
+            'username': username,
+            'name': user['name'],
+            'role': user['role'],
+            'title': user.get('title', ''),
+            'staffId': user['staffId'],
+            'isAdmin': user['isAdmin'],
+            'isSuperAdmin': user.get('isSuperAdmin', False),
+            'color': user.get('color', '#6366f1')
+        }
+    })
+
+@app.route('/api/auth/me', methods=['GET'])
+def auth_me():
+    """Return current user info from JWT"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = _verify_jwt(auth_header[7:])
+    if not payload:
+        return jsonify({'error': 'Token expired or invalid'}), 401
+
+    return jsonify({
+        'username': payload['sub'],
+        'name': payload.get('name', ''),
+        'role': payload.get('role', ''),
+        'isAdmin': payload.get('isAdmin', False),
+        'isSuperAdmin': payload.get('isSuperAdmin', False),
+        'staffId': payload.get('staffId', 0)
+    })
+
+@app.route('/api/auth/password', methods=['PUT'])
+def auth_change_password():
+    """Change own password"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = _verify_jwt(auth_header[7:])
+    if not payload:
+        return jsonify({'error': 'Token expired'}), 401
+
+    body = request.get_json(force=True)
+    old_pw = body.get('oldPassword', '')
+    new_pw = body.get('newPassword', '')
+
+    if len(new_pw) < 3:
+        return jsonify({'error': 'Mật khẩu mới phải có ít nhất 3 ký tự'}), 400
+
+    auth = _load_auth()
+    user = auth['users'].get(payload['sub'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    if not _check_password(old_pw, user['passwordHash']):
+        return jsonify({'error': 'Mật khẩu cũ không đúng'}), 401
+
+    user['passwordHash'] = _hash_password(new_pw)
+    _save_auth(auth)
+    audit_log(payload['sub'], 'auth.password.change')
+    return jsonify({'ok': True})
+
+@app.route('/api/auth/admin/password', methods=['PUT'])
+def auth_admin_change_password():
+    """Super admin changes another user's password"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = _verify_jwt(auth_header[7:])
+    if not payload or not payload.get('isSuperAdmin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    body = request.get_json(force=True)
+    target_user = body.get('username', '')
+    new_pw = body.get('newPassword', '')
+
+    auth = _load_auth()
+    user = auth['users'].get(target_user)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    user['passwordHash'] = _hash_password(new_pw)
+    _save_auth(auth)
+    audit_log(payload['sub'], 'auth.admin.password.reset', {'target': target_user})
+    return jsonify({'ok': True})
+
+@app.route('/api/auth/admin/toggle', methods=['PUT'])
+def auth_admin_toggle():
+    """Super admin toggles admin status"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = _verify_jwt(auth_header[7:])
+    if not payload or not payload.get('isSuperAdmin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    body = request.get_json(force=True)
+    target_user = body.get('username', '')
+
+    auth = _load_auth()
+    user = auth['users'].get(target_user)
+    if not user or target_user == 'vkan':
+        return jsonify({'error': 'Cannot modify this user'}), 400
+
+    user['isAdmin'] = not user.get('isAdmin', False)
+    _save_auth(auth)
+    audit_log(payload['sub'], 'auth.admin.toggle', {'target': target_user, 'isAdmin': user['isAdmin']})
+    return jsonify({'ok': True, 'isAdmin': user['isAdmin']})
+
+@app.route('/api/auth/admin/disable', methods=['PUT'])
+def auth_admin_disable():
+    """Super admin disables/enables account"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = _verify_jwt(auth_header[7:])
+    if not payload or not payload.get('isSuperAdmin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    body = request.get_json(force=True)
+    target_user = body.get('username', '')
+    disabled = body.get('disabled', True)
+
+    auth = _load_auth()
+    user = auth['users'].get(target_user)
+    if not user or target_user == 'vkan':
+        return jsonify({'error': 'Cannot modify this user'}), 400
+
+    user['disabled'] = disabled
+    _save_auth(auth)
+    audit_log(payload['sub'], 'auth.admin.disable', {'target': target_user, 'disabled': disabled})
+    return jsonify({'ok': True})
+
+@app.route('/api/auth/accounts', methods=['GET'])
+def auth_list_accounts():
+    """Super admin: list all accounts (no password hashes)"""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = _verify_jwt(auth_header[7:])
+    if not payload or not payload.get('isSuperAdmin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    auth = _load_auth()
+    accounts = []
+    for username, u in auth.get('users', {}).items():
+        accounts.append({
+            'username': username,
+            'name': u.get('name', ''),
+            'role': u.get('role', ''),
+            'staffId': u.get('staffId', 0),
+            'isAdmin': u.get('isAdmin', False),
+            'isSuperAdmin': u.get('isSuperAdmin', False),
+            'disabled': u.get('disabled', False),
+            'color': u.get('color', '#6366f1')
+        })
+    return jsonify({'accounts': accounts})
+
 # ────────────────────────────── EMR Proxy ──────────────────────────────
 cookie_jar = CookieJar()
 ssl_ctx = ssl.create_default_context()
@@ -311,6 +634,7 @@ def emr_status():
 _ensure_data_dir()
 _ensure_log_dir()
 _cleanup_old_logs(90)
+_init_auth_from_db()
 
 if __name__ == '__main__':
     print(f'\n  🏥 PTDTT Manager Server (Flask)')
