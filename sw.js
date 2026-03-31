@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v31032220';
+const CACHE_NAME = 'ptdtt-v31032230';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -96,35 +96,25 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Static assets (same origin): Cache first, fallback to network
-    if (url.origin === location.origin) {
-        event.respondWith(
-            caches.match(event.request)
-                .then(cached => {
-                    if (cached) return cached;
-                    return fetch(event.request).then(response => {
-                        if (response.ok) {
-                            const clone = response.clone();
-                            caches.open(CACHE_NAME).then(cache => {
-                                cache.put(event.request, clone);
-                            });
-                        }
-                        return response;
+    // ALL other requests: Network first, fallback to cache
+    event.respondWith(
+        fetch(event.request)
+            .then(response => {
+                if (response.ok) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, clone);
                     });
-                })
-                .catch(() => {
-                    // If both cache and network fail, return offline page for navigation
+                }
+                return response;
+            })
+            .catch(() => {
+                return caches.match(event.request).then(cached => {
+                    if (cached) return cached;
                     if (event.request.mode === 'navigate') {
                         return caches.match('/index.html');
                     }
-                })
-        );
-        return;
-    }
-
-    // CDN resources: Network first
-    event.respondWith(
-        fetch(event.request)
-            .catch(() => caches.match(event.request))
+                });
+            })
     );
 });
