@@ -106,7 +106,7 @@ const App = {
             </div>
             ${session.isAdmin ? `<div style="display:flex;gap:6px;margin:6px 0">
                 <button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openChangePassword()">🔑 Đổi mật khẩu</button>
-                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openManagePasswords()">👥 Quản lý MK</button>` : ''}
+                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openManagePasswords()">👥 Quản lý TK</button>` : ''}
             </div>` : ''}
             <button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:4px 0" onclick="Onboarding.start()">❓ Hướng dẫn sử dụng</button>
             <button class="logout-btn" id="logout-btn">

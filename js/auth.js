@@ -325,40 +325,66 @@ const Auth = {
         }
     },
 
-    // Super admin: manage all admin passwords
+    // Super admin: manage all staff accounts (passwords + admin access)
     openManagePasswords() {
         const session = this.getSession();
         if (!session || !session.isSuperAdmin) return;
-        const accounts = this.getAccountList().filter(a => a.isAdmin || a.isSuperAdmin);
+        const accounts = this.getAccountList().sort((a,b) => {
+            if (a.isSuperAdmin) return -1;
+            if (b.isSuperAdmin) return 1;
+            if (a.isAdmin && !b.isAdmin) return -1;
+            if (!a.isAdmin && b.isAdmin) return 1;
+            return a.name.localeCompare(b.name);
+        });
 
-        const rows = accounts.map(a => `
-            <tr>
-                <td style="padding:8px"><strong>${a.name}</strong></td>
-                <td style="padding:8px;color:var(--text-secondary)">${a.username}</td>
-                <td style="padding:8px">${a.role}</td>
-                <td style="padding:8px;text-align:center">
-                    ${a.username !== this.SUPERADMIN_USERNAME ? 
-                        `<button class="btn btn-secondary btn-sm" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">Đổi MK</button>` :
-                        '<span style="color:var(--text-secondary);font-size:0.8rem">Super Admin</span>'
-                    }
+        const rows = accounts.filter(a => a.username !== 'guest').map(a => {
+            const isSelf = a.username === this.SUPERADMIN_USERNAME;
+            const badge = isSelf ? '<span style="background:#7c3aed;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Super Admin</span>' :
+                          a.isAdmin ? '<span style="background:#0891b2;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Admin</span>' :
+                          '<span style="background:#94a3b8;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">User</span>';
+            return `<tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:6px 8px"><strong>${a.name}</strong></td>
+                <td style="padding:6px 8px;color:var(--text-secondary);font-size:0.82rem">${a.username}</td>
+                <td style="padding:6px 8px">${badge}</td>
+                <td style="padding:6px 8px;text-align:center;white-space:nowrap">
+                    ${!isSelf ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">🔑 MK</button>
+                    <button class="btn btn-sm" style="font-size:0.72rem;margin-left:4px;background:${a.isAdmin ? '#ef4444' : '#22c55e'};color:#fff;border:none;cursor:pointer" onclick="Auth.toggleAdmin('${a.username}')">${a.isAdmin ? '🔒 Bỏ Admin' : '🔓 Cấp Admin'}</button>` :
+                    '<span style="color:var(--text-secondary);font-size:0.75rem">—</span>'}
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
 
-        Modal.open('Quản lý mật khẩu Admin', `
-            <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
-                <thead><tr style="border-bottom:2px solid var(--border)">
+        Modal.open('👥 Quản lý tài khoản nhân viên', `
+            <div style="max-height:60vh;overflow-y:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+                <thead><tr style="border-bottom:2px solid var(--border);background:var(--bg-secondary)">
                     <th style="padding:8px;text-align:left">Họ tên</th>
                     <th style="padding:8px;text-align:left">Username</th>
-                    <th style="padding:8px;text-align:left">Chức vụ</th>
+                    <th style="padding:8px;text-align:left">Quyền</th>
                     <th style="padding:8px;text-align:center">Hành động</th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
             </table>
+            </div>
+            <div style="margin-top:10px;padding:8px;background:#f0fdf4;border-radius:6px;font-size:0.78rem;color:#166534">
+                <strong>Lưu ý:</strong> Admin có quyền xuất Excel, quản lý dữ liệu. Super Admin quản lý tất cả tài khoản.
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" onclick="Modal.close()">Đóng</button>
             </div>
         `);
+    },
+
+    // Toggle admin status for a user
+    toggleAdmin(username) {
+        const session = this.getSession();
+        if (!session || !session.isSuperAdmin) return;
+        const accounts = this.getAccounts();
+        if (!accounts[username] || username === this.SUPERADMIN_USERNAME) return;
+        accounts[username].isAdmin = !accounts[username].isAdmin;
+        localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        Toast.success(`Đã ${accounts[username].isAdmin ? 'cấp' : 'bỏ'} quyền Admin cho ${accounts[username].name}`);
+        this.openManagePasswords(); // Refresh modal
     },
 
     openResetPasswordFor(username, name) {
