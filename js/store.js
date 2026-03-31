@@ -72,6 +72,12 @@ const Store = {
     // Cache-busting: prevent browser/proxy from caching API calls
     _api(url, opts) {
         const sep = url.includes('?') ? '&' : '?';
+        // Inject X-User header for audit logging
+        if (opts && (opts.method === 'PUT' || opts.method === 'DELETE' || opts.method === 'POST')) {
+            if (!opts.headers) opts.headers = {};
+            const session = (typeof Auth !== 'undefined') ? Auth.getSession() : null;
+            opts.headers['X-User'] = session ? session.username : 'anonymous';
+        }
         return fetch(url + sep + '_t=' + Date.now(), opts);
     },
 

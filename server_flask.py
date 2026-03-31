@@ -10,7 +10,8 @@ import re
 import uuid
 import ssl
 import threading
-from datetime import datetime
+import glob
+from datetime import datetime, timedelta
 from urllib.parse import urlencode
 from http.cookiejar import CookieJar
 import urllib.request
@@ -23,6 +24,7 @@ import base64
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR  = os.path.join(BASE_DIR, 'data')
 DATA_FILE = os.path.join(DATA_DIR, 'db.json')
+LOG_DIR   = os.path.join(BASE_DIR, 'logs')
 PORT      = int(os.environ.get('PORT', 5000))
 
 # EMR
@@ -77,6 +79,41 @@ def save_data(data):
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp, DATA_FILE)
 
+# ────────────────────────────── Audit Logging ──────────────────────────────
+def _ensure_log_dir():
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+def audit_log(user, action, details=None):
+    """Write an audit log entry (JSON Lines format, daily files)"""
+    _ensure_log_dir()
+    today = datetime.now().strftime('%Y-%m-%d')
+    log_file = os.path.join(LOG_DIR, f'audit_{today}.jsonl')
+    entry = {
+        'ts': datetime.now().isoformat(),
+        'user': user or 'anonymous',
+        'action': action,
+        'ip': request.remote_addr if request else None,
+        'details': details
+    }
+    try:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    except Exception as e:
+        print(f'[Audit] Error writing log: {e}')
+
+def _cleanup_old_logs(days=90):
+    """Remove audit logs older than N days"""
+    _ensure_log_dir()
+    cutoff = datetime.now() - timedelta(days=days)
+    for f in glob.glob(os.path.join(LOG_DIR, 'audit_*.jsonl')):
+        try:
+            date_str = os.path.basename(f).replace('audit_', '').replace('.jsonl', '')
+            file_date = datetime.strptime(date_str, '%Y-%m-%d')
+            if file_date < cutoff:
+                os.remove(f)
+        except Exception:
+            pass
+
 # ────────────────────────────── Static files ──────────────────────────────
 @app.route('/')
 def index():
@@ -104,6 +141,8 @@ def get_data():
 def put_data():
     """Replace the entire JSON database"""
     data = request.get_json(force=True)
+    user = request.headers.get('X-User', 'unknown')
+    audit_log(user, 'data.put', {'size': len(json.dumps(data))})
     save_data(data)
     return jsonify({'ok': True, 'version': _get_file_version()})
 
@@ -144,10 +183,35 @@ def get_collection(collection):
 def put_collection(collection):
     """Replace a single collection"""
     items = request.get_json(force=True)
+    user = request.headers.get('X-User', 'unknown')
+    audit_log(user, f'collection.put.{collection}', {'count': len(items) if isinstance(items, list) else 1})
     data = load_data()
     data[collection] = items
     save_data(data)
     return jsonify({'ok': True})
+
+# ────────────────────────────── Audit API ──────────────────────────────
+@app.route('/api/audit', methods=['GET'])
+def get_audit_logs():
+    """Return audit logs (superadmin only, checked client-side)"""
+    _ensure_log_dir()
+    days = int(request.args.get('days', 7))
+    logs = []
+    for i in range(days):
+        d = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+        log_file = os.path.join(LOG_DIR, f'audit_{d}.jsonl')
+        if os.path.exists(log_file):
+            with open(log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            logs.append(json.loads(line))
+                        except Exception:
+                            pass
+    # Sort newest first
+    logs.sort(key=lambda x: x.get('ts', ''), reverse=True)
+    return jsonify({'logs': logs, 'total': len(logs)})
 
 # ────────────────────────────── EMR Proxy ──────────────────────────────
 cookie_jar = CookieJar()
@@ -245,6 +309,8 @@ def emr_status():
 
 # ────────────────────────────── Init ──────────────────────────────
 _ensure_data_dir()
+_ensure_log_dir()
+_cleanup_old_logs(90)
 
 if __name__ == '__main__':
     print(f'\n  🏥 PTDTT Manager Server (Flask)')
