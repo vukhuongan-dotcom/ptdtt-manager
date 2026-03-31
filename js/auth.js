@@ -54,12 +54,17 @@ const Auth = {
             Object.keys(pwMap).forEach(u => {
                 if (accounts[u]) accounts[u].password = pwMap[u];
             });
-            // Sync to both storage locations
             localStorage.setItem(this.CUSTOM_PASSWORDS_KEY, JSON.stringify(pwMap));
-            if (Store._data) {
-                Store._data.customPasswords = pwMap;
-            }
+            if (Store._data) Store._data.customPasswords = pwMap;
         }
+
+        // Restore custom admin status from server-synced data
+        const adminMap = (Store._data && Store._data.customAdmins) ? Store._data.customAdmins : {};
+        Object.keys(adminMap).forEach(u => {
+            if (accounts[u] && u !== this.SUPERADMIN_USERNAME) {
+                accounts[u].isAdmin = adminMap[u];
+            }
+        });
 
         localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
         return accounts;
@@ -105,17 +110,29 @@ const Auth = {
         const serverPw = (Store._data && Store._data.customPasswords) ? Store._data.customPasswords : null;
         const localPw = localStorage.getItem(this.CUSTOM_PASSWORDS_KEY);
         const pwMap = serverPw || (localPw ? JSON.parse(localPw) : null);
+        let changed = false;
         if (pwMap) {
-            let changed = false;
             Object.keys(pwMap).forEach(u => {
                 if (accounts[u] && accounts[u].password !== pwMap[u]) {
                     accounts[u].password = pwMap[u];
                     changed = true;
                 }
             });
-            if (changed) {
-                localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
-            }
+        }
+
+        // Also re-apply customAdmins from server-synced data
+        const adminMap = (Store._data && Store._data.customAdmins) ? Store._data.customAdmins : null;
+        if (adminMap) {
+            Object.keys(adminMap).forEach(u => {
+                if (accounts[u] && u !== this.SUPERADMIN_USERNAME && accounts[u].isAdmin !== adminMap[u]) {
+                    accounts[u].isAdmin = adminMap[u];
+                    changed = true;
+                }
+            });
+        }
+
+        if (changed) {
+            localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
         }
 
         return accounts;
@@ -381,7 +398,7 @@ const Auth = {
         `);
     },
 
-    // Toggle admin status for a user
+    // Toggle admin status for a user (synced to server)
     toggleAdmin(username) {
         const session = this.getSession();
         if (!session || !session.isSuperAdmin) return;
@@ -389,8 +406,12 @@ const Auth = {
         if (!accounts[username] || username === this.SUPERADMIN_USERNAME) return;
         accounts[username].isAdmin = !accounts[username].isAdmin;
         localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        // Persist to server-synced Store
+        if (!Store._data.customAdmins) Store._data.customAdmins = {};
+        Store._data.customAdmins[username] = accounts[username].isAdmin;
+        Store.save();
         Toast.success(`Đã ${accounts[username].isAdmin ? 'cấp' : 'bỏ'} quyền Admin cho ${accounts[username].name}`);
-        this.openManagePasswords(); // Refresh modal
+        this.openManagePasswords();
     },
 
     openResetPasswordFor(username, name) {
