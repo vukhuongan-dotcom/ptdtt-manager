@@ -337,7 +337,7 @@ const Auth = {
             return a.name.localeCompare(b.name);
         });
 
-        const rows = accounts.filter(a => a.username !== 'guest').map(a => {
+        const rows = accounts.filter(a => a.username !== 'guest').map((a, idx) => {
             const isSelf = a.username === this.SUPERADMIN_USERNAME;
             const badge = isSelf ? '<span style="background:#7c3aed;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Super Admin</span>' :
                           a.isAdmin ? '<span style="background:#0891b2;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Admin</span>' :
@@ -345,6 +345,11 @@ const Auth = {
             return `<tr style="border-bottom:1px solid var(--border)">
                 <td style="padding:6px 8px"><strong>${a.name}</strong></td>
                 <td style="padding:6px 8px;color:var(--text-secondary);font-size:0.82rem">${a.username}</td>
+                <td style="padding:6px 8px">
+                    <span id="pw-mask-${idx}" style="font-family:monospace;font-size:0.82rem">••••</span>
+                    <span id="pw-show-${idx}" style="font-family:monospace;font-size:0.82rem;display:none">${a.password}</span>
+                    <button onclick="var m=document.getElementById('pw-mask-${idx}'),s=document.getElementById('pw-show-${idx}');if(m.style.display!=='none'){m.style.display='none';s.style.display='';this.textContent='🙈'}else{m.style.display='';s.style.display='none';this.textContent='👁'}" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;vertical-align:middle" title="Hiện/ẩn mật khẩu">👁</button>
+                </td>
                 <td style="padding:6px 8px">${badge}</td>
                 <td style="padding:6px 8px;text-align:center;white-space:nowrap">
                     ${!isSelf ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">🔑 MK</button>
@@ -360,6 +365,7 @@ const Auth = {
                 <thead><tr style="border-bottom:2px solid var(--border);background:var(--bg-secondary)">
                     <th style="padding:8px;text-align:left">Họ tên</th>
                     <th style="padding:8px;text-align:left">Username</th>
+                    <th style="padding:8px;text-align:left">Mật khẩu</th>
                     <th style="padding:8px;text-align:left">Quyền</th>
                     <th style="padding:8px;text-align:center">Hành động</th>
                 </tr></thead>
