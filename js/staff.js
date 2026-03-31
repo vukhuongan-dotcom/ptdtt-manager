@@ -10,7 +10,7 @@ const STAFF_STATUSES = {
 const StaffPage = {
     currentFilter: 'all',
     searchQuery: '',
-    activeTab: 'internal', // 'internal' | 'external'
+    activeTab: 'internal', // 'internal' | 'external' | 'departed'
 
     render() {
         return `
@@ -34,9 +34,12 @@ const StaffPage = {
             <button class="staff-subtab ${this.activeTab === 'external' ? 'active' : ''}" onclick="StaffPage.switchTab('external')">
                 🩺 BS ngoài khoa <span class="staff-subtab-count">${Store.getAll('externalDoctors').length}</span>
             </button>
+            <button class="staff-subtab ${this.activeTab === 'departed' ? 'active' : ''}" onclick="StaffPage.switchTab('departed')">
+                📤 Rời khoa <span class="staff-subtab-count">${(Store.getAll('departedStaff') || []).length}</span>
+            </button>
         </div>
 
-        ${this.activeTab === 'internal' ? this.renderInternal() : this.renderExternal()}
+        ${this.activeTab === 'internal' ? this.renderInternal() : this.activeTab === 'external' ? this.renderExternal() : this.renderDeparted()}
         `;
     },
 
@@ -418,20 +421,131 @@ const StaffPage = {
         const s = Store.getById('staff', id);
         if (!s) return;
         const confirmed = await Confirm.show({
-            title: 'Xóa nhân sự',
-            message: `Bạn có chắc chắn muốn xóa <strong>${s.name}</strong>?<br>Tài khoản đăng nhập sẽ bị vô hiệu hoá.`,
-            icon: '🗑️',
+            title: 'Chuyển nhân sự rời khoa',
+            message: `Bạn có chắc chắn muốn chuyển <strong>${s.name}</strong> vào danh sách rời khoa?<br>Tài khoản đăng nhập sẽ bị vô hiệu hoá.<br><em>Có thể khôi phục sau.</em>`,
+            icon: '📤',
             type: 'danger',
-            confirmText: 'Xóa',
+            confirmText: 'Chuyển rời khoa',
             cancelText: 'Giữ lại'
         });
         if (confirmed) {
+            // Move to departedStaff
+            const departed = { ...s, departedDate: new Date().toISOString().split('T')[0] };
+            if (!Store._data.departedStaff) Store._data.departedStaff = [];
+            if (!Store._data.nextIds.departedStaff) Store._data.nextIds.departedStaff = 1;
+            Store._data.departedStaff.push(departed);
+            // Remove from active staff
             Store.remove('staff', id);
-            Auth.removeAccount(id);
+            // Disable account
+            Auth.disableAccount(id);
             Modal.close();
             App.renderCurrentPage();
-            Toast.success(`Đã xóa nhân sự ${s.name}`);
+            Toast.success(`Đã chuyển ${s.name} vào danh sách rời khoa`);
         }
+    },
+
+    // Restore departed staff back to active
+    async restoreStaff(index) {
+        if (!Auth.getSession()?.isAdmin) return;
+        const departed = Store._data.departedStaff || [];
+        if (index < 0 || index >= departed.length) return;
+        const s = departed[index];
+        const confirmed = await Confirm.show({
+            title: 'Khôi phục nhân sự',
+            message: `Khôi phục <strong>${s.name}</strong> vào danh sách nhân viên khoa?<br>Tài khoản đăng nhập sẽ được kích hoạt lại.`,
+            icon: '♻️',
+            type: 'primary',
+            confirmText: 'Khôi phục',
+            cancelText: 'Huỷ'
+        });
+        if (confirmed) {
+            // Remove departedDate
+            const restored = { ...s };
+            delete restored.departedDate;
+            // Add back to staff
+            Store._data.staff.push(restored);
+            // Remove from departed
+            Store._data.departedStaff.splice(index, 1);
+            Store.save();
+            // Re-enable account
+            Auth.enableAccount(restored.id);
+            Auth.refreshAccounts();
+            App.renderCurrentPage();
+            Toast.success(`Đã khôi phục ${s.name} vào nhân viên khoa`);
+        }
+    },
+
+    // Permanently delete departed staff
+    async deletePermanent(index) {
+        if (!Auth.getSession()?.isAdmin) return;
+        const departed = Store._data.departedStaff || [];
+        if (index < 0 || index >= departed.length) return;
+        const s = departed[index];
+        const confirmed = await Confirm.show({
+            title: 'Xóa vĩnh viễn',
+            message: `Xóa vĩnh viễn <strong>${s.name}</strong>?<br>Hành động này không thể hoàn tác!`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xóa vĩnh viễn',
+            cancelText: 'Giữ lại'
+        });
+        if (confirmed) {
+            Store._data.departedStaff.splice(index, 1);
+            Store.save();
+            Auth.removeAccount(s.id);
+            App.renderCurrentPage();
+            Toast.success(`Đã xóa vĩnh viễn ${s.name}`);
+        }
+    },
+
+    // Render departed staff tab
+    renderDeparted() {
+        const departed = Store._data.departedStaff || [];
+        const isAdmin = Auth.getSession()?.isAdmin;
+
+        return `
+        <div class="flex justify-between items-center">
+            <div class="staff-filters">
+                <span style="color:var(--text-muted);font-size:0.85rem;padding:6px 12px">Nhân sự đã rời khoa — có thể khôi phục</span>
+            </div>
+        </div>
+
+        <div class="card staff-table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:50px">STT</th>
+                        <th>Họ tên</th>
+                        <th>Chức danh</th>
+                        <th>Vai trò</th>
+                        <th>Ngày rời</th>
+                        ${isAdmin ? '<th style="width:160px">Thao tác</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${departed.length ? departed.map((s, idx) => `
+                    <tr style="opacity:0.75">
+                        <td style="text-align:center;color:var(--text-muted)">${idx + 1}</td>
+                        <td>
+                            <div class="staff-name-cell">
+                                <div class="staff-avatar-sm" style="background:${s.color || '#94a3b8'};filter:grayscale(50%)">${Utils.getInitials(s.name)}</div>
+                                <span class="staff-fullname">${s.name}</span>
+                            </div>
+                        </td>
+                        <td>${s.title || '—'}</td>
+                        <td><span class="badge" style="background:#94a3b8;color:#fff">${s.role}</span></td>
+                        <td style="color:var(--text-muted);font-size:0.82rem">${s.departedDate || '—'}</td>
+                        ${isAdmin ? `<td>
+                            <div class="staff-actions" style="gap:4px">
+                                <button class="btn btn-sm" style="background:#22c55e;color:#fff;border:none;font-size:0.72rem;cursor:pointer" onclick="StaffPage.restoreStaff(${idx})" title="Khôi phục">♻️ Khôi phục</button>
+                                <button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none;font-size:0.72rem;cursor:pointer" onclick="StaffPage.deletePermanent(${idx})" title="Xóa vĩnh viễn">🗑️ Xóa</button>
+                            </div>
+                        </td>` : ''}
+                    </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không có nhân sự rời khoa</p></div></td></tr>`}
+                </tbody>
+            </table>
+        </div>
+        `;
     },
 
     // ===== SELF-EDIT CONTACT (Phone & Email) =====

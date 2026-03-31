@@ -66,6 +66,14 @@ const Auth = {
             }
         });
 
+        // Restore disabled accounts from server-synced data
+        const disabledIds = (Store._data && Store._data.disabledAccounts) ? Store._data.disabledAccounts : [];
+        Object.keys(accounts).forEach(u => {
+            if (accounts[u].staffId && disabledIds.includes(accounts[u].staffId)) {
+                accounts[u].disabled = true;
+            }
+        });
+
         localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
         return accounts;
     },
@@ -144,6 +152,7 @@ const Auth = {
         const account = accounts[username];
 
         if (!account) return { success: false, error: 'Tài khoản không tồn tại' };
+        if (account.disabled) return { success: false, error: 'Tài khoản đã bị vô hiệu hoá. Liên hệ quản trị viên.' };
         if (account.password !== password) return { success: false, error: 'Mật khẩu không đúng' };
 
         // Save session
@@ -218,6 +227,37 @@ const Auth = {
         if (key) {
             delete accounts[key];
             localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        }
+    },
+
+    // Disable account (soft-delete: mark as disabled, sync to server)
+    disableAccount(staffId) {
+        const accounts = this.getAccounts();
+        const key = Object.keys(accounts).find(k => accounts[k].staffId === staffId);
+        if (key) {
+            accounts[key].disabled = true;
+            localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+            // Persist disabled status to server
+            if (!Store._data.disabledAccounts) Store._data.disabledAccounts = [];
+            if (!Store._data.disabledAccounts.includes(staffId)) {
+                Store._data.disabledAccounts.push(staffId);
+                Store.save();
+            }
+        }
+    },
+
+    // Enable account (restore from soft-delete)
+    enableAccount(staffId) {
+        const accounts = this.getAccounts();
+        const key = Object.keys(accounts).find(k => accounts[k].staffId === staffId);
+        if (key) {
+            delete accounts[key].disabled;
+            localStorage.setItem(this.ACCOUNTS_KEY, JSON.stringify(accounts));
+        }
+        // Remove from server disabled list
+        if (Store._data.disabledAccounts) {
+            Store._data.disabledAccounts = Store._data.disabledAccounts.filter(id => id !== staffId);
+            Store.save();
         }
     },
 

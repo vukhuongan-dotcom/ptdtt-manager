@@ -40,6 +40,8 @@ const Store = {
             if (!this._data.tasksTrash) this._data.tasksTrash = [];
             if (!this._data.nextIds.tasksTrash) this._data.nextIds.tasksTrash = 1;
             if (!this._data.staffStatuses) this._data.staffStatuses = [];
+            if (!this._data.departedStaff) this._data.departedStaff = [];
+            if (!this._data.disabledAccounts) this._data.disabledAccounts = [];
             SAMPLE_SCHEDULES.forEach(sample => {
                 if (!this._data.schedules.find(s => s.weekKey === sample.weekKey)) {
                     const entry = JSON.parse(JSON.stringify(sample));
