@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Test Excel Export</title></head>
+<body>
+<h1>Test SheetJS Excel Export</h1>
+<p id="status">Loading...</p>
+<button id="btn1" onclick="testExport()">Test Export (Blob)</button>
+<button id="btn2" onclick="testExportSaveAs()">Test Export (saveAs)</button>
+<button id="btn3" onclick="testExportBase64()">Test Export (Base64 link)</button>
+<pre id="log"></pre>
+
+<script src="js/xlsx.full.min.js"></script>
+<script>
+function log(msg) {
+    document.getElementById('log').textContent += msg + '\n';
+    console.log(msg);
+}
+
+window.onload = function() {
+    if (typeof XLSX !== 'undefined') {
+        document.getElementById('status').textContent = 'XLSX loaded OK, version: ' + XLSX.version;
+        log('XLSX loaded: ' + XLSX.version);
+    } else {
+        document.getElementById('status').textContent = 'XLSX NOT LOADED!';
+        log('ERROR: XLSX not loaded');
+    }
+};
+
+function createTestWorkbook() {
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet([
+        ['STT', 'Ho ten', 'So luong'],
+        [1, 'Nguyen Van A', 10],
+        [2, 'Tran Van B', 20],
+        [3, 'TONG', 30]
+    ]);
+    ws['!cols'] = [{wch:5},{wch:20},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    return wb;
+}
+
+// Method 1: Blob + <a> click
+function testExport() {
+    try {
+        log('--- Method 1: Blob + a.click ---');
+        var wb = createTestWorkbook();
+        var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        log('XLSX.write OK, bytes: ' + wbout.byteLength);
+        var blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        log('Blob created, size: ' + blob.size);
+        var url = URL.createObjectURL(blob);
+        log('ObjectURL: ' + url);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'test_export.xlsx';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        log('a.click() called');
+        setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+        log('Method 1 complete - check downloads');
+    } catch(e) {
+        log('ERROR: ' + e.message);
+    }
+}
+
+// Method 2: XLSX.writeFile (FileSaver)
+function testExportSaveAs() {
+    try {
+        log('--- Method 2: XLSX.writeFile ---');
+        var wb = createTestWorkbook();
+        XLSX.writeFile(wb, 'test_writeFile.xlsx');
+        log('writeFile called - check downloads');
+    } catch(e) {
+        log('ERROR: ' + e.message);
+    }
+}
+
+// Method 3: Base64 data URI
+function testExportBase64() {
+    try {
+        log('--- Method 3: Base64 data URI ---');
+        var wb = createTestWorkbook();
+        var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+        log('Base64 generated, length: ' + wbout.length);
+        var a = document.createElement('a');
+        a.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + wbout;
+        a.download = 'test_base64.xlsx';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        log('Base64 a.click() called');
+        setTimeout(function() { document.body.removeChild(a); }, 500);
+        log('Method 3 complete - check downloads');
+    } catch(e) {
+        log('ERROR: ' + e.message);
+    }
+}
+</script>
+</body>
+</html>
