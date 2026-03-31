@@ -381,7 +381,6 @@ const SurgeryStatsPage = {
                 const approachCounts = approaches.map(a => d.cases.filter(s => s.approachType === a).length);
                 summaryData.push([i+1, d.doctor.name, d.doctor.role, ...types.map(t => d.byType[t]), ...approachCounts, d.total]);
             });
-            // Footer totals
             const grandByType = {};
             types.forEach(t => { grandByType[t] = surgeries.filter(s => s.surgeryType === t).length; });
             const grandByApproach = approaches.map(a => surgeries.filter(s => s.approachType === a).length);
@@ -395,7 +394,7 @@ const SurgeryStatsPage = {
             const detailHeaders = ['STT', 'Ngày mổ', 'Họ tên BN', 'Năm sinh', 'Chẩn đoán', 'PP phẫu thuật', 'Loại PT', 'Đường mổ', 'BS mổ chính'];
             const detailData = [detailHeaders];
             const allDocs = this.getEligibleDoctors();
-            const approachMap = { mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' };
+            const approachMap = { mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'NSTH', robot: 'Robot' };
             surgeries.sort((a,b) => a.date.localeCompare(b.date)).forEach((s, i) => {
                 const doc = allDocs.find(d => d.id === s.mainSurgeon);
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || { label: s.surgeryType };
@@ -407,9 +406,17 @@ const SurgeryStatsPage = {
             ws2['!cols'] = [{wch:5},{wch:12},{wch:22},{wch:10},{wch:30},{wch:35},{wch:14},{wch:16},{wch:22}];
             XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiet');
 
-            // Safe filename: remove special chars
-            const safeLabel = periodLabel.replace(/[—–\/\\:*?"<>|]/g, '-').replace(/\s+/g, '_');
-            XLSX.writeFile(wb, `ThongKe_PT_${safeLabel}.xlsx`);
+            // Blob-based download (reliable across all browsers)
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const safeLabel = periodLabel.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ThongKe_PT_' + safeLabel + '.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
             Toast.success('Đã xuất file Excel thành công!');
         } catch (e) {
             console.error('Export Excel error:', e);

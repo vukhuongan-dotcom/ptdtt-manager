@@ -593,7 +593,16 @@ const StaffPage = {
                 XLSX.utils.book_append_sheet(wb, ws2, 'BS ngoai khoa');
             }
 
-            XLSX.writeFile(wb, 'DanhSach_NhanSu_KhoaPTDTT.xlsx');
+            // Blob-based download
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'DanhSach_NhanSu_KhoaPTDTT.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
             Toast.success('Đã xuất danh sách nhân sự thành công!');
         } catch (e) {
             console.error('Export Excel error:', e);
