@@ -227,101 +227,105 @@ const ReportsPage = {
         const autoPatients = this.getAutoPatientCount();
 
         const doctors = Store.getAll('staff').filter(s =>
-            s.role.includes('Bác sĩ') || s.role.includes('Trưởng khoa') || s.role.includes('Phó trưởng khoa')
+            s.role.includes('Bác sĩ') && !s.role.includes('Trưởng khoa') && !s.role.includes('Phó trưởng khoa')
         );
 
         const e = existing || {};
-        // #1: Auto-fill patient count from EMR if creating new report
         const defaultPatients = e.totalPatients || (autoPatients > 0 ? autoPatients : '');
-        // #3: Auto-sync reporter name = current logged-in user
         const defaultReporter = e.reporterName || session?.name || '';
 
-        Modal.open(`🩺 Báo cáo 16h — ${this.formatDateVN(date)}`, `
-            <form onsubmit="ReportsPage.saveReport16h(event, '${date}')" style="max-height:70vh;overflow-y:auto">
-                <div style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#fff">
-                    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8">KHOA PTĐTT — BV BÌNH DÂN</div>
-                    <div style="font-size:0.92rem;font-weight:700;color:#fff">📌 Báo cáo trực khoa lúc 16g — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}</div>
+        // Stepper helper
+        const stepper16 = (name, val, color, label) => `
+            <div style="text-align:center">
+                <div style="font-size:0.68rem;font-weight:700;color:${color};margin-bottom:3px;white-space:nowrap">${label}</div>
+                <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+                    <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                        style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+                    <input type="number" name="${name}" value="${val}" min="0" style="width:44px;text-align:center;font-size:1rem;font-weight:700;border:2px solid ${color}44;border-radius:6px;padding:3px 1px;color:${color}">
+                    <button type="button" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                        style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+                </div>
+            </div>`;
+
+        // Doctor chips (exclude trưởng/phó khoa)
+        const docChips = doctors.map(d => {
+            const shortName = d.name.replace(/^(Nguyễn|Trần|Phạm|Lê|Bùi|Phan|Huỳnh|Lý)\s/, (m) => m.charAt(0) + '. ');
+            return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
+                class="r16h-chip" style="padding:5px 8px;border-radius:6px;border:1px solid ${d.name===defaultReporter?'#0f172a':'#cbd5e1'};background:${d.name===defaultReporter?'#0f172a':'#f1f5f9'};color:${d.name===defaultReporter?'#fff':'#334155'};font-size:0.82rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${shortName}</button>`;
+        }).join('');
+
+        const nextDay = this._getNextDay(date);
+        const nextDayLabel = `${this.getDayOfWeek(nextDay)} (${this.formatDateShort(nextDay)})`;
+        const isFri = this._isFriday(date);
+
+        Modal.open(`🩺 Báo cáo 16h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
+            <form onsubmit="ReportsPage.saveReport16h(event, '${date}')">
+
+                <!-- Row 1: Tổng BN + Mổ chưa về -->
+                <div style="display:flex;gap:8px;margin-bottom:8px">
+                    <div style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:10px">
+                        <div style="flex:1;color:#fff">
+                            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:600">TỔNG BN</div>
+                        </div>
+                        <input type="number" name="totalPatients" value="${defaultPatients}" required min="0"
+                            style="width:62px;text-align:center;font-size:1.5rem;font-weight:800;border:none;border-radius:8px;padding:4px;background:rgba(255,255,255,0.12);color:#fff">
+                    </div>
+                    <div style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fef3c7;border-radius:10px;border:1px solid #fbbf24">
+                        <div style="flex:1">
+                            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#92400e;font-weight:600">MỔ CHƯA VỀ</div>
+                        </div>
+                        <input type="number" name="postOpNotReturned" value="${e.postOpNotReturned || 0}" min="0"
+                            style="width:52px;text-align:center;font-size:1.3rem;font-weight:800;border:2px solid #f59e0b44;border-radius:8px;padding:3px;color:#92400e;background:#fff">
+                    </div>
                 </div>
 
-                ${autoPatients > 0 ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.82rem;color:#065f46;display:flex;justify-content:space-between;align-items:center">
-                    <span>✅ Số BN hệ thống EMR: <strong>${autoPatients}</strong> bệnh nhân</span>
-                    ${existing ? `<button type="button" style="background:#059669;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:0.78rem;cursor:pointer" onclick="document.querySelector('input[name=totalPatients]').value=${autoPatients};this.parentElement.querySelector('span').innerHTML='✅ Đã đồng bộ: <strong>${autoPatients}</strong>'">🔄 Đồng bộ</button>` : ''}
+                <!-- Row 2: 3 steppers inline -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+                    <div style="background:#ecfdf5;border-radius:8px;padding:7px 4px">
+                        ${stepper16('admissions', e.admissions || 0, '#059669', '🏥 Nhập viện')}
+                    </div>
+                    <div style="background:#fef2f2;border-radius:8px;padding:7px 4px">
+                        ${stepper16('discharges', e.discharges || 0, '#dc2626', '📤 Xuất viện')}
+                    </div>
+                    <div style="background:#faf5ff;border-radius:8px;padding:7px 4px">
+                        ${stepper16('severePatients', e.severePatients || 0, '#7c3aed', '⚠️ BN nặng')}
+                    </div>
+                </div>
+
+                <!-- Row 3: Surgery next day -->
+                <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+                    <div style="font-size:0.72rem;font-weight:700;color:#1d4ed8;margin-bottom:5px">🔪 Bệnh mổ ${nextDayLabel}</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                        ${stepper16('surgeryTotal', e.surgeryTotal || 0, '#1d4ed8', 'Tổng')}
+                        ${stepper16('surgeryCT', e.surgeryCT || 0, '#0369a1', 'Chương trình')}
+                        ${stepper16('surgeryYC', e.surgeryYC || 0, '#6366f1', 'Yêu cầu')}
+                    </div>
+                </div>
+
+                ${isFri ? `
+                <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+                    <div style="font-size:0.72rem;font-weight:700;color:#15803d;margin-bottom:5px">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                        ${stepper16('surgery2Total', e.surgery2Total || 0, '#15803d', 'Tổng')}
+                        ${stepper16('surgery2CT', e.surgery2CT || 0, '#059669', 'Chương trình')}
+                        ${stepper16('surgery2YC', e.surgery2YC || 0, '#10b981', 'Yêu cầu')}
+                    </div>
                 </div>` : ''}
 
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-                    <div class="form-group">
-                        <label>Tổng số BN <span style="color:var(--danger)">*</span></label>
-                        <input type="number" name="totalPatients" value="${defaultPatients}" required min="0" placeholder="VD: 65">
-                    </div>
-                    <div class="form-group">
-                        <label>Số bệnh mổ chưa về</label>
-                        <input type="number" name="postOpNotReturned" value="${e.postOpNotReturned || ''}" min="0" placeholder="VD: 3">
-                    </div>
-                    <div class="form-group">
-                        <label>Nhập viện</label>
-                        <input type="number" name="admissions" value="${e.admissions || ''}" min="0" placeholder="VD: 5">
-                    </div>
-                    <div class="form-group">
-                        <label>Xuất viện</label>
-                        <input type="number" name="discharges" value="${e.discharges || ''}" min="0" placeholder="VD: 4">
-                    </div>
-                    <div class="form-group">
-                        <label>BN phòng nặng</label>
-                        <input type="number" name="severePatients" value="${e.severePatients || ''}" min="0" placeholder="VD: 2">
-                    </div>
+                <!-- Row 4: Doctor quick-select -->
+                <div style="margin-bottom:6px">
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👤 BS trực khoa báo cáo</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">${docChips}</div>
+                    <input type="hidden" id="r16h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
-                <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
-                    <label style="font-weight:700;font-size:0.85rem;color:#1d4ed8;margin-bottom:6px;display:block">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date))} (${this.formatDateShort(this._getNextDay(date))})</label>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Tổng ca mổ</label>
-                            <input type="number" name="surgeryTotal" value="${e.surgeryTotal || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Chương trình</label>
-                            <input type="number" name="surgeryCT" value="${e.surgeryCT || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Yêu cầu</label>
-                            <input type="number" name="surgeryYC" value="${e.surgeryYC || ''}" min="0" placeholder="0">
-                        </div>
-                    </div>
-                </div>
+                <!-- Row 5: Notes (collapsed) -->
+                <details style="margin-bottom:8px" ${e.notes ? 'open' : ''}>
+                    <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-secondary);padding:3px 0">📝 Ghi chú thêm (bấm để mở)</summary>
+                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.82rem">${e.notes || ''}</textarea>
+                </details>
 
-                ${this._isFriday(date) ? `
-                <div style="background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
-                    <label style="font-weight:700;font-size:0.85rem;color:#15803d;margin-bottom:6px;display:block">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</label>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Tổng ca mổ</label>
-                            <input type="number" name="surgery2Total" value="${e.surgery2Total || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Chương trình</label>
-                            <input type="number" name="surgery2CT" value="${e.surgery2CT || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Yêu cầu</label>
-                            <input type="number" name="surgery2YC" value="${e.surgery2YC || ''}" min="0" placeholder="0">
-                        </div>
-                    </div>
-                </div>` : ''}
-
-                <div class="form-group">
-                    <label>👤 BS báo cáo</label>
-                    <select name="reporterName">
-                        <option value="">— Chọn —</option>
-                        ${doctors.map(d => `<option value="${d.name}" ${d.name === defaultReporter ? 'selected' : ''}>${d.name} (${d.title})</option>`).join('')}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>📝 Ghi chú thêm</label>
-                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)...">${e.notes || ''}</textarea>
-                </div>
-
-                <div class="modal-footer">
+                <div class="modal-footer" style="padding-top:6px;border-top:1px solid var(--border)">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">💾 Lưu báo cáo</button>
                 </div>
