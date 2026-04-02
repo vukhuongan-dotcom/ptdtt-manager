@@ -560,17 +560,30 @@ const ReportsPage = {
     // ========== HELPERS ==========
     changeDate(date) { this.selectedDate = date; App.renderCurrentPage(); },
     goToday() { this.selectedDate = new Date().toISOString().split('T')[0]; App.renderCurrentPage(); },
-    viewDate(date) { this.selectedDate = date; App.renderCurrentPage(); },
+    viewDate(date) {
+        this.selectedDate = date;
+        App.renderCurrentPage();
+        // Scroll to the report card after render
+        setTimeout(() => {
+            const el = document.getElementById('report-export-area');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    },
+    // Timezone-safe date parser for YYYY-MM-DD strings
+    _parseDate(dateStr) {
+        const parts = dateStr.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    },
     formatDateVN(dateStr) {
-        const d = new Date(dateStr);
+        const d = this._parseDate(dateStr);
         return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
     },
     formatDateShort(dateStr) {
-        const d = new Date(dateStr);
+        const d = this._parseDate(dateStr);
         return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
     },
     getDayOfWeek(dateStr) {
         const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
-        return days[new Date(dateStr).getDay()];
+        return days[this._parseDate(dateStr).getDay()];
     }
 };
