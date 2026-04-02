@@ -16,7 +16,7 @@ const ReportsPage = {
             <button class="staff-subtab ${this.activeTab === 'report16h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report16h')">
                 🩺 Báo cáo 16h <span class="staff-subtab-count">BS trực</span>
             </button>
-            <button class="staff-subtab ${this.activeTab === 'report7h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report7h')" style="opacity:0.5" title="Sắp triển khai">
+            <button class="staff-subtab ${this.activeTab === 'report7h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report7h')">
                 👩‍⚕️ Báo cáo 7h <span class="staff-subtab-count">ĐD</span>
             </button>
         </div>
@@ -638,14 +638,449 @@ const ReportsPage = {
         ctx.closePath();
     },
 
-    // ========== REPORT 7H (placeholder) ==========
+    // ========== REPORT 7H — Báo cáo sáng (Điều dưỡng) ==========
     renderReport7h() {
+        const reports = Store.getAll('reports7h') || [];
+        const todayReport = reports.find(r => r.date === this.selectedDate);
+
         return `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center">
+                <label style="font-weight:600;font-size:0.85rem;color:var(--text-secondary)">Ngày:</label>
+                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)"
+                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg-card);color:var(--text-primary)">
+                <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.goToday()">Hôm nay</button>
+            </div>
+            <div style="display:flex;gap:8px">
+                ${todayReport ? `<button class="btn btn-sm" style="background:#f97316;color:#fff;border:none;font-size:0.78rem" onclick="ReportsPage.exportReport7hImage()">
+                    📸 Xuất hình báo cáo 7h
+                </button>` : ''}
+                ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport7hForm()">
+                    ${Utils.plusIcon()} Tạo báo cáo 7h
+                </button>` : ''}
+            </div>
+        </div>
+
+        ${todayReport ? this.renderReport7hCard(todayReport) : `
         <div class="card" style="text-align:center;padding:40px">
-            <div style="font-size:2.5rem;margin-bottom:12px">🚧</div>
-            <p style="font-size:1rem;font-weight:600;color:var(--text-secondary)">Đang phát triển</p>
-            <p style="font-size:0.85rem;color:var(--text-muted)">Form báo cáo 7h sáng (Điều dưỡng) sẽ được triển khai sau</p>
+            <div style="font-size:2.5rem;margin-bottom:12px">📋</div>
+            <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:8px">Chưa có báo cáo 7h cho ngày ${this.formatDateVN(this.selectedDate)}</p>
+            <p style="font-size:0.82rem;color:var(--text-muted)">Bấm "Tạo báo cáo 7h" để bắt đầu</p>
+        </div>`}
+
+        <div style="margin-top:20px">
+            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo 7h gần đây</h3>
+            ${this.renderReport7hHistory(reports)}
+        </div>
+        `;
+    },
+
+    renderReport7hCard(r) {
+        const session = Auth.getSession();
+        const canEdit = !!session;
+
+        return `
+        <div id="report7h-export-area">
+        <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:0 4px 20px rgba(0,0,0,0.12)">
+            <div style="background:linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0369a1 100%);padding:18px 22px;color:#fff;position:relative">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                    <div>
+                        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2.5px;color:#7dd3fc;margin-bottom:6px;font-weight:500">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
+                        <h2 style="font-size:1.25rem;font-weight:800;margin:0;letter-spacing:0.5px;color:#fff">👩‍⚕️ BÁO CÁO TÌNH HÌNH KHOA LÚC 7G SÁNG</h2>
+                        <div style="font-size:0.9rem;margin-top:5px;color:#bae6fd;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
+                    </div>
+                    <div class="report-no-export">
+                        ${canEdit ? `<button class="btn btn-sm" style="background:rgba(255,255,255,0.12);color:#e0f2fe;border:1px solid rgba(255,255,255,0.25);font-size:0.72rem;cursor:pointer" onclick="ReportsPage.openReport7hForm('${r.date}')">✏️ Sửa</button>` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats: 2 main cards -->
+            <div style="padding:16px 22px;background:#fff">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">TỔNG BN</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
+                    </div>
+                    <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">NHẬN BN ĐÊM QUA</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${(parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromGiaiAp) || 0)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail sections -->
+            <div style="padding:0 22px 16px;background:#fff">
+                ${r.fromHSCC > 0 ? `
+                <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#dc2626;font-size:0.82rem;margin-bottom:3px">🚑 NHẬN TỪ HSCC: ${r.fromHSCC} ca</div>
+                    ${r.fromHSCCDetail ? `<div style="font-size:0.85rem;color:#991b1b;line-height:1.5">${r.fromHSCCDetail}</div>` : ''}
+                </div>` : ''}
+
+                ${r.fromHoiTinh > 0 ? `
+                <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#2563eb;font-size:0.82rem;margin-bottom:3px">🏥 NHẬN TỪ HỒI TỈNH: ${r.fromHoiTinh} ca</div>
+                    ${r.fromHoiTinhDetail ? `<div style="font-size:0.85rem;color:#1e40af;line-height:1.5">${r.fromHoiTinhDetail}</div>` : ''}
+                </div>` : ''}
+
+                ${r.fromGiaiAp > 0 ? `
+                <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#16a34a;font-size:0.82rem;margin-bottom:3px">🔄 NHẬN GIẢI ÁP KHOA: ${r.fromGiaiAp} ca</div>
+                    ${r.fromGiaiApDetail ? `<div style="font-size:0.85rem;color:#166534;line-height:1.5">${r.fromGiaiApDetail}</div>` : ''}
+                </div>` : ''}
+
+                ${r.notes ? `
+                <div style="background:#f8fafc;border-left:4px solid #94a3b8;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#475569;font-size:0.82rem;margin-bottom:3px">GHI CHÚ</div>
+                    <div style="font-size:0.88rem;color:#334155;line-height:1.5">${r.notes}</div>
+                </div>` : ''}
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:10px 22px;background:#f0f9ff;border-top:1px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#0369a1">
+                <span>👩‍⚕️ ĐD báo cáo: <strong style="color:#0c4a6e">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
+                <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '07:00'}</strong></span>
+            </div>
+        </div>
         </div>`;
+    },
+
+    renderReport7hHistory(reports) {
+        const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
+        const recent = sorted.slice(0, 5);
+        if (recent.length === 0) return '<p style="font-size:0.85rem;color:var(--text-muted)">Chưa có báo cáo nào</p>';
+
+        return `<div class="card" style="padding:0;overflow:hidden">
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+                <thead><tr style="background:var(--bg-hover)">
+                    <th style="padding:10px;text-align:left;font-weight:600;color:var(--text-secondary)">NGÀY</th>
+                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">TỔNG BN</th>
+                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">HSCC</th>
+                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">HỒI TỈNH</th>
+                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">GIẢI ÁP</th>
+                    <th style="padding:10px;text-align:left;font-weight:600;color:var(--text-secondary)">ĐD BÁO CÁO</th>
+                    <th style="padding:10px"></th>
+                </tr></thead>
+                <tbody>
+                ${recent.map(r => `<tr style="border-top:1px solid var(--border);cursor:pointer" onclick="ReportsPage.viewDate('${r.date}');ReportsPage.switchTab('report7h')">
+                    <td style="padding:10px"><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
+                    <td style="padding:10px;text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
+                    <td style="padding:10px;text-align:center;color:#ef4444">${r.fromHSCC || '—'}</td>
+                    <td style="padding:10px;text-align:center;color:#3b82f6">${r.fromHoiTinh || '—'}</td>
+                    <td style="padding:10px;text-align:center;color:#22c55e">${r.fromGiaiAp || '—'}</td>
+                    <td style="padding:10px">${r.reporterName || '—'}</td>
+                    <td style="padding:10px;text-align:center">👁️</td>
+                </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+    },
+
+    openReport7hForm(editDate) {
+        const date = editDate || this.selectedDate;
+        const reports = Store.getAll('reports7h') || [];
+        const existing = reports.find(r => r.date === date);
+        const session = Auth.getSession();
+        const autoPatients = this.getAutoPatientCount();
+
+        const nurses = Store.getAll('staff').filter(s =>
+            s.role.includes('Điều dưỡng') || s.role.includes('Hộ lý')
+        );
+        const allStaff = Store.getAll('staff');
+
+        const e = existing || {};
+        const defaultPatients = e.totalPatients || (autoPatients > 0 ? autoPatients : '');
+        const defaultReporter = e.reporterName || session?.name || '';
+
+        Modal.open(`👩‍⚕️ Báo cáo 7h sáng — ${this.formatDateVN(date)}`, `
+            <form onsubmit="ReportsPage.saveReport7h(event, '${date}')" style="max-height:70vh;overflow-y:auto">
+                <div style="background:linear-gradient(135deg,#0c4a6e,#075985);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#fff">
+                    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc">KHOA PTĐTT — BV BÌNH DÂN</div>
+                    <div style="font-size:0.92rem;font-weight:700;color:#fff">📌 Báo cáo tình hình khoa lúc 7g sáng — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tổng số BN <span style="color:var(--danger)">*</span></label>
+                    <input type="number" name="totalPatients" value="${defaultPatients}" required min="0" placeholder="VD: 65">
+                </div>
+
+                <div style="background:#fef2f2;border-radius:8px;padding:10px;margin-bottom:10px">
+                    <label style="font-weight:700;font-size:0.85rem;color:#dc2626;margin-bottom:6px;display:block">🚑 Nhận bệnh từ HSCC</label>
+                    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Số ca</label>
+                            <input type="number" name="fromHSCC" value="${e.fromHSCC || ''}" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Chi tiết (tên BN/phòng)</label>
+                            <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" placeholder="VD: Nguyễn Văn A/P201">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
+                    <label style="font-weight:700;font-size:0.85rem;color:#2563eb;margin-bottom:6px;display:block">🏥 Nhận bệnh từ Hồi tỉnh</label>
+                    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Số ca</label>
+                            <input type="number" name="fromHoiTinh" value="${e.fromHoiTinh || ''}" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Chi tiết (tên BN/phòng)</label>
+                            <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="VD: Trần Thị B/P305">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
+                    <label style="font-weight:700;font-size:0.85rem;color:#16a34a;margin-bottom:6px;display:block">🔄 Nhận bệnh giải áp khoa</label>
+                    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Số ca</label>
+                            <input type="number" name="fromGiaiAp" value="${e.fromGiaiAp || ''}" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Chi tiết (tên khoa/phòng)</label>
+                            <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="VD: Tim mạch 2 ca">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>👩‍⚕️ ĐD báo cáo</label>
+                    <select name="reporterName">
+                        <option value="">— Chọn —</option>
+                        ${allStaff.map(d => `<option value="${d.name}" ${d.name === defaultReporter ? 'selected' : ''}>${d.name} (${d.title || d.role})</option>`).join('')}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>📝 Ghi chú thêm</label>
+                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)...">${e.notes || ''}</textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">💾 Lưu báo cáo</button>
+                </div>
+            </form>
+        `);
+    },
+
+    saveReport7h(e, date) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const session = Auth.getSession();
+
+        const report = {
+            date,
+            totalPatients: parseInt(fd.get('totalPatients')) || 0,
+            fromHSCC: parseInt(fd.get('fromHSCC')) || 0,
+            fromHSCCDetail: fd.get('fromHSCCDetail')?.trim() || '',
+            fromHoiTinh: parseInt(fd.get('fromHoiTinh')) || 0,
+            fromHoiTinhDetail: fd.get('fromHoiTinhDetail')?.trim() || '',
+            fromGiaiAp: parseInt(fd.get('fromGiaiAp')) || 0,
+            fromGiaiApDetail: fd.get('fromGiaiApDetail')?.trim() || '',
+            reporterName: fd.get('reporterName') || session?.name || '',
+            notes: fd.get('notes')?.trim() || '',
+            createdBy: session?.username || 'unknown',
+            createdAt: new Date().toISOString()
+        };
+
+        if (!Store._data.reports7h) Store._data.reports7h = [];
+        const idx = Store._data.reports7h.findIndex(r => r.date === date);
+        if (idx >= 0) {
+            report.createdAt = Store._data.reports7h[idx].createdAt;
+            report.updatedAt = new Date().toISOString();
+            Store._data.reports7h[idx] = report;
+        } else {
+            Store._data.reports7h.push(report);
+        }
+        Store.save();
+
+        Modal.close();
+        this.selectedDate = date;
+        this.activeTab = 'report7h';
+        App.renderCurrentPage();
+        Toast.success('Đã lưu báo cáo 7h sáng');
+    },
+
+    exportReport7hImage() {
+        const reports = Store.getAll('reports7h') || [];
+        const r = reports.find(rr => rr.date === this.selectedDate);
+        if (!r) return Toast.error('Không có báo cáo 7h để xuất');
+        try { this._drawAndDownload7h(r); } catch (err) { console.error(err); Toast.error('Lỗi: ' + err.message); }
+    },
+
+    _drawAndDownload7h(r) {
+        const scale = 2;
+        const W = 480;
+        let contentH = 260;
+        if (r.fromHSCC > 0) contentH += 50;
+        if (r.fromHoiTinh > 0) contentH += 50;
+        if (r.fromGiaiAp > 0) contentH += 50;
+        if (r.notes) contentH += 50;
+        contentH += 45;
+        const H = contentH;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = W * scale;
+        canvas.height = H * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+
+        // Background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, W, H);
+
+        // Header
+        const headerH = 80;
+        const hGrad = ctx.createLinearGradient(0, 0, W, headerH);
+        hGrad.addColorStop(0, '#0c4a6e');
+        hGrad.addColorStop(1, '#0369a1');
+        ctx.fillStyle = hGrad;
+        ctx.fillRect(0, 0, W, headerH);
+
+        ctx.fillStyle = '#7dd3fc';
+        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN', 22, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Inter, system-ui, sans-serif';
+        ctx.fillText('👩‍⚕️ BÁO CÁO TÌNH HÌNH KHOA LÚC 7G SÁNG', 22, 46);
+        ctx.fillStyle = '#bae6fd';
+        ctx.font = '500 12px Inter, system-ui, sans-serif';
+        ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}`, 22, 66);
+
+        // Stat boxes
+        let curY = headerH + 16;
+        const boxW = (W - 48 - 10) / 2;
+
+        // Total patients
+        ctx.fillStyle = '#0284c7';
+        this._roundRect(ctx, 24, curY, boxW, 55, 8);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('TỔNG BN', 24 + boxW/2, curY + 18);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+        ctx.fillText(`${r.totalPatients || '—'}`, 24 + boxW/2, curY + 45);
+
+        // Total received
+        const totalReceived = (parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromGiaiAp) || 0);
+        ctx.fillStyle = '#059669';
+        this._roundRect(ctx, 24 + boxW + 10, curY, boxW, 55, 8);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.fillText('NHẬN BN ĐÊM QUA', 24 + boxW + 10 + boxW/2, curY + 18);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+        ctx.fillText(`${totalReceived}`, 24 + boxW + 10 + boxW/2, curY + 45);
+
+        curY += 65;
+        ctx.textAlign = 'left';
+
+        // Detail blocks
+        const drawBlock = (label, count, detail, bgColor, borderColor, textColor) => {
+            if (count <= 0) return;
+            const blockH = 40;
+            ctx.fillStyle = bgColor;
+            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
+            ctx.fill();
+            ctx.fillStyle = borderColor;
+            ctx.fillRect(24, curY, 4, blockH);
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.fillText(`${label}: ${count} ca`, 38, curY + 16);
+            if (detail) {
+                ctx.fillStyle = textColor;
+                ctx.font = '10px Inter, system-ui, sans-serif';
+                const txt = detail.length > 60 ? detail.substring(0, 57) + '...' : detail;
+                ctx.fillText(txt, 38, curY + 32);
+            }
+            curY += blockH + 10;
+        };
+
+        drawBlock('🚑 NHẬN TỪ HSCC', r.fromHSCC, r.fromHSCCDetail, '#fef2f2', '#ef4444', '#991b1b');
+        drawBlock('🏥 NHẬN TỪ HỒI TỈNH', r.fromHoiTinh, r.fromHoiTinhDetail, '#eff6ff', '#3b82f6', '#1e40af');
+        drawBlock('🔄 NHẬN GIẢI ÁP KHOA', r.fromGiaiAp, r.fromGiaiApDetail, '#f0fdf4', '#22c55e', '#166534');
+
+        if (r.notes) {
+            const blockH = 40;
+            ctx.fillStyle = '#f8fafc';
+            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
+            ctx.fill();
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(24, curY, 4, blockH);
+            ctx.fillStyle = '#475569';
+            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.fillText('GHI CHÚ', 38, curY + 16);
+            ctx.font = '10px Inter, system-ui, sans-serif';
+            ctx.fillStyle = '#334155';
+            ctx.fillText(r.notes.length > 60 ? r.notes.substring(0, 57) + '...' : r.notes, 38, curY + 32);
+            curY += blockH + 10;
+        }
+
+        // Footer
+        const footY = curY + 5;
+        ctx.fillStyle = '#f0f9ff';
+        ctx.fillRect(0, footY, W, 35);
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillRect(0, footY, W, 1);
+        ctx.fillStyle = '#0369a1';
+        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`ĐD báo cáo: ${r.reporterName || ''}`, 24, footY + 22);
+        ctx.textAlign = 'right';
+        const timeStr7 = (r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '07:00';
+        ctx.fillText(`Báo cáo lúc: ${timeStr7}`, W - 24, footY + 22);
+
+        // Watermark (diagonal)
+        ctx.save();
+        const wmW7 = W;
+        const wmH7 = footY + 100;
+        ctx.translate(wmW7 / 2, wmH7 / 2);
+        ctx.rotate(-Math.atan2(wmH7, wmW7));
+        ctx.font = 'bold 42px Inter, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -10);
+        ctx.font = '20px Inter, system-ui, sans-serif';
+        ctx.fillText('Bệnh viện Bình Dân', 0, 30);
+        ctx.restore();
+
+        // Trim & download
+        const finalH = footY + 35;
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = W * scale;
+        outCanvas.height = finalH * scale;
+        const outCtx = outCanvas.getContext('2d');
+        outCtx.drawImage(canvas, 0, 0, W * scale, finalH * scale, 0, 0, W * scale, finalH * scale);
+
+        const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
+        const fileName = `BaoCao7h_${this.selectedDate.replace(/-/g, '')}.jpg`;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS) {
+            const w = window.open('', '_blank');
+            if (w) { w.document.write(`<html><head><title>${fileName}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;display:flex;justify-content:center;background:#f1f5f9;padding:16px}img{max-width:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15)}p{text-align:center;color:#475569;font-family:system-ui;font-size:14px;margin-top:12px}</style></head><body><div><img src="${dataUrl}"><p>Nhấn giữ hình để lưu về máy</p></div></body></html>`); w.document.close(); }
+            else { window.location.href = dataUrl; }
+        } else {
+            const byteStr = atob(dataUrl.split(',')[1]);
+            const mimeStr = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteStr.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+            const blob = new Blob([ab], { type: mimeStr });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+        Toast.success('Đã tạo hình báo cáo 7h!');
     },
 
     // ========== HELPERS ==========
