@@ -45,6 +45,7 @@ const ReportsPage = {
     renderReport16h() {
         const reports = Store.getAll('reports16h') || [];
         const todayReport = reports.find(r => r.date === this.selectedDate);
+        const isWeekend = this._isWeekend(this.selectedDate);
 
         return `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -54,23 +55,32 @@ const ReportsPage = {
                     style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg-card);color:var(--text-primary)">
                 <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
-            <div style="display:flex;gap:8px">
+            ${!isWeekend ? `<div style="display:flex;gap:8px">
                 ${todayReport ? `<button class="btn btn-sm" style="background:#f97316;color:#fff;border:none;font-size:0.78rem" onclick="ReportsPage.exportReportImage()">
                     📸 Xuất hình trực khoa
                 </button>` : ''}
                 ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport16hForm()">
                     ${Utils.plusIcon()} Tạo báo cáo
                 </button>` : ''}
-            </div>
+            </div>` : ''}
         </div>
 
-        ${todayReport ? this.renderReport16hCard(todayReport) : this.renderNoReport()}
+        ${isWeekend ? this.renderWeekendNotice() : (todayReport ? this.renderReport16hCard(todayReport) : this.renderNoReport())}
 
         <div style="margin-top:20px">
             <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo gần đây</h3>
             ${this.renderReportHistory(reports)}
         </div>
         `;
+    },
+
+    renderWeekendNotice() {
+        return `
+        <div class="card" style="text-align:center;padding:40px;background:linear-gradient(135deg,#fefce8,#fef9c3);border:1px solid #fde68a">
+            <div style="font-size:2.5rem;margin-bottom:12px">🏖️</div>
+            <p style="font-size:1rem;font-weight:700;color:#92400e;margin-bottom:6px">${this.getDayOfWeek(this.selectedDate)} — Không trực khoa</p>
+            <p style="font-size:0.85rem;color:#a16207">Thứ bảy và Chủ nhật không có báo cáo trực khoa 16h</p>
+        </div>`;
     },
 
     renderNoReport() {
@@ -661,6 +671,11 @@ const ReportsPage = {
     // Check if a date is Friday (day 5)
     _isFriday(dateStr) {
         return this._parseDate(dateStr).getDay() === 5;
+    },
+    // Check if a date is Saturday (6) or Sunday (0)
+    _isWeekend(dateStr) {
+        const day = this._parseDate(dateStr).getDay();
+        return day === 0 || day === 6;
     },
     formatDateVN(dateStr) {
         const d = this._parseDate(dateStr);
