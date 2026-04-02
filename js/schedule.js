@@ -552,7 +552,10 @@ const SchedulePage = {
                         <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:11px;color:#64748b"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
                     </tbody>
                 </table>
-                <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa Phẫu thuật Đại trực tràng — ${new Date().toLocaleDateString('vi-VN')}</p>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:10px;color:#94a3b8">
+                    <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
+                    <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}</span>
+                </div>
             </div></body></html>`;
 
             // Render in isolated iframe (prevents interaction with live DOM)
@@ -700,11 +703,11 @@ const SchedulePage = {
         ctx.save();
         ctx.translate(w / 2, h / 2);
         ctx.rotate(-25 * Math.PI / 180);
-        ctx.font = `bold ${Math.round(w * 0.06)}px Inter, Arial, sans-serif`;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.035)';
+        ctx.font = `bold ${Math.round(w * 0.04)}px Inter, Arial, sans-serif`;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('Khoa PTĐTT', 0, -Math.round(h * 0.02));
+        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -Math.round(h * 0.02));
         ctx.font = `${Math.round(w * 0.02)}px Inter, Arial, sans-serif`;
         ctx.fillText('Bệnh viện Bình Dân', 0, Math.round(h * 0.04));
         ctx.restore();

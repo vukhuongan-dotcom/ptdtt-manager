@@ -604,8 +604,8 @@ const SurgeryPage = {
             <!-- Header with dark navy background for high contrast -->
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
                 <div>
-                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PTĐTT</div>
-                    <div style="font-size:13px;color:#94a3b8;margin-top:3px">Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</div>
+                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                    <div style="font-size:13px;color:#94a3b8;margin-top:3px">Bệnh viện Bình Dân</div>
                 </div>
                 <div style="text-align:right">
                     <div style="font-size:20px;font-weight:700;color:#ffffff">LỊCH MỔ NGÀY ${dateLabel}</div>
@@ -645,7 +645,7 @@ const SurgeryPage = {
 
             <!-- Footer -->
             <div style="padding:12px 36px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;background:#f8fafc">
-                <span>PTDTT Manager — ptdtt.vukhuongan.id.vn</span>
+                <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
                 <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} ngày ${dateLabel}</span>
             </div>
         </div>`;
@@ -653,20 +653,20 @@ const SurgeryPage = {
 
         const target = container.querySelector('#surgery-export-target');
         html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
-            // Add watermark (same style as report export)
+            // Add watermark — centered, responsive size
             const ctx = canvasEl.getContext('2d');
             const cw = canvasEl.width;
             const ch = canvasEl.height;
             ctx.save();
             ctx.translate(cw / 2, ch / 2);
             ctx.rotate(-25 * Math.PI / 180);
-            ctx.font = 'bold 128px Inter, system-ui, sans-serif';
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.035)';
+            ctx.font = `bold ${Math.round(cw * 0.055)}px Inter, system-ui, sans-serif`;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('Khoa PTDTT', 0, -20);
-            ctx.font = '44px Inter, system-ui, sans-serif';
-            ctx.fillText('Bệnh viện Bình Dân', 0, 60);
+            ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -Math.round(ch * 0.02));
+            ctx.font = `${Math.round(cw * 0.025)}px Inter, system-ui, sans-serif`;
+            ctx.fillText('Bệnh viện Bình Dân', 0, Math.round(ch * 0.04));
             ctx.restore();
 
             canvasEl.toBlob(blob => {

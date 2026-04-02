@@ -546,13 +546,13 @@ const ReportsPage = {
         ctx.save();
         ctx.translate(W / 2, (footY + 100) / 2);
         ctx.rotate(-25 * Math.PI / 180);
-        ctx.font = 'bold 64px Inter, system-ui, sans-serif';
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.035)';
+        ctx.font = 'bold 42px Inter, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('Khoa PTDTT', 0, -10);
-        ctx.font = '22px Inter, system-ui, sans-serif';
-        ctx.fillText('Bệnh viện Bình Dân', 0, 35);
+        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -10);
+        ctx.font = '20px Inter, system-ui, sans-serif';
+        ctx.fillText('Bệnh viện Bình Dân', 0, 30);
         ctx.restore();
 
         // ===== Trim canvas to actual height =====
