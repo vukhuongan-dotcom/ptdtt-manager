@@ -32,8 +32,11 @@ const ReportsPage = {
 
     // ========== Auto-fill patient count from EMR ==========
     getAutoPatientCount() {
-        const emr = (typeof EMR !== 'undefined') ? EMR.getData() : null;
-        if (emr && emr.totalDept > 0) return emr.totalDept;
+        // Priority: EMR real-time data → manual patient stats
+        if (typeof EMR !== 'undefined') {
+            const emr = EMR.getData();
+            if (emr && emr.totalDept > 0) return emr.totalDept;
+        }
         const pStats = Store.getPatientStats();
         return pStats ? (pStats.total - pStats.discharged) : 0;
     },
@@ -41,7 +44,6 @@ const ReportsPage = {
     // ========== REPORT 16H ==========
     renderReport16h() {
         const reports = Store.getAll('reports16h') || [];
-        const session = Auth.getSession();
         const todayReport = reports.find(r => r.date === this.selectedDate);
 
         return `
@@ -86,67 +88,67 @@ const ReportsPage = {
 
         return `
         <div id="report-export-area">
-        <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:0 2px 16px rgba(0,0,0,0.10)">
-            <!-- Header -->
-            <div style="background:linear-gradient(135deg,#1e3a5f 0%,#0c4a6e 50%,#155e75 100%);padding:16px 20px;color:#fff;position:relative">
+        <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:0 4px 20px rgba(0,0,0,0.12)">
+            <!-- Header: White text on dark background for maximum contrast -->
+            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%);padding:18px 22px;color:#fff;position:relative">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start">
                     <div>
-                        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2px;opacity:0.7;margin-bottom:4px">KHOA PT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
-                        <h2 style="font-size:1.15rem;font-weight:800;margin:0;letter-spacing:0.5px">🩺 BÁO CÁO TRỰC KHOA LÚC 16G</h2>
-                        <div style="font-size:0.88rem;margin-top:4px;opacity:0.9;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
+                        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2.5px;color:#94a3b8;margin-bottom:6px;font-weight:500">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
+                        <h2 style="font-size:1.25rem;font-weight:800;margin:0;letter-spacing:0.5px;color:#fff">🩺 BÁO CÁO TRỰC KHOA LÚC 16G</h2>
+                        <div style="font-size:0.9rem;margin-top:5px;color:#e2e8f0;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
                     </div>
-                    <div style="text-align:right" class="report-no-export">
-                        ${canEdit ? `<button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:0.72rem;cursor:pointer;backdrop-filter:blur(4px)" onclick="ReportsPage.openReport16hForm('${r.date}')">✏️ Sửa</button>` : ''}
+                    <div class="report-no-export">
+                        ${canEdit ? `<button class="btn btn-sm" style="background:rgba(255,255,255,0.12);color:#e2e8f0;border:1px solid rgba(255,255,255,0.25);font-size:0.72rem;cursor:pointer" onclick="ReportsPage.openReport16hForm('${r.date}')">✏️ Sửa</button>` : ''}
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div style="padding:16px 20px;background:#fff">
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
-                    <div style="padding:14px 12px;text-align:center;background:linear-gradient(135deg,#dbeafe,#eff6ff);border-right:1px solid #e2e8f0">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:600;margin-bottom:4px">TỔNG BN</div>
-                        <div style="font-size:2rem;font-weight:800;color:#1e3a5f">${r.totalPatients || '—'}</div>
+            <!-- Stats: High contrast colored cards -->
+            <div style="padding:16px 22px;background:#fff">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+                    <div style="background:#1e40af;border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">TỔNG BN</div>
+                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
-                    <div style="padding:14px 12px;text-align:center;border-right:1px solid #e2e8f0">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:600;margin-bottom:4px">MỔ CHƯA VỀ</div>
-                        <div style="font-size:2rem;font-weight:800;color:#ea580c">${r.postOpNotReturned || '0'}</div>
+                    <div style="background:#ea580c;border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">MỔ CHƯA VỀ</div>
+                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.postOpNotReturned || '0'}</div>
                     </div>
-                    <div style="padding:14px 12px;text-align:center;background:linear-gradient(135deg,#dcfce7,#f0fdf4);border-right:1px solid #e2e8f0">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:600;margin-bottom:4px">NHẬP VIỆN</div>
-                        <div style="font-size:2rem;font-weight:800;color:#16a34a">${r.admissions || '0'}</div>
+                    <div style="background:#16a34a;border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">NHẬP VIỆN</div>
+                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.admissions || '0'}</div>
                     </div>
-                    <div style="padding:14px 12px;text-align:center;background:linear-gradient(135deg,#fef9c3,#fefce8)">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:600;margin-bottom:4px">XUẤT VIỆN</div>
-                        <div style="font-size:2rem;font-weight:800;color:#ca8a04">${r.discharges || '0'}</div>
+                    <div style="background:#ca8a04;border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">XUẤT VIỆN</div>
+                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.discharges || '0'}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Detail sections -->
-            <div style="padding:0 20px 16px;background:#fff">
+            <div style="padding:0 22px 16px;background:#fff">
                 ${r.severePatients ? `
-                <div style="background:linear-gradient(135deg,#fef2f2,#fff1f2);border-left:4px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#dc2626;font-size:0.82rem;margin-bottom:2px">⚠️ BỆNH PHÒNG NẶNG</div>
-                    <div style="font-size:0.88rem;color:#7f1d1d;line-height:1.4">${r.severePatients}</div>
+                <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#dc2626;font-size:0.82rem;margin-bottom:3px">⚠️ BỆNH PHÒNG NẶNG</div>
+                    <div style="font-size:0.88rem;color:#7f1d1d;line-height:1.5">${r.severePatients}</div>
                 </div>` : ''}
 
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
-                <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:2px">🔪 BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}</div>
+                <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">🔪 BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}</div>
                     <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} Chương trình, ${r.surgeryYC || '0'} Yêu cầu)</span></div>
                 </div>` : ''}
 
                 ${r.notes ? `
                 <div style="background:#f8fafc;border-left:4px solid #94a3b8;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#475569;font-size:0.82rem;margin-bottom:2px">📝 GHI CHÚ</div>
-                    <div style="font-size:0.88rem;color:#334155;line-height:1.4">${r.notes}</div>
+                    <div style="font-weight:700;color:#475569;font-size:0.82rem;margin-bottom:3px">📝 GHI CHÚ</div>
+                    <div style="font-size:0.88rem;color:#334155;line-height:1.5">${r.notes}</div>
                 </div>` : ''}
             </div>
 
             <!-- Footer -->
-            <div style="padding:10px 20px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:#64748b">
-                <span>👤 BS trực: <strong style="color:#1e3a5f">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
+            <div style="padding:10px 22px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#475569">
+                <span>👤 BS trực: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
                 <span>🕐 Báo cáo lúc: <strong>${r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '16:00'}</strong></span>
             </div>
         </div>
@@ -187,17 +189,20 @@ const ReportsPage = {
         );
 
         const e = existing || {};
+        // #1: Auto-fill patient count from EMR if creating new report
         const defaultPatients = e.totalPatients || (autoPatients > 0 ? autoPatients : '');
+        // #3: Auto-sync reporter name = current logged-in user
+        const defaultReporter = e.reporterName || session?.name || '';
 
         Modal.open(`🩺 Báo cáo 16h — ${this.formatDateVN(date)}`, `
             <form onsubmit="ReportsPage.saveReport16h(event, '${date}')" style="max-height:70vh;overflow-y:auto">
-                <div style="background:linear-gradient(135deg,#1e3a5f,#155e75);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#fff">
-                    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;opacity:0.7">KHOA PTĐTT — BV BÌNH DÂN</div>
-                    <div style="font-size:0.92rem;font-weight:700">📌 Báo cáo trực khoa lúc 16g — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}</div>
+                <div style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#fff">
+                    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8">KHOA PTĐTT — BV BÌNH DÂN</div>
+                    <div style="font-size:0.92rem;font-weight:700;color:#fff">📌 Báo cáo trực khoa lúc 16g — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}</div>
                 </div>
 
                 ${autoPatients > 0 && !existing ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.82rem;color:#065f46">
-                    ✅ Tổng BN tự động cập nhật từ hệ thống: <strong>${autoPatients}</strong> bệnh nhân
+                    ✅ Tổng BN tự động từ EMR: <strong>${autoPatients}</strong> bệnh nhân
                 </div>` : ''}
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -246,7 +251,7 @@ const ReportsPage = {
                     <label>👤 BS báo cáo</label>
                     <select name="reporterName">
                         <option value="">— Chọn —</option>
-                        ${doctors.map(d => `<option value="${d.name}" ${(e.reporterName === d.name || (!e.reporterName && d.name === session?.name)) ? 'selected' : ''}>${d.name} (${d.title})</option>`).join('')}
+                        ${doctors.map(d => `<option value="${d.name}" ${d.name === defaultReporter ? 'selected' : ''}>${d.name} (${d.title})</option>`).join('')}
                     </select>
                 </div>
 
@@ -302,232 +307,153 @@ const ReportsPage = {
         Toast.success('Đã lưu báo cáo 16h');
     },
 
-    // ========== EXPORT JPEG with Watermark ==========
-    async exportReportImage() {
-        const area = document.getElementById('report-export-area');
-        if (!area) return Toast.error('Không tìm thấy báo cáo để xuất');
-
-        // Hide edit buttons during export
-        area.querySelectorAll('.report-no-export').forEach(el => el.style.display = 'none');
+    // ========== EXPORT JPEG — Pure Canvas (guaranteed to work) ==========
+    exportReportImage() {
+        const reports = Store.getAll('reports16h') || [];
+        const r = reports.find(rr => rr.date === this.selectedDate);
+        if (!r) return Toast.error('Không có báo cáo để xuất');
 
         Toast.info('Đang tạo hình ảnh...');
 
-        try {
-            // Use canvas to render the report card
-            const card = area.querySelector('.card');
-            if (!card) return;
-
-            const rect = card.getBoundingClientRect();
-            const scale = 2; // Retina quality
-            const W = rect.width * scale;
-            const H = rect.height * scale;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = W;
-            canvas.height = H;
-            const ctx = canvas.getContext('2d');
-
-            // Draw white background
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, W, H);
-
-            // Render HTML to canvas using foreignObject in SVG
-            const clone = card.cloneNode(true);
-            clone.querySelectorAll('.report-no-export').forEach(el => el.remove());
-            // Set fixed width for consistent rendering
-            clone.style.width = rect.width + 'px';
-            clone.style.boxShadow = 'none';
-            clone.style.border = 'none';
-
-            const data = new XMLSerializer().serializeToString(clone);
-            const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}">
-                <foreignObject width="100%" height="100%">
-                    <div xmlns="http://www.w3.org/1999/xhtml">${data}</div>
-                </foreignObject>
-            </svg>`;
-
-            const img = new Image();
-            const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
-            const url = URL.createObjectURL(svgBlob);
-
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = () => reject(new Error('SVG render failed'));
-                img.src = url;
-            });
-
-            ctx.scale(scale, scale);
-            ctx.drawImage(img, 0, 0);
-            URL.revokeObjectURL(url);
-
-            // Draw watermark "Khoa PTĐTT"
-            ctx.save();
-            ctx.scale(1/scale, 1/scale); // Reset to pixel coords
-            ctx.translate(W/2, H/2);
-            ctx.rotate(-25 * Math.PI / 180);
-            ctx.font = `bold ${Math.max(W * 0.08, 40)}px Inter, system-ui, sans-serif`;
-            ctx.fillStyle = 'rgba(30, 58, 95, 0.06)';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('Khoa PTĐTT', 0, 0);
-            // Second watermark line smaller
-            ctx.font = `${Math.max(W * 0.03, 16)}px Inter, system-ui, sans-serif`;
-            ctx.fillText('Bệnh viện Bình Dân', 0, W * 0.06);
-            ctx.restore();
-
-            // Convert to JPEG
-            canvas.toBlob(blob => {
-                if (!blob) {
-                    // Fallback: manual pixel rendering
-                    this._exportFallback();
-                    return;
-                }
-                const a = document.createElement('a');
-                const reports = Store.getAll('reports16h') || [];
-                const r = reports.find(r => r.date === this.selectedDate);
-                const dateStr = this.selectedDate.replace(/-/g, '');
-                a.download = `BaoCao16h_${dateStr}.jpg`;
-                a.href = URL.createObjectURL(blob);
-                a.click();
-                URL.revokeObjectURL(a.href);
-                Toast.success('Đã xuất hình JPEG!');
-            }, 'image/jpeg', 0.92);
-
-        } catch (err) {
-            console.warn('SVG export failed, using fallback:', err);
-            this._exportFallback();
-        } finally {
-            // Restore hidden elements
-            area.querySelectorAll('.report-no-export').forEach(el => el.style.display = '');
-        }
+        // Use setTimeout to let toast render first
+        setTimeout(() => this._drawAndDownload(r), 100);
     },
 
-    // Fallback: Pure canvas rendering (no foreignObject dependency)
-    _exportFallback() {
-        const reports = Store.getAll('reports16h') || [];
-        const r = reports.find(rr => rr.date === this.selectedDate);
-        if (!r) return;
-
-        const W = 800, H = 520;
+    _drawAndDownload(r) {
+        const W = 800;
+        const scale = 2;
         const canvas = document.createElement('canvas');
-        canvas.width = W * 2;
-        canvas.height = H * 2;
         const ctx = canvas.getContext('2d');
-        ctx.scale(2, 2);
 
-        // Background
-        ctx.fillStyle = '#fff';
+        // Pre-calculate height
+        let contentH = 320; // header + stats
+        if (r.severePatients) contentH += 60;
+        if (r.surgeryTotal > 0 || r.surgeryDay) contentH += 55;
+        if (r.notes) contentH += 55;
+        contentH += 45; // footer
+        const H = contentH;
+
+        canvas.width = W * scale;
+        canvas.height = H * scale;
+        ctx.scale(scale, scale);
+
+        // ===== Background =====
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, W, H);
 
-        // Header gradient
-        const hGrad = ctx.createLinearGradient(0, 0, W, 80);
-        hGrad.addColorStop(0, '#1e3a5f');
-        hGrad.addColorStop(0.5, '#0c4a6e');
-        hGrad.addColorStop(1, '#155e75');
+        // ===== Header: Dark slate =====
+        const hGrad = ctx.createLinearGradient(0, 0, W, 0);
+        hGrad.addColorStop(0, '#0f172a');
+        hGrad.addColorStop(0.5, '#1e293b');
+        hGrad.addColorStop(1, '#334155');
         ctx.fillStyle = hGrad;
-        ctx.fillRect(0, 0, W, 95);
+        this._roundRectTop(ctx, 0, 0, W, 100, 0);
+        ctx.fill();
 
         // Header text
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.font = '10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('KHOA PT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN', 24, 25);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 10px Inter, system-ui, sans-serif';
+        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN', 24, 30);
 
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 18px Inter, system-ui, sans-serif';
-        ctx.fillText('🩺  BÁO CÁO TRỰC KHOA LÚC 16G', 24, 52);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px Inter, system-ui, sans-serif';
+        ctx.fillText('🩺  BÁO CÁO TRỰC KHOA LÚC 16G', 24, 58);
 
-        ctx.font = '14px Inter, system-ui, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}`, 24, 78);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '500 14px Inter, system-ui, sans-serif';
+        ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}`, 24, 82);
 
-        // Stat boxes
-        const boxY = 115;
+        // ===== Stat Boxes =====
+        const boxY = 118;
         const boxH = 80;
-        const boxW = (W - 24 * 2 - 10 * 3) / 4;
+        const gap = 12;
+        const boxW = (W - 24 * 2 - gap * 3) / 4;
 
         const stats = [
-            { label: 'TỔNG BN', value: r.totalPatients || '—', bg: '#dbeafe', color: '#1e3a5f' },
-            { label: 'MỔ CHƯA VỀ', value: r.postOpNotReturned || '0', bg: '#fff7ed', color: '#ea580c' },
-            { label: 'NHẬP VIỆN', value: r.admissions || '0', bg: '#dcfce7', color: '#16a34a' },
-            { label: 'XUẤT VIỆN', value: r.discharges || '0', bg: '#fef9c3', color: '#ca8a04' },
+            { label: 'TỔNG BN', value: r.totalPatients || '—', bg: '#1e40af' },
+            { label: 'MỔ CHƯA VỀ', value: r.postOpNotReturned || '0', bg: '#ea580c' },
+            { label: 'NHẬP VIỆN', value: r.admissions || '0', bg: '#16a34a' },
+            { label: 'XUẤT VIỆN', value: r.discharges || '0', bg: '#ca8a04' },
         ];
 
         stats.forEach((s, i) => {
-            const x = 24 + i * (boxW + 10);
-            // Box background
+            const x = 24 + i * (boxW + gap);
             ctx.fillStyle = s.bg;
-            this._roundRect(ctx, x, boxY, boxW, boxH, 8);
+            this._roundRect(ctx, x, boxY, boxW, boxH, 10);
             ctx.fill();
-            // Border
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 1;
-            this._roundRect(ctx, x, boxY, boxW, boxH, 8);
-            ctx.stroke();
-            // Label
-            ctx.fillStyle = '#64748b';
+
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = 'bold 9px Inter, system-ui, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(s.label, x + boxW/2, boxY + 22);
-            // Value
-            ctx.fillStyle = s.color;
-            ctx.font = 'bold 32px Inter, system-ui, sans-serif';
-            ctx.fillText(String(s.value), x + boxW/2, boxY + 60);
+            ctx.fillText(s.label, x + boxW / 2, boxY + 24);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 34px Inter, system-ui, sans-serif';
+            ctx.fillText(String(s.value), x + boxW / 2, boxY + 62);
         });
 
         let curY = boxY + boxH + 20;
         ctx.textAlign = 'left';
 
-        // Severe patients
+        // ===== Severe patients =====
         if (r.severePatients) {
+            const blockH = 50;
             ctx.fillStyle = '#fef2f2';
-            this._roundRect(ctx, 24, curY, W - 48, 50, 6);
+            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
             ctx.fill();
             ctx.fillStyle = '#ef4444';
-            ctx.fillRect(24, curY, 4, 50);
+            ctx.fillRect(24, curY, 4, blockH);
+
             ctx.fillStyle = '#dc2626';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-            ctx.fillText('⚠️  BỆNH PHÒNG NẶNG', 38, curY + 18);
+            ctx.fillText('⚠️  BỆNH PHÒNG NẶNG', 38, curY + 20);
             ctx.fillStyle = '#7f1d1d';
-            ctx.font = '12px Inter, system-ui, sans-serif';
-            ctx.fillText(r.severePatients.substring(0, 80), 38, curY + 38);
-            curY += 62;
+            ctx.font = '13px Inter, system-ui, sans-serif';
+            const sevText = r.severePatients.length > 80 ? r.severePatients.substring(0, 77) + '...' : r.severePatients;
+            ctx.fillText(sevText, 38, curY + 40);
+            curY += blockH + 10;
         }
 
-        // Surgery info
+        // ===== Surgery =====
         if (r.surgeryTotal > 0 || r.surgeryDay) {
+            const blockH = 45;
             ctx.fillStyle = '#eff6ff';
-            this._roundRect(ctx, 24, curY, W - 48, 45, 6);
+            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
             ctx.fill();
             ctx.fillStyle = '#3b82f6';
-            ctx.fillRect(24, curY, 4, 45);
+            ctx.fillRect(24, curY, 4, blockH);
+
             ctx.fillStyle = '#1d4ed8';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
             ctx.fillText(`🔪  BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}`, 38, curY + 18);
             ctx.fillStyle = '#1e3a8a';
-            ctx.font = 'bold 13px Inter, system-ui, sans-serif';
-            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} Chương trình,  ${r.surgeryYC || 0} Yêu cầu)`, 38, curY + 36);
-            curY += 57;
+            ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+            ctx.fillText(`${r.surgeryTotal || 0} ca   (${r.surgeryCT || 0} Chương trình,  ${r.surgeryYC || 0} Yêu cầu)`, 38, curY + 37);
+            curY += blockH + 10;
         }
 
-        // Notes
+        // ===== Notes =====
         if (r.notes) {
+            const blockH = 45;
             ctx.fillStyle = '#f8fafc';
-            this._roundRect(ctx, 24, curY, W - 48, 45, 6);
+            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
             ctx.fill();
             ctx.fillStyle = '#94a3b8';
-            ctx.fillRect(24, curY, 4, 45);
+            ctx.fillRect(24, curY, 4, blockH);
+
             ctx.fillStyle = '#475569';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
             ctx.fillText('📝  GHI CHÚ', 38, curY + 18);
             ctx.fillStyle = '#334155';
-            ctx.font = '12px Inter, system-ui, sans-serif';
-            ctx.fillText(r.notes.substring(0, 80), 38, curY + 36);
-            curY += 57;
+            ctx.font = '13px Inter, system-ui, sans-serif';
+            const noteText = r.notes.length > 80 ? r.notes.substring(0, 77) + '...' : r.notes;
+            ctx.fillText(noteText, 38, curY + 37);
+            curY += blockH + 10;
         }
 
-        // Footer
-        const footY = Math.max(curY + 10, H - 35);
+        // ===== Footer =====
+        const footY = curY + 5;
         ctx.fillStyle = '#f1f5f9';
         ctx.fillRect(0, footY, W, 35);
         ctx.strokeStyle = '#e2e8f0';
@@ -537,43 +463,51 @@ const ReportsPage = {
         ctx.lineTo(W, footY);
         ctx.stroke();
 
-        ctx.fillStyle = '#64748b';
-        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.font = '12px Inter, system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(`👤 BS trực: ${r.reporterName || ''}`, 24, footY + 22);
         ctx.textAlign = 'right';
-        const timeStr = r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '16:00';
+        const timeStr = r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00';
         ctx.fillText(`🕐 Báo cáo lúc: ${timeStr}`, W - 24, footY + 22);
 
-        // Watermark
+        // ===== Watermark =====
         ctx.save();
-        ctx.translate(W/2, (footY + 95)/2);
+        ctx.translate(W / 2, (footY + 100) / 2);
         ctx.rotate(-25 * Math.PI / 180);
-        ctx.font = 'bold 60px Inter, system-ui, sans-serif';
-        ctx.fillStyle = 'rgba(30, 58, 95, 0.04)';
+        ctx.font = 'bold 64px Inter, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.035)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('Khoa PTĐTT', 0, 0);
-        ctx.font = '20px Inter, system-ui, sans-serif';
-        ctx.fillText('Bệnh viện Bình Dân', 0, 40);
+        ctx.fillText('Khoa PTDTT', 0, -10);
+        ctx.font = '22px Inter, system-ui, sans-serif';
+        ctx.fillText('Benh vien Binh Dan', 0, 35);
         ctx.restore();
 
-        // Resize canvas to actual content height
-        const finalH = Math.max(curY + 50, footY + 35);
+        // ===== Trim canvas to actual height =====
+        const finalH = footY + 35;
         const outCanvas = document.createElement('canvas');
-        outCanvas.width = W * 2;
-        outCanvas.height = finalH * 2;
+        outCanvas.width = W * scale;
+        outCanvas.height = finalH * scale;
         const outCtx = outCanvas.getContext('2d');
-        outCtx.drawImage(canvas, 0, 0);
+        outCtx.drawImage(canvas, 0, 0, W * scale, finalH * scale, 0, 0, W * scale, finalH * scale);
 
+        // ===== Download as JPEG =====
         outCanvas.toBlob(blob => {
+            if (!blob) {
+                Toast.error('Không thể tạo file JPEG');
+                return;
+            }
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
+            a.href = url;
             a.download = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
-            a.href = URL.createObjectURL(blob);
+            document.body.appendChild(a);
             a.click();
-            URL.revokeObjectURL(a.href);
-            Toast.success('Đã xuất hình JPEG!');
-        }, 'image/jpeg', 0.92);
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            Toast.success('Đã tải file JPEG thành công!');
+        }, 'image/jpeg', 0.95);
     },
 
     _roundRect(ctx, x, y, w, h, r) {
@@ -590,6 +524,18 @@ const ReportsPage = {
         ctx.closePath();
     },
 
+    _roundRectTop(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h);
+        ctx.lineTo(x, y + h);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    },
+
     // ========== REPORT 7H (placeholder) ==========
     renderReport7h() {
         return `
@@ -601,18 +547,9 @@ const ReportsPage = {
     },
 
     // ========== HELPERS ==========
-    changeDate(date) {
-        this.selectedDate = date;
-        App.renderCurrentPage();
-    },
-    goToday() {
-        this.selectedDate = new Date().toISOString().split('T')[0];
-        App.renderCurrentPage();
-    },
-    viewDate(date) {
-        this.selectedDate = date;
-        App.renderCurrentPage();
-    },
+    changeDate(date) { this.selectedDate = date; App.renderCurrentPage(); },
+    goToday() { this.selectedDate = new Date().toISOString().split('T')[0]; App.renderCurrentPage(); },
+    viewDate(date) { this.selectedDate = date; App.renderCurrentPage(); },
     formatDateVN(dateStr) {
         const d = new Date(dateStr);
         return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
