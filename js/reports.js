@@ -783,7 +783,7 @@ const ReportsPage = {
         const session = Auth.getSession();
         const autoPatients = this.getAutoPatientCount();
         const allStaff = Store.getAll('staff');
-        const nurses = allStaff.filter(s => s.role.includes('Điều dưỡng'));
+        const nurses = allStaff.filter(s => s.role.includes('Điều dưỡng') && !s.name.includes('Thùy'));
 
         const e = existing || {};
         const defaultPatients = e.totalPatients || (autoPatients > 0 ? autoPatients : '');
@@ -804,7 +804,7 @@ const ReportsPage = {
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
             const shortName = n.name.replace(/^(Nguyễn|Trần|Phạm|Lê|Bùi|Phan|Huỳnh|Lý)\s/, (m) => m.charAt(0) + '. ');
             return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='#f0f9ff';c.style.color='#0369a1';c.style.borderColor='#bae6fd'});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
-                class="r7h-chip" style="padding:5px 8px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.72rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${shortName}</button>`;
+                class="r7h-chip" style="padding:5px 8px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.82rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${shortName}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
