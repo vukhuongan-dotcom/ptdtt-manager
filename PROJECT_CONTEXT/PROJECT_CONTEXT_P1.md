@@ -1,7 +1,9 @@
-# PROJECT CONTEXT — PTDTT Manager
+# PROJECT CONTEXT — PTDTT Manager (Phần 1: Nền tảng)
 
-> **Mục đích file này**: Cung cấp toàn bộ context cho Agent AI khi bắt đầu cuộc trò chuyện mới.
-> Khi muốn tiếp tục dự án, chỉ cần paste: _"Đọc PROJECT_CONTEXT.md và tiếp tục"_
+> **Mục đích file này**: Cung cấp context cho Agent AI khi bắt đầu cuộc trò chuyện mới.
+> **Cuộc trò chuyện gốc**: `9b56c37f` — "Finalizing Surgery Schedule And Statistics"
+> **Xem tiếp**: [PROJECT_CONTEXT_P2.md](./PROJECT_CONTEXT_P2.md) — Phần 2: UX Upgrade + Security
+> Khi muốn tiếp tục dự án, paste: _"Đọc PROJECT_CONTEXT_P1.md và PROJECT_CONTEXT_P2.md trong folder PROJECT_CONTEXT của ptdtt-manager rồi tiếp tục"_
 
 ---
 

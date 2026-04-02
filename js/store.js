@@ -72,13 +72,30 @@ const Store = {
     // Cache-busting: prevent browser/proxy from caching API calls
     _api(url, opts) {
         const sep = url.includes('?') ? '&' : '?';
+        if (!opts) opts = {};
+        if (!opts.headers) opts.headers = {};
+        // Inject JWT Bearer token for authentication
+        const token = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+        if (token) {
+            opts.headers['Authorization'] = 'Bearer ' + token;
+        }
         // Inject X-User header for audit logging
-        if (opts && (opts.method === 'PUT' || opts.method === 'DELETE' || opts.method === 'POST')) {
-            if (!opts.headers) opts.headers = {};
+        if (opts.method === 'PUT' || opts.method === 'DELETE' || opts.method === 'POST') {
             const session = (typeof Auth !== 'undefined') ? Auth.getSession() : null;
             opts.headers['X-User'] = session ? session.username : 'anonymous';
         }
-        return fetch(url + sep + '_t=' + Date.now(), opts);
+        return fetch(url + sep + '_t=' + Date.now(), opts).then(response => {
+            // Handle 401 Unauthorized — token expired or invalid
+            if (response.status === 401 && typeof Auth !== 'undefined') {
+                console.warn('[Store] 401 Unauthorized — logging out');
+                Auth.logout();
+                if (typeof App !== 'undefined' && App.renderLogin) {
+                    App.renderLogin();
+                }
+                throw new Error('Unauthorized');
+            }
+            return response;
+        });
     },
 
     _syncToServer() {
@@ -138,11 +155,6 @@ const Store = {
                     this._data = serverData;
                     localStorage.setItem(STORE_KEY, newJson);
                     if (!quiet) console.log('[Store] Synced from server ✅');
-                    // Re-apply custom passwords/admin after server sync
-                    if (typeof Auth !== 'undefined' && Auth.generateAccounts) {
-                        Auth.generateAccounts();
-                        console.log('[Store] Auth accounts regenerated with server data');
-                    }
                     if (typeof App !== 'undefined' && App.renderCurrentPage) {
                         App.renderCurrentPage();
                     }
@@ -150,8 +162,10 @@ const Store = {
                 this._serverAvailable = true;
             }
             this._syncing = false;
-        }).catch(() => {
-            this._serverAvailable = false;
+        }).catch(e => {
+            if (e.message !== 'Unauthorized') {
+                this._serverAvailable = false;
+            }
             this._syncing = false;
             if (!quiet) console.log('[Store] Server not available, using localStorage');
         });

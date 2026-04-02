@@ -29,7 +29,7 @@ DATA_DIR  = os.path.join(BASE_DIR, 'data')
 DATA_FILE = os.path.join(DATA_DIR, 'db.json')
 LOG_DIR   = os.path.join(BASE_DIR, 'logs')
 AUTH_FILE = os.path.join(DATA_DIR, 'auth.json')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'ptdtt-secret-key-' + str(uuid.uuid4())[:8])
+JWT_SECRET = os.environ.get('JWT_SECRET', 'ptdtt-jwt-secret-7937d0d7117344888dc10cc44b95ce77')
 JWT_EXPIRY_DAYS = 30
 PORT      = int(os.environ.get('PORT', 5000))
 
@@ -120,6 +120,51 @@ def _cleanup_old_logs(days=90):
         except Exception:
             pass
 
+# ────────────────────────────── Auth Middleware ──────────────────────────────
+def _get_current_user():
+    """Extract and verify JWT from Authorization header. Returns payload or None."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    return _verify_jwt(auth_header[7:])
+
+def require_auth(f):
+    """Decorator: require valid JWT for this endpoint"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        payload = _get_current_user()
+        if not payload:
+            return jsonify({'error': 'Authentication required'}), 401
+        request._user = payload  # Attach user info to request
+        return f(*args, **kwargs)
+    return decorated
+
+def require_admin(f):
+    """Decorator: require admin JWT for this endpoint"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        payload = _get_current_user()
+        if not payload:
+            return jsonify({'error': 'Authentication required'}), 401
+        if not payload.get('isAdmin') and not payload.get('isSuperAdmin'):
+            return jsonify({'error': 'Admin access required'}), 403
+        request._user = payload
+        return f(*args, **kwargs)
+    return decorated
+
+def require_superadmin(f):
+    """Decorator: require superadmin JWT for this endpoint"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        payload = _get_current_user()
+        if not payload:
+            return jsonify({'error': 'Authentication required'}), 401
+        if not payload.get('isSuperAdmin'):
+            return jsonify({'error': 'Super admin access required'}), 403
+        request._user = payload
+        return f(*args, **kwargs)
+    return decorated
+
 # ────────────────────────────── Static files ──────────────────────────────
 @app.route('/')
 def index():
@@ -139,15 +184,18 @@ def static_files(path):
 # ────────────────────────────── Data API ──────────────────────────────
 @app.route('/api/data', methods=['GET'])
 def get_data():
-    """Return the entire JSON database"""
+    """Return the entire JSON database (sensitive fields stripped)"""
     data = load_data()
-    return jsonify(data)
+    # Strip sensitive auth-related fields from response
+    safe_data = {k: v for k, v in data.items() if k not in ('customPasswords', 'customAdmins', 'disabledAccounts')}
+    return jsonify(safe_data)
 
 @app.route('/api/data', methods=['PUT'])
+@require_auth
 def put_data():
-    """Replace the entire JSON database"""
+    """Replace the entire JSON database (auth required)"""
     data = request.get_json(force=True)
-    user = request.headers.get('X-User', 'unknown')
+    user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     audit_log(user, 'data.put', {'size': len(json.dumps(data))})
     save_data(data)
     return jsonify({'ok': True, 'version': _get_file_version()})
@@ -186,10 +234,11 @@ def get_collection(collection):
     return jsonify(data.get(collection, []))
 
 @app.route('/api/data/<collection>', methods=['PUT'])
+@require_auth
 def put_collection(collection):
-    """Replace a single collection"""
+    """Replace a single collection (auth required)"""
     items = request.get_json(force=True)
-    user = request.headers.get('X-User', 'unknown')
+    user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     audit_log(user, f'collection.put.{collection}', {'count': len(items) if isinstance(items, list) else 1})
     data = load_data()
     data[collection] = items
