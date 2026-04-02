@@ -1,0 +1,42 @@
+/* ===== Reports Page ===== */
+.report-stat-card {
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--primary);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.report-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.report-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.report-row-active {
+    background: var(--bg-secondary) !important;
+    border-left: 3px solid var(--primary);
+}
+
+/* Report form enhancements */
+.report-stat-card:nth-child(3) { border-left-color: #22c55e; }
+.report-stat-card:nth-child(4) { border-left-color: #f59e0b; }
+
+@media (max-width: 768px) {
+    .report-stat-card {
+        padding: 8px 10px;
+    }
+    .report-stat-value {
+        font-size: 1.2rem;
+    }
+}
