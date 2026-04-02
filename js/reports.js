@@ -803,11 +803,10 @@ const ReportsPage = {
                     style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
             </div>`;
 
-        // Nurse chips — compact 4-column grid
+        // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
-            const shortName = n.name.replace(/^(Nguyễn|Trần|Phạm|Lê|Bùi|Phan|Huỳnh|Lý)\s/, (m) => m.charAt(0) + '. ');
             return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='#f0f9ff';c.style.color='#0369a1';c.style.borderColor='#bae6fd'});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
-                class="r7h-chip" style="padding:5px 8px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.82rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${shortName}</button>`;
+                class="r7h-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${n.name}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
@@ -816,8 +815,8 @@ const ReportsPage = {
                 <!-- Row 1: Tổng BN -->
                 <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#0c4a6e,#0369a1);border-radius:10px;margin-bottom:10px">
                     <div style="flex:1;color:#fff">
-                        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
-                        <div style="font-size:0.78rem;color:#bae6fd;margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
+                        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
+                        <div style="font-size:0.85rem;color:#bae6fd;margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
                     </div>
                     <input type="number" name="totalPatients" value="${defaultPatients}" required min="0"
                         style="width:72px;text-align:center;font-size:1.6rem;font-weight:800;border:none;border-radius:10px;padding:6px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(4px)">
@@ -826,15 +825,15 @@ const ReportsPage = {
                 <!-- Row 2: 3 sources inline compact -->
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
                     <div style="background:#fef2f2;border-radius:8px;padding:8px;text-align:center">
-                        <div style="font-size:0.68rem;font-weight:700;color:#dc2626;margin-bottom:4px">🚑 HSCC</div>
+                        <div style="font-size:0.78rem;font-weight:700;color:#dc2626;margin-bottom:4px">🚑 HSCC</div>
                         ${stepper('fromHSCC', e.fromHSCC || 0, '#dc2626')}
                     </div>
                     <div style="background:#eff6ff;border-radius:8px;padding:8px;text-align:center">
-                        <div style="font-size:0.68rem;font-weight:700;color:#2563eb;margin-bottom:4px">🏥 Hồi tỉnh</div>
+                        <div style="font-size:0.78rem;font-weight:700;color:#2563eb;margin-bottom:4px">🏥 Hồi tỉnh</div>
                         ${stepper('fromHoiTinh', e.fromHoiTinh || 0, '#2563eb')}
                     </div>
                     <div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center">
-                        <div style="font-size:0.68rem;font-weight:700;color:#16a34a;margin-bottom:4px">🔄 Giải áp</div>
+                        <div style="font-size:0.78rem;font-weight:700;color:#16a34a;margin-bottom:4px">🔄 Giải áp</div>
                         ${stepper('fromGiaiAp', e.fromGiaiAp || 0, '#16a34a')}
                     </div>
                 </div>
@@ -842,28 +841,28 @@ const ReportsPage = {
                 <!-- Row 3: Auto-expand detail fields (hidden by default when count=0) -->
                 <div id="detail-fromHSCC" style="display:${(e.fromHSCC > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" placeholder="🚑 Chi tiết HSCC: tên BN / phòng..."
-                        style="width:100%;padding:7px 10px;border:1px solid #fca5a5;border-radius:6px;font-size:0.82rem;background:#fff5f5">
+                        style="width:100%;padding:8px 10px;border:1px solid #fca5a5;border-radius:6px;font-size:0.88rem;background:#fff5f5">
                 </div>
                 <div id="detail-fromHoiTinh" style="display:${(e.fromHoiTinh > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
-                        style="width:100%;padding:7px 10px;border:1px solid #93c5fd;border-radius:6px;font-size:0.82rem;background:#eff6ff">
+                        style="width:100%;padding:8px 10px;border:1px solid #93c5fd;border-radius:6px;font-size:0.88rem;background:#eff6ff">
                 </div>
                 <div id="detail-fromGiaiAp" style="display:${(e.fromGiaiAp > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
-                        style="width:100%;padding:7px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.82rem;background:#f0fdf4">
+                        style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.88rem;background:#f0fdf4">
                 </div>
 
                 <!-- Row 4: Reporter quick-select -->
                 <div style="margin-bottom:8px">
-                    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px">👩‍⚕️ ĐD trực BV báo cáo</div>
-                    ${nurses.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">${nurseChips}</div>` : ''}
+                    <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px">👩‍⚕️ ĐD trực BV báo cáo</div>
+                    ${nurses.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">${nurseChips}</div>` : ''}
                     <input type="hidden" id="r7h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
                 <!-- Row 5: Notes (collapsed) -->
                 <details style="margin-bottom:10px" ${e.notes ? 'open' : ''}>
-                    <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-secondary);padding:4px 0">📝 Ghi chú thêm (bấm để mở)</summary>
-                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.82rem">${e.notes || ''}</textarea>
+                    <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text-secondary);padding:4px 0">📝 Ghi chú thêm (bấm để mở)</summary>
+                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.88rem">${e.notes || ''}</textarea>
                 </details>
 
                 <div class="modal-footer" style="padding-top:8px;border-top:1px solid var(--border)">
