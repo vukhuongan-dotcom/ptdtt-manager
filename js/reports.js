@@ -249,9 +249,8 @@ const ReportsPage = {
 
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
-            const shortName = d.name.replace(/^(Nguyễn|Trần|Phạm|Lê|Bùi|Phan|Huỳnh|Lý)\s/, (m) => m.charAt(0) + '. ');
             return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
-                class="r16h-chip" style="padding:5px 8px;border-radius:6px;border:1px solid ${d.name===defaultReporter?'#0f172a':'#cbd5e1'};background:${d.name===defaultReporter?'#0f172a':'#f1f5f9'};color:${d.name===defaultReporter?'#fff':'#334155'};font-size:0.82rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${shortName}</button>`;
+                class="r16h-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name===defaultReporter?'#0f172a':'#cbd5e1'};background:${d.name===defaultReporter?'#0f172a':'#f1f5f9'};color:${d.name===defaultReporter?'#fff':'#334155'};font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${d.name}</button>`;
         }).join('');
 
         const nextDay = this._getNextDay(date);
@@ -315,7 +314,7 @@ const ReportsPage = {
                 <!-- Row 4: Doctor quick-select -->
                 <div style="margin-bottom:6px">
                     <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👤 BS trực khoa báo cáo</div>
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">${docChips}</div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">${docChips}</div>
                     <input type="hidden" id="r16h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
