@@ -201,8 +201,9 @@ const ReportsPage = {
                     <div style="font-size:0.92rem;font-weight:700;color:#fff">📌 Báo cáo trực khoa lúc 16g — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}</div>
                 </div>
 
-                ${autoPatients > 0 && !existing ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.82rem;color:#065f46">
-                    ✅ Tổng BN tự động từ EMR: <strong>${autoPatients}</strong> bệnh nhân
+                ${autoPatients > 0 ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.82rem;color:#065f46;display:flex;justify-content:space-between;align-items:center">
+                    <span>✅ Số BN hệ thống EMR: <strong>${autoPatients}</strong> bệnh nhân</span>
+                    ${existing ? `<button type="button" style="background:#059669;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:0.78rem;cursor:pointer" onclick="document.querySelector('input[name=totalPatients]').value=${autoPatients};this.parentElement.querySelector('span').innerHTML='✅ Đã đồng bộ: <strong>${autoPatients}</strong>'">🔄 Đồng bộ</button>` : ''}
                 </div>` : ''}
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -350,19 +351,19 @@ const ReportsPage = {
         this._roundRectTop(ctx, 0, 0, W, 100, 0);
         ctx.fill();
 
-        // Header text
+        // Header text — NO EMOJI to prevent tainted canvas
         ctx.textAlign = 'left';
         ctx.fillStyle = '#94a3b8';
         ctx.font = '500 10px Inter, system-ui, sans-serif';
-        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN', 24, 30);
+        ctx.fillText('KHOA PHAU THUAT DAI TRUC TRANG  —  BENH VIEN BINH DAN', 24, 30);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 20px Inter, system-ui, sans-serif';
-        ctx.fillText('🩺  BÁO CÁO TRỰC KHOA LÚC 16G', 24, 58);
+        ctx.fillText('BAO CAO TRUC KHOA LUC 16G', 24, 58);
 
         ctx.fillStyle = '#e2e8f0';
         ctx.font = '500 14px Inter, system-ui, sans-serif';
-        ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}`, 24, 82);
+        ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngay ${this.formatDateVN(r.date)}`, 24, 82);
 
         // ===== Stat Boxes =====
         const boxY = 118;
@@ -407,7 +408,7 @@ const ReportsPage = {
 
             ctx.fillStyle = '#dc2626';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-            ctx.fillText('⚠️  BỆNH PHÒNG NẶNG', 38, curY + 20);
+            ctx.fillText('[!] BENH PHONG NANG', 38, curY + 20);
             ctx.fillStyle = '#7f1d1d';
             ctx.font = '13px Inter, system-ui, sans-serif';
             const sevText = r.severePatients.length > 80 ? r.severePatients.substring(0, 77) + '...' : r.severePatients;
@@ -426,7 +427,7 @@ const ReportsPage = {
 
             ctx.fillStyle = '#1d4ed8';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-            ctx.fillText(`🔪  BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}`, 38, curY + 18);
+            ctx.fillText(`BENH MO ${this.getDayOfWeek(r.date).toUpperCase()}`, 38, curY + 18);
             ctx.fillStyle = '#1e3a8a';
             ctx.font = 'bold 14px Inter, system-ui, sans-serif';
             ctx.fillText(`${r.surgeryTotal || 0} ca   (${r.surgeryCT || 0} Chương trình,  ${r.surgeryYC || 0} Yêu cầu)`, 38, curY + 37);
@@ -444,7 +445,7 @@ const ReportsPage = {
 
             ctx.fillStyle = '#475569';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-            ctx.fillText('📝  GHI CHÚ', 38, curY + 18);
+            ctx.fillText('GHI CHU', 38, curY + 18);
             ctx.fillStyle = '#334155';
             ctx.font = '13px Inter, system-ui, sans-serif';
             const noteText = r.notes.length > 80 ? r.notes.substring(0, 77) + '...' : r.notes;
@@ -466,10 +467,10 @@ const ReportsPage = {
         ctx.fillStyle = '#475569';
         ctx.font = '12px Inter, system-ui, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`👤 BS trực: ${r.reporterName || ''}`, 24, footY + 22);
+        ctx.fillText(`BS truc: ${r.reporterName || ''}`, 24, footY + 22);
         ctx.textAlign = 'right';
         const timeStr = r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00';
-        ctx.fillText(`🕐 Báo cáo lúc: ${timeStr}`, W - 24, footY + 22);
+        ctx.fillText(`Bao cao luc: ${timeStr}`, W - 24, footY + 22);
 
         // ===== Watermark =====
         ctx.save();
