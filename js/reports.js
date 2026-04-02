@@ -144,13 +144,13 @@ const ReportsPage = {
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
                 <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
                     <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date))})</div>
-                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} CT, ${r.surgeryYC || '0'} YC)</span></div>
+                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} Chương trình, ${r.surgeryYC || '0'} Yêu cầu)</span></div>
                 </div>` : ''}
 
                 ${this._isFriday(r.date) && (r.surgery2Total > 0) ? `
                 <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
                     <div style="font-weight:700;color:#15803d;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date, 3)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date, 3))})</div>
-                    <div style="font-size:0.95rem;color:#166534;font-weight:600">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} CT, ${r.surgery2YC || '0'} YC)</span></div>
+                    <div style="font-size:0.95rem;color:#166534;font-weight:600">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} Chương trình, ${r.surgery2YC || '0'} Yêu cầu)</span></div>
                 </div>` : ''}
 
                 ${r.notes ? `
@@ -163,7 +163,7 @@ const ReportsPage = {
             <!-- Footer -->
             <div style="padding:10px 22px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#475569">
                 <span>👤 BS trực: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
-                <span>🕐 Báo cáo lúc: <strong>${r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '16:00'}</strong></span>
+                <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '16:00'}</strong></span>
             </div>
         </div>
         </div>`;
@@ -481,7 +481,7 @@ const ReportsPage = {
             ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(nextDay).toUpperCase()} (${this.formatDateShort(nextDay)})`, 38, curY + 18);
             ctx.fillStyle = '#1e3a8a';
             ctx.font = 'bold 14px Inter, system-ui, sans-serif';
-            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} CT, ${r.surgeryYC || 0} YC)`, 38, curY + 37);
+            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} Chương trình, ${r.surgeryYC || 0} Yêu cầu)`, 38, curY + 37);
             curY += blockH + 10;
         }
 
@@ -500,7 +500,7 @@ const ReportsPage = {
             ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(monDay).toUpperCase()} (${this.formatDateShort(monDay)})`, 38, curY + 18);
             ctx.fillStyle = '#166534';
             ctx.font = 'bold 14px Inter, system-ui, sans-serif';
-            ctx.fillText(`${r.surgery2Total || 0} ca  (${r.surgery2CT || 0} CT, ${r.surgery2YC || 0} YC)`, 38, curY + 37);
+            ctx.fillText(`${r.surgery2Total || 0} ca  (${r.surgery2CT || 0} Chương trình, ${r.surgery2YC || 0} Yêu cầu)`, 38, curY + 37);
             curY += blockH + 10;
         }
 
@@ -539,7 +539,7 @@ const ReportsPage = {
         ctx.textAlign = 'left';
         ctx.fillText(`BS trực: ${r.reporterName || ''}`, 24, footY + 22);
         ctx.textAlign = 'right';
-        const timeStr = r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00';
+        const timeStr = (r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00';
         ctx.fillText(`Báo cáo lúc: ${timeStr}`, W - 24, footY + 22);
 
         // ===== Watermark =====

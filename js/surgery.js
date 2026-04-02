@@ -652,8 +652,24 @@ const SurgeryPage = {
         document.body.appendChild(container);
 
         const target = container.querySelector('#surgery-export-target');
-        html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
-            canvas.toBlob(blob => {
+        html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
+            // Add watermark (same style as report export)
+            const ctx = canvasEl.getContext('2d');
+            const cw = canvasEl.width;
+            const ch = canvasEl.height;
+            ctx.save();
+            ctx.translate(cw / 2, ch / 2);
+            ctx.rotate(-25 * Math.PI / 180);
+            ctx.font = 'bold 128px Inter, system-ui, sans-serif';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.035)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Khoa PTDTT', 0, -20);
+            ctx.font = '44px Inter, system-ui, sans-serif';
+            ctx.fillText('Bệnh viện Bình Dân', 0, 60);
+            ctx.restore();
+
+            canvasEl.toBlob(blob => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -661,6 +677,7 @@ const SurgeryPage = {
                 a.click();
                 URL.revokeObjectURL(url);
                 document.body.removeChild(container);
+                Toast.success('Đã xuất hình lịch mổ!');
             }, 'image/jpeg', 0.95);
         }).catch(err => {
             console.error('Export failed:', err);
