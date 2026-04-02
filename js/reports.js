@@ -504,26 +504,51 @@ const ReportsPage = {
         const outCtx = outCanvas.getContext('2d');
         outCtx.drawImage(canvas, 0, 0, W * scale, finalH * scale, 0, 0, W * scale, finalH * scale);
 
-        // ===== Download as JPEG (synchronous for mobile/PWA compatibility) =====
+        // ===== Download as JPEG (cross-platform: desktop, iOS Safari, PWA) =====
         const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
+        const fileName = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
 
-        // Convert dataURL to Blob for proper file download
-        const byteStr = atob(dataUrl.split(',')[1]);
-        const mimeStr = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteStr.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
-        const blob = new Blob([ab], { type: mimeStr });
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        Toast.success('Đã tải file JPEG thành công!');
+        if (isIOS) {
+            // iOS Safari doesn't support a.click() for blob downloads
+            // Open the image in a new tab so user can long-press to save
+            const w = window.open('', '_blank');
+            if (w) {
+                w.document.write(`
+                    <html><head><title>${fileName}</title>
+                    <meta name="viewport" content="width=device-width,initial-scale=1">
+                    <style>body{margin:0;display:flex;justify-content:center;align-items:flex-start;background:#f1f5f9;padding:16px}
+                    img{max-width:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+                    p{text-align:center;color:#475569;font-family:system-ui;font-size:14px;margin-top:12px}</style></head>
+                    <body><div><img src="${dataUrl}"><p>Nhấn giữ hình để lưu về máy</p></div></body></html>
+                `);
+                w.document.close();
+            } else {
+                // Popup blocked — fallback to direct navigation
+                window.location.href = dataUrl;
+            }
+        } else {
+            // Desktop/Android: use standard download
+            const byteStr = atob(dataUrl.split(',')[1]);
+            const mimeStr = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteStr.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+            const blob = new Blob([ab], { type: mimeStr });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+        Toast.success('Đã tạo hình JPEG thành công!');
     },
 
     _roundRect(ctx, x, y, w, h, r) {
