@@ -116,24 +116,24 @@ const ReportsPage = {
             <!-- Stats: 5 high contrast colored cards in one row -->
             <div style="padding:16px 22px;background:#fff">
                 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
-                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">TỔNG BN</div>
+                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">TỔNG BN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
-                    <div style="background:#e11d48;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">MỔ CHƯA VỀ</div>
+                    <div style="background:#e11d48;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">MỔ CHƯA VỀ</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.postOpNotReturned || '0'}</div>
                     </div>
-                    <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">NHẬP VIỆN</div>
+                    <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">NHẬP VIỆN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.admissions || '0'}</div>
                     </div>
-                    <div style="background:#d97706;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">XUẤT VIỆN</div>
+                    <div style="background:#d97706;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">XUẤT VIỆN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.discharges || '0'}</div>
                     </div>
-                    <div style="background:#7c3aed;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">BN NẶNG</div>
+                    <div style="background:#7c3aed;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">BN NẶNG</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.severePatients || '0'}</div>
                     </div>
                 </div>
@@ -701,12 +701,12 @@ const ReportsPage = {
             <!-- Stats: 2 main cards -->
             <div style="padding:16px 22px;background:#fff">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">TỔNG BN</div>
+                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">TỔNG BN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
-                    <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">NHẬN BN ĐÊM QUA</div>
+                    <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">NHẬN BN ĐÊM QUA</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${(parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromGiaiAp) || 0)}</div>
                     </div>
                 </div>
