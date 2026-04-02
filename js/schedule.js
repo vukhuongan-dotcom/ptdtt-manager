@@ -705,7 +705,7 @@ const SchedulePage = {
         const h = canvas.height;
         ctx.save();
         ctx.translate(w / 2, h / 2);
-        ctx.rotate(-25 * Math.PI / 180);
+        ctx.rotate(-Math.atan2(h, w));
         ctx.font = `bold ${Math.round(w * 0.04)}px Inter, Arial, sans-serif`;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
         ctx.textAlign = 'center';

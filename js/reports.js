@@ -542,10 +542,12 @@ const ReportsPage = {
         const timeStr = (r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00';
         ctx.fillText(`Báo cáo lúc: ${timeStr}`, W - 24, footY + 22);
 
-        // ===== Watermark =====
+        // ===== Watermark (diagonal bottom-left → top-right) =====
         ctx.save();
-        ctx.translate(W / 2, (footY + 100) / 2);
-        ctx.rotate(-25 * Math.PI / 180);
+        const wmW = W;
+        const wmH = footY + 100;
+        ctx.translate(wmW / 2, wmH / 2);
+        ctx.rotate(-Math.atan2(wmH, wmW));
         ctx.font = 'bold 42px Inter, system-ui, sans-serif';
         ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
         ctx.textAlign = 'center';

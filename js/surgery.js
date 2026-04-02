@@ -653,13 +653,13 @@ const SurgeryPage = {
 
         const target = container.querySelector('#surgery-export-target');
         html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
-            // Add watermark — centered, responsive size
+            // Add watermark — diagonal bottom-left → top-right
             const ctx = canvasEl.getContext('2d');
             const cw = canvasEl.width;
             const ch = canvasEl.height;
             ctx.save();
             ctx.translate(cw / 2, ch / 2);
-            ctx.rotate(-25 * Math.PI / 180);
+            ctx.rotate(-Math.atan2(ch, cw));
             ctx.font = `bold ${Math.round(cw * 0.055)}px Inter, system-ui, sans-serif`;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
             ctx.textAlign = 'center';
