@@ -217,7 +217,7 @@
   <div class="header">
     <h1>📋 HƯỚNG DẪN SỬ DỤNG MODULE BÁO CÁO</h1>
     <div class="sub">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</div>
-    <div class="meta">Phiên bản v0204234f &nbsp;|&nbsp; Cập nhật: 02/04/2026 &nbsp;|&nbsp; 🌐 khoaptdtt.info.vn</div>
+    <div class="meta">Phiên bản v02042353 &nbsp;|&nbsp; Cập nhật: 02/04/2026 &nbsp;|&nbsp; 🌐 khoaptdtt.info.vn</div>
   </div>
 
   <h2>1. Tổng quan</h2>
@@ -269,15 +269,17 @@
 
   <h4>🔹 Khu vực 3: Bệnh mổ ngày mai</h4>
   <div class="zone">
-    <p>3 stepper cho ca mổ dự kiến ngày hôm sau:</p>
+    <p><strong>4 stepper</strong> cho ca mổ dự kiến ngày hôm sau:</p>
     <table class="overview-table">
       <tr><th>Ô</th><th>Ý nghĩa</th></tr>
-      <tr><td><strong>Tổng</strong></td><td>Tổng số ca mổ dự kiến</td></tr>
-      <tr><td><strong>Chương trình</strong></td><td>Số ca mổ chương trình</td></tr>
+      <tr><td><strong>Tổng</strong></td><td>Tổng số ca mổ dự kiến (<strong>tự động cộng</strong> = CT + YC + Robot)</td></tr>
+      <tr><td><strong>CT</strong></td><td>Số ca mổ chương trình</td></tr>
       <tr><td><strong>Yêu cầu</strong></td><td>Số ca mổ yêu cầu</td></tr>
+      <tr><td><strong>Robot</strong> 🤖</td><td>Số ca mổ robot</td></tr>
     </table>
   </div>
-  <div class="note">Nếu hôm nay là <strong>Thứ Sáu</strong>, form sẽ tự động hiển thị thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau.</div>
+  <div class="tip"><strong>Tính năng tự động cộng:</strong> Khi thay đổi CT, Yêu cầu hoặc Robot, ô <strong>Tổng</strong> sẽ tự động cập nhật = CT + YC + Robot.</div>
+  <div class="note">Nếu hôm nay là <strong>Thứ Sáu</strong>, form sẽ tự động hiển thị thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau (cũng gồm 4 stepper tương tự).</div>
 
   <h4>🔹 Khu vực 4: Chọn BS trực khoa</h4>
   <div class="zone">
@@ -310,14 +312,16 @@
     <p>Ô lớn nền <strong>xanh dương gradient</strong> hiển thị ngày tháng và ô nhập tổng BN. Nhập số vào ô bên phải.</p>
   </div>
 
-  <h4>🔹 Khu vực 2: Nguồn BN nhận (HSCC – Hồi tỉnh – Giải áp)</h4>
+  <h4>🔹 Khu vực 2: Nguồn BN nhận (HSCC – Hồi tỉnh – ICU – Giải áp)</h4>
   <div class="zone">
     <table class="overview-table">
       <tr><th>Ô</th><th>Ý nghĩa</th><th>Màu</th></tr>
       <tr><td>🚑 <strong>HSCC</strong></td><td>Số BN nhận từ Hồi sức cấp cứu</td><td>Đỏ</td></tr>
       <tr><td>🏥 <strong>Hồi tỉnh</strong></td><td>Số BN nhận từ phòng Hồi tỉnh</td><td>Xanh dương</td></tr>
+      <tr><td>🏨 <strong>ICU</strong></td><td>Số BN nhận từ khoa ICU</td><td>Tím</td></tr>
       <tr><td>🔄 <strong>Giải áp</strong></td><td>Số BN nhận từ ca giải áp</td><td>Xanh lá</td></tr>
     </table>
+    <p style="margin-top:6px"><strong>Tổng nhận BN đêm qua</strong> = HSCC + Hồi tỉnh + ICU + Giải áp (tự động cộng).</p>
   </div>
   
   <div class="tip"><strong>Tính năng tự động mở rộng:</strong> Khi tăng số > 0, ô chi tiết sẽ <strong>tự động hiện</strong> bên dưới để nhập thêm thông tin (tên BN, phòng...). Khi = 0, ô chi tiết tự ẩn.</div>
