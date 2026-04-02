@@ -238,11 +238,11 @@
     }
 
     /* ---- Modal ---- */
-    .modal-content {
-        width: 95% !important;
+    .modal, .modal-content {
+        width: 96% !important;
         max-width: none !important;
-        margin: 10px;
-        max-height: 90vh;
+        margin: 10px auto;
+        max-height: 92vh;
     }
 
     /* ---- Login ---- */

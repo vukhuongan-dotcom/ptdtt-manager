@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hướng dẫn sử dụng Module Báo cáo — Khoa PTĐTT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    background: #fff;
+    font-size: 11pt;
+    line-height: 1.6;
+    padding: 0;
+  }
+  
+  .page {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 15mm 18mm;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+  
+  .header {
+    text-align: center;
+    padding-bottom: 12px;
+    border-bottom: 3px solid #0c4a6e;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #0c4a6e;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .header .sub {
+    font-size: 11pt;
+    color: #475569;
+    font-weight: 600;
+  }
+  .header .meta {
+    font-size: 9pt;
+    color: #94a3b8;
+    margin-top: 6px;
+  }
+  
+  h2 {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #0c4a6e;
+    margin: 18px 0 10px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 14px 0 6px;
+  }
+  
+  h4 {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #334155;
+    margin: 10px 0 4px;
+  }
+  
+  p { margin-bottom: 8px; }
+  
+  .overview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 16px;
+    font-size: 10pt;
+  }
+  .overview-table th {
+    background: #0c4a6e;
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .overview-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .overview-table tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+  
+  .step-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0284c7;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0;
+  }
+  .step-box.green { border-left-color: #059669; }
+  .step-box.amber { border-left-color: #d97706; }
+  .step-box.red { border-left-color: #dc2626; }
+  .step-box.purple { border-left-color: #7c3aed; }
+  
+  .step-num {
+    display: inline-block;
+    background: #0284c7;
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 9pt;
+    font-weight: 700;
+    line-height: 22px;
+    margin-right: 8px;
+  }
+  .step-box.green .step-num { background: #059669; }
+  
+  .zone {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 8px 0;
+  }
+  .zone-title {
+    font-weight: 700;
+    font-size: 10.5pt;
+    color: #0369a1;
+    margin-bottom: 4px;
+  }
+  .zone-title.teal { color: #0d9488; }
+  
+  .tip {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 9.5pt;
+    color: #065f46;
+    margin: 8px 0;
+  }
+  .tip::before { content: "💡 MẸO: "; font-weight: 700; }
+  
+  .warning {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 9.5pt;
+    color: #92400e;
+    margin: 8px 0;
+  }
+  .warning::before { content: "⚠️ LƯU Ý: "; font-weight: 700; }
+  
+  .note {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 9.5pt;
+    color: #1e40af;
+    margin: 8px 0;
+  }
+  .note::before { content: "ℹ️ GHI CHÚ: "; font-weight: 700; }
+  
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 8px 0;
+  }
+  
+  .faq-item {
+    margin: 10px 0;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .faq-q {
+    font-weight: 700;
+    color: #0c4a6e;
+    font-size: 10.5pt;
+    margin-bottom: 3px;
+  }
+  .faq-a {
+    color: #475569;
+    font-size: 10pt;
+    padding-left: 20px;
+  }
+  
+  .footer {
+    text-align: center;
+    padding-top: 14px;
+    border-top: 2px solid #e2e8f0;
+    margin-top: 20px;
+    font-size: 9.5pt;
+    color: #64748b;
+  }
+  
+  @media print {
+    body { padding: 0; }
+    .page { padding: 10mm 15mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<div class="page">
+  <div class="header">
+    <h1>📋 HƯỚNG DẪN SỬ DỤNG MODULE BÁO CÁO</h1>
+    <div class="sub">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</div>
+    <div class="meta">Phiên bản v0204234f &nbsp;|&nbsp; Cập nhật: 02/04/2026 &nbsp;|&nbsp; 🌐 khoaptdtt.info.vn</div>
+  </div>
+
+  <h2>1. Tổng quan</h2>
+  <p>Module Báo cáo giúp nhân viên Khoa PTĐTT nhập liệu nhanh chóng, chính xác. Hệ thống có <strong>2 loại báo cáo</strong>:</p>
+  
+  <table class="overview-table">
+    <tr><th>Loại báo cáo</th><th>Đối tượng</th><th>Thời điểm</th><th>Tab</th></tr>
+    <tr><td><strong>Báo cáo 16g</strong></td><td>Bác sĩ trực khoa</td><td>Hằng ngày 16:00</td><td>🩺 BS trực khoa</td></tr>
+    <tr><td><strong>Báo cáo 7g</strong></td><td>Điều dưỡng trực BV</td><td>Hằng ngày 07:00</td><td>👩‍⚕️ ĐD trực BV</td></tr>
+  </table>
+  
+  <h3>Cách truy cập</h3>
+  <div class="step-box">
+    <span class="step-num">1</span> Đăng nhập tại <strong>khoaptdtt.info.vn</strong>
+  </div>
+  <div class="step-box">
+    <span class="step-num">2</span> Nhấn <strong>"📊 Báo cáo"</strong> ở menu bên trái
+  </div>
+  <div class="step-box">
+    <span class="step-num">3</span> Chọn tab tương ứng: <strong>"BS trực khoa"</strong> hoặc <strong>"ĐD trực BV"</strong>
+  </div>
+
+  <h2>2. Báo cáo trực khoa lúc 16g (Bác sĩ)</h2>
+  
+  <h3>2.1. Tạo báo cáo mới</h3>
+  <p>Vào tab <strong>"BS trực khoa"</strong> → Nhấn <strong>"+ Tạo báo cáo 16h"</strong> → Form hiện ra.</p>
+
+  <h3>2.2. Các khu vực trong form</h3>
+  
+  <h4>🔹 Khu vực 1: Tổng BN & Mổ chưa về</h4>
+  <div class="zone">
+    <div class="two-col">
+      <div><strong>TỔNG BN</strong> (nền xanh đậm): Nhập tổng số bệnh nhân trong khoa</div>
+      <div><strong>MỔ CHƯA VỀ</strong> (nền vàng): Nhập số BN đã mổ nhưng chưa về khoa</div>
+    </div>
+  </div>
+  <div class="tip">Nếu hệ thống EMR có dữ liệu, số BN sẽ được <strong>tự động điền</strong> sẵn.</div>
+
+  <h4>🔹 Khu vực 2: Nhập viện – Xuất viện – BN nặng</h4>
+  <div class="zone">
+    <p>Gồm <strong>3 ô stepper</strong> nằm ngang với nút <strong>[−]</strong> và <strong>[+]</strong>:</p>
+    <div class="two-col">
+      <div>🏥 <strong>Nhập viện</strong> — Số BN nhập viện trong ngày</div>
+      <div>📤 <strong>Xuất viện</strong> — Số BN xuất viện trong ngày</div>
+    </div>
+    <p>⚠️ <strong>BN nặng</strong> — Số BN phòng nặng</p>
+    <p><em>Cách dùng: Nhấn [+] tăng 1, [−] giảm 1, hoặc nhập số trực tiếp.</em></p>
+  </div>
+
+  <h4>🔹 Khu vực 3: Bệnh mổ ngày mai</h4>
+  <div class="zone">
+    <p>3 stepper cho ca mổ dự kiến ngày hôm sau:</p>
+    <table class="overview-table">
+      <tr><th>Ô</th><th>Ý nghĩa</th></tr>
+      <tr><td><strong>Tổng</strong></td><td>Tổng số ca mổ dự kiến</td></tr>
+      <tr><td><strong>Chương trình</strong></td><td>Số ca mổ chương trình</td></tr>
+      <tr><td><strong>Yêu cầu</strong></td><td>Số ca mổ yêu cầu</td></tr>
+    </table>
+  </div>
+  <div class="note">Nếu hôm nay là <strong>Thứ Sáu</strong>, form sẽ tự động hiển thị thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau.</div>
+
+  <h4>🔹 Khu vực 4: Chọn BS trực khoa</h4>
+  <div class="zone">
+    <p>Danh sách bác sĩ hiển thị dạng <strong>chips 3 cột</strong>. Nhấn vào tên mình → chip chuyển sang <strong>màu đen</strong> (đã chọn).</p>
+  </div>
+  <div class="warning">Danh sách chỉ gồm BS trực khoa. Trưởng khoa và Phó khoa <strong>không nằm</strong> trong danh sách.</div>
+
+  <h4>🔹 Khu vực 5: Ghi chú & Lưu</h4>
+  <div class="zone">
+    <p>• <strong>Ghi chú:</strong> Mặc định thu gọn. Nhấn <em>"📝 Ghi chú thêm"</em> để mở.</p>
+    <p>• <strong>Lưu:</strong> Nhấn <strong>"💾 Lưu báo cáo"</strong>. Giờ lưu = thời điểm nhấn nút.</p>
+  </div>
+
+  <h3>2.3. Chỉnh sửa báo cáo</h3>
+  <p>Nhấn <strong>"✏️ Sửa"</strong> trên thẻ báo cáo → Chỉnh sửa → <strong>"💾 Lưu báo cáo"</strong></p>
+  <div class="warning">Chỉ có thể sửa báo cáo <strong>trong ngày</strong>. Báo cáo ngày trước sẽ bị khoá.</div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page">
+  <h2>3. Báo cáo 7g sáng (Điều dưỡng)</h2>
+  
+  <h3>3.1. Tạo báo cáo mới</h3>
+  <p>Vào tab <strong>"ĐD trực BV"</strong> → Nhấn <strong>"+ Tạo báo cáo 7h"</strong> → Form hiện ra.</p>
+
+  <h3>3.2. Các khu vực trong form</h3>
+  
+  <h4>🔹 Khu vực 1: Tổng số bệnh nhân</h4>
+  <div class="zone">
+    <p>Ô lớn nền <strong>xanh dương gradient</strong> hiển thị ngày tháng và ô nhập tổng BN. Nhập số vào ô bên phải.</p>
+  </div>
+
+  <h4>🔹 Khu vực 2: Nguồn BN nhận (HSCC – Hồi tỉnh – Giải áp)</h4>
+  <div class="zone">
+    <table class="overview-table">
+      <tr><th>Ô</th><th>Ý nghĩa</th><th>Màu</th></tr>
+      <tr><td>🚑 <strong>HSCC</strong></td><td>Số BN nhận từ Hồi sức cấp cứu</td><td>Đỏ</td></tr>
+      <tr><td>🏥 <strong>Hồi tỉnh</strong></td><td>Số BN nhận từ phòng Hồi tỉnh</td><td>Xanh dương</td></tr>
+      <tr><td>🔄 <strong>Giải áp</strong></td><td>Số BN nhận từ ca giải áp</td><td>Xanh lá</td></tr>
+    </table>
+  </div>
+  
+  <div class="tip"><strong>Tính năng tự động mở rộng:</strong> Khi tăng số > 0, ô chi tiết sẽ <strong>tự động hiện</strong> bên dưới để nhập thêm thông tin (tên BN, phòng...). Khi = 0, ô chi tiết tự ẩn.</div>
+
+  <h4>🔹 Khu vực 3: Chọn ĐD trực BV</h4>
+  <div class="zone">
+    <p>Danh sách Điều dưỡng hiển thị dạng <strong>chips 3 cột</strong>. Nhấn vào tên mình → chip chuyển <strong>màu xanh</strong>.</p>
+  </div>
+
+  <h4>🔹 Khu vực 4: Ghi chú & Lưu</h4>
+  <div class="zone">
+    <p>• <strong>Ghi chú:</strong> Thu gọn mặc định. Nhấn <em>"📝 Ghi chú thêm"</em> để ghi các tình huống đêm trực.</p>
+    <p>• <strong>Lưu:</strong> Nhấn <strong>"💾 Lưu báo cáo"</strong> để hoàn tất.</p>
+  </div>
+
+  <div class="note">Báo cáo 7g áp dụng <strong>tất cả các ngày trong tuần</strong> (bao gồm T7 và CN).</div>
+
+  <h2>4. Xuất hình ảnh báo cáo (JPEG)</h2>
+  <p>Cả hai loại báo cáo đều hỗ trợ <strong>xuất file ảnh JPEG</strong> để chia sẻ qua Zalo, Viber hay in ấn.</p>
+  
+  <div class="step-box green">
+    <span class="step-num" style="background:#059669">1</span> Trên thẻ báo cáo đã lưu, nhấn <strong>"📸 Xuất ảnh"</strong>
+  </div>
+  <div class="step-box green">
+    <span class="step-num" style="background:#059669">2</span> Hệ thống tự động tạo file ảnh và <strong>tải về thiết bị</strong>
+  </div>
+
+  <h4>Thông tin trên ảnh xuất ra:</h4>
+  <table class="overview-table">
+    <tr><th>Thành phần</th><th>Mô tả</th></tr>
+    <tr><td><strong>Header</strong></td><td>"KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG – Bệnh viện Bình Dân"</td></tr>
+    <tr><td><strong>Nội dung</strong></td><td>Toàn bộ dữ liệu báo cáo đã nhập</td></tr>
+    <tr><td><strong>Watermark</strong></td><td>Chữ chìm chéo (chống sao chép)</td></tr>
+    <tr><td><strong>Góc dưới trái</strong></td><td>Tên tài khoản đang đăng nhập</td></tr>
+    <tr><td><strong>Góc dưới phải</strong></td><td>Thời gian xuất file</td></tr>
+  </table>
+
+  <h2>5. Câu hỏi thường gặp (FAQ)</h2>
+  
+  <div class="faq-item">
+    <div class="faq-q">❓ Tôi không thấy tên mình trong danh sách?</div>
+    <div class="faq-a">→ Liên hệ quản trị viên để bổ sung tên vào module "Nhân viên".</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">❓ Muốn sửa báo cáo ngày hôm qua, có được không?</div>
+    <div class="faq-a">→ Hiện tại chỉ cho phép chỉnh sửa trong ngày. Cần sửa báo cáo cũ → liên hệ quản trị viên.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">❓ Nút [+]/[−] và nhập trực tiếp khác gì nhau?</div>
+    <div class="faq-a">→ Kết quả giống nhau. Nút [+]/[−] tiện trên điện thoại, nhập trực tiếp phù hợp trên máy tính.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">❓ Tại sao Thứ Sáu form dài hơn?</div>
+    <div class="faq-a">→ Vì cần báo cáo thêm bệnh mổ Thứ Hai tuần sau (T7-CN không có mổ chương trình).</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">❓ Tổng BN được tự động điền từ đâu?</div>
+    <div class="faq-a">→ Từ hệ thống EMR (nếu đã tích hợp). Có thể chỉnh sửa nếu số liệu chưa đúng.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">❓ Watermark trên ảnh có ý nghĩa gì?</div>
+    <div class="faq-a">→ Xác thực nguồn gốc báo cáo và ngăn chặn chỉnh sửa/giả mạo.</div>
+  </div>
+
+  <div class="footer">
+    📞 <strong>Hỗ trợ kỹ thuật:</strong> BS. Vũ Khương An — Quản trị viên hệ thống<br>
+    🌐 <strong>Website:</strong> khoaptdtt.info.vn
+  </div>
+</div>
+
+</body>
+</html>

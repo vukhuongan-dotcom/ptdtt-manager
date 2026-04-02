@@ -250,7 +250,7 @@ const ReportsPage = {
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
             return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
-                class="r16h-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name===defaultReporter?'#0f172a':'#cbd5e1'};background:${d.name===defaultReporter?'#0f172a':'#f1f5f9'};color:${d.name===defaultReporter?'#fff':'#334155'};font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${d.name}</button>`;
+                class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name===defaultReporter?'#0f172a':'#cbd5e1'};background:${d.name===defaultReporter?'#0f172a':'#f1f5f9'};color:${d.name===defaultReporter?'#fff':'#334155'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
         }).join('');
 
         const nextDay = this._getNextDay(date);
@@ -314,7 +314,7 @@ const ReportsPage = {
                 <!-- Row 4: Doctor quick-select -->
                 <div style="margin-bottom:6px">
                     <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👤 BS trực khoa báo cáo</div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">${docChips}</div>
+                    <div class="report-chips-grid">${docChips}</div>
                     <input type="hidden" id="r16h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
@@ -806,7 +806,7 @@ const ReportsPage = {
         // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
             return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='#f0f9ff';c.style.color='#0369a1';c.style.borderColor='#bae6fd'});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
-                class="r7h-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${n.name}</button>`;
+                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
@@ -855,7 +855,7 @@ const ReportsPage = {
                 <!-- Row 4: Reporter quick-select -->
                 <div style="margin-bottom:8px">
                     <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px">👩‍⚕️ ĐD trực BV báo cáo</div>
-                    ${nurses.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">${nurseChips}</div>` : ''}
+                    ${nurses.length > 0 ? `<div class="report-chips-grid">${nurseChips}</div>` : ''}
                     <input type="hidden" id="r7h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
