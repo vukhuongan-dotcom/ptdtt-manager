@@ -133,8 +133,14 @@ const ReportsPage = {
             <div style="padding:0 22px 16px;background:#fff">
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
                 <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}</div>
-                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} Chương trình, ${r.surgeryYC || '0'} Yêu cầu)</span></div>
+                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date))})</div>
+                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} CT, ${r.surgeryYC || '0'} YC)</span></div>
+                </div>` : ''}
+
+                ${this._isFriday(r.date) && (r.surgery2Total > 0) ? `
+                <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#15803d;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date, 3)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date, 3))})</div>
+                    <div style="font-size:0.95rem;color:#166534;font-weight:600">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} CT, ${r.surgery2YC || '0'} YC)</span></div>
                 </div>` : ''}
 
                 ${r.notes ? `
@@ -256,7 +262,7 @@ const ReportsPage = {
                 </div>
 
                 <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
-                    <label style="font-weight:700;font-size:0.85rem;color:#1d4ed8;margin-bottom:6px;display:block">🔪 Bệnh mổ ${this.getDayOfWeek(date)}</label>
+                    <label style="font-weight:700;font-size:0.85rem;color:#1d4ed8;margin-bottom:6px;display:block">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date))} (${this.formatDateShort(this._getNextDay(date))})</label>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
                         <div class="form-group" style="margin:0">
                             <label style="font-size:0.78rem">Tổng ca mổ</label>
@@ -272,6 +278,25 @@ const ReportsPage = {
                         </div>
                     </div>
                 </div>
+
+                ${this._isFriday(date) ? `
+                <div style="background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
+                    <label style="font-weight:700;font-size:0.85rem;color:#15803d;margin-bottom:6px;display:block">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</label>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Tổng ca mổ</label>
+                            <input type="number" name="surgery2Total" value="${e.surgery2Total || ''}" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Chương trình</label>
+                            <input type="number" name="surgery2CT" value="${e.surgery2CT || ''}" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label style="font-size:0.78rem">Yêu cầu</label>
+                            <input type="number" name="surgery2YC" value="${e.surgery2YC || ''}" min="0" placeholder="0">
+                        </div>
+                    </div>
+                </div>` : ''}
 
                 <div class="form-group">
                     <label>👤 BS báo cáo</label>
@@ -310,6 +335,9 @@ const ReportsPage = {
             surgeryTotal: parseInt(fd.get('surgeryTotal')) || 0,
             surgeryCT: parseInt(fd.get('surgeryCT')) || 0,
             surgeryYC: parseInt(fd.get('surgeryYC')) || 0,
+            surgery2Total: parseInt(fd.get('surgery2Total')) || 0,
+            surgery2CT: parseInt(fd.get('surgery2CT')) || 0,
+            surgery2YC: parseInt(fd.get('surgery2YC')) || 0,
             reporterName: fd.get('reporterName') || session?.name || '',
             notes: fd.get('notes')?.trim() || '',
             createdBy: session?.username || 'unknown',
@@ -356,6 +384,7 @@ const ReportsPage = {
         // Pre-calculate height
         let contentH = 320; // header + 5 stat boxes
         if (r.surgeryTotal > 0 || r.surgeryDay) contentH += 55;
+        if (this._isFriday(r.date) && r.surgery2Total > 0) contentH += 55;
         if (r.notes) contentH += 55;
         contentH += 45; // footer
         const H = contentH;
@@ -427,7 +456,8 @@ const ReportsPage = {
         // ===== Severe patients (now just a number, details in notes) =====
         // Removed separate severe patients section - it's now in the stat boxes
 
-        // ===== Surgery =====
+        // ===== Surgery (next day) =====
+        const nextDay = this._getNextDay(r.date);
         if (r.surgeryTotal > 0 || r.surgeryDay) {
             const blockH = 45;
             ctx.fillStyle = '#eff6ff';
@@ -438,10 +468,29 @@ const ReportsPage = {
 
             ctx.fillStyle = '#1d4ed8';
             ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-            ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}`, 38, curY + 18);
+            ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(nextDay).toUpperCase()} (${this.formatDateShort(nextDay)})`, 38, curY + 18);
             ctx.fillStyle = '#1e3a8a';
             ctx.font = 'bold 14px Inter, system-ui, sans-serif';
-            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} Chương trình, ${r.surgeryYC || 0} Yêu cầu)`, 38, curY + 37);
+            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} CT, ${r.surgeryYC || 0} YC)`, 38, curY + 37);
+            curY += blockH + 10;
+        }
+
+        // ===== Surgery 2 (Monday — only on Friday reports) =====
+        if (this._isFriday(r.date) && r.surgery2Total > 0) {
+            const monDay = this._getNextDay(r.date, 3);
+            const blockH = 45;
+            ctx.fillStyle = '#f0fdf4';
+            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
+            ctx.fill();
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(24, curY, 4, blockH);
+
+            ctx.fillStyle = '#15803d';
+            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(monDay).toUpperCase()} (${this.formatDateShort(monDay)})`, 38, curY + 18);
+            ctx.fillStyle = '#166534';
+            ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+            ctx.fillText(`${r.surgery2Total || 0} ca  (${r.surgery2CT || 0} CT, ${r.surgery2YC || 0} YC)`, 38, curY + 37);
             curY += blockH + 10;
         }
 
@@ -593,7 +642,6 @@ const ReportsPage = {
     viewDate(date) {
         this.selectedDate = date;
         App.renderCurrentPage();
-        // Scroll to the report card after render
         setTimeout(() => {
             const el = document.getElementById('report-export-area');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -603,6 +651,16 @@ const ReportsPage = {
     _parseDate(dateStr) {
         const parts = dateStr.split('-');
         return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    },
+    // Get next day (or +N days) as YYYY-MM-DD string
+    _getNextDay(dateStr, addDays) {
+        const d = this._parseDate(dateStr);
+        d.setDate(d.getDate() + (addDays || 1));
+        return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+    },
+    // Check if a date is Friday (day 5)
+    _isFriday(dateStr) {
+        return this._parseDate(dateStr).getDay() === 5;
     },
     formatDateVN(dateStr) {
         const d = this._parseDate(dateStr);
