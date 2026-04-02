@@ -14,10 +14,10 @@ const ReportsPage = {
 
         <div class="staff-subtabs">
             <button class="staff-subtab ${this.activeTab === 'report16h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report16h')">
-                🩺 Báo cáo 16h <span class="staff-subtab-count">BS trực</span>
+                🩺 Báo cáo 16h <span class="staff-subtab-count">BS trực khoa</span>
             </button>
             <button class="staff-subtab ${this.activeTab === 'report7h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report7h')">
-                👩‍⚕️ Báo cáo 7h <span class="staff-subtab-count">ĐD</span>
+                👩‍⚕️ Báo cáo 7h <span class="staff-subtab-count">ĐD trực BV</span>
             </button>
         </div>
 
@@ -52,7 +52,7 @@ const ReportsPage = {
             <div style="display:flex;gap:8px;align-items:center">
                 <label style="font-weight:600;font-size:0.85rem;color:var(--text-secondary)">Ngày:</label>
                 <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)"
-                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg-card);color:var(--text-primary)">
+                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:'Inter',system-ui,sans-serif;background:var(--bg-card);color:var(--text-primary)">
                 <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
             ${!isWeekend ? `<div style="display:flex;gap:8px">
@@ -162,7 +162,7 @@ const ReportsPage = {
 
             <!-- Footer -->
             <div style="padding:10px 22px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#475569">
-                <span>👤 BS trực: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
+                <span>👤 BS trực khoa: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
                 <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '16:00'}</strong></span>
             </div>
         </div>
@@ -537,7 +537,7 @@ const ReportsPage = {
         ctx.fillStyle = '#475569';
         ctx.font = '12px Inter, system-ui, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`BS trực: ${r.reporterName || ''}`, 24, footY + 22);
+        ctx.fillText(`BS trực khoa: ${r.reporterName || ''}`, 24, footY + 22);
         ctx.textAlign = 'right';
         const timeStr = (r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00';
         ctx.fillText(`Báo cáo lúc: ${timeStr}`, W - 24, footY + 22);
@@ -648,7 +648,7 @@ const ReportsPage = {
             <div style="display:flex;gap:8px;align-items:center">
                 <label style="font-weight:600;font-size:0.85rem;color:var(--text-secondary)">Ngày:</label>
                 <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)"
-                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;background:var(--bg-card);color:var(--text-primary)">
+                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:'Inter',system-ui,sans-serif;background:var(--bg-card);color:var(--text-primary)">
                 <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
             <div style="display:flex;gap:8px">
