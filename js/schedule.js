@@ -663,7 +663,10 @@ const SchedulePage = {
                         </tr></thead>
                         <tbody>${robotRows}</tbody>
                     </table>
-                    <p style="text-align:right;font-size:10px;color:#94a3b8;margin-top:14px">Xuất từ hệ thống quản lý Khoa Phẫu thuật Đại trực tràng — ${new Date().toLocaleDateString('vi-VN')}</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:10px;color:#94a3b8">
+                        <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
+                        <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}</span>
+                    </div>
                 </div></body></html>`;
 
                 const iframe2 = document.createElement('iframe');
