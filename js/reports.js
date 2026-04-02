@@ -56,7 +56,7 @@ const ReportsPage = {
             </div>
             <div style="display:flex;gap:8px">
                 ${todayReport ? `<button class="btn btn-sm" style="background:#f97316;color:#fff;border:none;font-size:0.78rem" onclick="ReportsPage.exportReportImage()">
-                    📸 Xuất hình Zalo
+                    📸 Xuất hình trực khoa
                 </button>` : ''}
                 ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport16hForm()">
                     ${Utils.plusIcon()} Tạo báo cáo
@@ -84,7 +84,7 @@ const ReportsPage = {
 
     renderReport16hCard(r) {
         const session = Auth.getSession();
-        const canEdit = session?.isAdmin || r.createdBy === session?.username;
+        const canEdit = !!session; // All logged-in staff can edit reports
 
         return `
         <div id="report-export-area">
@@ -155,25 +155,53 @@ const ReportsPage = {
         </div>`;
     },
 
+    _showArchive: false,
+
+    toggleArchive() {
+        this._showArchive = !this._showArchive;
+        App.renderCurrentPage();
+    },
+
+    _renderHistoryRows(items) {
+        return items.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}')" style="cursor:pointer" class="${r.date === this.selectedDate ? 'report-row-active' : ''}">
+            <td><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
+            <td style="text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
+            <td style="text-align:center;color:#22c55e">${r.admissions || '0'}</td>
+            <td style="text-align:center;color:#f59e0b">${r.discharges || '0'}</td>
+            <td style="text-align:center">${r.surgeryTotal || '0'}</td>
+            <td style="font-size:0.82rem;color:var(--text-secondary)">${r.reporterName || '—'}</td>
+            <td><button class="btn-icon" onclick="event.stopPropagation();ReportsPage.viewDate('${r.date}')" title="Xem">👁</button></td>
+        </tr>`).join('');
+    },
+
     renderReportHistory(reports) {
         const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
-        const recent = sorted.slice(0, 14);
+        const recent = sorted.slice(0, 5);
+        const archive = sorted.slice(5);
         if (!recent.length) return '<p style="color:var(--text-muted);font-size:0.82rem">Chưa có lịch sử báo cáo</p>';
 
-        return `<div class="card staff-table-card"><table>
-            <thead><tr>
-                <th>Ngày</th><th>Tổng BN</th><th>Nhập</th><th>Xuất</th><th>Ca mổ</th><th>BS báo cáo</th><th style="width:60px"></th>
-            </tr></thead>
-            <tbody>${recent.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}')" style="cursor:pointer" class="${r.date === this.selectedDate ? 'report-row-active' : ''}">
-                <td><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
-                <td style="text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
-                <td style="text-align:center;color:#22c55e">${r.admissions || '0'}</td>
-                <td style="text-align:center;color:#f59e0b">${r.discharges || '0'}</td>
-                <td style="text-align:center">${r.surgeryTotal || '0'}</td>
-                <td style="font-size:0.82rem;color:var(--text-secondary)">${r.reporterName || '—'}</td>
-                <td><button class="btn-icon" onclick="event.stopPropagation();ReportsPage.viewDate('${r.date}')" title="Xem">👁</button></td>
-            </tr>`).join('')}</tbody>
+        const tableHead = `<thead><tr>
+            <th>Ngày</th><th>Tổng BN</th><th>Nhập</th><th>Xuất</th><th>Ca mổ</th><th>BS báo cáo</th><th style="width:60px"></th>
+        </tr></thead>`;
+
+        let html = `<div class="card staff-table-card"><table>
+            ${tableHead}
+            <tbody>${this._renderHistoryRows(recent)}</tbody>
         </table></div>`;
+
+        if (archive.length > 0) {
+            html += `<div style="margin-top:10px">
+                <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.toggleArchive()">
+                    ${this._showArchive ? '📁 Ẩn lưu trữ' : `📂 Xem lưu trữ (${archive.length} báo cáo cũ)`}
+                </button>
+                ${this._showArchive ? `<div class="card staff-table-card" style="margin-top:8px;opacity:0.85"><table>
+                    ${tableHead}
+                    <tbody>${this._renderHistoryRows(archive)}</tbody>
+                </table></div>` : ''}
+            </div>`;
+        }
+
+        return html;
     },
 
     // ========== FORM 16h ==========

@@ -578,6 +578,9 @@ const SchedulePage = {
 
             document.body.removeChild(iframe);
 
+            // Add watermark to schedule canvas
+            this._addWatermark(canvas);
+
             // Helper: download image via server
             const downloadImage = async (canvasEl, fname) => {
                 const dataUrl = canvasEl.toDataURL('image/jpeg', 0.92);
@@ -671,6 +674,9 @@ const SchedulePage = {
                 });
                 document.body.removeChild(iframe2);
 
+                // Add watermark to robot surgery canvas
+                this._addWatermark(robotCanvas);
+
                 const robotFilename = `Lich_mo_robot_${startFmt}_${endFmt}.jpg`;
                 await downloadImage(robotCanvas, robotFilename);
             }
@@ -684,5 +690,23 @@ const SchedulePage = {
             window.alert = origAlert;
             if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh`; }
         }
+    },
+
+    // Add watermark to any canvas (used for schedule + robot surgery exports)
+    _addWatermark(canvas) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate(-25 * Math.PI / 180);
+        ctx.font = `bold ${Math.round(w * 0.06)}px Inter, Arial, sans-serif`;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.035)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Khoa PTĐTT', 0, -Math.round(h * 0.02));
+        ctx.font = `${Math.round(w * 0.02)}px Inter, Arial, sans-serif`;
+        ctx.fillText('Bệnh viện Bình Dân', 0, Math.round(h * 0.04));
+        ctx.restore();
     }
 };
