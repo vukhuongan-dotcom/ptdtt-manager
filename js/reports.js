@@ -144,13 +144,13 @@ const ReportsPage = {
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
                 <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
                     <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date))})</div>
-                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} Chương trình, ${r.surgeryYC || '0'} Yêu cầu)</span></div>
+                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} CT, ${r.surgeryYC || '0'} YC${r.surgeryRobot ? ', ' + r.surgeryRobot + ' Robot' : ''})</span></div>
                 </div>` : ''}
 
                 ${this._isFriday(r.date) && (r.surgery2Total > 0) ? `
                 <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
                     <div style="font-weight:700;color:#15803d;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date, 3)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date, 3))})</div>
-                    <div style="font-size:0.95rem;color:#166534;font-weight:600">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} Chương trình, ${r.surgery2YC || '0'} Yêu cầu)</span></div>
+                    <div style="font-size:0.95rem;color:#166534;font-weight:600">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} CT, ${r.surgery2YC || '0'} YC${r.surgery2Robot ? ', ' + r.surgery2Robot + ' Robot' : ''})</span></div>
                 </div>` : ''}
 
                 ${r.notes ? `
@@ -247,6 +247,9 @@ const ReportsPage = {
                 </div>
             </div>`;
 
+        // Auto-sum surgery total = CT + YC + Robot
+        const autoSumSurgery = (prefix) => `ReportsPage._autoSumSurgery('${prefix}')`;
+
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
             return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
@@ -294,20 +297,22 @@ const ReportsPage = {
                 <!-- Row 3: Surgery next day -->
                 <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:6px">
                     <div style="font-size:0.72rem;font-weight:700;color:#1d4ed8;margin-bottom:5px">🔪 Bệnh mổ ${nextDayLabel}</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px" oninput="${autoSumSurgery('surgery')}">
                         ${stepper16('surgeryTotal', e.surgeryTotal || 0, '#1d4ed8', 'Tổng')}
-                        ${stepper16('surgeryCT', e.surgeryCT || 0, '#0369a1', 'Chương trình')}
+                        ${stepper16('surgeryCT', e.surgeryCT || 0, '#0369a1', 'CT')}
                         ${stepper16('surgeryYC', e.surgeryYC || 0, '#6366f1', 'Yêu cầu')}
+                        ${stepper16('surgeryRobot', e.surgeryRobot || 0, '#0d9488', 'Robot')}
                     </div>
                 </div>
 
                 ${isFri ? `
                 <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:6px">
                     <div style="font-size:0.72rem;font-weight:700;color:#15803d;margin-bottom:5px">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px" oninput="${autoSumSurgery('surgery2')}">
                         ${stepper16('surgery2Total', e.surgery2Total || 0, '#15803d', 'Tổng')}
-                        ${stepper16('surgery2CT', e.surgery2CT || 0, '#059669', 'Chương trình')}
+                        ${stepper16('surgery2CT', e.surgery2CT || 0, '#059669', 'CT')}
                         ${stepper16('surgery2YC', e.surgery2YC || 0, '#10b981', 'Yêu cầu')}
+                        ${stepper16('surgery2Robot', e.surgery2Robot || 0, '#0d9488', 'Robot')}
                     </div>
                 </div>` : ''}
 
@@ -348,9 +353,11 @@ const ReportsPage = {
             surgeryTotal: parseInt(fd.get('surgeryTotal')) || 0,
             surgeryCT: parseInt(fd.get('surgeryCT')) || 0,
             surgeryYC: parseInt(fd.get('surgeryYC')) || 0,
+            surgeryRobot: parseInt(fd.get('surgeryRobot')) || 0,
             surgery2Total: parseInt(fd.get('surgery2Total')) || 0,
             surgery2CT: parseInt(fd.get('surgery2CT')) || 0,
             surgery2YC: parseInt(fd.get('surgery2YC')) || 0,
+            surgery2Robot: parseInt(fd.get('surgery2Robot')) || 0,
             reporterName: fd.get('reporterName') || session?.name || '',
             notes: fd.get('notes')?.trim() || '',
             createdBy: session?.username || 'unknown',
@@ -484,7 +491,7 @@ const ReportsPage = {
             ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(nextDay).toUpperCase()} (${this.formatDateShort(nextDay)})`, 38, curY + 18);
             ctx.fillStyle = '#1e3a8a';
             ctx.font = 'bold 14px Inter, system-ui, sans-serif';
-            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} Chương trình, ${r.surgeryYC || 0} Yêu cầu)`, 38, curY + 37);
+            ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} CT, ${r.surgeryYC || 0} YC${r.surgeryRobot ? ', ' + r.surgeryRobot + ' Robot' : ''})`, 38, curY + 37);
             curY += blockH + 10;
         }
 
@@ -503,7 +510,7 @@ const ReportsPage = {
             ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(monDay).toUpperCase()} (${this.formatDateShort(monDay)})`, 38, curY + 18);
             ctx.fillStyle = '#166534';
             ctx.font = 'bold 14px Inter, system-ui, sans-serif';
-            ctx.fillText(`${r.surgery2Total || 0} ca  (${r.surgery2CT || 0} Chương trình, ${r.surgery2YC || 0} Yêu cầu)`, 38, curY + 37);
+            ctx.fillText(`${r.surgery2Total || 0} ca  (${r.surgery2CT || 0} CT, ${r.surgery2YC || 0} YC${r.surgery2Robot ? ', ' + r.surgery2Robot + ' Robot' : ''})`, 38, curY + 37);
             curY += blockH + 10;
         }
 
@@ -707,7 +714,7 @@ const ReportsPage = {
                     </div>
                     <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
                         <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">NHẬN BN ĐÊM QUA</div>
-                        <div style="font-size:2rem;font-weight:800;color:#fff">${(parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromGiaiAp) || 0)}</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${(parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromICU) || 0) + (parseInt(r.fromGiaiAp) || 0)}</div>
                     </div>
                 </div>
             </div>
@@ -724,6 +731,12 @@ const ReportsPage = {
                 <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
                     <div style="font-weight:700;color:#2563eb;font-size:0.82rem;margin-bottom:3px">🏥 NHẬN TỪ HỒI TỈNH: ${r.fromHoiTinh} ca</div>
                     ${r.fromHoiTinhDetail ? `<div style="font-size:0.85rem;color:#1e40af;line-height:1.5">${r.fromHoiTinhDetail}</div>` : ''}
+                </div>` : ''}
+
+                ${r.fromICU > 0 ? `
+                <div style="background:#faf5ff;border-left:4px solid #7c3aed;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                    <div style="font-weight:700;color:#7c3aed;font-size:0.82rem;margin-bottom:3px">🏨 NHẬN TỪ ICU: ${r.fromICU} ca</div>
+                    ${r.fromICUDetail ? `<div style="font-size:0.85rem;color:#5b21b6;line-height:1.5">${r.fromICUDetail}</div>` : ''}
                 </div>` : ''}
 
                 ${r.fromGiaiAp > 0 ? `
@@ -760,6 +773,7 @@ const ReportsPage = {
                     <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">TỔNG BN</th>
                     <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">HSCC</th>
                     <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">HỒI TỈNH</th>
+                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">ICU</th>
                     <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">GIẢI ÁP</th>
                     <th style="padding:10px;text-align:left;font-weight:600;color:var(--text-secondary)">ĐD BÁO CÁO</th>
                     <th style="padding:10px"></th>
@@ -770,6 +784,7 @@ const ReportsPage = {
                     <td style="padding:10px;text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
                     <td style="padding:10px;text-align:center;color:#ef4444">${r.fromHSCC || '—'}</td>
                     <td style="padding:10px;text-align:center;color:#3b82f6">${r.fromHoiTinh || '—'}</td>
+                    <td style="padding:10px;text-align:center;color:#7c3aed">${r.fromICU || '—'}</td>
                     <td style="padding:10px;text-align:center;color:#22c55e">${r.fromGiaiAp || '—'}</td>
                     <td style="padding:10px">${r.reporterName || '—'}</td>
                     <td style="padding:10px;text-align:center">👁️</td>
@@ -822,17 +837,21 @@ const ReportsPage = {
                         style="width:72px;text-align:center;font-size:1.6rem;font-weight:800;border:none;border-radius:10px;padding:6px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(4px)">
                 </div>
 
-                <!-- Row 2: 3 sources inline compact -->
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-                    <div style="background:#fef2f2;border-radius:8px;padding:8px;text-align:center">
+                <!-- Row 2: 4 sources inline compact -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+                    <div style="background:#fef2f2;border-radius:8px;padding:8px 4px;text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#dc2626;margin-bottom:4px">🚑 HSCC</div>
                         ${stepper('fromHSCC', e.fromHSCC || 0, '#dc2626')}
                     </div>
-                    <div style="background:#eff6ff;border-radius:8px;padding:8px;text-align:center">
+                    <div style="background:#eff6ff;border-radius:8px;padding:8px 4px;text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#2563eb;margin-bottom:4px">🏥 Hồi tỉnh</div>
                         ${stepper('fromHoiTinh', e.fromHoiTinh || 0, '#2563eb')}
                     </div>
-                    <div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center">
+                    <div style="background:#faf5ff;border-radius:8px;padding:8px 4px;text-align:center">
+                        <div style="font-size:0.78rem;font-weight:700;color:#7c3aed;margin-bottom:4px">🏨 ICU</div>
+                        ${stepper('fromICU', e.fromICU || 0, '#7c3aed')}
+                    </div>
+                    <div style="background:#f0fdf4;border-radius:8px;padding:8px 4px;text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#16a34a;margin-bottom:4px">🔄 Giải áp</div>
                         ${stepper('fromGiaiAp', e.fromGiaiAp || 0, '#16a34a')}
                     </div>
@@ -846,6 +865,10 @@ const ReportsPage = {
                 <div id="detail-fromHoiTinh" style="display:${(e.fromHoiTinh > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid #93c5fd;border-radius:6px;font-size:0.88rem;background:#eff6ff">
+                </div>
+                <div id="detail-fromICU" style="display:${(e.fromICU > 0) ? 'block' : 'none'};margin-bottom:6px">
+                    <input type="text" name="fromICUDetail" value="${e.fromICUDetail || ''}" placeholder="🏨 Chi tiết ICU: tên BN / phòng..."
+                        style="width:100%;padding:8px 10px;border:1px solid #c4b5fd;border-radius:6px;font-size:0.88rem;background:#faf5ff">
                 </div>
                 <div id="detail-fromGiaiAp" style="display:${(e.fromGiaiAp > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
@@ -879,6 +902,15 @@ const ReportsPage = {
         if (el) el.style.display = parseInt(value) > 0 ? 'block' : 'none';
     },
 
+    // Auto-sum surgery total = CT + YC + Robot
+    _autoSumSurgery(prefix) {
+        const ct = parseInt(document.querySelector(`[name="${prefix}CT"]`)?.value) || 0;
+        const yc = parseInt(document.querySelector(`[name="${prefix}YC"]`)?.value) || 0;
+        const robot = parseInt(document.querySelector(`[name="${prefix}Robot"]`)?.value) || 0;
+        const totalInput = document.querySelector(`[name="${prefix}Total"]`);
+        if (totalInput) totalInput.value = ct + yc + robot;
+    },
+
     saveReport7h(e, date) {
         e.preventDefault();
         const fd = new FormData(e.target);
@@ -891,6 +923,8 @@ const ReportsPage = {
             fromHSCCDetail: fd.get('fromHSCCDetail')?.trim() || '',
             fromHoiTinh: parseInt(fd.get('fromHoiTinh')) || 0,
             fromHoiTinhDetail: fd.get('fromHoiTinhDetail')?.trim() || '',
+            fromICU: parseInt(fd.get('fromICU')) || 0,
+            fromICUDetail: fd.get('fromICUDetail')?.trim() || '',
             fromGiaiAp: parseInt(fd.get('fromGiaiAp')) || 0,
             fromGiaiApDetail: fd.get('fromGiaiApDetail')?.trim() || '',
             reporterName: fd.get('reporterName') || session?.name || '',
@@ -930,6 +964,7 @@ const ReportsPage = {
         let contentH = 260;
         if (r.fromHSCC > 0) contentH += 50;
         if (r.fromHoiTinh > 0) contentH += 50;
+        if (r.fromICU > 0) contentH += 50;
         if (r.fromGiaiAp > 0) contentH += 50;
         if (r.notes) contentH += 50;
         contentH += 45;
@@ -981,7 +1016,7 @@ const ReportsPage = {
         ctx.fillText(`${r.totalPatients || '—'}`, 24 + boxW/2, curY + 45);
 
         // Total received
-        const totalReceived = (parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromGiaiAp) || 0);
+        const totalReceived = (parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromICU) || 0) + (parseInt(r.fromGiaiAp) || 0);
         ctx.fillStyle = '#059669';
         this._roundRect(ctx, 24 + boxW + 10, curY, boxW, 55, 8);
         ctx.fill();
@@ -1018,6 +1053,7 @@ const ReportsPage = {
 
         drawBlock('🚑 NHẬN TỪ HSCC', r.fromHSCC, r.fromHSCCDetail, '#fef2f2', '#ef4444', '#991b1b');
         drawBlock('🏥 NHẬN TỪ HỒI TỈNH', r.fromHoiTinh, r.fromHoiTinhDetail, '#eff6ff', '#3b82f6', '#1e40af');
+        drawBlock('🏨 NHẬN TỪ ICU', r.fromICU, r.fromICUDetail, '#faf5ff', '#7c3aed', '#5b21b6');
         drawBlock('🔄 NHẬN GIẢI ÁP KHOA', r.fromGiaiAp, r.fromGiaiApDetail, '#f0fdf4', '#22c55e', '#166534');
 
         if (r.notes) {
