@@ -339,10 +339,12 @@ const ReportsPage = {
         const r = reports.find(rr => rr.date === this.selectedDate);
         if (!r) return Toast.error('Không có báo cáo để xuất');
 
-        Toast.info('Đang tạo hình ảnh...');
-
-        // Use setTimeout to let toast render first
-        setTimeout(() => this._drawAndDownload(r), 100);
+        try {
+            this._drawAndDownload(r);
+        } catch (err) {
+            console.error('Export error:', err);
+            Toast.error('Lỗi khi tạo hình: ' + err.message);
+        }
     },
 
     _drawAndDownload(r) {
@@ -502,22 +504,26 @@ const ReportsPage = {
         const outCtx = outCanvas.getContext('2d');
         outCtx.drawImage(canvas, 0, 0, W * scale, finalH * scale, 0, 0, W * scale, finalH * scale);
 
-        // ===== Download as JPEG =====
-        outCanvas.toBlob(blob => {
-            if (!blob) {
-                Toast.error('Không thể tạo file JPEG');
-                return;
-            }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-            Toast.success('Đã tải file JPEG thành công!');
-        }, 'image/jpeg', 0.95);
+        // ===== Download as JPEG (synchronous for mobile/PWA compatibility) =====
+        const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
+
+        // Convert dataURL to Blob for proper file download
+        const byteStr = atob(dataUrl.split(',')[1]);
+        const mimeStr = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteStr.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+        const blob = new Blob([ab], { type: mimeStr });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        Toast.success('Đã tải file JPEG thành công!');
     },
 
     _roundRect(ctx, x, y, w, h, r) {
