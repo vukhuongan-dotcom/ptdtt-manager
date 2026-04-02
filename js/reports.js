@@ -103,45 +103,43 @@ const ReportsPage = {
                 </div>
             </div>
 
-            <!-- Stats: High contrast colored cards -->
+            <!-- Stats: 5 high contrast colored cards in one row -->
             <div style="padding:16px 22px;background:#fff">
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
-                    <div style="background:#1e40af;border-radius:10px;padding:14px;text-align:center">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">TỔNG BN</div>
-                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">TỔNG BN</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
-                    <div style="background:#ea580c;border-radius:10px;padding:14px;text-align:center">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">MỔ CHƯA VỀ</div>
-                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.postOpNotReturned || '0'}</div>
+                    <div style="background:#e11d48;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">MỔ CHƯA VỀ</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${r.postOpNotReturned || '0'}</div>
                     </div>
-                    <div style="background:#16a34a;border-radius:10px;padding:14px;text-align:center">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">NHẬP VIỆN</div>
-                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.admissions || '0'}</div>
+                    <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">NHẬP VIỆN</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${r.admissions || '0'}</div>
                     </div>
-                    <div style="background:#ca8a04;border-radius:10px;padding:14px;text-align:center">
-                        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:4px">XUẤT VIỆN</div>
-                        <div style="font-size:2.2rem;font-weight:800;color:#fff">${r.discharges || '0'}</div>
+                    <div style="background:#d97706;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">XUẤT VIỆN</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${r.discharges || '0'}</div>
+                    </div>
+                    <div style="background:#7c3aed;border-radius:10px;padding:12px 8px;text-align:center">
+                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px">BN NẶNG</div>
+                        <div style="font-size:2rem;font-weight:800;color:#fff">${r.severePatients || '0'}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Detail sections -->
             <div style="padding:0 22px 16px;background:#fff">
-                ${r.severePatients ? `
-                <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#dc2626;font-size:0.82rem;margin-bottom:3px">⚠️ BỆNH PHÒNG NẶNG</div>
-                    <div style="font-size:0.88rem;color:#7f1d1d;line-height:1.5">${r.severePatients}</div>
-                </div>` : ''}
-
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
                 <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">🔪 BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}</div>
+                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(r.date).toUpperCase()}</div>
                     <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} Chương trình, ${r.surgeryYC || '0'} Yêu cầu)</span></div>
                 </div>` : ''}
 
                 ${r.notes ? `
                 <div style="background:#f8fafc;border-left:4px solid #94a3b8;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#475569;font-size:0.82rem;margin-bottom:3px">📝 GHI CHÚ</div>
+                    <div style="font-weight:700;color:#475569;font-size:0.82rem;margin-bottom:3px">GHI CHÚ</div>
                     <div style="font-size:0.88rem;color:#334155;line-height:1.5">${r.notes}</div>
                 </div>` : ''}
             </div>
@@ -234,7 +232,7 @@ const ReportsPage = {
                     ${existing ? `<button type="button" style="background:#059669;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:0.78rem;cursor:pointer" onclick="document.querySelector('input[name=totalPatients]').value=${autoPatients};this.parentElement.querySelector('span').innerHTML='✅ Đã đồng bộ: <strong>${autoPatients}</strong>'">🔄 Đồng bộ</button>` : ''}
                 </div>` : ''}
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
                     <div class="form-group">
                         <label>Tổng số BN <span style="color:var(--danger)">*</span></label>
                         <input type="number" name="totalPatients" value="${defaultPatients}" required min="0" placeholder="VD: 65">
@@ -251,11 +249,10 @@ const ReportsPage = {
                         <label>Xuất viện</label>
                         <input type="number" name="discharges" value="${e.discharges || ''}" min="0" placeholder="VD: 4">
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label>⚠️ Bệnh phòng nặng</label>
-                    <textarea name="severePatients" rows="2" placeholder="VD: BN Nguyễn Văn A P.B712 — theo dõi sát...">${e.severePatients || ''}</textarea>
+                    <div class="form-group">
+                        <label>BN phòng nặng</label>
+                        <input type="number" name="severePatients" value="${e.severePatients || ''}" min="0" placeholder="VD: 2">
+                    </div>
                 </div>
 
                 <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
@@ -308,7 +305,7 @@ const ReportsPage = {
             postOpNotReturned: parseInt(fd.get('postOpNotReturned')) || 0,
             admissions: parseInt(fd.get('admissions')) || 0,
             discharges: parseInt(fd.get('discharges')) || 0,
-            severePatients: fd.get('severePatients')?.trim() || '',
+            severePatients: parseInt(fd.get('severePatients')) || 0,
             surgeryDay: true,
             surgeryTotal: parseInt(fd.get('surgeryTotal')) || 0,
             surgeryCT: parseInt(fd.get('surgeryCT')) || 0,
@@ -397,13 +394,14 @@ const ReportsPage = {
         const boxY = 118;
         const boxH = 80;
         const gap = 12;
-        const boxW = (W - 24 * 2 - gap * 3) / 4;
+        const boxW = (W - 24 * 2 - gap * 4) / 5;
 
         const stats = [
-            { label: 'TỔNG BN', value: r.totalPatients || '—', bg: '#1e40af' },
-            { label: 'MỔ CHƯA VỀ', value: r.postOpNotReturned || '0', bg: '#ea580c' },
-            { label: 'NHẬP VIỆN', value: r.admissions || '0', bg: '#16a34a' },
-            { label: 'XUẤT VIỆN', value: r.discharges || '0', bg: '#ca8a04' },
+            { label: 'TỔNG BN', value: r.totalPatients || '—', bg: '#0284c7' },
+            { label: 'MỔ CHƯA VỀ', value: r.postOpNotReturned || '0', bg: '#e11d48' },
+            { label: 'NHẬP VIỆN', value: r.admissions || '0', bg: '#059669' },
+            { label: 'XUẤT VIỆN', value: r.discharges || '0', bg: '#d97706' },
+            { label: 'BN NẶNG', value: r.severePatients || '0', bg: '#7c3aed' },
         ];
 
         stats.forEach((s, i) => {
@@ -425,24 +423,8 @@ const ReportsPage = {
         let curY = boxY + boxH + 20;
         ctx.textAlign = 'left';
 
-        // ===== Severe patients =====
-        if (r.severePatients) {
-            const blockH = 50;
-            ctx.fillStyle = '#fef2f2';
-            this._roundRect(ctx, 24, curY, W - 48, blockH, 6);
-            ctx.fill();
-            ctx.fillStyle = '#ef4444';
-            ctx.fillRect(24, curY, 4, blockH);
-
-            ctx.fillStyle = '#dc2626';
-            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-            ctx.fillText('[!] BỆNH PHÒNG NẶNG', 38, curY + 20);
-            ctx.fillStyle = '#7f1d1d';
-            ctx.font = '13px Inter, system-ui, sans-serif';
-            const sevText = r.severePatients.length > 80 ? r.severePatients.substring(0, 77) + '...' : r.severePatients;
-            ctx.fillText(sevText, 38, curY + 40);
-            curY += blockH + 10;
-        }
+        // ===== Severe patients (now just a number, details in notes) =====
+        // Removed separate severe patients section - it's now in the stat boxes
 
         // ===== Surgery =====
         if (r.surgeryTotal > 0 || r.surgeryDay) {
