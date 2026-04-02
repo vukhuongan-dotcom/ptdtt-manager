@@ -352,8 +352,7 @@ const ReportsPage = {
         const ctx = canvas.getContext('2d');
 
         // Pre-calculate height
-        let contentH = 320; // header + stats
-        if (r.severePatients) contentH += 60;
+        let contentH = 320; // header + 5 stat boxes
         if (r.surgeryTotal > 0 || r.surgeryDay) contentH += 55;
         if (r.notes) contentH += 55;
         contentH += 45; // footer
