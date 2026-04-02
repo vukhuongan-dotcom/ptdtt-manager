@@ -138,6 +138,11 @@ const Store = {
                     this._data = serverData;
                     localStorage.setItem(STORE_KEY, newJson);
                     if (!quiet) console.log('[Store] Synced from server ✅');
+                    // Re-apply custom passwords/admin after server sync
+                    if (typeof Auth !== 'undefined' && Auth.generateAccounts) {
+                        Auth.generateAccounts();
+                        console.log('[Store] Auth accounts regenerated with server data');
+                    }
                     if (typeof App !== 'undefined' && App.renderCurrentPage) {
                         App.renderCurrentPage();
                     }

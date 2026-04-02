@@ -146,8 +146,26 @@ const Auth = {
         return accounts;
     },
 
-    // Login
-    login(username, password) {
+    // Login — async to fetch latest server data (password changes) before checking
+    async login(username, password) {
+        // Try to fetch fresh server data before checking password
+        // This ensures admin-changed passwords take effect immediately
+        try {
+            const sep = '/api/data'.includes('?') ? '&' : '?';
+            const response = await fetch('/api/data' + sep + '_t=' + Date.now(), {
+                headers: { 'X-User': username }
+            });
+            const serverData = await response.json();
+            if (serverData && serverData._version) {
+                Store._data = serverData;
+                localStorage.setItem('ptdtt_manager', JSON.stringify(serverData));
+                this.generateAccounts();
+                console.log('[Auth] Fresh server data loaded before login');
+            }
+        } catch (e) {
+            console.log('[Auth] Server unavailable, using local data for login');
+        }
+
         const accounts = this.getAccounts();
         const account = accounts[username];
 
@@ -519,12 +537,25 @@ const LoginPage = {
 
 
 
-    handleLogin(e) {
+    async handleLogin(e) {
         e.preventDefault();
         const username = document.getElementById('login-username').value.trim();
         const password = document.getElementById('login-password').value;
 
-        const result = Auth.login(username, password);
+        // Show loading state
+        const loginBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = loginBtn ? loginBtn.innerHTML : '';
+        if (loginBtn) {
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '⏳ Đang đăng nhập...';
+        }
+
+        const result = await Auth.login(username, password);
+
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = originalText;
+        }
 
         if (result.success) {
             App.onLoginSuccess();
