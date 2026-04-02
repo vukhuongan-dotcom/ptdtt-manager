@@ -5,11 +5,12 @@ const ReportsPage = {
 
     render() {
         return `
-        <div class="page-header">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
             <div>
                 <h1 class="page-title">Báo cáo</h1>
                 <p class="page-subtitle">Báo cáo tình hình khoa hàng ngày</p>
             </div>
+            <button onclick="ReportsPage.showGuide()" style="background:#0284c7;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(2,132,199,0.3);transition:all .2s" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">📖 Hướng dẫn</button>
         </div>
 
         <div class="staff-subtabs">
@@ -1173,5 +1174,148 @@ const ReportsPage = {
     getDayOfWeek(dateStr) {
         const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
         return days[this._parseDate(dateStr).getDay()];
+    },
+
+    // ========== GUIDE MODAL ==========
+    showGuide() {
+        const guideHTML = `
+        <div style="max-width:100%;font-family:'Inter',sans-serif;color:#1e293b;line-height:1.65;font-size:0.92rem">
+            <div style="text-align:center;padding-bottom:12px;border-bottom:3px solid #0c4a6e;margin-bottom:18px">
+                <div style="font-size:1.3rem;font-weight:800;color:#0c4a6e;margin-bottom:4px">📋 HƯỚNG DẪN SỬ DỤNG MODULE BÁO CÁO</div>
+                <div style="font-size:0.85rem;color:#475569;font-weight:600">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</div>
+                <div style="font-size:0.75rem;color:#94a3b8;margin-top:4px">Phiên bản v02042353 · Cập nhật: 02/04/2026</div>
+            </div>
+
+            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">1. Tổng quan</h2>
+            <p>Module Báo cáo giúp nhân viên Khoa PTĐTT nhập liệu nhanh chóng, chính xác. Hệ thống có <strong>2 loại báo cáo</strong>:</p>
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:8px 0 14px">
+                <tr style="background:#0c4a6e;color:#fff"><th style="padding:8px;text-align:left">Loại</th><th style="padding:8px">Đối tượng</th><th style="padding:8px">Thời điểm</th><th style="padding:8px">Tab</th></tr>
+                <tr><td style="padding:7px;border-bottom:1px solid #e2e8f0"><strong>Báo cáo 16g</strong></td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">BS trực khoa</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">16:00</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">🩺 BS trực khoa</td></tr>
+                <tr style="background:#f8fafc"><td style="padding:7px;border-bottom:1px solid #e2e8f0"><strong>Báo cáo 7g</strong></td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">ĐD trực BV</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">07:00</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">👩‍⚕️ ĐD trực BV</td></tr>
+            </table>
+
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #0284c7;border-radius:6px;padding:10px 14px;margin:8px 0">
+                <strong>Cách truy cập:</strong><br>
+                ① Đăng nhập tại <strong>khoaptdtt.info.vn</strong> →
+                ② Nhấn <strong>"📊 Báo cáo"</strong> ở menu bên trái →
+                ③ Chọn tab tương ứng
+            </div>
+
+            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">2. Báo cáo trực khoa lúc 16g (Bác sĩ)</h2>
+            <p>Vào tab <strong>"BS trực khoa"</strong> → Nhấn <strong>"+ Tạo báo cáo 16h"</strong></p>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 1: Tổng BN & Mổ chưa về</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                <strong>TỔNG BN</strong> (nền xanh đậm): Tổng BN trong khoa · <strong>MỔ CHƯA VỀ</strong> (nền vàng): BN đã mổ chưa về khoa
+            </div>
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#065f46;margin:6px 0">
+                💡 <strong>MẸO:</strong> Nếu hệ thống EMR có dữ liệu, số BN sẽ được <strong>tự động điền</strong> sẵn.
+            </div>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 2: Nhập viện – Xuất viện – BN nặng</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                Gồm <strong>3 ô stepper</strong> (nút [−] [+]):<br>
+                🏥 <strong>Nhập viện</strong> · 📤 <strong>Xuất viện</strong> · ⚠️ <strong>BN nặng</strong><br>
+                <em>Nhấn [+] tăng 1, [−] giảm 1, hoặc nhập số trực tiếp.</em>
+            </div>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 3: Bệnh mổ ngày mai</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                <strong>4 stepper</strong> cho ca mổ dự kiến ngày hôm sau:
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:6px 0">
+                    <tr style="background:#0c4a6e;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th></tr>
+                    <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>Tổng</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Tổng ca mổ (<strong>tự động cộng</strong> = CT + YC + Robot)</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>CT</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Ca mổ chương trình</td></tr>
+                    <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>Yêu cầu</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Ca mổ yêu cầu</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>Robot</strong> 🤖</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Ca mổ robot</td></tr>
+                </table>
+            </div>
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#065f46;margin:6px 0">
+                💡 <strong>Tự động cộng:</strong> Khi thay đổi CT, YC hoặc Robot → ô <strong>Tổng</strong> tự cập nhật.
+            </div>
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#1e40af;margin:6px 0">
+                ℹ️ Nếu hôm nay là <strong>Thứ Sáu</strong>, form hiển thị thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau (cũng 4 stepper).
+            </div>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 4: Chọn BS trực khoa</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                Danh sách BS dạng <strong>chips</strong>. Nhấn vào tên → chip chuyển <strong>màu đen</strong> (đã chọn).
+            </div>
+            <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#92400e;margin:6px 0">
+                ⚠️ Danh sách chỉ gồm BS trực khoa. Trưởng/Phó khoa <strong>không nằm</strong> trong danh sách.
+            </div>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 5: Ghi chú & Lưu</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                • <strong>Ghi chú:</strong> Thu gọn mặc định, nhấn "📝 Ghi chú thêm" để mở.<br>
+                • <strong>Lưu:</strong> Nhấn <strong>"💾 Lưu báo cáo"</strong>. Giờ lưu = thời điểm nhấn nút.
+            </div>
+
+            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">3. Báo cáo 7g sáng (Điều dưỡng)</h2>
+            <p>Vào tab <strong>"ĐD trực BV"</strong> → Nhấn <strong>"+ Tạo báo cáo 7h"</strong></p>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 1: Tổng số bệnh nhân</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                Ô lớn nền <strong>xanh dương gradient</strong> hiển thị ngày tháng. Nhập tổng BN vào ô bên phải.
+            </div>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 2: Nguồn BN nhận (HSCC – Hồi tỉnh – ICU – Giải áp)</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                <strong>4 stepper</strong> nằm ngang:
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:6px 0">
+                    <tr style="background:#0c4a6e;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th><th style="padding:6px 8px">Màu</th></tr>
+                    <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🚑 <strong>HSCC</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ Hồi sức cấp cứu</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#dc2626">Đỏ</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🏥 <strong>Hồi tỉnh</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ phòng Hồi tỉnh</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#2563eb">Xanh dương</td></tr>
+                    <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🏨 <strong>ICU</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ khoa ICU</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#7c3aed">Tím</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🔄 <strong>Giải áp</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ ca giải áp</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#16a34a">Xanh lá</td></tr>
+                </table>
+                <p style="margin:6px 0 0"><strong>Tổng nhận BN đêm qua</strong> = HSCC + Hồi tỉnh + ICU + Giải áp (tự động cộng).</p>
+            </div>
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#065f46;margin:6px 0">
+                💡 <strong>Auto-expand:</strong> Khi số > 0, ô chi tiết <strong>tự hiện</strong> bên dưới để nhập tên BN/phòng. Khi = 0, tự ẩn.
+            </div>
+
+            <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 3–4: Chọn ĐD & Ghi chú</h3>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                • <strong>Chọn ĐD:</strong> Nhấn tên mình trong danh sách chips → chuyển <strong>màu xanh</strong>.<br>
+                • <strong>Ghi chú:</strong> Thu gọn mặc định, nhấn để mở nhập tình huống đêm trực.<br>
+                • Nhấn <strong>"💾 Lưu báo cáo"</strong> để hoàn tất.
+            </div>
+
+            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">4. Xuất hình ảnh (JPEG)</h2>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+                Trên thẻ báo cáo đã lưu → nhấn <strong>"📸 Xuất ảnh"</strong> → Hệ thống tạo file ảnh và <strong>tải về thiết bị</strong>.<br>
+                Ảnh bao gồm: Header khoa · Dữ liệu đầy đủ · Watermark chống giả mạo · Thời gian xuất.
+            </div>
+
+            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">5. Câu hỏi thường gặp</h2>
+            <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Không thấy tên mình trong danh sách?</div>
+                <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Liên hệ quản trị viên để bổ sung vào module "Nhân viên".</div>
+            </div>
+            <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Sửa báo cáo ngày hôm qua được không?</div>
+                <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Chỉ cho phép sửa <strong>trong ngày</strong>. Cần sửa cũ → liên hệ quản trị viên.</div>
+            </div>
+            <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Nút [+]/[−] và nhập trực tiếp khác gì?</div>
+                <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Kết quả giống nhau. [+]/[−] tiện trên điện thoại, nhập trực tiếp phù hợp máy tính.</div>
+            </div>
+            <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Tại sao Thứ Sáu form dài hơn?</div>
+                <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Cần báo cáo thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau (T7-CN không mổ chương trình).</div>
+            </div>
+            <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Tổng BN tự động điền từ đâu?</div>
+                <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Từ hệ thống EMR (nếu đã tích hợp). Có thể chỉnh sửa nếu chưa đúng.</div>
+            </div>
+
+            <div style="text-align:center;padding-top:14px;border-top:2px solid #e2e8f0;margin-top:16px;font-size:0.8rem;color:#64748b">
+                📞 <strong>Hỗ trợ kỹ thuật:</strong> BS. Vũ Khương An — Quản trị viên hệ thống<br>
+                🌐 <strong>Website:</strong> khoaptdtt.info.vn
+            </div>
+        </div>`;
+
+        Modal.open('📖 Hướng dẫn sử dụng Module Báo cáo', guideHTML);
     }
 };
