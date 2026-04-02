@@ -783,9 +783,7 @@ const ReportsPage = {
         const session = Auth.getSession();
         const autoPatients = this.getAutoPatientCount();
         const allStaff = Store.getAll('staff');
-        const nurses = allStaff.filter(s =>
-            s.role.includes('Điều dưỡng') || s.role.includes('Hộ lý')
-        );
+        const nurses = allStaff.filter(s => s.role.includes('Điều dưỡng'));
 
         const e = existing || {};
         const defaultPatients = e.totalPatients || (autoPatients > 0 ? autoPatients : '');
@@ -802,11 +800,12 @@ const ReportsPage = {
                     style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
             </div>`;
 
-        // Nurse chips for quick select
-        const nurseChips = nurses.length > 0 ? nurses.map(n =>
-            `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>c.style.opacity='0.5');this.style.opacity='1';this.style.boxShadow='0 0 0 2px #0284c7'"
-                class="r7h-chip" style="padding:4px 10px;border-radius:20px;border:1px solid #bae6fd;background:#f0f9ff;color:#0369a1;font-size:0.75rem;cursor:pointer;white-space:nowrap;transition:all .15s;opacity:${n.name === defaultReporter ? '1' : '0.5'};${n.name === defaultReporter ? 'box-shadow:0 0 0 2px #0284c7' : ''}">${n.name}</button>`
-        ).join('') : '';
+        // Nurse chips — compact 4-column grid
+        const nurseChips = nurses.length > 0 ? nurses.map(n => {
+            const shortName = n.name.replace(/^(Nguyễn|Trần|Phạm|Lê|Bùi|Phan|Huỳnh|Lý)\s/, (m) => m.charAt(0) + '. ');
+            return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='#f0f9ff';c.style.color='#0369a1';c.style.borderColor='#bae6fd'});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
+                class="r7h-chip" style="padding:5px 8px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.72rem;cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center">${shortName}</button>`;
+        }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
             <form onsubmit="ReportsPage.saveReport7h(event, '${date}')">
@@ -853,8 +852,8 @@ const ReportsPage = {
 
                 <!-- Row 4: Reporter quick-select -->
                 <div style="margin-bottom:8px">
-                    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👩‍⚕️ ĐD báo cáo</div>
-                    ${nurses.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">${nurseChips}</div>` : ''}
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px">👩‍⚕️ ĐD trực BV báo cáo</div>
+                    ${nurses.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">${nurseChips}</div>` : ''}
                     <input type="hidden" id="r7h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
