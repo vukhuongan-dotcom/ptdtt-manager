@@ -782,89 +782,100 @@ const ReportsPage = {
         const existing = reports.find(r => r.date === date);
         const session = Auth.getSession();
         const autoPatients = this.getAutoPatientCount();
-
-        const nurses = Store.getAll('staff').filter(s =>
+        const allStaff = Store.getAll('staff');
+        const nurses = allStaff.filter(s =>
             s.role.includes('Điều dưỡng') || s.role.includes('Hộ lý')
         );
-        const allStaff = Store.getAll('staff');
 
         const e = existing || {};
         const defaultPatients = e.totalPatients || (autoPatients > 0 ? autoPatients : '');
         const defaultReporter = e.reporterName || session?.name || '';
 
-        Modal.open(`👩‍⚕️ Báo cáo 7h sáng — ${this.formatDateVN(date)}`, `
-            <form onsubmit="ReportsPage.saveReport7h(event, '${date}')" style="max-height:70vh;overflow-y:auto">
-                <div style="background:linear-gradient(135deg,#0c4a6e,#075985);padding:10px 14px;border-radius:8px;margin-bottom:12px;color:#fff">
-                    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc">KHOA PTĐTT — BV BÌNH DÂN</div>
-                    <div style="font-size:0.92rem;font-weight:700;color:#fff">📌 Báo cáo tình hình khoa lúc 7g sáng — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}</div>
+        // Stepper helper
+        const stepper = (name, val, color) => `
+            <div style="display:flex;align-items:center;gap:4px">
+                <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                    style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+                <input type="number" name="${name}" value="${val}" min="0" style="width:52px;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid ${color}44;border-radius:8px;padding:4px 2px;color:${color}"
+                    oninput="ReportsPage._toggle7hDetail('${name}', this.value)">
+                <button type="button" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                    style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+            </div>`;
+
+        // Nurse chips for quick select
+        const nurseChips = nurses.length > 0 ? nurses.map(n =>
+            `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>c.style.opacity='0.5');this.style.opacity='1';this.style.boxShadow='0 0 0 2px #0284c7'"
+                class="r7h-chip" style="padding:4px 10px;border-radius:20px;border:1px solid #bae6fd;background:#f0f9ff;color:#0369a1;font-size:0.75rem;cursor:pointer;white-space:nowrap;transition:all .15s;opacity:${n.name === defaultReporter ? '1' : '0.5'};${n.name === defaultReporter ? 'box-shadow:0 0 0 2px #0284c7' : ''}">${n.name}</button>`
+        ).join('') : '';
+
+        Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
+            <form onsubmit="ReportsPage.saveReport7h(event, '${date}')">
+
+                <!-- Row 1: Tổng BN -->
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#0c4a6e,#0369a1);border-radius:10px;margin-bottom:10px">
+                    <div style="flex:1;color:#fff">
+                        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
+                        <div style="font-size:0.78rem;color:#bae6fd;margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
+                    </div>
+                    <input type="number" name="totalPatients" value="${defaultPatients}" required min="0"
+                        style="width:72px;text-align:center;font-size:1.6rem;font-weight:800;border:none;border-radius:10px;padding:6px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(4px)">
                 </div>
 
-                <div class="form-group">
-                    <label>Tổng số BN <span style="color:var(--danger)">*</span></label>
-                    <input type="number" name="totalPatients" value="${defaultPatients}" required min="0" placeholder="VD: 65">
-                </div>
-
-                <div style="background:#fef2f2;border-radius:8px;padding:10px;margin-bottom:10px">
-                    <label style="font-weight:700;font-size:0.85rem;color:#dc2626;margin-bottom:6px;display:block">🚑 Nhận bệnh từ HSCC</label>
-                    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Số ca</label>
-                            <input type="number" name="fromHSCC" value="${e.fromHSCC || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Chi tiết (tên BN/phòng)</label>
-                            <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" placeholder="VD: Nguyễn Văn A/P201">
-                        </div>
+                <!-- Row 2: 3 sources inline compact -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+                    <div style="background:#fef2f2;border-radius:8px;padding:8px;text-align:center">
+                        <div style="font-size:0.68rem;font-weight:700;color:#dc2626;margin-bottom:4px">🚑 HSCC</div>
+                        ${stepper('fromHSCC', e.fromHSCC || 0, '#dc2626')}
+                    </div>
+                    <div style="background:#eff6ff;border-radius:8px;padding:8px;text-align:center">
+                        <div style="font-size:0.68rem;font-weight:700;color:#2563eb;margin-bottom:4px">🏥 Hồi tỉnh</div>
+                        ${stepper('fromHoiTinh', e.fromHoiTinh || 0, '#2563eb')}
+                    </div>
+                    <div style="background:#f0fdf4;border-radius:8px;padding:8px;text-align:center">
+                        <div style="font-size:0.68rem;font-weight:700;color:#16a34a;margin-bottom:4px">🔄 Giải áp</div>
+                        ${stepper('fromGiaiAp', e.fromGiaiAp || 0, '#16a34a')}
                     </div>
                 </div>
 
-                <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
-                    <label style="font-weight:700;font-size:0.85rem;color:#2563eb;margin-bottom:6px;display:block">🏥 Nhận bệnh từ Hồi tỉnh</label>
-                    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Số ca</label>
-                            <input type="number" name="fromHoiTinh" value="${e.fromHoiTinh || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Chi tiết (tên BN/phòng)</label>
-                            <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="VD: Trần Thị B/P305">
-                        </div>
-                    </div>
+                <!-- Row 3: Auto-expand detail fields (hidden by default when count=0) -->
+                <div id="detail-fromHSCC" style="display:${(e.fromHSCC > 0) ? 'block' : 'none'};margin-bottom:6px">
+                    <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" placeholder="🚑 Chi tiết HSCC: tên BN / phòng..."
+                        style="width:100%;padding:7px 10px;border:1px solid #fca5a5;border-radius:6px;font-size:0.82rem;background:#fff5f5">
+                </div>
+                <div id="detail-fromHoiTinh" style="display:${(e.fromHoiTinh > 0) ? 'block' : 'none'};margin-bottom:6px">
+                    <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
+                        style="width:100%;padding:7px 10px;border:1px solid #93c5fd;border-radius:6px;font-size:0.82rem;background:#eff6ff">
+                </div>
+                <div id="detail-fromGiaiAp" style="display:${(e.fromGiaiAp > 0) ? 'block' : 'none'};margin-bottom:6px">
+                    <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
+                        style="width:100%;padding:7px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.82rem;background:#f0fdf4">
                 </div>
 
-                <div style="background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
-                    <label style="font-weight:700;font-size:0.85rem;color:#16a34a;margin-bottom:6px;display:block">🔄 Nhận bệnh giải áp khoa</label>
-                    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px">
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Số ca</label>
-                            <input type="number" name="fromGiaiAp" value="${e.fromGiaiAp || ''}" min="0" placeholder="0">
-                        </div>
-                        <div class="form-group" style="margin:0">
-                            <label style="font-size:0.78rem">Chi tiết (tên khoa/phòng)</label>
-                            <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="VD: Tim mạch 2 ca">
-                        </div>
-                    </div>
+                <!-- Row 4: Reporter quick-select -->
+                <div style="margin-bottom:8px">
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👩‍⚕️ ĐD báo cáo</div>
+                    ${nurses.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">${nurseChips}</div>` : ''}
+                    <input type="hidden" id="r7h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
-                <div class="form-group">
-                    <label>👩‍⚕️ ĐD báo cáo</label>
-                    <select name="reporterName">
-                        <option value="">— Chọn —</option>
-                        ${allStaff.map(d => `<option value="${d.name}" ${d.name === defaultReporter ? 'selected' : ''}>${d.name} (${d.title || d.role})</option>`).join('')}
-                    </select>
-                </div>
+                <!-- Row 5: Notes (collapsed) -->
+                <details style="margin-bottom:10px" ${e.notes ? 'open' : ''}>
+                    <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-secondary);padding:4px 0">📝 Ghi chú thêm (bấm để mở)</summary>
+                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.82rem">${e.notes || ''}</textarea>
+                </details>
 
-                <div class="form-group">
-                    <label>📝 Ghi chú thêm</label>
-                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)...">${e.notes || ''}</textarea>
-                </div>
-
-                <div class="modal-footer">
+                <div class="modal-footer" style="padding-top:8px;border-top:1px solid var(--border)">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">💾 Lưu báo cáo</button>
                 </div>
             </form>
         `);
+    },
+
+    // Toggle detail input visibility based on stepper value
+    _toggle7hDetail(fieldName, value) {
+        const el = document.getElementById('detail-' + fieldName);
+        if (el) el.style.display = parseInt(value) > 0 ? 'block' : 'none';
     },
 
     saveReport7h(e, date) {
