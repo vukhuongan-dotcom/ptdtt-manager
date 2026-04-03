@@ -11,6 +11,7 @@ const DashboardPage = {
 
         // Surgery stats (live from SurgeryPage)
         SurgeryPage.init();
+        const dailyS = SurgeryPage.getDailyStats();
         const weeklyS = SurgeryPage.getWeeklyStats();
         const monthlyS = SurgeryPage.getMonthlyStats();
         const currentMonth = new Date().toLocaleDateString('vi-VN', { month: 'long' });
@@ -97,13 +98,13 @@ const DashboardPage = {
             </div>
             <div class="stat-card slide-up" style="animation-delay:0.1s">
                 <div class="stat-header">
-                    <span class="stat-label">PT trong tuần</span>
+                    <span class="stat-label">PT hôm nay</span>
                     <div class="stat-icon green">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22L16 8"/><path d="M3.47 12.53L5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94z"/></svg>
                     </div>
                 </div>
-                <div class="stat-value">${weeklyS.total}</div>
-                <div class="stat-change">${Object.entries(SURGERY_TYPES).map(([k,t]) => `${t.label}: ${weeklyS[k]||0}`).join(' · ')}</div>
+                <div class="stat-value">${dailyS.total}</div>
+                <div class="stat-change">${Object.entries(SURGERY_TYPES).map(([k,t]) => `${t.label}: ${dailyS[k]||0}`).join(' · ')}</div>
             </div>
             <div class="stat-card slide-up" style="animation-delay:0.15s">
                 <div class="stat-header">

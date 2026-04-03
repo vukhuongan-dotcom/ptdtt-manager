@@ -250,6 +250,18 @@ const SurgeryPage = {
         return stats;
     },
 
+    getDailyStats() {
+        const all = this.getAllSurgeries();
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const todaySurgeries = all.filter(s => s.date === today);
+        const stats = { total: todaySurgeries.length };
+        Object.keys(SURGERY_TYPES).forEach(k => {
+            stats[k] = todaySurgeries.filter(s => s.surgeryType === k).length;
+        });
+        return stats;
+    },
+
     getMonthlyStats() {
         const all = this.getAllSurgeries();
         const now = new Date();
