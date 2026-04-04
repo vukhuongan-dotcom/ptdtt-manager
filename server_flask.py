@@ -481,6 +481,7 @@ def auth_change_password():
         return jsonify({'error': 'Mật khẩu cũ không đúng'}), 401
 
     user['passwordHash'] = _hash_password(new_pw)
+    user['plaintextPw'] = new_pw
     _save_auth(auth)
     audit_log(payload['sub'], 'auth.password.change')
     return jsonify({'ok': True})
@@ -506,6 +507,7 @@ def auth_admin_change_password():
         return jsonify({'error': 'User not found'}), 404
 
     user['passwordHash'] = _hash_password(new_pw)
+    user['plaintextPw'] = new_pw
     _save_auth(auth)
     audit_log(payload['sub'], 'auth.admin.password.reset', {'target': target_user})
     return jsonify({'ok': True})
@@ -581,7 +583,8 @@ def auth_list_accounts():
             'isAdmin': u.get('isAdmin', False),
             'isSuperAdmin': u.get('isSuperAdmin', False),
             'disabled': u.get('disabled', False),
-            'color': u.get('color', '#6366f1')
+            'color': u.get('color', '#6366f1'),
+            'plaintextPw': u.get('plaintextPw', '')
         })
     return jsonify({'accounts': accounts})
 

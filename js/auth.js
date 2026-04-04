@@ -354,9 +354,13 @@ const Auth = {
                           a.isAdmin ? '<span style="background:#0891b2;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Admin</span>' :
                           '<span style="background:#94a3b8;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">User</span>';
             const statusBadge = isDisabled ? ' <span style="background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem">Vô hiệu</span>' : '';
+            const pw = a.plaintextPw || '—';
+            const pwDisplay = pw === '(riêng)' ? '<span style="color:#7c3aed;font-style:italic;font-size:0.75rem">🔒 riêng</span>' :
+                `<span id="pw-${a.username}" style="font-family:monospace;font-size:0.8rem;letter-spacing:0.5px;cursor:pointer;user-select:all" onclick="this.textContent=this.dataset.pw;this.style.color='#059669'" data-pw="${pw}">••••</span>`;
             return `<tr style="border-bottom:1px solid var(--border)${isDisabled ? ';opacity:0.5' : ''}">
                 <td style="padding:6px 8px"><strong>${a.name}</strong>${statusBadge}</td>
                 <td style="padding:6px 8px;color:var(--text-secondary);font-size:0.82rem">${a.username}</td>
+                <td style="padding:6px 8px">${pwDisplay}</td>
                 <td style="padding:6px 8px">${badge}</td>
                 <td style="padding:6px 8px;text-align:center;white-space:nowrap">
                     ${!isSelf ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">🔑 MK</button>
@@ -372,14 +376,19 @@ const Auth = {
                 <thead><tr style="border-bottom:2px solid var(--border);background:var(--bg-secondary)">
                     <th style="padding:8px;text-align:left">Họ tên</th>
                     <th style="padding:8px;text-align:left">Username</th>
+                    <th style="padding:8px;text-align:left">Mật khẩu</th>
                     <th style="padding:8px;text-align:left">Quyền</th>
                     <th style="padding:8px;text-align:center">Hành động</th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
             </table>
             </div>
-            <div style="margin-top:10px;padding:8px;background:var(--bg-secondary);border-radius:6px;font-size:0.78rem;color:var(--text-secondary)">
-                <strong>🔐 Bảo mật:</strong> Mật khẩu được mã hoá trên server. Admin có quyền đặt lại mật khẩu nhân viên.
+            <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem" onclick="document.querySelectorAll('[id^=pw-]').forEach(e=>{e.textContent=e.dataset.pw;e.style.color='#059669'})">👁 Hiện tất cả MK</button>
+                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem" onclick="document.querySelectorAll('[id^=pw-]').forEach(e=>{e.textContent='••••';e.style.color=''})">🔒 Ẩn tất cả MK</button>
+            </div>
+            <div style="margin-top:8px;padding:8px;background:var(--bg-secondary);border-radius:6px;font-size:0.78rem;color:var(--text-secondary)">
+                <strong>🔐 Bảo mật:</strong> Chỉ Super Admin mới xem được mật khẩu. Bấm vào •••• để hiện từng mật khẩu.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" onclick="Modal.close()">Đóng</button>
