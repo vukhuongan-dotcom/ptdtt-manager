@@ -74,67 +74,92 @@ const App = {
     IDLE_WARNING: 14 * 60 * 1000, // warn at 14 min
     _idleTimer: null,
     _idleWarned: false,
-    _lastActivity: Date.now(),
+    _IDLE_KEY: 'ptdtt_lastActivity',
+
+    _getLastActivity() {
+        return parseInt(localStorage.getItem(this._IDLE_KEY) || Date.now());
+    },
+
+    _setLastActivity() {
+        const now = Date.now();
+        localStorage.setItem(this._IDLE_KEY, now);
+    },
 
     _startIdleTimer() {
-        // Track user activity
+        // Init last activity
+        this._setLastActivity();
+
+        // Track user activity — desktop + mobile events
         const resetIdle = () => {
-            this._lastActivity = Date.now();
+            this._setLastActivity();
             if (this._idleWarned) {
                 this._idleWarned = false;
-                // Dismiss warning if user moves
                 const warn = document.getElementById('idle-warning-bar');
                 if (warn) warn.remove();
             }
         };
 
-        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+        ['mousemove', 'mousedown', 'keydown', 'click', 'scroll',
+         'touchstart', 'touchmove', 'touchend'].forEach(evt => {
             document.addEventListener(evt, resetIdle, { passive: true });
         });
 
-        // Check every 30 seconds
+        // Visibility change — crucial for mobile (timers freeze when tab/app is hidden)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
+                this._checkIdle();
+            }
+        });
+
+        // Also check on window focus (some mobile browsers use this instead)
+        window.addEventListener('focus', () => {
+            if (Auth.isLoggedIn()) this._checkIdle();
+        });
+
+        // Periodic check every 30 seconds (works on desktop, may be throttled on mobile)
         if (this._idleTimer) clearInterval(this._idleTimer);
-        this._idleTimer = setInterval(() => {
-            if (!Auth.isLoggedIn()) return;
+        this._idleTimer = setInterval(() => this._checkIdle(), 30000);
+    },
 
-            const idle = Date.now() - this._lastActivity;
+    _checkIdle() {
+        if (!Auth.isLoggedIn()) return;
 
-            // Warning at 14 min
-            if (idle >= this.IDLE_WARNING && !this._idleWarned) {
-                this._idleWarned = true;
-                this._showIdleWarning();
-            }
+        const idle = Date.now() - this._getLastActivity();
 
-            // Logout at 15 min
-            if (idle >= this.IDLE_TIMEOUT) {
-                clearInterval(this._idleTimer);
-                this._idleTimer = null;
-                Auth.logout();
-                this.showLogin();
-                // Show message on login page
-                setTimeout(() => {
-                    const err = document.getElementById('login-error');
-                    if (err) {
-                        err.textContent = '⏰ Phiên đăng nhập đã hết hạn do không hoạt động (15 phút).';
-                        err.style.display = 'block';
-                        err.style.color = '#f59e0b';
-                    }
-                }, 200);
-            }
-        }, 30000);
+        // Logout at 15 min
+        if (idle >= this.IDLE_TIMEOUT) {
+            if (this._idleTimer) { clearInterval(this._idleTimer); this._idleTimer = null; }
+            localStorage.removeItem(this._IDLE_KEY);
+            Auth.logout();
+            this.showLogin();
+            setTimeout(() => {
+                const err = document.getElementById('login-error');
+                if (err) {
+                    err.textContent = '⏰ Phiên đăng nhập đã hết hạn do không hoạt động (15 phút).';
+                    err.style.display = 'block';
+                    err.style.color = '#f59e0b';
+                }
+            }, 200);
+            return;
+        }
+
+        // Warning at 14 min
+        if (idle >= this.IDLE_WARNING && !this._idleWarned) {
+            this._idleWarned = true;
+            this._showIdleWarning();
+        }
     },
 
     _showIdleWarning() {
-        // Remove existing warning if any
         const existing = document.getElementById('idle-warning-bar');
         if (existing) existing.remove();
 
         const bar = document.createElement('div');
         bar.id = 'idle-warning-bar';
         bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;text-align:center;padding:10px 16px;font-size:0.85rem;font-weight:600;font-family:Inter,system-ui,sans-serif;animation:slideDown 0.3s ease;cursor:pointer';
-        bar.innerHTML = '⚠️ Bạn sẽ bị đăng xuất trong <strong>1 phút</strong> nữa do không hoạt động. Bấm vào đây hoặc di chuyển chuột để tiếp tục.';
+        bar.innerHTML = '⚠️ Bạn sẽ bị đăng xuất trong <strong>1 phút</strong> nữa do không hoạt động. Chạm vào đây để tiếp tục.';
         bar.onclick = () => {
-            this._lastActivity = Date.now();
+            this._setLastActivity();
             this._idleWarned = false;
             bar.remove();
         };

@@ -26,3 +26,6 @@ data/
 
 # Logs
 *.log
+
+# Secrets
+PROJECT_CONTEXT/DEPLOY_SECRETS.md
