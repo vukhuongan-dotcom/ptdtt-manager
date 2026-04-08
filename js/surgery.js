@@ -6,6 +6,36 @@ const SURGERY_TYPES = {
     'robot':       { label: 'Robot', color: '#1e3a5f' }
 };
 
+// Priority doctor per day of week (getDay(): 0=Sun, 1=Mon...6=Sat)
+// staffId: 1=Hữu, 2=An, 4=Tuấn, 5=Hậu(Bùi Hồng Minh Hậu)
+const PRIORITY_DOCTOR_BY_DAY = {
+    1: 1,  // Thứ 2: BS Hữu
+    2: 4,  // Thứ 3: BS Tuấn
+    3: 2,  // Thứ 4: BS An
+    4: 1,  // Thứ 5: BS Hữu
+    5: 5,  // Thứ 6: BS Hậu
+};
+
+const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
+
+// Sort surgeries: by type, then priority doctor first within same type
+function sortSurgeries(surgeries, date) {
+    const dayOfWeek = date instanceof Date ? date.getDay() : new Date(date).getDay();
+    const priorityDocId = PRIORITY_DOCTOR_BY_DAY[dayOfWeek] || null;
+    return surgeries.sort((a, b) => {
+        // 1. Sort by surgery type priority
+        const typeDiff = (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9);
+        if (typeDiff !== 0) return typeDiff;
+        // 2. Within same type: priority doctor's cases first
+        if (priorityDocId) {
+            const aIsPriority = a.mainSurgeon === priorityDocId ? 0 : 1;
+            const bIsPriority = b.mainSurgeon === priorityDocId ? 0 : 1;
+            return aIsPriority - bIsPriority;
+        }
+        return 0;
+    });
+}
+
 // Check if current user is a doctor (can edit surgery schedule)
 function canEditSurgery() {
     const session = Auth.getSession();
@@ -152,9 +182,7 @@ const SurgeryPage = {
             ${weekDates.map(d => {
                 const ds = this.dateStr(d);
                 const isToday = d.getTime() === today.getTime();
-                const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
-                const daySurgeries = surgeries.filter(s => s.date === ds)
-                    .sort((a, b) => (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9));
+                const daySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), d);
 
                 return `
                 <div class="surgery-day ${isToday ? 'today' : ''} ${d.getDay() === 0 || d.getDay() === 6 ? 'weekend' : ''}">
@@ -557,9 +585,7 @@ const SurgeryPage = {
     _exportImageForDate(targetDate) {
         const ds = this.dateStr(targetDate);
         const surgeries = this.getAllSurgeries();
-        const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
-        const todaySurgeries = surgeries.filter(s => s.date === ds)
-            .sort((a, b) => (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9));
+        const todaySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), targetDate);
 
         const dateLabel = `${targetDate.getDate()}/${targetDate.getMonth()+1}/${targetDate.getFullYear()}`;
         const dayNames = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
