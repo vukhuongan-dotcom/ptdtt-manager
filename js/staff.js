@@ -1,10 +1,10 @@
 // ===== STAFF PAGE =====
 const STAFF_STATUSES = {
-    'active':    { label: 'Hoạt động', badge: 'badge-success', icon: '🟢' },
-    'leave':     { label: 'Nghỉ phép', badge: 'badge-warning', icon: '🟡' },
-    'sick':      { label: 'Bệnh ốm',  badge: 'badge-danger',  icon: '🔴' },
-    'business':  { label: 'Công tác',  badge: 'badge-accent',  icon: '🟣' },
-    'dayoff':    { label: 'Nghỉ bù',   badge: 'badge-info',    icon: '🔵' }
+    'active':    { label: 'Hoạt động', badge: 'badge-success', icon: '🟢', abbr: '' },
+    'leave':     { label: 'Nghỉ phép', badge: 'badge-warning', icon: '🟡', abbr: 'NP' },
+    'sick':      { label: 'Bệnh ốm',  badge: 'badge-danger',  icon: '🔴', abbr: 'B' },
+    'business':  { label: 'Công tác',  badge: 'badge-accent',  icon: '🟣', abbr: 'CT' },
+    'dayoff':    { label: 'Nghỉ bù',   badge: 'badge-info',    icon: '🔵', abbr: 'NB' }
 };
 
 const StaffPage = {
@@ -103,15 +103,11 @@ const StaffPage = {
                         <th>Vai trò</th>
                         <th>Điện thoại</th>
                         <th>Email</th>
-                        <th>Trạng thái</th>
-                        <th style="width:100px">Thao tác</th>
+                        <th style="width:80px">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${staff.length ? staff.map(s => {
-                        const st = this.getEffectiveStatus(s, today);
-                        const statusInfo = STAFF_STATUSES[st.status] || STAFF_STATUSES.active;
-                        const dateRange = st.fromDate && st.toDate ? `<span class="staff-status-dates">${this.fmtDate(st.fromDate)} → ${this.fmtDate(st.toDate)}</span>` : '';
                         return `
                     <tr>
                         <td>
@@ -125,17 +121,8 @@ const StaffPage = {
                         <td style="color:var(--text-muted)">${s.phone || '—'}</td>
                         <td style="color:var(--text-muted);font-size:0.82rem">${s.email || '—'}</td>
                         <td>
-                            <div class="staff-status-cell">
-                                <span class="badge ${statusInfo.badge}">${statusInfo.label}</span>
-                                ${dateRange}
-                            </div>
-                        </td>
-                        <td>
                             <div class="staff-actions">
                                 ${isAdmin ? `
-                                <button class="btn-icon" onclick="StaffPage.openStatusForm(${s.id})" title="Trạng thái">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                </button>
                                 <button class="btn-icon" onclick="StaffPage.openForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
                                 <button class="btn-icon" onclick="StaffPage.delete(${s.id})" title="Xoá">${Utils.deleteIcon()}</button>
                                 ` : (s.id === myStaffId ? `
@@ -144,7 +131,7 @@ const StaffPage = {
                             </div>
                         </td>
                     </tr>`;
-                    }).join('') : `<tr><td colspan="7"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
+                    }).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
                 </tbody>
             </table>
         </div>
