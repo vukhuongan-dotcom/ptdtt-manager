@@ -221,15 +221,53 @@ const StaffPage = {
     },
 
 
-    // Determine effective status based on date range
+    // Determine effective status — check per-day entries first, then staff object fallback
     getEffectiveStatus(staff, today) {
+        // Priority: per-day staffStatuses entries
+        const entries = Store.getAll('staffStatuses') || [];
+        const dayEntry = entries.find(e => e.staffId === staff.id && e.date === today);
+        if (dayEntry && dayEntry.status !== 'active') {
+            // Find the range this belongs to
+            const range = this._findStatusRange(staff.id, today, entries);
+            return { status: dayEntry.status, fromDate: range.from, toDate: range.to };
+        }
+        // Fallback: staff object (legacy data)
         if (staff.statusType && staff.statusType !== 'active' && staff.statusFrom && staff.statusTo) {
             if (today >= staff.statusFrom && today <= staff.statusTo) {
                 return { status: staff.statusType, fromDate: staff.statusFrom, toDate: staff.statusTo };
             }
-            return { status: 'active', fromDate: null, toDate: null };
         }
-        return { status: staff.statusType || 'active', fromDate: null, toDate: null };
+        return { status: 'active', fromDate: null, toDate: null };
+    },
+
+    // Find contiguous date range for same status
+    _findStatusRange(staffId, dateStr, entries) {
+        const staffEntries = entries.filter(e => e.staffId === staffId);
+        const target = staffEntries.find(e => e.date === dateStr);
+        if (!target) return { from: dateStr, to: dateStr };
+        const status = target.status;
+        let from = dateStr, to = dateStr;
+        // Expand backward
+        let d = new Date(dateStr);
+        while (true) {
+            d.setDate(d.getDate() - 1);
+            const ds = this._dateStr(d);
+            const e = staffEntries.find(x => x.date === ds && x.status === status);
+            if (e) from = ds; else break;
+        }
+        // Expand forward
+        d = new Date(dateStr);
+        while (true) {
+            d.setDate(d.getDate() + 1);
+            const ds = this._dateStr(d);
+            const e = staffEntries.find(x => x.date === ds && x.status === status);
+            if (e) to = ds; else break;
+        }
+        return { from, to };
+    },
+
+    _dateStr(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     },
 
     fmtDate(d) {
@@ -278,38 +316,93 @@ const StaffPage = {
         if (!s) return;
         const today = new Date().toISOString().split('T')[0];
 
+        // Get existing status entries for this staff
+        const entries = (Store.getAll('staffStatuses') || []).filter(e => e.staffId === id && e.status !== 'active');
+        // Group consecutive same-status entries into ranges
+        const ranges = this._groupStatusRanges(entries);
+
+        const historyHtml = ranges.length ? `
+            <div style="margin-bottom:12px">
+                <label class="form-label" style="margin-bottom:6px">📋 Lịch sử trạng thái</label>
+                <div style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px">
+                    ${ranges.map(r => {
+                        const info = STAFF_STATUSES[r.status] || STAFF_STATUSES.active;
+                        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:${StaffPage._statusColor(r.status)}15">
+                            <div style="font-size:0.8rem">
+                                <span>${info.icon} ${info.label}</span>
+                                <span style="color:var(--text-muted);margin-left:6px">${StaffPage.fmtDate(r.from)} → ${StaffPage.fmtDate(r.to)}</span>
+                                ${r.note ? `<span style="color:var(--text-secondary);margin-left:4px;font-style:italic">"${r.note}"</span>` : ''}
+                            </div>
+                            <button type="button" class="btn-icon" onclick="StaffPage.deleteStatusRange(${id},'${r.from}','${r.to}')" title="Xoá" style="flex-shrink:0">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            </button>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : '';
+
         Modal.open(`Cập nhật trạng thái — ${s.name}`, `
             <form onsubmit="StaffPage.saveStatus(event, ${id})">
-                <div class="form-group">
-                    <label class="form-label">Trạng thái</label>
-                    <select class="form-select" name="statusType" id="status-type-select" onchange="StaffPage.toggleDateFields()">
-                        ${Object.entries(STAFF_STATUSES).map(([key, val]) =>
-                            `<option value="${key}" ${(s.statusType||'active')===key?'selected':''}>${val.icon} ${val.label}</option>`
-                        ).join('')}
-                    </select>
-                </div>
-                <div id="status-date-fields" style="${(s.statusType && s.statusType !== 'active') ? '' : 'display:none'}">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Từ ngày</label>
-                            <input class="form-input" type="date" name="statusFrom" value="${s.statusFrom || today}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Đến ngày</label>
-                            <input class="form-input" type="date" name="statusTo" value="${s.statusTo || today}">
+                ${historyHtml}
+                <div style="${ranges.length ? 'border-top:1px solid var(--border);padding-top:12px;margin-top:4px' : ''}">
+                    <label class="form-label" style="margin-bottom:6px">${ranges.length ? '➕ Thêm trạng thái mới' : 'Trạng thái'}</label>
+                    <div class="form-group">
+                        <select class="form-select" name="statusType" id="status-type-select" onchange="StaffPage.toggleDateFields()">
+                            ${Object.entries(STAFF_STATUSES).map(([key, val]) =>
+                                `<option value="${key}" ${key === 'active' ? 'selected' : ''}>${val.icon} ${val.label}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div id="status-date-fields" style="display:none">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Từ ngày</label>
+                                <input class="form-input" type="date" name="statusFrom" value="${today}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Đến ngày</label>
+                                <input class="form-input" type="date" name="statusTo" value="${today}">
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ghi chú</label>
-                    <input class="form-input" name="statusNote" value="${s.statusNote || ''}" placeholder="Lý do nghỉ, nơi công tác...">
+                    <div class="form-group">
+                        <label class="form-label">Ghi chú</label>
+                        <input class="form-input" name="statusNote" placeholder="Lý do nghỉ, nơi công tác...">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
-                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                    <button type="submit" class="btn btn-primary">${ranges.length ? 'Thêm trạng thái' : 'Cập nhật'}</button>
                 </div>
             </form>
         `);
+    },
+
+    _statusColor(status) {
+        const map = { active: '#22c55e', leave: '#eab308', sick: '#ef4444', business: '#a855f7', dayoff: '#3b82f6' };
+        return map[status] || '#22c55e';
+    },
+
+    // Group per-day entries into contiguous date ranges with same status
+    _groupStatusRanges(entries) {
+        if (!entries.length) return [];
+        const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+        const ranges = [];
+        let current = { status: sorted[0].status, from: sorted[0].date, to: sorted[0].date, note: sorted[0].note || '' };
+        for (let i = 1; i < sorted.length; i++) {
+            const e = sorted[i];
+            const prevDate = new Date(current.to);
+            prevDate.setDate(prevDate.getDate() + 1);
+            const nextDay = this._dateStr(prevDate);
+            if (e.status === current.status && e.date === nextDay) {
+                current.to = e.date;
+            } else {
+                ranges.push(current);
+                current = { status: e.status, from: e.date, to: e.date, note: e.note || '' };
+            }
+        }
+        ranges.push(current);
+        return ranges;
     },
 
     toggleDateFields() {
@@ -320,24 +413,65 @@ const StaffPage = {
         }
     },
 
+    // Save status as per-day entries in staffStatuses[]
     saveStatus(e, id) {
         if (!Auth.getSession()?.isAdmin) return;
         e.preventDefault();
         const f = new FormData(e.target);
         const statusType = f.get('statusType');
-        const data = { statusType };
-        if (statusType !== 'active') {
-            data.statusFrom = f.get('statusFrom');
-            data.statusTo = f.get('statusTo');
-            data.statusNote = f.get('statusNote');
+        const note = f.get('statusNote') || '';
+
+        if (statusType === 'active') {
+            // Clear all per-day entries for this staff
+            let entries = Store.getAll('staffStatuses') || [];
+            entries = entries.filter(e => e.staffId !== id);
+            Store._data.staffStatuses = entries;
+            // Also clear legacy staff object fields
+            Store.update('staff', id, { statusType: 'active', statusFrom: '', statusTo: '', statusNote: '' });
         } else {
-            data.statusFrom = '';
-            data.statusTo = '';
-            data.statusNote = '';
+            const fromDate = f.get('statusFrom');
+            const toDate = f.get('statusTo');
+            if (!fromDate || !toDate || fromDate > toDate) {
+                Toast.warning('Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc');
+                return;
+            }
+
+            // Generate per-day entries
+            let entries = Store.getAll('staffStatuses') || [];
+            const d = new Date(fromDate);
+            const end = new Date(toDate);
+            while (d <= end) {
+                const ds = this._dateStr(d);
+                const idx = entries.findIndex(e => e.staffId === id && e.date === ds);
+                const entry = { staffId: id, date: ds, status: statusType, note };
+                if (idx !== -1) {
+                    entries[idx] = entry;
+                } else {
+                    entries.push(entry);
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            Store._data.staffStatuses = entries;
+
+            // Update staff object to reflect latest status (for badge display)
+            Store.update('staff', id, { statusType, statusFrom: fromDate, statusTo: toDate, statusNote: note });
         }
-        Store.update('staff', id, data);
+
+        Store.save();
         Modal.close();
         App.renderCurrentPage();
+        Toast.success('Đã cập nhật trạng thái');
+    },
+
+    // Delete a status range
+    deleteStatusRange(staffId, fromDate, toDate) {
+        let entries = Store.getAll('staffStatuses') || [];
+        entries = entries.filter(e => !(e.staffId === staffId && e.date >= fromDate && e.date <= toDate));
+        Store._data.staffStatuses = entries;
+        Store.save();
+        // Refresh form
+        this.openStatusForm(staffId);
+        Toast.success('Đã xoá trạng thái');
     },
 
     openForm(id) {

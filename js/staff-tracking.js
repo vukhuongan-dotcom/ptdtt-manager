@@ -53,6 +53,54 @@ const StaffTrackingPage = {
         return dates;
     },
 
+    // ===== TODAY SUMMARY =====
+    _renderTodaySummary(allStaff) {
+        const today = this._localDateStr(new Date());
+        const absent = [];
+        allStaff.forEach(s => {
+            const status = this.getStatusForDay(s.id, today);
+            if (status !== 'active') {
+                const info = STAFF_STATUSES[status] || STAFF_STATUSES.active;
+                absent.push({ ...s, status, statusInfo: info });
+            }
+        });
+
+        const present = allStaff.length - absent.length;
+        const pct = Math.round((present / allStaff.length) * 100);
+        const isLow = pct < 80;
+
+        const absentCards = absent.length ? absent.map(a => `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:${this._statusColor(a.status)}12;border:1px solid ${this._statusColor(a.status)}30">
+                <div class="st-staff-avatar" style="background:${a.color};width:28px;height:28px;font-size:0.65rem">${Utils.getInitials(a.name)}</div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div>
+                    <div style="font-size:0.68rem;color:var(--text-muted)">${a.role}</div>
+                </div>
+                <span style="font-size:0.72rem;padding:2px 6px;border-radius:4px;background:${this._statusColor(a.status)};color:#fff;white-space:nowrap">${a.statusInfo.icon} ${a.statusInfo.label}</span>
+            </div>
+        `).join('') : '<span style="color:var(--text-muted);font-size:0.82rem">✅ Tất cả nhân viên có mặt</span>';
+
+        return `
+        <div class="card" style="margin-bottom:16px;padding:16px;border-left:4px solid ${isLow ? '#ef4444' : '#22c55e'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${absent.length ? '12px' : '0'}">
+                <div>
+                    <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary)">📊 Nhân sự hôm nay</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'numeric', year:'numeric'})}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:1.4rem;font-weight:800;color:${isLow ? '#ef4444' : '#22c55e'}">${present}/${allStaff.length}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted)">có mặt (${pct}%)</div>
+                </div>
+            </div>
+            ${absent.length ? `
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+                ${absentCards}
+            </div>
+            ${isLow ? '<div style="margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#ef4444;font-size:0.75rem;font-weight:600">⚠️ Cảnh báo: Vắng &gt;20% nhân sự — kiểm tra nhân lực!</div>' : ''}
+            ` : ''}
+        </div>`;
+    },
+
     // ===== RENDER =====
     render() {
         const session = Auth.getSession();
@@ -99,6 +147,8 @@ const StaffTrackingPage = {
 
         // Table rows
         const rows = staff.map(s => {
+            const todayStatus = this.getStatusForDay(s.id, today);
+            const isAbsentToday = todayStatus !== 'active';
             const cells = dates.map(d => {
                 const ds = this._localDateStr(d);
                 const isToday = ds === today;
@@ -111,7 +161,7 @@ const StaffTrackingPage = {
                 </td>`;
             }).join('');
 
-            return `<tr>
+            return `<tr${isAbsentToday ? ' style="background:rgba(239,68,68,0.04)"' : ''}>
                 <td class="st-staff-cell">
                     <div class="st-staff-info">
                         <div class="st-staff-avatar" style="background:${s.color}">${Utils.getInitials(s.name)}</div>
@@ -125,7 +175,7 @@ const StaffTrackingPage = {
             </tr>`;
         }).join('');
 
-        // Role filters (same as staff page)
+        // Role filters
         const roleDefs = [
             { key: 'all', label: 'Tất cả' },
             { key: 'BCN', label: 'BCN khoa' },
@@ -151,6 +201,8 @@ const StaffTrackingPage = {
                 <p class="page-subtitle">Trạng thái nhân viên theo ${this.viewMode === 'week' ? 'tuần' : 'tháng'}</p>
             </div>
         </div>
+
+        ${this._renderTodaySummary(allStaff)}
 
         <div class="st-controls">
             <div class="st-view-tabs">
@@ -197,7 +249,6 @@ const StaffTrackingPage = {
     },
 
     _periodSummary(staff, dates) {
-        // Count absent days per status type across the period
         const counts = {};
         Object.keys(STAFF_STATUSES).forEach(k => { counts[k] = 0; });
         let totalAbsent = 0;
@@ -259,9 +310,24 @@ const StaffTrackingPage = {
             <form onsubmit="StaffTrackingPage.saveDayStatus(event, ${staffId}, '${dateStr}')">
                 <div class="form-group">
                     <label class="form-label">Trạng thái</label>
-                    <select class="form-select" name="status" style="font-size:15px;padding:10px">
+                    <select class="form-select" name="status" style="font-size:15px;padding:10px" onchange="StaffTrackingPage._toggleRangeFields()">
                         ${options}
                     </select>
+                </div>
+                <div id="tracking-range-fields" style="${currentStatus !== 'active' ? '' : 'display:none'}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Từ ngày</label>
+                            <input class="form-input" type="date" name="fromDate" value="${dateStr}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Đến ngày</label>
+                            <input class="form-input" type="date" name="toDate" value="${dateStr}">
+                        </div>
+                    </div>
+                    <div style="font-size:0.72rem;color:var(--text-muted);margin-top:-4px;margin-bottom:8px">
+                        💡 Để khoảng ngày giống nhau nếu chỉ cập nhật 1 ngày
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
@@ -275,6 +341,14 @@ const StaffTrackingPage = {
         `);
     },
 
+    _toggleRangeFields() {
+        const sel = document.querySelector('select[name="status"]');
+        const fields = document.getElementById('tracking-range-fields');
+        if (sel && fields) {
+            fields.style.display = sel.value === 'active' ? 'none' : '';
+        }
+    },
+
     _getNoteForDay(staffId, dateStr) {
         const entries = this.getAllEntries();
         const entry = entries.find(e => e.staffId === staffId && e.date === dateStr);
@@ -286,19 +360,34 @@ const StaffTrackingPage = {
         const f = new FormData(e.target);
         const status = f.get('status');
         const note = f.get('note') || '';
+        const fromDate = f.get('fromDate') || dateStr;
+        const toDate = f.get('toDate') || dateStr;
 
         let entries = this.getAllEntries();
-        const idx = entries.findIndex(e => e.staffId === staffId && e.date === dateStr);
 
         if (status === 'active') {
-            // Remove the entry if exists — active is default
-            if (idx !== -1) entries.splice(idx, 1);
+            // Remove entries for the range
+            const d = new Date(fromDate);
+            const end = new Date(toDate);
+            while (d <= end) {
+                const ds = this._localDateStr(d);
+                entries = entries.filter(e => !(e.staffId === staffId && e.date === ds));
+                d.setDate(d.getDate() + 1);
+            }
         } else {
-            const entry = { staffId, date: dateStr, status, note };
-            if (idx !== -1) {
-                entries[idx] = entry;
-            } else {
-                entries.push(entry);
+            // Create/update entries for each day in range
+            const d = new Date(fromDate);
+            const end = new Date(toDate);
+            while (d <= end) {
+                const ds = this._localDateStr(d);
+                const idx = entries.findIndex(e => e.staffId === staffId && e.date === ds);
+                const entry = { staffId, date: ds, status, note };
+                if (idx !== -1) {
+                    entries[idx] = entry;
+                } else {
+                    entries.push(entry);
+                }
+                d.setDate(d.getDate() + 1);
             }
         }
 
