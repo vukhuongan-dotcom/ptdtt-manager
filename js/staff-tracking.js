@@ -127,7 +127,7 @@ const StaffTrackingPage = {
 
         // Status legend
         const legend = Object.entries(STAFF_STATUSES).map(([k,v]) =>
-            `<span class="st-legend-item"><span class="st-legend-dot" style="background:${this._statusBg(k)};border-color:${this._statusColor(k)}"></span>${v.label}</span>`
+            `<span class="st-legend-item"><span class="st-legend-chip st-chip-${k}">${v.abbr || '✔'}</span>${v.label}</span>`
         ).join('');
 
         // Summary counts for this period
@@ -156,8 +156,9 @@ const StaffTrackingPage = {
                 const status = this.getStatusForDay(s.id, ds);
                 const statusInfo = STAFF_STATUSES[status] || STAFF_STATUSES.active;
                 const clickHandler = isAdmin ? `onclick="StaffTrackingPage.openDayStatus(${s.id},'${ds}','${s.name}')"` : '';
+                const abbr = statusInfo.abbr || '';
                 return `<td class="st-cell st-status-${status} ${isToday ? 'st-today' : ''} ${isWeekend ? 'st-weekend' : ''}" ${clickHandler} title="${s.name} — ${statusInfo.label}">
-                    <span class="st-status-icon">${statusInfo.icon}</span>
+                    <span class="st-status-label">${abbr || '✔'}</span>
                 </td>`;
             }).join('');
 
@@ -244,13 +245,8 @@ const StaffTrackingPage = {
     },
 
     _statusColor(status) {
-        const map = { active: '#22c55e', leave: '#eab308', sick: '#ef4444', business: '#a855f7', dayoff: '#3b82f6' };
-        return map[status] || '#22c55e';
-    },
-
-    _statusBg(status) {
-        const map = { active: '#f0fdf4', leave: '#fef9c3', sick: '#fee2e2', business: '#f3e8ff', dayoff: '#dbeafe' };
-        return map[status] || '#f0fdf4';
+        const map = { active: '#16a34a', leave: '#ca8a04', sick: '#dc2626', business: '#7c3aed', dayoff: '#2563eb' };
+        return map[status] || '#16a34a';
     },
 
     _periodSummary(staff, dates) {

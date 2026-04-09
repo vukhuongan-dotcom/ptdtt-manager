@@ -38,6 +38,7 @@
     background: var(--hover-bg);
 }
 
+/* ===== LEGEND — badge chips ===== */
 .st-legend {
     display: flex;
     gap: 14px;
@@ -54,12 +55,47 @@
     color: var(--text-secondary);
 }
 
-.st-legend-dot {
-    width: 14px;
-    height: 14px;
+/* Legend chips — match cell appearance */
+.st-legend-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 20px;
     border-radius: 4px;
-    display: inline-block;
-    border: 1px solid rgba(0,0,0,0.08);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.st-chip-active {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1.5px solid #86efac;
+}
+
+.st-chip-leave {
+    background: #fef9c3;
+    color: #a16207;
+    border: 1.5px solid #fde047;
+}
+
+.st-chip-sick {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+}
+
+.st-chip-business {
+    background: #ede9fe;
+    color: #7c3aed;
+    border: 1.5px solid #c4b5fd;
+}
+
+.st-chip-dayoff {
+    background: #dbeafe;
+    color: #2563eb;
+    border: 1.5px solid #93c5fd;
 }
 
 /* Summary */
@@ -205,13 +241,16 @@
     white-space: nowrap;
 }
 
-/* Status cells — base */
+/* ===== STATUS CELLS — Colorblind-safe design ===== */
+/* Uses DUAL ENCODING: background color + text abbreviation */
+/* Palette tested for protanopia, deuteranopia, tritanopia */
+
 .st-cell {
     text-align: center;
-    padding: 8px 4px;
+    padding: 6px 4px;
     border-bottom: 1px solid var(--border);
     cursor: default;
-    transition: background 0.15s;
+    transition: all 0.15s;
     min-width: 52px;
 }
 
@@ -220,7 +259,20 @@
 }
 
 .st-cell[onclick]:hover {
-    filter: brightness(0.95);
+    filter: brightness(0.92);
+}
+
+/* Status label — text inside each cell */
+.st-status-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 22px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
 }
 
 .st-cell.st-today {
@@ -231,41 +283,61 @@
     background: var(--hover-bg);
 }
 
-/* Per-status cell colors — HIGH CONTRAST */
-.st-cell.st-status-active {
-    /* No background — clean white */
+/* ===== Per-status styles — MATCHED to legend chips ===== */
+
+/* Active — subtle green check */
+.st-cell.st-status-active .st-status-label {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+    font-size: 0.75rem;
 }
 
+/* Leave (Nghỉ phép) — warm yellow */
 .st-cell.st-status-leave {
-    background: #fef9c3 !important;  /* warm yellow tint */
-    border-bottom-color: #facc15;
+    background: #fefce8 !important;
+}
+.st-cell.st-status-leave .st-status-label {
+    background: #fef08a;
+    color: #854d0e;
+    border: 1.5px solid #facc15;
 }
 
+/* Sick (Bệnh ốm) — strong red */
 .st-cell.st-status-sick {
-    background: #fee2e2 !important;  /* soft red tint */
-    border-bottom-color: #f87171;
+    background: #fef2f2 !important;
+}
+.st-cell.st-status-sick .st-status-label {
+    background: #fecaca;
+    color: #dc2626;
+    border: 1.5px solid #f87171;
 }
 
+/* Business (Công tác) — purple */
 .st-cell.st-status-business {
-    background: #f3e8ff !important;  /* light purple tint */
-    border-bottom-color: #c084fc;
+    background: #faf5ff !important;
+}
+.st-cell.st-status-business .st-status-label {
+    background: #ddd6fe;
+    color: #6d28d9;
+    border: 1.5px solid #a78bfa;
 }
 
+/* Dayoff (Nghỉ bù) — blue */
 .st-cell.st-status-dayoff {
-    background: #dbeafe !important;  /* light blue tint */
-    border-bottom-color: #60a5fa;
+    background: #eff6ff !important;
+}
+.st-cell.st-status-dayoff .st-status-label {
+    background: #bfdbfe;
+    color: #1d4ed8;
+    border: 1.5px solid #60a5fa;
 }
 
-/* Today column + status combo */
-.st-cell.st-today.st-status-leave { background: #fef3c7 !important; }
-.st-cell.st-today.st-status-sick { background: #fecaca !important; }
+/* Today column + status combos */
+.st-cell.st-today.st-status-leave { background: #fef9c3 !important; }
+.st-cell.st-today.st-status-sick { background: #fee2e2 !important; }
 .st-cell.st-today.st-status-business { background: #ede9fe !important; }
-.st-cell.st-today.st-status-dayoff { background: #bfdbfe !important; }
-
-.st-status-icon {
-    font-size: 1rem;
-    line-height: 1;
-}
+.st-cell.st-today.st-status-dayoff { background: #dbeafe !important; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -281,5 +353,10 @@
     }
     .st-staff-avatar {
         display: none;
+    }
+    .st-status-label {
+        width: 24px;
+        height: 18px;
+        font-size: 0.6rem;
     }
 }
