@@ -508,7 +508,7 @@ const SchedulePage = {
                 for (let slot = 0; slot < pos.slots; slot++) {
                     let row = '<tr>';
                     if (slot === 0) {
-                        row += `<td rowspan="${pos.slots}" style="border:1.5px solid #94a3b8;padding:8px 10px;background:${pos.color}15;font-weight:700;color:${pos.color};vertical-align:middle;font-size:12px">${pos.label}</td>`;
+                        row += `<td rowspan="${pos.slots}" style="border:1.5px solid #94a3b8;padding:8px 10px;background:${pos.color}15;font-weight:700;color:${pos.color};vertical-align:middle;font-size:13px">${pos.label}</td>`;
                     }
                     dates.forEach((d, dayIdx) => {
                         const dayKey = DAYS[dayIdx];
@@ -520,7 +520,7 @@ const SchedulePage = {
                             if (member) name = this.getShortName(member.id) || member.name.split(' ').pop();
                         }
                         const bg = dayIdx >= 5 ? '#fffbeb' : '#fff';
-                        row += `<td style="border:1px solid #cbd5e1;padding:6px 8px;text-align:center;background:${bg};font-size:12px;color:#334155">${name}</td>`;
+                        row += `<td style="border:1px solid #cbd5e1;padding:7px 8px;text-align:center;background:${bg};font-size:13px;color:#1e293b;font-weight:500">${name}</td>`;
                     });
                     row += '</tr>';
                     tableRows.push(row);
@@ -535,24 +535,24 @@ const SchedulePage = {
             </head><body>
             <div id="capture" style="padding:28px;width:1120px;background:#fff">
                 <div style="text-align:center;margin-bottom:18px">
-                    <h2 style="font-size:20px;color:#1e293b">LỊCH PHÂN CÔNG TUẦN</h2>
-                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
-                    <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
+                    <h2 style="font-size:22px;color:#0f172a;font-weight:800">LỊCH PHÂN CÔNG TUẦN</h2>
+                    <p style="margin:6px 0 0;font-size:14px;color:#475569;font-weight:500">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
+                    <p style="margin:3px 0 0;font-size:15px;color:#1e293b;font-weight:700">${dateRange}</p>
                 </div>
-                <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
                     <thead><tr>
-                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px">Vị trí</th>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px;font-size:13px;font-weight:700">Vị trí</th>
                         ${dates.map((d, i) => `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
-                            <div style="font-weight:700;font-size:12px;color:#1e293b">${DAY_LABELS[i]}</div>
-                            <div style="color:#64748b;font-size:12px">${d.getDate()}/${d.getMonth()+1}</div>
+                            <div style="font-weight:700;font-size:13px;color:#0f172a">${DAY_LABELS[i]}</div>
+                            <div style="color:#475569;font-size:13px;font-weight:600">${d.getDate()}/${d.getMonth()+1}</div>
                         </th>`).join('')}
                     </tr></thead>
                     <tbody>
                         ${tableRows.join('')}
-                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:11px;color:#64748b"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
+                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:12px;color:#475569"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
                     </tbody>
                 </table>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:10px;color:#94a3b8">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px;color:#64748b">
                     <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
                     <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}</span>
                 </div>
@@ -560,7 +560,7 @@ const SchedulePage = {
 
             // Render in isolated iframe (prevents interaction with live DOM)
             const iframe = document.createElement('iframe');
-            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1200px;height:900px;border:none;opacity:0;pointer-events:none';
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1200px;height:3000px;border:none;opacity:0;pointer-events:none';
             document.body.appendChild(iframe);
 
             await new Promise((resolve) => {
@@ -573,10 +573,11 @@ const SchedulePage = {
 
             const captureEl = iframe.contentDocument.getElementById('capture');
             const canvas = await html2canvas(captureEl, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 backgroundColor: '#ffffff',
-                logging: false
+                logging: false,
+                windowHeight: captureEl.scrollHeight + 100
             });
 
             document.body.removeChild(iframe);
@@ -586,7 +587,7 @@ const SchedulePage = {
 
             // Helper: download image via server
             const downloadImage = async (canvasEl, fname) => {
-                const dataUrl = canvasEl.toDataURL('image/jpeg', 0.92);
+                const dataUrl = canvasEl.toDataURL('image/jpeg', 0.95);
                 const resp = await fetch('/api/download-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -670,13 +671,14 @@ const SchedulePage = {
                 </div></body></html>`;
 
                 const iframe2 = document.createElement('iframe');
-                iframe2.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:900px;height:600px;border:none;opacity:0;pointer-events:none';
+                iframe2.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:900px;height:1500px;border:none;opacity:0;pointer-events:none';
                 document.body.appendChild(iframe2);
                 await new Promise(resolve => { iframe2.onload = resolve; iframe2.srcdoc = robotHtml; });
                 await new Promise(r => setTimeout(r, 500));
 
                 const robotCanvas = await html2canvas(iframe2.contentDocument.getElementById('capture'), {
-                    scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false
+                    scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false,
+                    windowHeight: iframe2.contentDocument.getElementById('capture').scrollHeight + 100
                 });
                 document.body.removeChild(iframe2);
 
