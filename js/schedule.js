@@ -520,7 +520,7 @@ const SchedulePage = {
                             if (member) name = this.getShortName(member.id) || member.name.split(' ').pop();
                         }
                         const bg = dayIdx >= 5 ? '#fffbeb' : '#fff';
-                        row += `<td style="border:1px solid #cbd5e1;padding:7px 8px;text-align:center;background:${bg};font-size:13px;color:#1e293b;font-weight:500">${name}</td>`;
+                        row += `<td style="border:1px solid #cbd5e1;padding:7px 8px;text-align:center;background:${bg};font-size:13px;color:#000;font-weight:600">${name}</td>`;
                     });
                     row += '</tr>';
                     tableRows.push(row);
@@ -535,24 +535,24 @@ const SchedulePage = {
             </head><body>
             <div id="capture" style="padding:28px;width:1120px;background:#fff">
                 <div style="text-align:center;margin-bottom:18px">
-                    <h2 style="font-size:22px;color:#0f172a;font-weight:800">LỊCH PHÂN CÔNG TUẦN</h2>
-                    <p style="margin:6px 0 0;font-size:14px;color:#475569;font-weight:500">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
-                    <p style="margin:3px 0 0;font-size:15px;color:#1e293b;font-weight:700">${dateRange}</p>
+                    <h2 style="font-size:22px;color:#000;font-weight:800">LỊCH PHÂN CÔNG TUẦN</h2>
+                    <p style="margin:6px 0 0;font-size:14px;color:#222;font-weight:600">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
+                    <p style="margin:3px 0 0;font-size:15px;color:#000;font-weight:800">${dateRange}</p>
                 </div>
                 <table style="width:100%;border-collapse:collapse;font-size:13px">
                     <thead><tr>
                         <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px;font-size:13px;font-weight:700">Vị trí</th>
                         ${dates.map((d, i) => `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
-                            <div style="font-weight:700;font-size:13px;color:#0f172a">${DAY_LABELS[i]}</div>
-                            <div style="color:#475569;font-size:13px;font-weight:600">${d.getDate()}/${d.getMonth()+1}</div>
+                            <div style="font-weight:700;font-size:13px;color:#000">${DAY_LABELS[i]}</div>
+                            <div style="color:#111;font-size:13px;font-weight:700">${d.getDate()}/${d.getMonth()+1}</div>
                         </th>`).join('')}
                     </tr></thead>
                     <tbody>
                         ${tableRows.join('')}
-                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:12px;color:#475569"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
+                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:12px;color:#111;font-weight:500"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
                     </tbody>
                 </table>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px;color:#64748b">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px;color:#333">
                     <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
                     <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}</span>
                 </div>
