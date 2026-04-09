@@ -116,6 +116,34 @@ const DashboardPage = {
                 <div class="stat-value">${tasks.filter(t=>t.status!=='done').length}</div>
                 <div class="stat-change">${tasks.filter(t=>t.status==='done').length} đã hoàn thành</div>
             </div>
+            ${(() => {
+                const allStaff = Store.getAll('staff');
+                const today = new Date().toISOString().split('T')[0];
+                const entries = Store.getAll('staffStatuses') || [];
+                const absentList = [];
+                allStaff.forEach(s => {
+                    const dayEntry = entries.find(e => e.staffId === s.id && e.date === today);
+                    let status = 'active';
+                    if (dayEntry) status = dayEntry.status;
+                    else if (s.statusType && s.statusType !== 'active' && s.statusFrom && s.statusTo && today >= s.statusFrom && today <= s.statusTo) status = s.statusType;
+                    if (status !== 'active') {
+                        const info = STAFF_STATUSES[status] || STAFF_STATUSES.active;
+                        absentList.push(`${info.icon} ${s.name}`);
+                    }
+                });
+                const present = allStaff.length - absentList.length;
+                const isLow = absentList.length > 0 && (present / allStaff.length) < 0.8;
+                return `<div class="stat-card slide-up" style="animation-delay:0.2s">
+                    <div class="stat-header">
+                        <span class="stat-label">Nhân sự</span>
+                        <div class="stat-icon ${isLow ? 'red' : 'green'}">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-value">${present}/${allStaff.length}</div>
+                    <div class="stat-change">${absentList.length ? absentList.join(' · ') : '✅ Đủ nhân sự'}</div>
+                </div>`;
+            })()}
         </div>
 
         <div class="chart-card slide-up" style="animation-delay:0.2s">
