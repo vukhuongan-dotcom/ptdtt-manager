@@ -18,7 +18,7 @@ const PRIORITY_DOCTOR_BY_DAY = {
 
 const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
 
-// Sort surgeries: by type, then priority doctor first within same type
+// Sort surgeries: by type > isFirstCase > priority doctor > duration (desc)
 function sortSurgeries(surgeries, date) {
     const dayOfWeek = date instanceof Date ? date.getDay() : new Date(date).getDay();
     const priorityDocId = PRIORITY_DOCTOR_BY_DAY[dayOfWeek] || null;
@@ -26,13 +26,20 @@ function sortSurgeries(surgeries, date) {
         // 1. Sort by surgery type priority
         const typeDiff = (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9);
         if (typeDiff !== 0) return typeDiff;
-        // 2. Within same type: priority doctor's cases first
+        // 2. "Ca đầu tiên" always on top within same type
+        const aFirst = a.isFirstCase ? 0 : 1;
+        const bFirst = b.isFirstCase ? 0 : 1;
+        if (aFirst !== bFirst) return aFirst - bFirst;
+        // 3. Priority doctor's cases first
         if (priorityDocId) {
             const aIsPriority = a.mainSurgeon === priorityDocId ? 0 : 1;
             const bIsPriority = b.mainSurgeon === priorityDocId ? 0 : 1;
-            return aIsPriority - bIsPriority;
+            if (aIsPriority !== bIsPriority) return aIsPriority - bIsPriority;
         }
-        return 0;
+        // 4. Longest duration first
+        const aDur = parseInt(a.duration) || 0;
+        const bDur = parseInt(b.duration) || 0;
+        return bDur - aDur;
     });
 }
 
@@ -466,12 +473,52 @@ const SurgeryPage = {
                     <label class="form-label">Ghi chú</label>
                     <textarea class="form-textarea" name="notes">${s?.notes || ''}</textarea>
                 </div>
+                <div class="form-group" id="first-case-group">
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">${s ? 'Cập nhật' : 'Thêm ca mổ'}</button>
                 </div>
             </form>
         `);
+
+        // Init "Ca đầu tiên" checkbox after modal opens
+        this._initFirstCaseCheckbox(s, defaultDate);
+    },
+
+    _initFirstCaseCheckbox(s, dateStr) {
+        const group = document.getElementById('first-case-group');
+        if (!group) return;
+
+        const all = this.getAllSurgeries();
+        const existingFirst = all.find(x => x.date === dateStr && x.isFirstCase && (!s || x.id !== s?.id));
+        const isChecked = s?.isFirstCase || false;
+
+        if (existingFirst) {
+            const name = existingFirst.patientName;
+            group.innerHTML = `
+                <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:var(--bg-secondary);cursor:not-allowed;opacity:0.7">
+                    <input type="checkbox" name="isFirstCase" disabled ${isChecked ? 'checked' : ''}>
+                    <span style="font-size:0.82rem">⭐ Ca đầu tiên trong ngày</span>
+                </label>
+                <div style="font-size:0.75rem;color:#f59e0b;margin-top:4px">⚠️ Đã có ca đầu tiên: <strong>${name}</strong></div>
+            `;
+        } else {
+            group.innerHTML = `
+                <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:var(--bg-secondary);cursor:pointer">
+                    <input type="checkbox" name="isFirstCase" ${isChecked ? 'checked' : ''}>
+                    <span style="font-size:0.82rem">⭐ Ca đầu tiên trong ngày</span>
+                </label>
+            `;
+        }
+
+        // Re-check when date changes
+        const dateInput = document.querySelector('input[name="date"]');
+        if (dateInput) {
+            dateInput.addEventListener('change', () => {
+                this._initFirstCaseCheckbox(s, dateInput.value);
+            });
+        }
     },
 
     save(e, id) {
@@ -497,7 +544,8 @@ const SurgeryPage = {
             assistSurgeon1: f.get('assistSurgeon1') ? parseInt(f.get('assistSurgeon1')) : null,
             diagnosis: f.get('diagnosis'),
             method: f.get('method'),
-            notes: f.get('notes')
+            notes: f.get('notes'),
+            isFirstCase: !!f.get('isFirstCase')
         };
 
         const all = this.getAllSurgeries();
