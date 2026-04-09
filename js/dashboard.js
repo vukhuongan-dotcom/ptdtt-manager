@@ -15,14 +15,7 @@ const DashboardPage = {
         const weeklyS = SurgeryPage.getWeeklyStats();
         const monthlyS = SurgeryPage.getMonthlyStats();
         const currentMonth = new Date().toLocaleDateString('vi-VN', { month: 'long' });
-
-        // Calculate staff status counts
-        const statusCounts = { active: 0, leave: 0, sick: 0, business: 0, dayoff: 0 };
-        staff.forEach(s => {
-            const eff = StaffPage.getEffectiveStatus(s, today);
-            statusCounts[eff.status] = (statusCounts[eff.status] || 0) + 1;
-        });
-
+        
         // Get today's duty staff from weekly schedule
         const todayDutyKhoa = this.getTodayDutyByGroup(staff, today, 'khoa');
         const todayDutyCapCuu = this.getTodayDutyByGroup(staff, today, 'capcuu');
@@ -34,16 +27,6 @@ const DashboardPage = {
             .slice(0, 4);
 
         const dotColors = ['cyan', 'purple', 'green', 'cyan'];
-
-        const absentCount = statusCounts.leave + statusCounts.sick + statusCounts.business + statusCounts.dayoff;
-        const staffParts = [];
-        if (statusCounts.leave > 0) staffParts.push(`${statusCounts.leave} nghỉ phép`);
-        if (statusCounts.sick > 0) staffParts.push(`${statusCounts.sick} bệnh`);
-        if (statusCounts.business > 0) staffParts.push(`${statusCounts.business} công tác`);
-        if (statusCounts.dayoff > 0) staffParts.push(`${statusCounts.dayoff} nghỉ bù`);
-        const staffSummary = absentCount > 0
-            ? `${statusCounts.active} hoạt động · ${staffParts.join(' · ')}`
-            : `● Tất cả đang hoạt động`;
 
         return `
         <div class="page-header">
@@ -61,16 +44,6 @@ const DashboardPage = {
 
         <div class="stats-grid">
             <div class="stat-card slide-up" style="animation-delay:0s">
-                <div class="stat-header">
-                    <span class="stat-label">Nhân sự hôm nay</span>
-                    <div class="stat-icon cyan">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </div>
-                </div>
-                <div class="stat-value">${statusCounts.active}<span style="font-size:1rem;font-weight:400;color:var(--text-muted)">/${staff.length}</span></div>
-                <div class="stat-change ${absentCount > 0 ? '' : 'up'}">${staffSummary}</div>
-            </div>
-            <div class="stat-card slide-up" style="animation-delay:0.05s">
                 <div class="stat-header">
                     <span class="stat-label">BN đang điều trị</span>
                     <div class="stat-icon purple">
@@ -96,7 +69,7 @@ const DashboardPage = {
                     }
                 })()}
             </div>
-            <div class="stat-card slide-up" style="animation-delay:0.1s">
+            <div class="stat-card slide-up" style="animation-delay:0.05s">
                 <div class="stat-header">
                     <span class="stat-label">PT hôm nay</span>
                     <div class="stat-icon green">
@@ -106,7 +79,7 @@ const DashboardPage = {
                 <div class="stat-value">${dailyS.total}</div>
                 <div class="stat-change">${Object.entries(SURGERY_TYPES).map(([k,t]) => `${t.label}: ${dailyS[k]||0}`).join(' · ')}</div>
             </div>
-            <div class="stat-card slide-up" style="animation-delay:0.15s">
+            <div class="stat-card slide-up" style="animation-delay:0.1s">
                 <div class="stat-header">
                     <span class="stat-label">Công việc</span>
                     <div class="stat-icon amber">
@@ -116,34 +89,6 @@ const DashboardPage = {
                 <div class="stat-value">${tasks.filter(t=>t.status!=='done').length}</div>
                 <div class="stat-change">${tasks.filter(t=>t.status==='done').length} đã hoàn thành</div>
             </div>
-            ${(() => {
-                const allStaff = Store.getAll('staff');
-                const today = new Date().toISOString().split('T')[0];
-                const entries = Store.getAll('staffStatuses') || [];
-                const absentList = [];
-                allStaff.forEach(s => {
-                    const dayEntry = entries.find(e => e.staffId === s.id && e.date === today);
-                    let status = 'active';
-                    if (dayEntry) status = dayEntry.status;
-                    else if (s.statusType && s.statusType !== 'active' && s.statusFrom && s.statusTo && today >= s.statusFrom && today <= s.statusTo) status = s.statusType;
-                    if (status !== 'active') {
-                        const info = STAFF_STATUSES[status] || STAFF_STATUSES.active;
-                        absentList.push(`${info.icon} ${s.name}`);
-                    }
-                });
-                const present = allStaff.length - absentList.length;
-                const isLow = absentList.length > 0 && (present / allStaff.length) < 0.8;
-                return `<div class="stat-card slide-up" style="animation-delay:0.2s">
-                    <div class="stat-header">
-                        <span class="stat-label">Nhân sự</span>
-                        <div class="stat-icon ${isLow ? 'red' : 'green'}">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        </div>
-                    </div>
-                    <div class="stat-value">${present}/${allStaff.length}</div>
-                    <div class="stat-change">${absentList.length ? absentList.join(' · ') : '✅ Đủ nhân sự'}</div>
-                </div>`;
-            })()}
         </div>
 
         <div class="chart-card slide-up" style="animation-delay:0.2s">

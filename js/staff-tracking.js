@@ -127,7 +127,7 @@ const StaffTrackingPage = {
 
         // Status legend
         const legend = Object.entries(STAFF_STATUSES).map(([k,v]) =>
-            `<span class="st-legend-item"><span class="st-legend-dot" style="background:${this._statusColor(k)}"></span>${v.label}</span>`
+            `<span class="st-legend-item"><span class="st-legend-dot" style="background:${this._statusBg(k)};border-color:${this._statusColor(k)}"></span>${v.label}</span>`
         ).join('');
 
         // Summary counts for this period
@@ -156,7 +156,7 @@ const StaffTrackingPage = {
                 const status = this.getStatusForDay(s.id, ds);
                 const statusInfo = STAFF_STATUSES[status] || STAFF_STATUSES.active;
                 const clickHandler = isAdmin ? `onclick="StaffTrackingPage.openDayStatus(${s.id},'${ds}','${s.name}')"` : '';
-                return `<td class="st-cell ${isToday ? 'st-today' : ''} ${isWeekend ? 'st-weekend' : ''} ${status !== 'active' ? 'st-absent' : ''}" ${clickHandler} title="${s.name} — ${statusInfo.label}">
+                return `<td class="st-cell st-status-${status} ${isToday ? 'st-today' : ''} ${isWeekend ? 'st-weekend' : ''}" ${clickHandler} title="${s.name} — ${statusInfo.label}">
                     <span class="st-status-icon">${statusInfo.icon}</span>
                 </td>`;
             }).join('');
@@ -246,6 +246,11 @@ const StaffTrackingPage = {
     _statusColor(status) {
         const map = { active: '#22c55e', leave: '#eab308', sick: '#ef4444', business: '#a855f7', dayoff: '#3b82f6' };
         return map[status] || '#22c55e';
+    },
+
+    _statusBg(status) {
+        const map = { active: '#f0fdf4', leave: '#fef9c3', sick: '#fee2e2', business: '#f3e8ff', dayoff: '#dbeafe' };
+        return map[status] || '#f0fdf4';
     },
 
     _periodSummary(staff, dates) {
