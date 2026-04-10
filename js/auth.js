@@ -280,7 +280,7 @@ const Auth = {
 
     openChangePassword() {
         const session = this.getSession();
-        if (!session) return;
+        if (!session || !session.isAdmin) return;
         Modal.open('Đổi mật khẩu', `
             <form onsubmit="Auth.handleChangePassword(event)">
                 ${this._pwField('pw-current', 'Mật khẩu hiện tại', 'required')}
