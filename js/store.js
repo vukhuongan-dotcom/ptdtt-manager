@@ -42,6 +42,17 @@ const Store = {
             if (!this._data.staffStatuses) this._data.staffStatuses = [];
             if (!this._data.departedStaff) this._data.departedStaff = [];
             if (!this._data.disabledAccounts) this._data.disabledAccounts = [];
+            // SHCM collections
+            if (!this._data.shcmSchedule) {
+                this._data.shcmSchedule = typeof SAMPLE_SHCM !== 'undefined' ? [...SAMPLE_SHCM] : [];
+                this._data.nextIds.shcmSchedule = (this._data.shcmSchedule.length || 0) + 1;
+            }
+            if (!this._data.nextIds.shcmSchedule) this._data.nextIds.shcmSchedule = (this._data.shcmSchedule.length || 0) + 1;
+            if (!this._data.shcmSettings) {
+                this._data.shcmSettings = [{ id: 1, defaultTime: '15:30', defaultDuration: '30m' }];
+                this._data.nextIds.shcmSettings = 2;
+            }
+            if (!this._data.nextIds.shcmSettings) this._data.nextIds.shcmSettings = 2;
             SAMPLE_SCHEDULES.forEach(sample => {
                 if (!this._data.schedules.find(s => s.weekKey === sample.weekKey)) {
                     const entry = JSON.parse(JSON.stringify(sample));

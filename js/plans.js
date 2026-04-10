@@ -96,8 +96,8 @@ const PlansPage = {
             html += `<div class="calendar-day ${isToday?'today':''}" ${isAdmin ? `onclick="PlansPage.openForm(null,'${dateStr}')"` : ''}>
                 <span class="day-number">${d}</span>
                 ${dayPlans.map(p => `
-                    <div class="calendar-event ${p.type}" onclick="event.stopPropagation();PlansPage.viewOrEdit(${p.id})" title="${p.title} — ${p.time}${p.duration ? ' ('+p.duration+')' : ''}">
-                        ${p.time} ${p.title}
+                    <div class="calendar-event ${p.type}${p.source === 'shcm' ? ' shcm-event' : ''}" onclick="event.stopPropagation();PlansPage.viewOrEdit(${p.id})" title="${p.source === 'shcm' ? '🔬 ' : ''}${p.title} — ${p.time}${p.duration ? ' ('+p.duration+')' : ''}">
+                        ${p.time} ${p.source === 'shcm' ? '🔬 ' : ''}${p.title}
                     </div>
                 `).join('')}
             </div>`;
@@ -214,6 +214,29 @@ const PlansPage = {
 
     // ===== FORMS =====
     viewOrEdit(id) {
+        const p = Store.getById('plans', id);
+        if (!p) return;
+        // SHCM plans: always view-only, link to Research page
+        if (p.source === 'shcm') {
+            const staff = Store.getAll('staff');
+            const responsible = staff.find(s => s.id === p.responsible);
+            Modal.open('🔬 Sinh hoạt Chuyên môn', `
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    <div><strong>Tiêu đề:</strong> ${p.title}</div>
+                    <div><strong>Ngày:</strong> ${p.date}  •  <strong>Giờ:</strong> ${p.time}${p.duration ? '  •  <strong>Thời lượng:</strong> ' + p.duration : ''}</div>
+                    <div><strong>Phụ trách:</strong> ${responsible?.name || '—'}</div>
+                    <div><strong>Địa điểm:</strong> ${p.location || '—'}</div>
+                    ${p.note ? `<div><strong>Ghi chú:</strong> ${p.note}</div>` : ''}
+                    <div style="padding:10px;background:var(--bg-secondary);border-radius:8px;font-size:0.82rem;color:var(--text-muted)">
+                        ℹ️ Sự kiện này được tạo tự động từ <strong>Lịch SHCM</strong>. Để chỉnh sửa, vui lòng vào trang <a href="#" onclick="Modal.close();App.navigate('research')" style="color:var(--primary);font-weight:600">Nghiên cứu</a>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
+                </div>
+            `);
+            return;
+        }
         if (Auth.getSession()?.isAdmin) {
             this.openForm(id);
         } else {

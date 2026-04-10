@@ -13,6 +13,7 @@ const App = {
         schedule: SchedulePage,
         surgery: SurgeryPage,
         'surgery-stats': SurgeryStatsPage,
+        research: ResearchPage,
         reports: ReportsPage,
     },
 

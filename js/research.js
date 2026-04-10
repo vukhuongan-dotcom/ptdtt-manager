@@ -1,0 +1,367 @@
+// ===== RESEARCH / SHCM PAGE =====
+const SHCM_STATUSES = {
+    done: { label: 'Đã trình', color: '#16a34a', bg: '#dcfce7', icon: '✅' },
+    pending: { label: 'Chưa trình', color: '#ea580c', bg: '#fff7ed', icon: '⏳' },
+    registered: { label: 'Mới đăng ký', color: '#7c3aed', bg: '#f3e8ff', icon: '📝' }
+};
+
+const SAMPLE_SHCM = [
+    { id:1, doctorName:'BS. Vũ Ngọc Anh Tuấn', doctorId:4, title:'Phân giai đoạn ung thư đường tiêu hóa và cách làm hồ sơ xuất viện', status:'done', presentDate:'2025-04-15' },
+    { id:2, doctorName:'BS. Võ Chí Nguyện', doctorId:6, title:'Chuẩn bị bệnh nhân trước phẫu thuật ung thư đại trực tràng', status:'done', presentDate:'2025-04-29' },
+    { id:3, doctorName:'BS. Giao Hữu Trường Quy', doctorId:8, title:'Chăm sóc bệnh nhân sau phẫu thuật ung thư đại trực tràng', status:'done', presentDate:'2025-06-17' },
+    { id:4, doctorName:'BS. Vũ Khương An', doctorId:2, title:'Cập nhật trong chẩn đoán và điều trị ung thư đại trực tràng 2025', status:'done', presentDate:'2025-05-07' },
+    { id:5, doctorName:'BS. Vũ Khương An', doctorId:2, title:'Hội chẩn tham vấn (Thầy Chúc) trường hợp rò tiêu hóa. Kinh nghiệm xử trí u đại tràng ngang.', status:'done', presentDate:'2025-07-24' },
+    { id:6, doctorName:'BS. Vũ Ngọc Anh Tuấn', doctorId:4, title:'Ứng dụng laser trong phẫu thuật trĩ, rò', status:'done', presentDate:'2025-11-06' },
+    { id:7, doctorName:'BS. Phạm Vĩnh Phú', doctorId:7, title:'Một số kinh nghiệm trong công bố và báo cáo quốc tế', status:'done', presentDate:'2025-12-22' },
+    { id:8, doctorName:'BS. Vũ Khương An', doctorId:2, title:'Ý tưởng báo cáo khoa học trong năm 2026, các lỗi thường gặp khi thực hiện BAĐT', status:'done', presentDate:'2026-01-26' },
+    { id:9, doctorName:'BS. Vũ Khương An', doctorId:2, title:'Tổng kết triển khai mô hình POD bệnh phòng & Định hướng luân chuyển Nội trú kỳ mới', status:'done', presentDate:'2026-02-23' },
+    { id:10, doctorName:'BS. Trịnh Hoàng Minh Đức', doctorId:9, title:'Cập nhật điều trị polyp đại trực tràng', status:'done', presentDate:'2026-03-09' },
+    { id:11, doctorName:'BS. Phạm Vĩnh Phú', doctorId:7, title:'Cập nhật hướng dẫn chẩn đoán và điều trị Helicobacter pylori', status:'done', presentDate:'2026-03-23' },
+    { id:12, doctorName:'BS. Võ Chí Nguyện', doctorId:6, title:'Có nên hạ góc lách thường quy trong phẫu thuật cắt trực tràng?', status:'pending', presentDate:'2026-04-06' },
+    { id:13, doctorName:'BS. Vũ Ngọc Anh Tuấn', doctorId:4, title:'Ứng dụng laser trong điều trị bệnh lý condyloma', status:'pending', presentDate:'2026-04-20' },
+    { id:14, doctorName:'BS. Bùi Hồng Minh Hậu', doctorId:5, title:'Cập nhật hướng dẫn sử dụng kháng sinh dự phòng, kháng sinh điều trị', status:'pending', presentDate:'2026-05-04' },
+    { id:15, doctorName:'BS. Lê Văn Hoan', doctorId:11, title:'Cập nhật hướng dẫn chẩn đoán và điều trị viêm túi thừa đại tràng', status:'pending', presentDate:'2026-05-18' },
+    { id:16, doctorName:'BS. Giao Hữu Trường Quy', doctorId:8, title:'Phẫu thuật nội soi điều trị thoát vị bẹn - TAPP vs TEP', status:'pending', presentDate:'2026-06-01' },
+    { id:17, doctorName:'BS. Võ Chí Nguyện', doctorId:6, title:'Hồi tràng ra da/ Phẫu thuật cắt trực tràng: Kỹ thuật và biến chứng liên quan', status:'pending', presentDate:'2026-06-15' },
+    { id:18, doctorName:'BS. Trần Như Đức', doctorId:10, title:'Xử trí u dưới niêm dạ dày, tá tràng với các kích thước khác nhau', status:'pending', presentDate:'2026-06-29' },
+    { id:19, doctorName:'BS. Phạm Thị Tuyết Minh', doctorId:12, title:'Ứng dụng giảm đau đa mô thức trong hậu phẫu', status:'pending', presentDate:'2026-07-13' },
+    { id:20, doctorName:'BS. Trịnh Hoàng Minh Đức', doctorId:9, title:'Chẩn đoán và xử trí tắc mạch máu mạc treo ruột', status:'pending', presentDate:'2026-07-27' },
+    { id:21, doctorName:'BS. Bùi Hồng Minh Hậu', doctorId:5, title:'Xử trí tắc ruột do u đại trực tràng: PTNS mở HMNT trên dòng?', status:'pending', presentDate:'2026-08-10' },
+    { id:22, doctorName:'BS. Lê Văn Hoan', doctorId:11, title:'Ung thư đại trực tràng đồng thời: Tiếp cận và xử trí', status:'pending', presentDate:'2026-08-24' },
+    { id:23, doctorName:'BS. Trần Như Đức', doctorId:10, title:'DNA tự do của khối u trong máu (ctDNA) và quản lý ung thư đại trực tràng.', status:'registered', presentDate:'2026-09-07' },
+    { id:24, doctorName:'BS. Phạm Thị Tuyết Minh', doctorId:12, title:'Hiệu quả của tư vấn di truyền trong điều trị và dự phòng ung thư đại trực tràng có tính chất gia đình.', status:'registered', presentDate:'2026-09-21' },
+];
+
+const ResearchPage = {
+    _canEdit() {
+        const s = Auth.getSession();
+        if (!s) return false;
+        if (s.isAdmin) return true;
+        const staff = Store.getAll('staff').find(st => st.id === s.staffId);
+        if (!staff) return false;
+        return staff.role.includes('Bác sĩ chính') || staff.role.includes('Trưởng khoa') || staff.role.includes('Phó trưởng khoa');
+    },
+
+    _getSettings() {
+        const all = Store.getAll('shcmSettings');
+        if (all && all.length > 0) return all[0];
+        return { defaultTime: '15:30', defaultDuration: '30m' };
+    },
+
+    render() {
+        const canEdit = this._canEdit();
+        const items = Store.getAll('shcmSchedule').sort((a, b) => {
+            if (a.presentDate && b.presentDate) return a.presentDate.localeCompare(b.presentDate);
+            return a.id - b.id;
+        });
+        const settings = this._getSettings();
+
+        // Stats
+        const done = items.filter(i => i.status === 'done').length;
+        const pending = items.filter(i => i.status === 'pending').length;
+        const registered = items.filter(i => i.status === 'registered').length;
+
+        return `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Sinh hoạt Chuyên môn</h1>
+                <p class="page-subtitle">Lịch SHCM & Tài liệu — Khoa PTĐTT · Bệnh viện Bình Dân</p>
+            </div>
+            ${canEdit ? `<button class="btn btn-primary" onclick="ResearchPage.openForm()">
+                ${Utils.plusIcon()} Thêm bài SHCM
+            </button>` : ''}
+        </div>
+
+        <!-- Stats cards -->
+        <div class="rsch-stats">
+            <div class="rsch-stat-card"><span class="rsch-stat-val">${items.length}</span><span class="rsch-stat-lbl">Tổng bài</span></div>
+            <div class="rsch-stat-card rsch-done"><span class="rsch-stat-val">${done}</span><span class="rsch-stat-lbl">Đã trình</span></div>
+            <div class="rsch-stat-card rsch-pending"><span class="rsch-stat-val">${pending}</span><span class="rsch-stat-lbl">Chưa trình</span></div>
+            <div class="rsch-stat-card rsch-reg"><span class="rsch-stat-val">${registered}</span><span class="rsch-stat-lbl">Mới đăng ký</span></div>
+        </div>
+
+        <!-- Settings (admin only) -->
+        ${canEdit ? `<div class="card rsch-settings-card">
+            <div class="rsch-settings-row">
+                <span class="rsch-settings-label">⚙️ Giờ mặc định SHCM:</span>
+                <input type="time" class="form-input rsch-time-input" id="shcm-default-time" value="${settings.defaultTime}">
+                <span class="rsch-settings-label">Thời lượng:</span>
+                <input type="text" class="form-input rsch-dur-input" id="shcm-default-dur" value="${settings.defaultDuration}" placeholder="30m">
+                <button class="btn btn-secondary btn-sm" onclick="ResearchPage.saveSettings()">Lưu</button>
+            </div>
+        </div>` : ''}
+
+        <!-- SHCM Table -->
+        <div class="card" style="padding:0;overflow:hidden">
+            <div class="rsch-table-header">
+                <h3>📋 Lịch Sinh hoạt Chuyên môn tại Khoa</h3>
+            </div>
+            <div class="rsch-table-wrap">
+                <table class="rsch-table">
+                    <thead>
+                        <tr>
+                            <th style="width:44px">STT</th>
+                            <th style="min-width:160px">Bác sĩ</th>
+                            <th>Tên bài</th>
+                            <th style="width:110px">Tiến độ</th>
+                            <th style="width:100px">Ngày trình</th>
+                            ${canEdit ? '<th style="width:70px"></th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map((item, idx) => {
+                            const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
+                            const d = item.presentDate ? new Date(item.presentDate) : null;
+                            const dateLabel = d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}` : '—';
+                            return `<tr class="rsch-row rsch-row-${item.status}">
+                                <td class="rsch-stt">${idx + 1}</td>
+                                <td class="rsch-doctor">${item.doctorName}</td>
+                                <td class="rsch-title">${item.title}</td>
+                                <td><span class="rsch-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}30">${st.icon} ${st.label}</span></td>
+                                <td class="rsch-date">${dateLabel}</td>
+                                ${canEdit ? `<td class="rsch-actions">
+                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa">✏️</button>
+                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá">🗑️</button>
+                                </td>` : ''}
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Files section -->
+        <div class="card rsch-files-card">
+            <div class="rsch-files-header">
+                <h3>📁 Bài Sinh hoạt Chuyên môn đã có</h3>
+                ${canEdit ? `<label class="btn btn-primary btn-sm rsch-upload-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload PDF
+                    <input type="file" accept=".pdf" style="display:none" onchange="ResearchPage.uploadFile(this)">
+                </label>` : ''}
+            </div>
+            <div id="shcm-files-list" class="rsch-files-list">
+                <div style="text-align:center;padding:20px;color:var(--text-muted)">Đang tải danh sách file...</div>
+            </div>
+        </div>
+        `;
+    },
+
+    afterRender() {
+        this.loadFiles();
+    },
+
+    // ===== CRUD =====
+    openForm(id) {
+        if (!this._canEdit()) return;
+        const item = id ? Store.getById('shcmSchedule', id) : null;
+        const staff = Store.getAll('staff').filter(s =>
+            s.role.includes('Bác sĩ') || s.role.includes('Trưởng khoa') || s.role.includes('Phó trưởng khoa')
+        );
+
+        Modal.open(item ? 'Sửa bài SHCM' : 'Thêm bài SHCM', `
+            <form onsubmit="ResearchPage.save(event, ${id || 0})">
+                <div class="form-group">
+                    <label class="form-label">Bác sĩ trình bày</label>
+                    <select class="form-select" name="doctorId" required>
+                        <option value="">— Chọn BS —</option>
+                        ${staff.map(s => `<option value="${s.id}" ${item?.doctorId === s.id ? 'selected' : ''}>${s.title} ${s.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tên bài trình bày</label>
+                    <textarea class="form-textarea" name="title" required style="min-height:60px">${item?.title || ''}</textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Ngày trình</label>
+                        <input class="form-input" type="date" name="presentDate" value="${item?.presentDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tiến độ</label>
+                        <select class="form-select" name="status">
+                            ${Object.entries(SHCM_STATUSES).map(([k, v]) => `<option value="${k}" ${item?.status === k ? 'selected' : ''}>${v.icon} ${v.label}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    ${item ? `<button type="button" class="btn btn-danger" onclick="ResearchPage.deleteItem(${id});Modal.close()">Xoá</button>` : ''}
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">${item ? 'Cập nhật' : 'Thêm'}</button>
+                </div>
+            </form>
+        `);
+    },
+
+    save(e, id) {
+        if (!this._canEdit()) return;
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const doctorId = parseInt(f.get('doctorId'));
+        const staff = Store.getAll('staff').find(s => s.id === doctorId);
+        const data = {
+            doctorId,
+            doctorName: staff ? `${staff.title} ${staff.name}` : '',
+            title: f.get('title'),
+            status: f.get('status'),
+            presentDate: f.get('presentDate') || null,
+        };
+
+        if (id) {
+            Store.update('shcmSchedule', id, data);
+        } else {
+            Store.add('shcmSchedule', data);
+        }
+
+        // Sync to plans
+        this._syncPlan(id ? Store.getById('shcmSchedule', id) : Store.getAll('shcmSchedule').slice(-1)[0]);
+
+        Modal.close();
+        App.renderCurrentPage();
+        Toast.success(id ? 'Đã cập nhật bài SHCM' : 'Đã thêm bài SHCM mới');
+    },
+
+    deleteItem(id) {
+        if (!this._canEdit()) return;
+        if (!confirm('Xoá bài SHCM này?')) return;
+        // Remove linked plan
+        const item = Store.getById('shcmSchedule', id);
+        if (item?.planId) {
+            Store.remove('plans', item.planId);
+        }
+        Store.remove('shcmSchedule', id);
+        Modal.close();
+        App.renderCurrentPage();
+        Toast.success('Đã xoá bài SHCM');
+    },
+
+    // ===== Plan sync =====
+    _syncPlan(item) {
+        if (!item || !item.presentDate) return;
+        const settings = this._getSettings();
+        const planData = {
+            title: `Sinh hoạt chuyên môn BS`,
+            date: item.presentDate,
+            time: settings.defaultTime,
+            duration: settings.defaultDuration,
+            type: 'training',
+            responsible: item.doctorId,
+            location: 'Phòng họp khoa',
+            note: `${item.doctorName}: ${item.title}`,
+            source: 'shcm',
+            shcmId: item.id
+        };
+
+        if (item.planId) {
+            Store.update('plans', item.planId, planData);
+        } else {
+            const newPlan = Store.add('plans', planData);
+            Store.update('shcmSchedule', item.id, { planId: newPlan.id });
+        }
+    },
+
+    // ===== Settings =====
+    saveSettings() {
+        const time = document.getElementById('shcm-default-time')?.value || '15:30';
+        const dur = document.getElementById('shcm-default-dur')?.value || '30m';
+        const all = Store.getAll('shcmSettings');
+        if (all && all.length > 0) {
+            Store.update('shcmSettings', all[0].id, { defaultTime: time, defaultDuration: dur });
+        } else {
+            Store.add('shcmSettings', { defaultTime: time, defaultDuration: dur });
+        }
+        Toast.success('Đã lưu cài đặt giờ SHCM');
+    },
+
+    // ===== File management =====
+    async loadFiles() {
+        const container = document.getElementById('shcm-files-list');
+        if (!container) return;
+        try {
+            const token = Auth.getToken();
+            const resp = await fetch('/api/shcm/files', {
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            });
+            if (!resp.ok) throw new Error('Failed');
+            const data = await resp.json();
+            const files = data.files || [];
+            const canEdit = this._canEdit();
+
+            if (files.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">📂 Chưa có tài liệu nào được upload</div>';
+                return;
+            }
+
+            container.innerHTML = files.map(f => `
+                <div class="rsch-file-item">
+                    <div class="rsch-file-icon">📄</div>
+                    <div class="rsch-file-info">
+                        <div class="rsch-file-name">${f.name}</div>
+                        <div class="rsch-file-meta">${f.size} · ${f.uploaded || ''}</div>
+                    </div>
+                    <div class="rsch-file-actions">
+                        <a href="/api/shcm/download/${encodeURIComponent(f.name)}" class="btn btn-secondary btn-sm" download>⬇️ Tải</a>
+                        ${canEdit ? `<button class="btn btn-danger btn-sm" onclick="ResearchPage.deleteFile('${f.name.replace(/'/g, "\\'")}')">🗑️</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) {
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger)">Không thể tải danh sách file</div>';
+        }
+    },
+
+    async uploadFile(input) {
+        if (!this._canEdit()) return;
+        const file = input.files[0];
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            Toast.error('Chỉ chấp nhận file PDF');
+            input.value = '';
+            return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            Toast.error('File quá lớn (tối đa 50MB)');
+            input.value = '';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            Toast.info('Đang upload...');
+            const token = Auth.getToken();
+            const resp = await fetch('/api/shcm/upload', {
+                method: 'POST',
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                body: formData
+            });
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.error || 'Upload failed');
+            }
+            Toast.success('Upload thành công!');
+            this.loadFiles();
+        } catch (err) {
+            Toast.error('Lỗi upload: ' + err.message);
+        }
+        input.value = '';
+    },
+
+    async deleteFile(filename) {
+        if (!this._canEdit()) return;
+        if (!confirm(`Xoá file "${filename}"?`)) return;
+        try {
+            const token = Auth.getToken();
+            const resp = await fetch('/api/shcm/delete/' + encodeURIComponent(filename), {
+                method: 'DELETE',
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            });
+            if (!resp.ok) throw new Error('Delete failed');
+            Toast.success('Đã xoá file');
+            this.loadFiles();
+        } catch (err) {
+            Toast.error('Lỗi xoá file');
+        }
+    }
+};

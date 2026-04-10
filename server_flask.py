@@ -682,6 +682,88 @@ def emr_proxy():
 def emr_status():
     return jsonify({'loggedIn': _emr_logged_in, 'user': EMR_USER})
 
+# ────────────────────────────── SHCM File API ──────────────────────────────
+SHCM_DIR = os.path.join(DATA_DIR, 'shcm-files')
+
+def _ensure_shcm_dir():
+    os.makedirs(SHCM_DIR, exist_ok=True)
+
+def _format_size(size_bytes):
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+@app.route('/api/shcm/files', methods=['GET'])
+def shcm_list_files():
+    _ensure_shcm_dir()
+    files = []
+    for f in sorted(os.listdir(SHCM_DIR)):
+        if f.lower().endswith('.pdf'):
+            fpath = os.path.join(SHCM_DIR, f)
+            stat = os.stat(fpath)
+            files.append({
+                'name': f,
+                'size': _format_size(stat.st_size),
+                'sizeBytes': stat.st_size,
+                'uploaded': datetime.fromtimestamp(stat.st_mtime).strftime('%d/%m/%Y %H:%M')
+            })
+    return jsonify({'files': files})
+
+@app.route('/api/shcm/upload', methods=['POST'])
+@require_auth
+def shcm_upload(user):
+    _ensure_shcm_dir()
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    f = request.files['file']
+    if not f.filename.lower().endswith('.pdf'):
+        return jsonify({'error': 'Only PDF files allowed'}), 400
+    # Max 50MB
+    f.seek(0, 2)
+    size = f.tell()
+    f.seek(0)
+    if size > 50 * 1024 * 1024:
+        return jsonify({'error': 'File too large (max 50MB)'}), 400
+    # Sanitize filename
+    from werkzeug.utils import secure_filename
+    filename = secure_filename(f.filename)
+    if not filename:
+        filename = f'shcm_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+    # If not ending in .pdf after secure_filename
+    if not filename.lower().endswith('.pdf'):
+        filename += '.pdf'
+    filepath = os.path.join(SHCM_DIR, filename)
+    # If exists, add suffix
+    if os.path.exists(filepath):
+        base, ext = os.path.splitext(filename)
+        filename = f"{base}_{datetime.now().strftime('%H%M%S')}{ext}"
+        filepath = os.path.join(SHCM_DIR, filename)
+    f.save(filepath)
+    _write_log('shcm_upload', user.get('username', '?'), {'file': filename, 'size': size})
+    return jsonify({'success': True, 'name': filename, 'size': _format_size(size)})
+
+@app.route('/api/shcm/download/<path:filename>', methods=['GET'])
+def shcm_download(filename):
+    _ensure_shcm_dir()
+    filepath = os.path.join(SHCM_DIR, filename)
+    if not os.path.exists(filepath) or not filepath.startswith(SHCM_DIR):
+        return jsonify({'error': 'File not found'}), 404
+    return send_from_directory(SHCM_DIR, filename, as_attachment=True)
+
+@app.route('/api/shcm/delete/<path:filename>', methods=['DELETE'])
+@require_auth
+def shcm_delete(user, filename):
+    _ensure_shcm_dir()
+    filepath = os.path.join(SHCM_DIR, filename)
+    if not os.path.exists(filepath) or not filepath.startswith(SHCM_DIR):
+        return jsonify({'error': 'File not found'}), 404
+    os.remove(filepath)
+    _write_log('shcm_delete', user.get('username', '?'), {'file': filename})
+    return jsonify({'success': True})
+
 # ────────────────────────────── Init ──────────────────────────────
 _ensure_data_dir()
 _ensure_log_dir()
