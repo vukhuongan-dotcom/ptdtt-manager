@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v03040510';
+const CACHE_NAME = 'ptdtt-v10041805';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -24,6 +24,8 @@ const STATIC_ASSETS = [
     '/css/charts.css',
     '/css/search.css',
     '/css/onboarding.css',
+    '/css/reports.css',
+    '/css/research.css',
     '/js/data.js',
     '/js/store.js',
     '/js/auth.js',
@@ -43,6 +45,7 @@ const STATIC_ASSETS = [
     '/js/search.js',
     '/js/onboarding.js',
     '/js/reports.js',
+    '/js/research.js',
     '/js/audit-log.js',
     '/js/app.js',
     '/img/logo-khoa.jpg',
