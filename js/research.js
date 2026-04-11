@@ -126,19 +126,14 @@ const ResearchPage = {
         this._syncAllPlans();
     },
 
-    // Bulk-sync all SHCM entries → Plans (runs once on page load)
+    // Bulk-sync all SHCM entries → Plans (update existing + create missing)
     _syncAllPlans() {
         if (!this._canEdit()) return;
         const items = Store.getAll('shcmSchedule');
         let synced = 0;
         items.forEach(item => {
             if (!item.presentDate) return;
-            if (item.planId) {
-                // Verify linked plan still exists
-                const existing = Store.getById('plans', item.planId);
-                if (existing) return; // Already synced
-            }
-            // Create plan for this entry
+            // Always sync (create or update)
             this._syncPlan(item);
             synced++;
         });
