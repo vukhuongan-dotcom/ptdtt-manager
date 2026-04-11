@@ -59,7 +59,8 @@ const ResearchPage = {
                 <span class="rsch-settings-label">⚙️ Giờ mặc định SHCM:</span>
                 <input type="time" class="form-input rsch-time-input" id="shcm-default-time" value="${settings.defaultTime}">
                 <span class="rsch-settings-label">Thời lượng:</span>
-                <input type="text" class="form-input rsch-dur-input" id="shcm-default-dur" value="${settings.defaultDuration}" placeholder="30m">
+                <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
+                <span class="rsch-settings-unit">phút</span>
                 <button class="btn btn-secondary btn-sm" onclick="ResearchPage.saveSettings()">Lưu</button>
             </div>
         </div>` : ''}
@@ -236,7 +237,8 @@ const ResearchPage = {
     // ===== Settings =====
     saveSettings() {
         const time = document.getElementById('shcm-default-time')?.value || '15:30';
-        const dur = document.getElementById('shcm-default-dur')?.value || '30m';
+        const durVal = parseInt(document.getElementById('shcm-default-dur')?.value) || 30;
+        const dur = durVal + 'm';
         const all = Store.getAll('shcmSettings');
         if (all && all.length > 0) {
             Store.update('shcmSettings', all[0].id, { defaultTime: time, defaultDuration: dur });

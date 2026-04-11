@@ -34,8 +34,9 @@
     flex-wrap: wrap;
 }
 .rsch-settings-label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.rsch-settings-unit { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
 .rsch-time-input { width: 110px !important; }
-.rsch-dur-input { width: 80px !important; }
+.rsch-dur-input { width: 72px !important; text-align: center; }
 
 /* Table */
 .rsch-table-header {
