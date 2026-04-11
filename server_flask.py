@@ -744,6 +744,21 @@ def shcm_upload():
         filepath = os.path.join(SHCM_DIR, filename)
     f.save(filepath)
     _write_log('shcm_upload', user.get('username', '?'), {'file': filename, 'size': size})
+
+    # Sync to Google Drive (async — don't block response)
+    import subprocess, threading
+    def _gdrive_upload():
+        try:
+            gdrive_path = "gdrive:KHOA PTDTT/03. ĐÀO TẠO - NGHIÊN CỨU/Sinh hoạt chuyên môn/BÀI ĐÃ TRÌNH"
+            subprocess.run(
+                ['rclone', 'copy', filepath, gdrive_path],
+                timeout=120, capture_output=True
+            )
+            app.logger.info(f'[SHCM] Uploaded {filename} to Google Drive')
+        except Exception as e:
+            app.logger.error(f'[SHCM] Google Drive upload failed: {e}')
+    threading.Thread(target=_gdrive_upload, daemon=True).start()
+
     return jsonify({'success': True, 'name': filename, 'size': _format_size(size)})
 
 @app.route('/api/shcm/download/<path:filename>', methods=['GET'])
