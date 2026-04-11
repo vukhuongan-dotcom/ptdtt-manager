@@ -714,8 +714,9 @@ def shcm_list_files():
 
 @app.route('/api/shcm/upload', methods=['POST'])
 @require_auth
-def shcm_upload(user):
+def shcm_upload():
     _ensure_shcm_dir()
+    user = request._user
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     f = request.files['file']
@@ -755,8 +756,9 @@ def shcm_download(filename):
 
 @app.route('/api/shcm/delete/<path:filename>', methods=['DELETE'])
 @require_auth
-def shcm_delete(user, filename):
+def shcm_delete(filename):
     _ensure_shcm_dir()
+    user = request._user
     filepath = os.path.join(SHCM_DIR, filename)
     if not os.path.exists(filepath) or not filepath.startswith(SHCM_DIR):
         return jsonify({'error': 'File not found'}), 404
