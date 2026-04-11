@@ -3,6 +3,9 @@ const Auth = {
     SESSION_KEY: 'ptdtt_session',
     TOKEN_KEY: 'ptdtt_jwt',
     SUPERADMIN_USERNAME: 'vkan',
+    IDLE_TIMEOUT_MS: 5 * 60 * 1000, // 5 minutes
+    _lastActivity: Date.now(),
+    _idleTimer: null,
 
     init() {
         // Check if we have a stored JWT token
@@ -15,7 +18,41 @@ const Auth = {
                 this.logout();
             }
         }
+        // Start idle monitor
+        this._startIdleMonitor();
     },
+
+    // ===== IDLE AUTO-LOGOUT =====
+    _startIdleMonitor() {
+        // Track user activity events (desktop + mobile)
+        const resetIdle = () => { this._lastActivity = Date.now(); };
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'touchmove', 'click'];
+        events.forEach(evt => document.addEventListener(evt, resetIdle, { passive: true }));
+
+        // Check every 30s if idle timeout exceeded
+        this._idleTimer = setInterval(() => this._checkIdle(), 30000);
+
+        // Also check on visibility change (handles mobile tab switch / screen lock)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                this._checkIdle();
+            }
+        });
+    },
+
+    _checkIdle() {
+        if (!this.isLoggedIn()) return;
+        const elapsed = Date.now() - this._lastActivity;
+        if (elapsed >= this.IDLE_TIMEOUT_MS) {
+            this.logout();
+            if (typeof App !== 'undefined') App.showLogin();
+            // Brief toast before redirect
+            if (typeof Toast !== 'undefined') {
+                Toast.info('Phiên đăng nhập đã hết hạn do không hoạt động (5 phút).');
+            }
+        }
+    },
+
 
     // ===== TOKEN MANAGEMENT =====
     getToken() {
