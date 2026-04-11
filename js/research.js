@@ -242,7 +242,7 @@ const ResearchPage = {
             duration: settings.defaultDuration,
             type: 'training',
             responsible: item.doctorId,
-            location: 'Phòng họp khoa',
+            location: 'Phòng 7.14',
             note: `${item.doctorName}: ${item.title}`,
             source: 'shcm',
             shcmId: item.id

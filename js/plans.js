@@ -220,10 +220,13 @@ const PlansPage = {
         if (p.source === 'shcm') {
             const staff = Store.getAll('staff');
             const responsible = staff.find(s => s.id === p.responsible);
+            const dateParts = p.date ? p.date.split('-') : null;
+            const dateDisplay = dateParts ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '—';
+            const durDisplay = p.duration ? p.duration.replace('m', '') + ' phút' : '';
             Modal.open('🔬 Sinh hoạt Chuyên môn', `
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <div><strong>Tiêu đề:</strong> ${p.title}</div>
-                    <div><strong>Ngày:</strong> ${p.date}  •  <strong>Giờ:</strong> ${p.time}${p.duration ? '  •  <strong>Thời lượng:</strong> ' + p.duration : ''}</div>
+                    <div><strong>Ngày:</strong> ${dateDisplay}  •  <strong>Giờ:</strong> ${p.time}${durDisplay ? '  •  <strong>Thời lượng:</strong> ' + durDisplay : ''}</div>
                     <div><strong>Phụ trách:</strong> ${responsible?.name || '—'}</div>
                     <div><strong>Địa điểm:</strong> ${p.location || '—'}</div>
                     ${p.note ? `<div><strong>Ghi chú:</strong> ${p.note}</div>` : ''}
@@ -244,10 +247,13 @@ const PlansPage = {
             if (!p) return;
             const staff = Store.getAll('staff');
             const responsible = staff.find(s => s.id === p.responsible);
+            const dp = p.date ? p.date.split('-') : null;
+            const dd = dp ? `${dp[2]}/${dp[1]}/${dp[0]}` : '—';
+            const du = p.duration ? p.duration.replace('m', '') + ' phút' : '';
             Modal.open('Chi tiết kế hoạch', `
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <div><strong>Tiêu đề:</strong> ${p.title}</div>
-                    <div><strong>Ngày:</strong> ${p.date}  •  <strong>Giờ:</strong> ${p.time}${p.duration ? '  •  <strong>Thời lượng:</strong> ' + p.duration : ''}</div>
+                    <div><strong>Ngày:</strong> ${dd}  •  <strong>Giờ:</strong> ${p.time}${du ? '  •  <strong>Thời lượng:</strong> ' + du : ''}</div>
                     <div><strong>Loại:</strong> ${Utils.planTypeLabel(p.type)}</div>
                     <div><strong>Phụ trách:</strong> ${responsible?.name || '—'}</div>
                     <div><strong>Địa điểm:</strong> ${p.location || '—'}</div>
