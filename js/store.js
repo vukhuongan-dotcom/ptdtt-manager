@@ -256,9 +256,13 @@ const Store = {
     },
 
     getPlansByMonth(year, month) {
+        const monthStart = `${year}-${String(month+1).padStart(2,'0')}-01`;
+        const monthEnd = `${year}-${String(month+1).padStart(2,'0')}-${new Date(year, month+1, 0).getDate()}`;
         return this._data.plans.filter(p => {
-            const d = new Date(p.date);
-            return d.getFullYear() === year && d.getMonth() === month;
+            const start = p.date;
+            const end = p.endDate || p.date;
+            // Plan overlaps month if: start <= monthEnd AND end >= monthStart
+            return start <= monthEnd && end >= monthStart;
         });
     },
 

@@ -221,3 +221,46 @@
 }
 
 .plan-type-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Multi-day event bar */
+.calendar-event.multi-day {
+    border-radius: 0;
+    margin-left: -8px;
+    margin-right: -8px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+.calendar-event.multi-start {
+    margin-left: 0;
+    border-radius: 4px 0 0 4px;
+}
+.calendar-event.multi-end {
+    margin-right: 0;
+    border-radius: 0 4px 4px 0;
+}
+.calendar-event.multi-mid {
+    font-size: 0.65rem;
+    opacity: 0.7;
+}
+
+/* All-day event in column view */
+.cal-event-allday {
+    position: relative !important;
+    top: auto !important;
+    left: 2px;
+    right: 2px;
+    margin: 2px 0;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 2;
+}
+.cal-event-allday.meeting { background: rgba(8,145,178,0.25); color: var(--primary-dark); }
+.cal-event-allday.consultation { background: rgba(124,58,237,0.25); color: var(--accent); }
+.cal-event-allday.training { background: rgba(5,150,105,0.25); color: var(--success); }
+.cal-event-allday.conference { background: rgba(217,119,6,0.25); color: var(--warning); }
+.cal-event-allday.other { background: rgba(100,116,139,0.25); color: var(--text-secondary); }

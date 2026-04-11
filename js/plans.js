@@ -91,15 +91,26 @@ const PlansPage = {
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
-            const dayPlans = plans.filter(p => p.date === dateStr);
+            const dayPlans = plans.filter(p => this._isDateInRange(dateStr, p));
 
             html += `<div class="calendar-day ${isToday?'today':''}" ${isAdmin ? `onclick="PlansPage.openForm(null,'${dateStr}')"` : ''}>
                 <span class="day-number">${d}</span>
-                ${dayPlans.map(p => `
-                    <div class="calendar-event ${p.type}${p.source === 'shcm' ? ' shcm-event' : ''}" onclick="event.stopPropagation();PlansPage.viewOrEdit(${p.id})" title="${p.source === 'shcm' ? '🔬 ' : ''}${p.title} — ${p.time}${p.duration ? ' ('+p.duration+')' : ''}">
-                        ${p.time} ${p.source === 'shcm' ? '🔬 ' : ''}${p.title}
-                    </div>
-                `).join('')}
+                ${dayPlans.map(p => {
+                    const isMulti = p.endDate && p.endDate !== p.date;
+                    const isStart = p.date === dateStr;
+                    const isEnd = (p.endDate || p.date) === dateStr;
+                    let spanClass = p.type + (p.source === 'shcm' ? ' shcm-event' : '');
+                    if (isMulti) {
+                        spanClass += ' multi-day';
+                        if (isStart) spanClass += ' multi-start';
+                        else if (isEnd) spanClass += ' multi-end';
+                        else spanClass += ' multi-mid';
+                    }
+                    const label = isStart ? `${p.allDay ? '📌' : p.time} ${p.source === 'shcm' ? '🔬 ' : ''}${p.title}` : `↳ ${p.title}`;
+                    return `<div class="calendar-event ${spanClass}" onclick="event.stopPropagation();PlansPage.viewOrEdit(${p.id})" title="${p.source === 'shcm' ? '🔬 ' : ''}${p.title}${p.allDay ? ' (cả ngày)' : ' — ' + p.time}${p.duration ? ' (' + p.duration + ')' : ''}">
+                        ${label}
+                    </div>`;
+                }).join('')}
             </div>`;
         }
 
@@ -108,8 +119,13 @@ const PlansPage = {
         for (let i = 1; i <= remaining; i++) {
             html += `<div class="calendar-day other-month"><span class="day-number">${i}</span></div>`;
         }
-
         return html;
+    },
+
+    _isDateInRange(dateStr, plan) {
+        const start = plan.date;
+        const end = plan.endDate || plan.date;
+        return dateStr >= start && dateStr <= end;
     },
 
     // ===== WEEK / 3-DAY VIEW =====
@@ -146,12 +162,17 @@ const PlansPage = {
                 </div>
                 ${dates.map(d => {
                     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                    const dayPlans = allPlans.filter(p => p.date === dateStr);
+                    const dayPlans = allPlans.filter(p => this._isDateInRange(dateStr, p));
                     const isToday = d.getTime() === today.getTime();
 
                     return `<div class="cal-day-col ${isToday ? 'today-col' : ''}" ${isAdmin ? `onclick="PlansPage.openForm(null,'${dateStr}')"` : ''}>
                         ${hours.map(h => `<div class="cal-hour-cell"></div>`).join('')}
                         ${dayPlans.map(p => {
+                            if (p.allDay) {
+                                return `<div class="cal-event cal-event-allday ${p.type}" onclick="event.stopPropagation();PlansPage.viewOrEdit(${p.id})" title="${p.title}">
+                                    <span class="cal-event-title">📌 ${p.title}</span>
+                                </div>`;
+                            }
                             const [hh, mm] = (p.time || '08:00').split(':').map(Number);
                             const topPx = (hh - 6) * 52 + (mm / 60) * 52;
                             const durationMin = this.parseDuration(p.duration);
@@ -168,11 +189,10 @@ const PlansPage = {
     },
 
     parseDuration(dur) {
-        if (!dur) return 0;
-        // Format: "1h30", "2h", "30m", "1h 30m", etc.
+        if (!dur || dur === 'Cả ngày') return 0;
         let mins = 0;
         const hMatch = dur.match(/(\d+)\s*h/i);
-        const mMatch = dur.match(/(\d+)\s*m/i);
+        const mMatch = dur.match(/(\d+)\s*(?:m|ph)/i);
         if (hMatch) mins += parseInt(hMatch[1]) * 60;
         if (mMatch) mins += parseInt(mMatch[1]);
         if (!hMatch && !mMatch) {
@@ -186,37 +206,25 @@ const PlansPage = {
     setView(mode) { this.viewMode = mode; App.renderCurrentPage(); },
 
     prev() {
-        if (this.viewMode === 'month') {
-            this.currentDate.setMonth(this.currentDate.getMonth() - 1);
-        } else if (this.viewMode === 'week') {
-            this.currentDate.setDate(this.currentDate.getDate() - 7);
-        } else {
-            this.currentDate.setDate(this.currentDate.getDate() - 3);
-        }
+        if (this.viewMode === 'month') this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+        else if (this.viewMode === 'week') this.currentDate.setDate(this.currentDate.getDate() - 7);
+        else this.currentDate.setDate(this.currentDate.getDate() - 3);
         App.renderCurrentPage();
     },
 
     next() {
-        if (this.viewMode === 'month') {
-            this.currentDate.setMonth(this.currentDate.getMonth() + 1);
-        } else if (this.viewMode === 'week') {
-            this.currentDate.setDate(this.currentDate.getDate() + 7);
-        } else {
-            this.currentDate.setDate(this.currentDate.getDate() + 3);
-        }
+        if (this.viewMode === 'month') this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+        else if (this.viewMode === 'week') this.currentDate.setDate(this.currentDate.getDate() + 7);
+        else this.currentDate.setDate(this.currentDate.getDate() + 3);
         App.renderCurrentPage();
     },
 
-    today() {
-        this.currentDate = new Date();
-        App.renderCurrentPage();
-    },
+    today() { this.currentDate = new Date(); App.renderCurrentPage(); },
 
     // ===== FORMS =====
     viewOrEdit(id) {
         const p = Store.getById('plans', id);
         if (!p) return;
-        // SHCM plans: always view-only, link to Research page
         if (p.source === 'shcm') {
             const staff = Store.getAll('staff');
             const responsible = staff.find(s => s.id === p.responsible);
@@ -243,17 +251,16 @@ const PlansPage = {
         if (Auth.getSession()?.isAdmin) {
             this.openForm(id);
         } else {
-            const p = Store.getById('plans', id);
-            if (!p) return;
             const staff = Store.getAll('staff');
             const responsible = staff.find(s => s.id === p.responsible);
             const dp = p.date ? p.date.split('-') : null;
             const dd = dp ? `${dp[2]}/${dp[1]}/${dp[0]}` : '—';
-            const du = p.duration ? p.duration.replace('m', '') + ' phút' : '';
+            const du = p.duration && p.duration !== 'Cả ngày' ? p.duration.replace('m','') + ' phút' : (p.allDay ? 'Cả ngày' : '');
+            const ep = p.endDate && p.endDate !== p.date ? (() => { const e = p.endDate.split('-'); return ` → ${e[2]}/${e[1]}/${e[0]}`; })() : '';
             Modal.open('Chi tiết kế hoạch', `
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <div><strong>Tiêu đề:</strong> ${p.title}</div>
-                    <div><strong>Ngày:</strong> ${dd}  •  <strong>Giờ:</strong> ${p.time}${du ? '  •  <strong>Thời lượng:</strong> ' + du : ''}</div>
+                    <div><strong>Ngày:</strong> ${dd}${ep}  •  <strong>Giờ:</strong> ${p.allDay ? 'Cả ngày' : p.time}${du ? '  •  <strong>Thời lượng:</strong> ' + du : ''}</div>
                     <div><strong>Loại:</strong> ${Utils.planTypeLabel(p.type)}</div>
                     <div><strong>Phụ trách:</strong> ${responsible?.name || '—'}</div>
                     <div><strong>Địa điểm:</strong> ${p.location || '—'}</div>
@@ -271,6 +278,9 @@ const PlansPage = {
         const p = id ? Store.getById('plans', id) : null;
         const staff = Store.getAll('staff');
         const defaultDate = p?.date || date || new Date().toISOString().split('T')[0];
+        const defaultEndDate = p?.endDate || defaultDate;
+        const isAllDay = p?.allDay || false;
+        const endTime = p?.endTime || '';
 
         Modal.open(p ? 'Chỉnh sửa kế hoạch' : 'Thêm kế hoạch', `
             <form onsubmit="PlansPage.save(event, ${id||0})">
@@ -280,18 +290,34 @@ const PlansPage = {
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Ngày</label>
-                        <input class="form-input" type="date" name="date" value="${defaultDate}" required>
+                        <label class="form-label">Ngày bắt đầu</label>
+                        <input class="form-input" type="date" name="date" value="${defaultDate}" required onchange="PlansPage._onStartDateChange()">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Ngày kết thúc</label>
+                        <input class="form-input" type="date" name="endDate" value="${defaultEndDate}">
+                    </div>
+                </div>
+                <div class="form-row" style="align-items:center">
+                    <div class="form-group" id="plan-time-group" style="${isAllDay ? 'opacity:0.4;pointer-events:none' : ''}">
                         <label class="form-label">Giờ bắt đầu</label>
-                        <input class="form-input" type="time" name="time" value="${p?.time||'08:00'}" required>
+                        <input class="form-input" type="time" name="time" value="${p?.time||'08:00'}" onchange="PlansPage._calcDuration()">
+                    </div>
+                    <div class="form-group" id="plan-endtime-group" style="${isAllDay ? 'opacity:0.4;pointer-events:none' : ''}">
+                        <label class="form-label">Giờ kết thúc</label>
+                        <input class="form-input" type="time" name="endTime" value="${endTime}" onchange="PlansPage._calcDuration()">
+                    </div>
+                    <div class="form-group" style="flex:0 0 auto;padding-top:22px">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;font-weight:600;white-space:nowrap">
+                            <input type="checkbox" name="allDay" ${isAllDay ? 'checked' : ''} onchange="PlansPage._toggleAllDay(this.checked)" style="width:16px;height:16px">
+                            Cả ngày
+                        </label>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Thời lượng dự kiến</label>
-                        <input class="form-input" name="duration" value="${p?.duration||''}" placeholder="VD: 1h30, 2h, 45m">
+                        <label class="form-label">Thời lượng</label>
+                        <input class="form-input" name="duration" id="plan-duration" value="${p?.duration||''}" readonly style="background:var(--bg-secondary);cursor:default" placeholder="Tự tính từ giờ">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại hoạt động</label>
@@ -325,24 +351,83 @@ const PlansPage = {
                 </div>
             </form>
         `);
+        if (isAllDay) this._toggleAllDay(true);
+        else if (endTime) this._calcDuration();
+    },
+
+    _onStartDateChange() {
+        const form = document.querySelector('#modal-overlay form');
+        if (!form) return;
+        const startVal = form.querySelector('[name="date"]')?.value;
+        const endInput = form.querySelector('[name="endDate"]');
+        if (endInput && startVal && (!endInput.value || endInput.value < startVal)) {
+            endInput.value = startVal;
+        }
+    },
+
+    _toggleAllDay(checked) {
+        const tg = document.getElementById('plan-time-group');
+        const eg = document.getElementById('plan-endtime-group');
+        const dur = document.getElementById('plan-duration');
+        const style = checked ? 'opacity:0.4;pointer-events:none' : '';
+        if (tg) tg.style.cssText = style;
+        if (eg) eg.style.cssText = style;
+        if (dur) dur.value = checked ? 'Cả ngày' : '';
+        if (!checked) this._calcDuration();
+    },
+
+    _calcDuration() {
+        const form = document.querySelector('#modal-overlay form');
+        if (!form) return;
+        const st = form.querySelector('[name="time"]')?.value;
+        const et = form.querySelector('[name="endTime"]')?.value;
+        const dur = document.getElementById('plan-duration');
+        if (!st || !et || !dur) return;
+        const [sh, sm] = st.split(':').map(Number);
+        const [eh, em] = et.split(':').map(Number);
+        const mins = (eh * 60 + em) - (sh * 60 + sm);
+        dur.value = mins > 0 ? mins + ' phút' : '';
     },
 
     save(e, id) {
         if (!Auth.getSession()?.isAdmin) return;
         e.preventDefault();
         const f = new FormData(e.target);
+        const allDay = f.get('allDay') === 'on';
+        const startTime = f.get('time') || '08:00';
+        const endTime = f.get('endTime') || '';
+        let duration = f.get('duration') || '';
+
+        if (!allDay && startTime && endTime) {
+            const [sh, sm] = startTime.split(':').map(Number);
+            const [eh, em] = endTime.split(':').map(Number);
+            const mins = (eh * 60 + em) - (sh * 60 + sm);
+            if (mins > 0) duration = mins + ' phút';
+        }
+        if (allDay) duration = 'Cả ngày';
+
+        const startDate = f.get('date');
+        let endDate = f.get('endDate') || startDate;
+        if (endDate < startDate) endDate = startDate;
+
         const data = {
             title: f.get('title'),
-            date: f.get('date'),
-            time: f.get('time'),
-            duration: f.get('duration'),
+            date: startDate,
+            endDate: endDate,
+            time: allDay ? '00:00' : startTime,
+            endTime: allDay ? '' : endTime,
+            allDay: allDay,
+            duration: duration,
             type: f.get('type'),
             responsible: parseInt(f.get('responsible')),
             location: f.get('location'),
             note: f.get('note')
         };
-        if (id) Store.update('plans', id, data); else Store.add('plans', data);
-        Modal.close(); App.renderCurrentPage();
+
+        if (id) Store.update('plans', id, data);
+        else Store.add('plans', data);
+        Modal.close();
+        App.renderCurrentPage();
     },
 
     deletePlan(id) {
