@@ -18,12 +18,7 @@ echo "$LOG_PREFIX Backup: db_${DATE}.json ($(du -h "$BACKUP_DIR/db_${DATE}.json"
 cp "$DATA_DIR/auth.json" "$BACKUP_DIR/auth_${DATE}.json"
 echo "$LOG_PREFIX Backup: auth_${DATE}.json ($(du -h "$BACKUP_DIR/auth_${DATE}.json" | cut -f1))"
 
-# 3. Backup SHCM PDF files
-if [ -d "$DATA_DIR/shcm-files" ] && [ "$(ls -A $DATA_DIR/shcm-files 2>/dev/null)" ]; then
-    rsync -a "$DATA_DIR/shcm-files/" "$BACKUP_DIR/shcm-files/"
-    PDF_COUNT=$(ls "$DATA_DIR/shcm-files/"*.pdf 2>/dev/null | wc -l)
-    echo "$LOG_PREFIX Backup: $PDF_COUNT PDF files synced to backups/shcm-files/"
-fi
+
 
 # 4. Push to GitHub backup branch
 (
@@ -41,7 +36,7 @@ fi
     mkdir -p github-backup
     cp "$BACKUP_DIR/db_${DATE}.json" github-backup/db_latest.json
     cp "$BACKUP_DIR/auth_${DATE}.json" github-backup/auth_latest.json
-    cp -r "$BACKUP_DIR/shcm-files" github-backup/ 2>/dev/null || true
+
 
     git add github-backup/ 2>/dev/null
     git commit -m "backup: $DATE" --quiet 2>/dev/null || true
@@ -58,8 +53,12 @@ if command -v rclone &>/dev/null && rclone listremotes 2>/dev/null | grep -q "gd
     rclone mkdir "$GDRIVE_BACKUP" 2>/dev/null || true
     rclone copy "$BACKUP_DIR/db_${DATE}.json" "$GDRIVE_BACKUP/" 2>/dev/null || true
     rclone copy "$BACKUP_DIR/auth_${DATE}.json" "$GDRIVE_BACKUP/" 2>/dev/null || true
-    if [ -d "$BACKUP_DIR/shcm-files" ]; then
-        rclone sync "$BACKUP_DIR/shcm-files/" "$GDRIVE_BACKUP/shcm-files/" 2>/dev/null || true
+    # Sync SHCM PDFs to Google Drive only
+    if [ -d "$DATA_DIR/shcm-files" ] && [ "$(ls -A $DATA_DIR/shcm-files 2>/dev/null)" ]; then
+        GDRIVE_SHCM="gdrive:KHOA PTDTT/03. ĐÀO TẠO - NGHIÊN CỨU/Sinh hoạt chuyên môn/BÀI ĐÃ TRÌNH"
+        rclone copy "$DATA_DIR/shcm-files/" "$GDRIVE_SHCM/" 2>/dev/null || true
+        PDF_COUNT=$(ls "$DATA_DIR/shcm-files/"*.pdf 2>/dev/null | wc -l)
+        echo "$LOG_PREFIX Google Drive: $PDF_COUNT PDF files synced"
     fi
     echo "$LOG_PREFIX Google Drive backup synced"
 else
