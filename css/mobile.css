@@ -15,7 +15,7 @@
         left: 0;
         right: 0;
         height: 52px;
-        padding: 0 14px;
+        padding: 0 12px;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border);
         z-index: 1001;
@@ -27,6 +27,7 @@
         align-items: center;
         gap: 8px;
         color: var(--primary);
+        min-width: 0;
     }
     .mobile-header-logo {
         width: 28px;
@@ -35,50 +36,49 @@
         flex-shrink: 0;
     }
     .mobile-header-title {
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         font-weight: 700;
         color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .mobile-header-right {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        flex-shrink: 0;
     }
 
     .mobile-user-avatar {
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 700;
         flex-shrink: 0;
     }
+    /* Hide full name on mobile to save space */
     .mobile-user-name {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        max-width: 100px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: none !important;
     }
     .mobile-logout-btn {
         background: none;
         border: 1px solid rgba(239,68,68,0.3);
         color: #ef4444;
-        padding: 5px 10px;
+        padding: 4px 8px;
         border-radius: 6px;
-        font-size: 0.7rem;
+        font-size: 0.68rem;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
         transition: all 0.2s;
     }
     .mobile-logout-btn:hover, .mobile-logout-btn:active {
@@ -117,16 +117,16 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         width: 100%;
-        justify-content: space-around;
+        justify-content: flex-start;
     }
     .sidebar-nav::-webkit-scrollbar { display: none; }
 
     .nav-item {
         flex-direction: column;
         gap: 2px;
-        padding: 8px 6px 6px;
-        font-size: 0.65rem;
-        min-width: 52px;
+        padding: 7px 4px 5px;
+        font-size: 0.6rem;
+        min-width: 56px;
         text-align: center;
         justify-content: center;
         align-items: center;
@@ -134,8 +134,15 @@
         flex-shrink: 0;
     }
     .nav-item::before { display: none; }
-    .nav-item svg { width: 20px; height: 20px; }
-    .nav-item span { display: block !important; font-size: 0.6rem; white-space: nowrap; }
+    .nav-item svg { width: 18px; height: 18px; }
+    .nav-item span {
+        display: block !important;
+        font-size: 0.58rem;
+        white-space: nowrap;
+        max-width: 54px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     .nav-item.active {
         background: rgba(8,145,178,0.1);
@@ -145,7 +152,7 @@
     /* ---- Main Content ---- */
     .main-content {
         margin-left: 0 !important;
-        padding: 80px 14px 80px; /* top padding for mobile header, bottom for nav bar */
+        padding: 62px 12px 72px; /* top: header, bottom: nav bar */
         height: auto;
         min-height: 100vh;
     }
@@ -154,105 +161,295 @@
     .page-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 16px;
+        gap: 10px;
+        margin-bottom: 14px;
     }
-    .page-title { font-size: 1.35rem; }
-    .page-subtitle { font-size: 0.8rem; }
+    .page-title { font-size: 1.2rem; }
+    .page-subtitle { font-size: 0.78rem; }
 
     /* ---- Dashboard Stats ---- */
     .stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 10px;
+        gap: 8px;
     }
-    .stat-card { padding: 14px; }
-    .stat-value { font-size: 1.5rem; }
-    .stat-label { font-size: 0.7rem; }
-    .stat-icon { width: 32px; height: 32px; }
-    .stat-icon svg { width: 16px; height: 16px; }
+    .stat-card { padding: 12px; }
+    .stat-card::after { width: 50px; height: 50px; }
+    .stat-value { font-size: 1.4rem; }
+    .stat-label { font-size: 0.68rem; }
+    .stat-icon { width: 30px; height: 30px; }
+    .stat-icon svg { width: 14px; height: 14px; }
 
     .dashboard-grid {
         grid-template-columns: 1fr !important;
-        gap: 14px;
+        gap: 12px;
     }
     .chart-container { height: 200px; }
-    .chart-card, .widget-card { padding: 16px; }
+    .chart-card, .widget-card { padding: 14px; }
 
     /* ---- Cards ---- */
-    .card { padding: 14px; }
+    .card { padding: 12px; }
 
     /* ---- Tables ---- */
     .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    thead th { padding: 8px 10px; font-size: 0.7rem; white-space: nowrap; }
-    tbody td { padding: 10px; font-size: 0.82rem; }
+    thead th { padding: 8px 8px; font-size: 0.68rem; white-space: nowrap; }
+    tbody td { padding: 8px; font-size: 0.78rem; }
 
     /* ---- Search Box ---- */
     .search-box { width: 100%; }
 
     /* ---- Form ---- */
-    .form-row { grid-template-columns: 1fr !important; }
+    .form-row { grid-template-columns: 1fr !important; gap: 8px !important; }
     .form-input, .form-select, .form-textarea { font-size: 16px; } /* prevents iOS zoom */
+    .form-group { margin-bottom: 10px; }
+    .form-label { font-size: 0.72rem; margin-bottom: 4px; }
 
     /* ---- Buttons ---- */
-    .btn { padding: 8px 14px; font-size: 0.82rem; }
-    .btn-sm { padding: 6px 10px; font-size: 0.75rem; }
+    .btn { padding: 8px 12px; font-size: 0.78rem; }
+    .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
+    .btn-icon { width: 32px; height: 32px; }
 
-    /* ---- Surgery Schedule ---- */
+    /* ===== CALENDAR / PLANS ===== */
+    .calendar-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .calendar-nav {
+        justify-content: space-between;
+        gap: 6px;
+    }
+    .calendar-month-label {
+        font-size: 0.82rem;
+        min-width: auto;
+    }
+    .calendar-view-modes {
+        align-self: center;
+    }
+    .view-mode-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    /* Month grid — tighter on mobile */
+    .calendar-grid { border-radius: 8px; }
+    .calendar-day-header {
+        padding: 6px 2px;
+        font-size: 0.62rem;
+    }
+    .calendar-day {
+        min-height: 72px;
+        padding: 4px 3px;
+    }
+    .day-number {
+        font-size: 0.72rem;
+        margin-bottom: 2px;
+    }
+    .calendar-day.today .day-number {
+        width: 22px; height: 22px;
+        font-size: 0.68rem;
+    }
+    .calendar-event {
+        font-size: 0.58rem;
+        padding: 2px 3px;
+        margin-bottom: 1px;
+        border-radius: 3px;
+        line-height: 1.3;
+    }
+    .calendar-event.multi-day {
+        margin-left: -3px;
+        margin-right: -3px;
+        padding-left: 5px;
+    }
+    .calendar-event.multi-start { margin-left: 0; }
+    .calendar-event.multi-end { margin-right: 0; }
+
+    /* Week / 3‑day column view */
+    .calendar-columns { border-radius: 8px; }
+    .cal-col-header { padding: 8px 4px; }
+    .cal-col-day { font-size: 0.62rem; }
+    .cal-col-date { font-size: 0.78rem; }
+    .cal-col-date.today-num { width: 24px; height: 24px; }
+    .cal-time-slot { font-size: 0.6rem; padding: 2px 4px; }
+    .cal-event { font-size: 0.62rem; padding: 2px 4px; }
+    .cal-event-time { font-size: 0.55rem; }
+    .cal-event-title { font-size: 0.62rem; }
+    .cal-event-allday { font-size: 0.62rem; padding: 2px 4px; }
+
+    /* ===== SURGERY SCHEDULE ===== */
+    .surgery-controls {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    .surgery-controls .page-header {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .surgery-stats {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .surgery-stat-chip {
+        font-size: 0.72rem;
+        padding: 4px 10px;
+    }
     .surgery-week-grid {
         grid-template-columns: 1fr !important;
-        gap: 10px;
+        gap: 8px;
     }
-    .surgery-day-card { margin-bottom: 4px; }
-    .surgery-controls { flex-direction: column; gap: 8px; }
-    .surgery-summary-panel { margin-top: 16px; }
+    .surgery-day { min-height: auto; }
+    .surgery-day-header { padding: 8px 10px; }
+    .surgery-summary-panel {
+        flex-direction: column;
+        padding: 8px 12px;
+        gap: 6px;
+        align-items: flex-start;
+    }
+    .surgery-summary-chips { gap: 8px; }
+    .surgery-summary-chip { font-size: 0.72rem; }
+    .surgery-summary-total { padding-left: 0; border-left: none; }
+    .surgery-detail-label { flex: 0 0 100px; font-size: 0.78rem; }
+    .surgery-detail-value { font-size: 0.82rem; }
 
-    /* ---- Schedule (Phân công tuần) ---- */
-    .schedule-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .schedule-table { min-width: 700px; }
-
-    /* ---- Staff Grid ---- */
+    /* ===== STAFF ===== */
     .staff-grid {
         grid-template-columns: 1fr !important;
     }
+    .staff-subtabs {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .staff-subtab {
+        padding: 8px 14px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+    .staff-filters {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .filter-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+    .staff-name-cell {
+        gap: 8px;
+    }
+    .staff-fullname {
+        white-space: normal;
+        word-break: break-word;
+    }
 
-    /* ---- Patient Stats ---- */
+    /* ===== RESEARCH / SHCM ===== */
+    .rsch-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px;
+    }
+    .rsch-stat-card { padding: 12px; }
+    .rsch-stat-val { font-size: 1.4rem; }
+    .rsch-stat-lbl { font-size: 0.7rem; }
+    .rsch-settings-card { padding: 10px 12px !important; }
+    .rsch-settings-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .rsch-time-input, .rsch-dur-input { width: 100% !important; }
+    .rsch-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rsch-table { min-width: 600px; font-size: 0.75rem; }
+    .rsch-table td, .rsch-table th { padding: 6px 4px; }
+    .rsch-file-name { max-width: 160px; }
+    .rsch-file-item { padding: 8px 10px; gap: 8px; }
+    .rsch-files-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    /* ===== SCHEDULE (Phân công tuần) ===== */
+    .schedule-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .schedule-table { min-width: 700px; }
+
+    /* ===== PATIENT ===== */
     .patient-stats {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 10px;
+        gap: 8px;
     }
+    .patient-room-filters {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    .patient-room-filters .btn { font-size: 0.7rem; padding: 4px 8px; }
 
-    /* ---- Room Map ---- */
+    /* ===== ROOMS ===== */
     .room-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 10px;
+        gap: 8px;
     }
 
-    /* ---- Plans ---- */
-    .plans-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    /* ---- Tasks Kanban ---- */
+    /* ===== TASKS ===== */
     .kanban-board {
         grid-template-columns: 1fr !important;
     }
 
-    /* ---- Modal ---- */
+    /* ===== MODAL — Bottom Sheet style ===== */
+    .modal-overlay {
+        align-items: flex-end !important;
+    }
     .modal, .modal-content {
-        width: 96% !important;
+        width: 100% !important;
         max-width: none !important;
-        margin: 10px auto;
-        max-height: 92vh;
+        margin: 0;
+        border-radius: 16px 16px 0 0;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .modal-header {
+        padding: 14px 16px;
+        position: sticky;
+        top: 0;
+        background: var(--bg-secondary);
+        z-index: 2;
+        border-radius: 16px 16px 0 0;
+    }
+    .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 14px;
+    }
+    .modal-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        z-index: 2;
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+        gap: 8px;
+    }
+    .modal-footer .btn {
+        flex: 1;
+        justify-content: center;
+    }
+    .modal-title { font-size: 1rem; }
+
+    @keyframes slideUpModal {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
     }
 
-    /* ---- Login ---- */
+    /* ===== LOGIN ===== */
     .login-card {
         width: 95% !important;
         max-width: none !important;
         padding: 24px 20px;
     }
 
-    /* ---- Surgery Stats ---- */
+    /* ===== SURGERY STATS ===== */
     .surgery-stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
     }
@@ -260,22 +457,25 @@
         grid-template-columns: 1fr !important;
     }
 
-    /* ---- Calendar Nav ---- */
-    .calendar-nav {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-    .calendar-month-label { font-size: 0.85rem; }
+    /* ===== REPORTS ===== */
+    .report-stat-card { padding: 8px 10px; }
+    .report-stat-value { font-size: 1.15rem; }
 
-    /* ---- Patient Filter Buttons ---- */
-    .patient-room-filters {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-    .patient-room-filters .btn { font-size: 0.72rem; padding: 4px 8px; }
-
-    /* ---- Hide non-essential on mobile ---- */
+    /* ===== HIDE NON-ESSENTIAL ===== */
     .stat-change { display: none; }
+
+    /* ===== SCROLL FADE — bottom nav ===== */
+    .sidebar::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 24px;
+        background: linear-gradient(to right, transparent, var(--bg-secondary));
+        pointer-events: none;
+        z-index: 1;
+    }
 }
 
 /* ===== SMALL PHONES — max-width: 480px ===== */
@@ -284,7 +484,16 @@
     .patient-stats { grid-template-columns: 1fr !important; }
     .room-grid { grid-template-columns: 1fr !important; }
     .surgery-stats-grid { grid-template-columns: 1fr !important; }
-    .main-content { padding: 80px 10px 80px; }
-    .nav-item { min-width: 44px; padding: 6px 4px; }
-    .nav-item span { font-size: 0.55rem; }
+    .rsch-stats { grid-template-columns: 1fr !important; }
+    .main-content { padding: 60px 8px 68px; }
+    .nav-item { min-width: 48px; padding: 6px 3px 4px; }
+    .nav-item svg { width: 16px; height: 16px; }
+    .nav-item span { font-size: 0.52rem; max-width: 46px; }
+    .page-title { font-size: 1.05rem; }
+    .page-subtitle { font-size: 0.72rem; }
+
+    /* Calendar even tighter */
+    .calendar-day { min-height: 60px; padding: 2px; }
+    .calendar-event { font-size: 0.52rem; padding: 1px 2px; }
+    .day-number { font-size: 0.65rem; }
 }
