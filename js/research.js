@@ -170,8 +170,18 @@ const ResearchPage = {
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Ngày trình</label>
-                        <input class="form-input" type="date" name="presentDate" value="${item?.presentDate || ''}">
+                        <label class="form-label">Ngày trình (dd/mm/yyyy)</label>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <input class="form-input" type="text" name="presentDateDisplay" 
+                                placeholder="dd/mm/yyyy" 
+                                pattern="\\d{2}/\\d{2}/\\d{4}" 
+                                value="${item?.presentDate ? (() => { const d = new Date(item.presentDate); return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); })() : ''}"
+                                style="flex:1">
+                            <input type="date" name="presentDate" value="${item?.presentDate || ''}" 
+                                style="width:40px;padding:6px 4px;opacity:0.6;cursor:pointer" 
+                                title="Chọn từ lịch" 
+                                onchange="const d=new Date(this.value);this.form.presentDateDisplay.value=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tiến độ</label>
@@ -195,12 +205,23 @@ const ResearchPage = {
         const f = new FormData(e.target);
         const doctorId = parseInt(f.get('doctorId'));
         const staff = Store.getAll('staff').find(s => s.id === doctorId);
+        // Parse date from dd/mm/yyyy text input or native date picker
+        let presentDate = null;
+        const displayVal = f.get('presentDateDisplay');
+        const nativeVal = f.get('presentDate');
+        if (displayVal && /^\d{2}\/\d{2}\/\d{4}$/.test(displayVal.trim())) {
+            const [dd, mm, yyyy] = displayVal.trim().split('/');
+            presentDate = `${yyyy}-${mm}-${dd}`;
+        } else if (nativeVal) {
+            presentDate = nativeVal;
+        }
+
         const data = {
             doctorId,
             doctorName: staff ? `${staff.title} ${staff.name}` : '',
             title: f.get('title'),
             status: f.get('status'),
-            presentDate: f.get('presentDate') || null,
+            presentDate,
         };
 
         if (id) {
