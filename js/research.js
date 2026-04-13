@@ -201,7 +201,11 @@ const ResearchPage = {
         if (id) {
             Store.update('shcmSchedule', id, data);
         } else {
-            Store.add('shcmSchedule', data);
+            const newItem = Store.add('shcmSchedule', data);
+            // Auto-shift: push all subsequent items forward by 2 weeks
+            if (data.presentDate) {
+                this._shiftSubsequentDates(newItem.id, data.presentDate);
+            }
         }
 
         // Sync to plans
@@ -209,7 +213,31 @@ const ResearchPage = {
 
         Modal.close();
         App.renderCurrentPage();
-        Toast.success(id ? 'Đã cập nhật bài SHCM' : 'Đã thêm bài SHCM mới');
+        Toast.success(id ? 'Đã cập nhật bài SHCM' : 'Đã thêm bài SHCM mới (lịch sau tự dời +2 tuần)');
+    },
+
+    // Shift all SHCM entries after insertedDate forward by 2 weeks
+    _shiftSubsequentDates(newItemId, insertedDate) {
+        const items = Store.getAll('shcmSchedule');
+        let shifted = 0;
+        items.forEach(item => {
+            if (item.id === newItemId) return; // skip the newly inserted item
+            if (!item.presentDate) return;
+            if (item.presentDate >= insertedDate) {
+                const d = new Date(item.presentDate);
+                d.setDate(d.getDate() + 14); // +2 weeks
+                const newDate = d.toISOString().split('T')[0];
+                Store.update('shcmSchedule', item.id, { presentDate: newDate });
+                // Also update linked plan
+                if (item.planId) {
+                    Store.update('plans', item.planId, { date: newDate });
+                }
+                shifted++;
+            }
+        });
+        if (shifted > 0) {
+            console.log(`[SHCM] Shifted ${shifted} entries forward by 2 weeks`);
+        }
     },
 
     deleteItem(id) {
