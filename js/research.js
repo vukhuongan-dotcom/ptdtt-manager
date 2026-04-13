@@ -40,9 +40,14 @@ const ResearchPage = {
                 <h1 class="page-title">Sinh hoạt Chuyên môn</h1>
                 <p class="page-subtitle">Lịch SHCM & Tài liệu — Khoa PTĐTT · Bệnh viện Bình Dân</p>
             </div>
-            ${canEdit ? `<button class="btn btn-primary" onclick="ResearchPage.openForm()">
-                ${Utils.plusIcon()} Thêm bài SHCM
-            </button>` : ''}
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-secondary" id="shcm-export-btn" onclick="ResearchPage.exportImage()">
+                    📸 Xuất hình
+                </button>
+                ${canEdit ? `<button class="btn btn-primary" onclick="ResearchPage.openForm()">
+                    ${Utils.plusIcon()} Thêm bài SHCM
+                </button>` : ''}
+            </div>
         </div>
 
         <!-- Stats cards -->
@@ -86,7 +91,7 @@ const ResearchPage = {
                         ${items.map((item, idx) => {
                             const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
                             const d = item.presentDate ? new Date(item.presentDate) : null;
-                            const dateLabel = d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}` : '—';
+                            const dateLabel = d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}` : '—';
                             return `<tr class="rsch-row rsch-row-${item.status}">
                                 <td class="rsch-stt">${idx + 1}</td>
                                 <td class="rsch-doctor">${item.doctorName}</td>
@@ -383,5 +388,185 @@ const ResearchPage = {
         } catch (err) {
             Toast.error('Lỗi xoá file');
         }
+    },
+
+    // ===== EXPORT JPEG =====
+    async exportImage() {
+        const btn = document.getElementById('shcm-export-btn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xuất...'; }
+
+        try {
+            const items = Store.getAll('shcmSchedule').sort((a, b) => {
+                if (a.presentDate && b.presentDate) return a.presentDate.localeCompare(b.presentDate);
+                return a.id - b.id;
+            });
+            const settings = this._getSettings();
+
+            if (items.length === 0) {
+                Toast.error('Chưa có bài SHCM nào để xuất');
+                return;
+            }
+
+            const pad = n => String(n).padStart(2, '0');
+            const fmtDate = (ds) => {
+                if (!ds) return '—';
+                const d = new Date(ds);
+                return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+            };
+
+            // Status label
+            const stLabel = (status) => {
+                const m = { done: '✅ Đã trình', pending: '⏳ Chưa trình', registered: '📝 Mới đăng ký' };
+                return m[status] || status;
+            };
+            const stColor = (status) => {
+                const m = { done: '#16a34a', pending: '#ea580c', registered: '#7c3aed' };
+                return m[status] || '#64748b';
+            };
+            const stBg = (status) => {
+                const m = { done: '#dcfce7', pending: '#fff7ed', registered: '#f3e8ff' };
+                return m[status] || '#f1f5f9';
+            };
+
+            // Build table rows
+            const tableRows = items.map((item, idx) => `
+                <tr>
+                    <td style="border:1px solid #cbd5e1;padding:10px 8px;text-align:center;font-weight:700;color:#64748b;font-size:13px">${idx + 1}</td>
+                    <td style="border:1px solid #cbd5e1;padding:10px 12px;font-weight:600;font-size:13px;color:#1e293b;white-space:nowrap">${item.doctorName || '—'}</td>
+                    <td style="border:1px solid #cbd5e1;padding:10px 12px;font-size:13px;color:#334155;line-height:1.4">${item.title || '—'}</td>
+                    <td style="border:1px solid #cbd5e1;padding:10px 8px;text-align:center">
+                        <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${stBg(item.status)};color:${stColor(item.status)};border:1px solid ${stColor(item.status)}30">${stLabel(item.status)}</span>
+                    </td>
+                    <td style="border:1px solid #cbd5e1;padding:10px 8px;text-align:center;font-weight:600;font-size:13px;color:#1e293b">${fmtDate(item.presentDate)}</td>
+                </tr>
+            `).join('');
+
+            // Stats
+            const done = items.filter(i => i.status === 'done').length;
+            const pending = items.filter(i => i.status === 'pending').length;
+            const registered = items.filter(i => i.status === 'registered').length;
+
+            const user = Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống';
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('vi-VN');
+            const dateStr = now.toLocaleDateString('vi-VN');
+
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+            <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
+            </head><body>
+            <div id="capture" style="padding:28px;width:900px;background:#fff">
+                <div style="text-align:center;margin-bottom:20px">
+                    <h2 style="font-size:20px;color:#000;font-weight:800;letter-spacing:0.5px">LỊCH SINH HOẠT CHUYÊN MÔN</h2>
+                    <p style="margin:6px 0 0;font-size:14px;color:#334155;font-weight:600">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#64748b">Giờ SHCM: ${settings.defaultTime} · Thời lượng: ${parseInt(settings.defaultDuration) || 30} phút · Địa điểm: Phòng 7.14</p>
+                </div>
+
+                <div style="display:flex;gap:12px;margin-bottom:16px;justify-content:center">
+                    <div style="padding:8px 16px;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:#0891b2">${items.length}</div>
+                        <div style="font-size:11px;color:#64748b;font-weight:600">TỔNG BÀI</div>
+                    </div>
+                    <div style="padding:8px 16px;border-radius:8px;background:#dcfce7;border:1px solid #86efac;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:#16a34a">${done}</div>
+                        <div style="font-size:11px;color:#64748b;font-weight:600">ĐÃ TRÌNH</div>
+                    </div>
+                    <div style="padding:8px 16px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:#ea580c">${pending}</div>
+                        <div style="font-size:11px;color:#64748b;font-weight:600">CHƯA TRÌNH</div>
+                    </div>
+                    <div style="padding:8px 16px;border-radius:8px;background:#f3e8ff;border:1px solid #d8b4fe;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:#7c3aed">${registered}</div>
+                        <div style="font-size:11px;color:#64748b;font-weight:600">MỚI ĐĂNG KÝ</div>
+                    </div>
+                </div>
+
+                <table style="width:100%;border-collapse:collapse">
+                    <thead><tr>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:center;width:44px;font-size:12px">STT</th>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 12px;text-align:left;min-width:140px;font-size:12px">Bác sĩ</th>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 12px;text-align:left;font-size:12px">Tên bài trình bày</th>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:center;width:110px;font-size:12px">Tiến độ</th>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:center;width:100px;font-size:12px">Ngày trình</th>
+                    </tr></thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px;color:#94a3b8">
+                    <span>Xuất bởi: ${user}</span>
+                    <span>Xuất lúc ${timeStr} — ${dateStr}</span>
+                </div>
+            </div></body></html>`;
+
+            // Render in isolated iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1000px;height:3000px;border:none;opacity:0;pointer-events:none';
+            document.body.appendChild(iframe);
+
+            await new Promise(resolve => { iframe.onload = resolve; iframe.srcdoc = fullHtml; });
+            await new Promise(r => setTimeout(r, 500));
+
+            const captureEl = iframe.contentDocument.getElementById('capture');
+            const canvas = await html2canvas(captureEl, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                windowHeight: captureEl.scrollHeight + 100
+            });
+
+            document.body.removeChild(iframe);
+
+            // Add watermark
+            this._addWatermark(canvas);
+
+            // Download via server
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            const resp = await fetch('/api/download-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataUrl, filename: `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}.jpg` })
+            });
+            if (resp.ok) {
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}.jpg`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                await new Promise(r => setTimeout(r, 500));
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                throw new Error('Server download failed');
+            }
+
+            Toast.success('Đã xuất hình lịch SHCM!');
+        } catch (err) {
+            console.error('SHCM export error:', err);
+            Toast.error('Lỗi xuất hình: ' + err.message);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '📸 Xuất hình'; }
+        }
+    },
+
+    // Watermark (same pattern as SchedulePage)
+    _addWatermark(canvas) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate(-Math.atan2(h, w));
+        ctx.font = `bold ${Math.round(w * 0.04)}px Inter, Arial, sans-serif`;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -Math.round(h * 0.02));
+        ctx.font = `${Math.round(w * 0.02)}px Inter, Arial, sans-serif`;
+        ctx.fillText('Bệnh viện Bình Dân', 0, Math.round(h * 0.04));
+        ctx.restore();
     }
 };
+
