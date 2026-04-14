@@ -1477,21 +1477,25 @@ const ReportsPage = {
         }
     },
 
-    _chartOpts(datasets) {
-        // Auto-compute Y range from all datasets for better trend visibility
-        let allVals = [];
-        datasets.forEach(ds => {
-            if (ds.data) allVals = allVals.concat(ds.data.filter(v => v != null));
-        });
-        const dataMin = allVals.length ? Math.min(...allVals) : 0;
-        const dataMax = allVals.length ? Math.max(...allVals) : 10;
-        const range = dataMax - dataMin || 1;
-        const padding = Math.max(Math.ceil(range * 0.15), 1);
-        const yMin = Math.max(0, dataMin - padding);
-        const yMax = dataMax + padding;
-        // Smart step: aim for 5-8 grid lines
-        const rawStep = (yMax - yMin) / 6;
-        const stepSize = rawStep <= 1 ? 1 : rawStep <= 3 ? 2 : rawStep <= 7 ? 5 : Math.ceil(rawStep / 5) * 5;
+    _chartOpts(primaryDS, secondaryDS) {
+        // Compute ranges independently for each axis
+        const range = (arr) => {
+            const vals = arr.filter(v => v != null && v !== 0);
+            if (!vals.length) return { min: 0, max: 10, step: 2 };
+            const mn = Math.min(...vals), mx = Math.max(...vals);
+            const span = mx - mn || 1;
+            const pad = Math.max(Math.ceil(span * 0.15), 1);
+            const yMin = Math.max(0, mn - pad);
+            const yMax = mx + pad;
+            const raw = (yMax - yMin) / 5;
+            const step = raw <= 1 ? 1 : raw <= 3 ? 2 : raw <= 7 ? 5 : Math.ceil(raw / 5) * 5;
+            return { min: yMin, max: yMax, step };
+        };
+
+        const yL = range(primaryDS.data || []);
+        let allSecVals = [];
+        secondaryDS.forEach(ds => { if (ds.data) allSecVals = allSecVals.concat(ds.data); });
+        const yR = range(allSecVals);
 
         return {
             responsive: true,
@@ -1502,7 +1506,7 @@ const ReportsPage = {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 16, usePointStyle: true, pointStyle: 'line',
+                        padding: 14, usePointStyle: true, pointStyle: 'line',
                         font: { size: 11, weight: '500' },
                         generateLabels: (chart) => {
                             return chart.data.datasets.map((ds, i) => ({
@@ -1536,23 +1540,15 @@ const ReportsPage = {
                     boxHeight: 2,
                     boxPadding: 6,
                     callbacks: {
-                        title: (items) => {
-                            if (!items.length) return '';
-                            return '\ud83d\udcc5 ' + items[0].label;
-                        },
+                        title: (items) => items.length ? '\ud83d\udcc5 ' + items[0].label : '',
                         label: (ctx) => {
                             const val = ctx.parsed.y;
-                            const ds = ctx.chart.data.datasets[0];
-                            const total = ds.data[ctx.dataIndex];
+                            const total = ctx.chart.data.datasets[0].data[ctx.dataIndex];
                             let suffix = '';
                             if (ctx.datasetIndex > 0 && total > 0) {
                                 suffix = ` (${Math.round(val/total*100)}%)`;
                             }
                             return ` ${ctx.dataset.label}: ${val}${suffix}`;
-                        },
-                        afterBody: (items) => {
-                            if (!items.length) return '';
-                            return '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500';
                         }
                     }
                 }
@@ -1563,34 +1559,53 @@ const ReportsPage = {
                     ticks: { font: { size: 10, weight: '500' }, maxRotation: 0, color: '#64748b' },
                     border: { display: false }
                 },
-                y: {
-                    min: yMin,
-                    suggestedMax: yMax,
-                    grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
-                    ticks: { font: { size: 10 }, stepSize, color: '#94a3b8', padding: 6 },
-                    border: { display: false }
+                yLeft: {
+                    type: 'linear',
+                    position: 'left',
+                    min: yL.min,
+                    suggestedMax: yL.max,
+                    grid: { color: 'rgba(0,114,178,0.06)', drawBorder: false },
+                    ticks: {
+                        font: { size: 10 }, stepSize: yL.step, color: '#0072B2', padding: 4,
+                        callback: (v) => v
+                    },
+                    border: { display: false },
+                    title: { display: true, text: 'Tổng BN', color: '#0072B2', font: { size: 10, weight: '600' } }
+                },
+                yRight: {
+                    type: 'linear',
+                    position: 'right',
+                    min: yR.min,
+                    suggestedMax: yR.max,
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        font: { size: 10 }, stepSize: yR.step, color: '#64748b', padding: 4
+                    },
+                    border: { display: false },
+                    title: { display: true, text: 'Chỉ số', color: '#64748b', font: { size: 10, weight: '600' } }
                 }
             }
         };
     },
 
-    // Dataset builder with color-blind safe styling
+    // Dataset builder — yAxisID determines which axis
     _ds(label, data, color, opts = {}) {
         return {
             label,
             data,
+            yAxisID: opts.primary ? 'yLeft' : 'yRight',
             borderColor: color,
-            backgroundColor: opts.fill ? color + '15' : 'transparent',
-            borderWidth: opts.thick ? 3 : 2,
+            backgroundColor: opts.fill ? color + '12' : 'transparent',
+            borderWidth: opts.primary ? 2.5 : 2,
             tension: 0.3,
             fill: !!opts.fill,
-            pointRadius: data.length > 20 ? 0 : 3,
+            pointRadius: data.length > 20 ? 0 : opts.primary ? 4 : 3,
             pointHoverRadius: 6,
-            pointBackgroundColor: '#fff',
-            pointBorderColor: color,
-            pointBorderWidth: 2,
+            pointBackgroundColor: opts.primary ? color : '#fff',
+            pointBorderColor: opts.primary ? '#fff' : color,
+            pointBorderWidth: opts.primary ? 2 : 2,
             borderDash: opts.dash || [],
-            order: opts.order || 1
+            order: opts.primary ? 5 : 1  // primary renders behind
         };
     },
 
@@ -1604,17 +1619,17 @@ const ReportsPage = {
         this._destroyChart('chart16h');
         const ctx16 = document.getElementById('chart16h');
         if (ctx16 && r16.length > 0) {
-            const ds16 = [
-                this._ds('Tổng BN',   r16.map(r => r.totalPatients || 0),                              C.blue,   { fill: true, thick: true, order: 0 }),
-                this._ds('Nhập viện',  r16.map(r => r.admissions || 0),                                 C.green),
-                this._ds('Xuất viện',  r16.map(r => r.discharges || 0),                                 C.amber,  { dash: [8, 4] }),
-                this._ds('Ca mổ',      r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)),     C.purple, { dash: [4, 4] }),
-                this._ds('BN nặng',    r16.map(r => r.severePatients || 0),                             C.red,    { dash: [2, 3] })
+            const primary16 = this._ds('Tổng BN', r16.map(r => r.totalPatients || 0), C.blue, { fill: true, primary: true });
+            const secondary16 = [
+                this._ds('Nhập viện', r16.map(r => r.admissions || 0),                             C.green),
+                this._ds('Xuất viện', r16.map(r => r.discharges || 0),                             C.amber,  { dash: [8, 4] }),
+                this._ds('Ca mổ',     r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)), C.purple, { dash: [4, 4] }),
+                this._ds('BN nặng',   r16.map(r => r.severePatients || 0),                         C.red,    { dash: [2, 3] })
             ];
             this._chartInstances['chart16h'] = new Chart(ctx16, {
                 type: 'line',
-                data: { labels: lbl16, datasets: ds16 },
-                options: this._chartOpts(ds16)
+                data: { labels: lbl16, datasets: [primary16, ...secondary16] },
+                options: this._chartOpts(primary16, secondary16)
             });
         }
 
@@ -1624,17 +1639,17 @@ const ReportsPage = {
         this._destroyChart('chart7h');
         const ctx7 = document.getElementById('chart7h');
         if (ctx7 && r7.length > 0) {
-            const ds7 = [
-                this._ds('Tổng BN',  r7.map(r => r.totalPatients || 0), C.blue,   { fill: true, thick: true, order: 0 }),
-                this._ds('Từ HSCC',  r7.map(r => r.fromHSCC || 0),      C.red,    { dash: [2, 3] }),
-                this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0),   C.green),
-                this._ds('Từ ICU',   r7.map(r => r.fromICU || 0),        C.amber,  { dash: [8, 4] }),
-                this._ds('Giải áp',  r7.map(r => r.fromGiaiAp || 0),     C.purple, { dash: [4, 4] })
+            const primary7 = this._ds('Tổng BN', r7.map(r => r.totalPatients || 0), C.blue, { fill: true, primary: true });
+            const secondary7 = [
+                this._ds('Từ HSCC',  r7.map(r => r.fromHSCC || 0),    C.red,    { dash: [2, 3] }),
+                this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0), C.green),
+                this._ds('Từ ICU',   r7.map(r => r.fromICU || 0),      C.amber,  { dash: [8, 4] }),
+                this._ds('Giải áp',  r7.map(r => r.fromGiaiAp || 0),   C.purple, { dash: [4, 4] })
             ];
             this._chartInstances['chart7h'] = new Chart(ctx7, {
                 type: 'line',
-                data: { labels: lbl7, datasets: ds7 },
-                options: this._chartOpts(ds7)
+                data: { labels: lbl7, datasets: [primary7, ...secondary7] },
+                options: this._chartOpts(primary7, secondary7)
             });
         }
     }
