@@ -225,7 +225,12 @@ const ResearchPage = {
         };
 
         if (id) {
+            // Check if date changed — cascade subsequent items
+            const oldItem = Store.getById('shcmSchedule', id);
             Store.update('shcmSchedule', id, data);
+            if (data.presentDate && oldItem && oldItem.presentDate !== data.presentDate && id >= 12) {
+                this._cascadeFrom(id, data.presentDate);
+            }
         } else {
             const newItem = Store.add('shcmSchedule', data);
             // Auto-shift: push all subsequent items forward by 2 weeks
@@ -239,22 +244,55 @@ const ResearchPage = {
 
         Modal.close();
         App.renderCurrentPage();
-        Toast.success(id ? 'Đã cập nhật bài SHCM' : 'Đã thêm bài SHCM mới (lịch sau tự dời +2 tuần)');
+        Toast.success(id ? 'Đã cập nhật (lịch sau tự điều chỉnh +2 tuần)' : 'Đã thêm bài SHCM mới (lịch sau tự dời +2 tuần)');
     },
 
-    // Shift all SHCM entries after insertedDate forward by 2 weeks
+    // When a date is changed for items #12+, recalculate all subsequent items +14 days each
+    _cascadeFrom(changedId, newDate) {
+        const items = Store.getAll('shcmSchedule')
+            .filter(i => i.id >= 12)
+            .sort((a, b) => a.id - b.id);
+        
+        const idx = items.findIndex(i => i.id === changedId);
+        if (idx < 0) return;
+
+        let prevDate = new Date(newDate);
+        let cascaded = 0;
+
+        for (let i = idx + 1; i < items.length; i++) {
+            const nextDate = new Date(prevDate);
+            nextDate.setDate(nextDate.getDate() + 14);
+            const newDateStr = nextDate.toISOString().split('T')[0];
+            
+            if (items[i].presentDate !== newDateStr) {
+                Store.update('shcmSchedule', items[i].id, { presentDate: newDateStr });
+                // Also update linked plan
+                if (items[i].planId) {
+                    Store.update('plans', items[i].planId, { date: newDateStr });
+                }
+                this._syncPlan(Store.getById('shcmSchedule', items[i].id));
+                cascaded++;
+            }
+            prevDate = nextDate;
+        }
+
+        if (cascaded > 0) {
+            console.log(`[SHCM] Cascaded ${cascaded} entries from #${changedId} (+2 weeks each)`);
+        }
+    },
+
+    // Shift all SHCM entries after insertedDate forward by 2 weeks (for new items)
     _shiftSubsequentDates(newItemId, insertedDate) {
         const items = Store.getAll('shcmSchedule');
         let shifted = 0;
         items.forEach(item => {
-            if (item.id === newItemId) return; // skip the newly inserted item
+            if (item.id === newItemId) return;
             if (!item.presentDate) return;
             if (item.presentDate >= insertedDate) {
                 const d = new Date(item.presentDate);
-                d.setDate(d.getDate() + 14); // +2 weeks
+                d.setDate(d.getDate() + 14);
                 const newDate = d.toISOString().split('T')[0];
                 Store.update('shcmSchedule', item.id, { presentDate: newDate });
-                // Also update linked plan
                 if (item.planId) {
                     Store.update('plans', item.planId, { date: newDate });
                 }
