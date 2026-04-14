@@ -1323,52 +1323,123 @@ const ReportsPage = {
         Modal.open('📖 Hướng dẫn sử dụng Module Báo cáo', guideHTML);
     },
 
-    // ========== STATS TAB — Line Charts ==========
+    // ========== STATS TAB — Interactive Charts ==========
     _chartInstances: {},
+    _weekOffset: 0,
 
     renderStats() {
-        const r = this.chartRange;
-        setTimeout(() => this._initCharts(), 100);
+        const range = this.chartRange;
+        const { start, end, label } = this._getDateRange();
+        const r16 = this._filterByRange(Store.getAll('reports16h') || []);
+        const r7 = this._filterByRange(Store.getAll('reports7h') || []);
+
+        // Summary metrics for 16h
+        const avgBN = r16.length ? Math.round(r16.reduce((s, r) => s + (r.totalPatients || 0), 0) / r16.length) : 0;
+        const totalSurgery = r16.reduce((s, r) => s + (r.surgeryTotal || 0) + (r.surgery2Total || 0), 0);
+        const totalAdmit = r16.reduce((s, r) => s + (r.admissions || 0), 0);
+        const totalDischarge = r16.reduce((s, r) => s + (r.discharges || 0), 0);
+        const totalSevere = r16.reduce((s, r) => s + (r.severePatients || 0), 0);
+        const reportCount = r16.length;
+
+        setTimeout(() => this._initCharts(), 150);
+
         return `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-            <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0">📊 Thống kê báo cáo theo thời gian</h3>
+        <!-- Time range controls -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:6px">
-                <button class="btn btn-sm ${r==='week'?'btn-primary':'btn-secondary'}" onclick="ReportsPage.setChartRange('week')">Tuần</button>
-                <button class="btn btn-sm ${r==='month'?'btn-primary':'btn-secondary'}" onclick="ReportsPage.setChartRange('month')">Tháng</button>
-                <button class="btn btn-sm ${r==='all'?'btn-primary':'btn-secondary'}" onclick="ReportsPage.setChartRange('all')">Tất cả</button>
+                <button class="btn btn-sm ${range==='week'?'btn-primary':'btn-secondary'}" style="font-size:0.78rem" onclick="ReportsPage.setChartRange('week')">Tuần</button>
+                <button class="btn btn-sm ${range==='month'?'btn-primary':'btn-secondary'}" style="font-size:0.78rem" onclick="ReportsPage.setChartRange('month')">Tháng</button>
+                <button class="btn btn-sm ${range==='all'?'btn-primary':'btn-secondary'}" style="font-size:0.78rem" onclick="ReportsPage.setChartRange('all')">Tất cả</button>
             </div>
+            ${range !== 'all' ? `
+            <div style="display:flex;align-items:center;gap:8px">
+                <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:1rem" onclick="ReportsPage.shiftRange(-1)">◀</button>
+                <span style="font-size:0.82rem;font-weight:600;color:var(--text-primary);min-width:160px;text-align:center">${label}</span>
+                <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:1rem" onclick="ReportsPage.shiftRange(1)" ${this._weekOffset >= 0 ? 'disabled' : ''}>▶</button>
+                ${this._weekOffset < 0 ? `<button class="btn btn-sm btn-secondary" style="font-size:0.72rem;padding:4px 8px" onclick="ReportsPage._weekOffset=0;App.renderCurrentPage()">Hiện tại</button>` : ''}
+            </div>` : `<span style="font-size:0.82rem;color:var(--text-muted)">${label}</span>`}
         </div>
 
-        <div class="card" style="padding:16px;margin-bottom:16px">
-            <h4 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin:0 0 12px">🩺 Báo cáo 16h — BS trực khoa</h4>
-            <div style="position:relative;height:280px"><canvas id="chart16h"></canvas></div>
+        <!-- Summary cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px">
+            ${this._statCard('📊', 'Báo cáo', reportCount, '#64748b', 'ngày')}
+            ${this._statCard('🏥', 'BN TB', avgBN, '#0284c7', '/ngày')}
+            ${this._statCard('🔪', 'Ca mổ', totalSurgery, '#7c3aed', 'tổng')}
+            ${this._statCard('📥', 'Nhập', totalAdmit, '#059669', 'tổng')}
+            ${this._statCard('📤', 'Xuất', totalDischarge, '#d97706', 'tổng')}
+            ${this._statCard('⚠️', 'Nặng', totalSevere, '#dc2626', 'tổng')}
         </div>
 
-        <div class="card" style="padding:16px">
-            <h4 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin:0 0 12px">👩‍⚕️ Báo cáo 7h — ĐD trực BV</h4>
-            <div style="position:relative;height:280px"><canvas id="chart7h"></canvas></div>
+        <!-- Chart 16h -->
+        <div class="card" style="padding:14px 14px 10px;margin-bottom:14px;border-radius:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <h4 style="font-size:0.88rem;font-weight:700;color:var(--text-primary);margin:0">🩺 BS trực khoa (16h)</h4>
+                <span style="font-size:0.72rem;color:var(--text-muted)">${r16.length} báo cáo</span>
+            </div>
+            <div style="position:relative;height:260px"><canvas id="chart16h"></canvas></div>
+            ${r16.length === 0 ? '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding:40px 0">Chưa có dữ liệu trong khoảng thời gian này</p>' : ''}
+        </div>
+
+        <!-- Chart 7h -->
+        <div class="card" style="padding:14px 14px 10px;border-radius:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <h4 style="font-size:0.88rem;font-weight:700;color:var(--text-primary);margin:0">👩‍⚕️ ĐD trực BV (7h)</h4>
+                <span style="font-size:0.72rem;color:var(--text-muted)">${r7.length} báo cáo</span>
+            </div>
+            <div style="position:relative;height:260px"><canvas id="chart7h"></canvas></div>
+            ${r7.length === 0 ? '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding:40px 0">Chưa có dữ liệu trong khoảng thời gian này</p>' : ''}
         </div>
         `;
     },
 
+    _statCard(icon, label, value, color, unit) {
+        return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;transition:transform .15s;cursor:default" 
+            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" 
+            onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:1.1rem">${icon}</div>
+            <div style="font-size:1.3rem;font-weight:800;color:${color};line-height:1.2">${value}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600">${label} <span style="opacity:0.7">${unit}</span></div>
+        </div>`;
+    },
+
     setChartRange(range) {
         this.chartRange = range;
+        this._weekOffset = 0;
+        App.renderCurrentPage();
+    },
+
+    shiftRange(dir) {
+        this._weekOffset += dir;
+        if (this._weekOffset > 0) this._weekOffset = 0;
         App.renderCurrentPage();
     },
 
     _getDateRange() {
         const now = new Date();
+        const offset = this._weekOffset || 0;
         if (this.chartRange === 'week') {
-            const start = new Date(now);
+            const end = new Date(now);
+            end.setDate(end.getDate() + offset * 7);
+            const start = new Date(end);
             start.setDate(start.getDate() - 6);
-            return { start, end: now };
+            const pad = n => String(n).padStart(2, '0');
+            const label = `${pad(start.getDate())}/${pad(start.getMonth()+1)} — ${pad(end.getDate())}/${pad(end.getMonth()+1)}/${end.getFullYear()}`;
+            return { start, end, label };
         }
         if (this.chartRange === 'month') {
-            const start = new Date(now);
+            const end = new Date(now);
+            end.setDate(end.getDate() + offset * 30);
+            const start = new Date(end);
             start.setDate(start.getDate() - 29);
-            return { start, end: now };
+            const months = ['Th01','Th02','Th03','Th04','Th05','Th06','Th07','Th08','Th09','Th10','Th11','Th12'];
+            const label = `${start.getDate()}/${months[start.getMonth()]} — ${end.getDate()}/${months[end.getMonth()]}/${end.getFullYear()}`;
+            return { start, end, label };
         }
-        return { start: null, end: null }; // all
+        const all16 = (Store.getAll('reports16h') || []).filter(r => r.date);
+        const all7 = (Store.getAll('reports7h') || []).filter(r => r.date);
+        const allDates = [...all16, ...all7].map(r => r.date).sort();
+        const total = all16.length + all7.length;
+        return { start: null, end: null, label: `${total} báo cáo (toàn bộ)` };
     },
 
     _filterByRange(reports) {
@@ -1395,173 +1466,115 @@ const ReportsPage = {
         }
     },
 
+    _chartOpts(stepSize) {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            animation: { duration: 400, easing: 'easeOutQuart' },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 14, usePointStyle: true, pointStyle: 'circle', font: { size: 11, weight: '500' } },
+                    onClick: function(e, legendItem, legend) {
+                        const idx = legendItem.datasetIndex;
+                        const chart = legend.chart;
+                        const meta = chart.getDatasetMeta(idx);
+                        meta.hidden = meta.hidden === null ? !chart.data.datasets[idx].hidden : null;
+                        chart.update();
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15,23,42,0.92)',
+                    titleFont: { size: 12, weight: '700' },
+                    bodyFont: { size: 11 },
+                    padding: 12,
+                    cornerRadius: 10,
+                    displayColors: true,
+                    boxPadding: 4,
+                    callbacks: {
+                        title: (items) => items[0]?.label || '',
+                        label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10, weight: '500' }, maxRotation: 45, color: '#64748b' }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                    ticks: { font: { size: 10 }, stepSize, color: '#94a3b8' }
+                }
+            }
+        };
+    },
+
+    _ds(label, data, color, opts = {}) {
+        return {
+            label,
+            data,
+            borderColor: color,
+            backgroundColor: opts.fill ? color + '18' : 'transparent',
+            borderWidth: opts.thick ? 2.5 : 2,
+            tension: 0.35,
+            fill: !!opts.fill,
+            pointRadius: data.length > 15 ? 2 : 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: color,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 1.5,
+            borderDash: opts.dash || [],
+            order: opts.order || 1
+        };
+    },
+
     _initCharts() {
         if (typeof Chart === 'undefined') return;
 
-        // ── Report 16h chart ──
+        // ── Report 16h ──
         const r16 = this._filterByRange(Store.getAll('reports16h') || []);
-        const labels16 = r16.map(r => this._fmtDateLabel(r.date));
-
+        const lbl16 = r16.map(r => this._fmtDateLabel(r.date));
         this._destroyChart('chart16h');
         const ctx16 = document.getElementById('chart16h');
-        if (ctx16) {
+        if (ctx16 && r16.length > 0) {
             this._chartInstances['chart16h'] = new Chart(ctx16, {
                 type: 'line',
                 data: {
-                    labels: labels16,
+                    labels: lbl16,
                     datasets: [
-                        {
-                            label: 'Tổng BN',
-                            data: r16.map(r => r.totalPatients || 0),
-                            borderColor: '#0284c7',
-                            backgroundColor: 'rgba(2,132,199,0.1)',
-                            borderWidth: 2.5,
-                            tension: 0.3,
-                            fill: true,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#0284c7'
-                        },
-                        {
-                            label: 'Nhập viện',
-                            data: r16.map(r => r.admissions || 0),
-                            borderColor: '#059669',
-                            backgroundColor: 'rgba(5,150,105,0.08)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#059669'
-                        },
-                        {
-                            label: 'Xuất viện',
-                            data: r16.map(r => r.discharges || 0),
-                            borderColor: '#d97706',
-                            backgroundColor: 'rgba(217,119,6,0.08)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#d97706'
-                        },
-                        {
-                            label: 'Ca mổ',
-                            data: r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)),
-                            borderColor: '#7c3aed',
-                            backgroundColor: 'rgba(124,58,237,0.08)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#7c3aed'
-                        },
-                        {
-                            label: 'BN nặng',
-                            data: r16.map(r => r.severePatients || 0),
-                            borderColor: '#dc2626',
-                            backgroundColor: 'rgba(220,38,38,0.08)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#dc2626',
-                            borderDash: [5, 3]
-                        }
+                        this._ds('Tổng BN', r16.map(r => r.totalPatients || 0), '#0284c7', { fill: true, thick: true, order: 0 }),
+                        this._ds('Nhập viện', r16.map(r => r.admissions || 0), '#059669'),
+                        this._ds('Xuất viện', r16.map(r => r.discharges || 0), '#d97706'),
+                        this._ds('Ca mổ', r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)), '#7c3aed'),
+                        this._ds('BN nặng', r16.map(r => r.severePatients || 0), '#dc2626', { dash: [5, 3] })
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
-                        tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 }, stepSize: 5 } }
-                    }
-                }
+                options: this._chartOpts(5)
             });
         }
 
-        // ── Report 7h chart ──
+        // ── Report 7h ──
         const r7 = this._filterByRange(Store.getAll('reports7h') || []);
-        const labels7 = r7.map(r => this._fmtDateLabel(r.date));
-
+        const lbl7 = r7.map(r => this._fmtDateLabel(r.date));
         this._destroyChart('chart7h');
         const ctx7 = document.getElementById('chart7h');
-        if (ctx7) {
+        if (ctx7 && r7.length > 0) {
             this._chartInstances['chart7h'] = new Chart(ctx7, {
                 type: 'line',
                 data: {
-                    labels: labels7,
+                    labels: lbl7,
                     datasets: [
-                        {
-                            label: 'Tổng BN',
-                            data: r7.map(r => r.totalPatients || 0),
-                            borderColor: '#0284c7',
-                            backgroundColor: 'rgba(2,132,199,0.1)',
-                            borderWidth: 2.5,
-                            tension: 0.3,
-                            fill: true,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#0284c7'
-                        },
-                        {
-                            label: 'Từ HSCC',
-                            data: r7.map(r => r.fromHSCC || 0),
-                            borderColor: '#dc2626',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#dc2626'
-                        },
-                        {
-                            label: 'Hồi tỉnh',
-                            data: r7.map(r => r.fromHoiTinh || 0),
-                            borderColor: '#059669',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#059669'
-                        },
-                        {
-                            label: 'Từ ICU',
-                            data: r7.map(r => r.fromICU || 0),
-                            borderColor: '#d97706',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#d97706'
-                        },
-                        {
-                            label: 'Giải áp',
-                            data: r7.map(r => r.fromGiaiAp || 0),
-                            borderColor: '#7c3aed',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#7c3aed'
-                        }
+                        this._ds('Tổng BN', r7.map(r => r.totalPatients || 0), '#0284c7', { fill: true, thick: true, order: 0 }),
+                        this._ds('Từ HSCC', r7.map(r => r.fromHSCC || 0), '#dc2626'),
+                        this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0), '#059669'),
+                        this._ds('Từ ICU', r7.map(r => r.fromICU || 0), '#d97706'),
+                        this._ds('Giải áp', r7.map(r => r.fromGiaiAp || 0), '#7c3aed')
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
-                        tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 }, stepSize: 1 } }
-                    }
-                }
+                options: this._chartOpts(1)
             });
         }
     }
