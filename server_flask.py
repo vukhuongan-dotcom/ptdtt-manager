@@ -615,7 +615,7 @@ def emr_login():
             'User-Agent': 'Mozilla/5.0',
             'Accept': 'text/html',
         })
-        resp = opener.open(req, timeout=15)
+        resp = opener.open(req, timeout=8)
         html = resp.read().decode('utf-8', errors='replace')
 
         token_match = re.search(
@@ -639,7 +639,7 @@ def emr_login():
             'X-Requested-With': 'XMLHttpRequest',
             'Referer': EMR_LOGIN_URL,
         })
-        opener.open(login_req, timeout=15)
+        opener.open(login_req, timeout=8)
         _emr_logged_in = True
         print(f'[{now}] ✅ EMR login OK')
         return True
@@ -704,7 +704,7 @@ def _fetch_emr_html():
             'User-Agent': 'Mozilla/5.0',
             'Accept': 'text/html',
         })
-        resp = opener.open(req, timeout=15)
+        resp = opener.open(req, timeout=8)
         html = resp.read().decode(resp.headers.get_content_charset() or 'utf-8', errors='replace')
 
         has_data = '<tbody>' in html and '<tr>' in html
@@ -716,7 +716,7 @@ def _fetch_emr_html():
                     'User-Agent': 'Mozilla/5.0',
                     'Accept': 'text/html',
                 })
-                resp2 = opener.open(req2, timeout=15)
+                resp2 = opener.open(req2, timeout=8)
                 html = resp2.read().decode(resp2.headers.get_content_charset() or 'utf-8', errors='replace')
                 if '<tbody>' not in html:
                     return None, 'Login OK but no data'
@@ -767,10 +767,14 @@ def _emr_background_refresh():
 
 @app.route('/api/emr')
 def emr_proxy():
+    """Non-blocking: always return cached data. Never wait for EMR fetch."""
+    if _emr_cache:
+        return jsonify(_emr_cache)
+    # No cache yet — try a quick fetch but with short timeout
     data, error = fetch_emr_data()
-    if error:
-        return jsonify({'error': error}), 502
-    return jsonify(data)
+    if data:
+        return jsonify(data)
+    return jsonify({'error': error or 'EMR not available yet, data loading in background'}), 502
 
 @app.route('/api/emr-status')
 def emr_status():
