@@ -1371,10 +1371,10 @@ const ReportsPage = {
 
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">
             ${this._statCard(avgBN, 'BN/ngày', 'Trung bình BN nội trú', this._CB.blue)}
-            ${this._statCard(avgSurgeryStr, 'Mổ/ngày', 'TB ca mổ (P1+P2)', this._CB.purple)}
-            ${this._statCard(totalAdmit, 'Nhập viện', `Tổng ${n} ngày`, this._CB.green)}
-            ${this._statCard(totalDischarge, 'Xuất viện', `Tổng ${n} ngày`, this._CB.amber)}
-            ${this._statCard(totalSevere, 'BN nặng', `Tổng ${n} ngày`, this._CB.red)}
+            ${this._statCard(avgSurgeryStr, 'Mổ/ngày', 'TB ca mổ', this._CB.purple)}
+            ${this._statCard(totalAdmit, 'Nhập viện', `Tổng ${n} ngày (T2–T6)`, this._CB.green)}
+            ${this._statCard(totalDischarge, 'Xuất viện', `Tổng ${n} ngày (T2–T6)`, this._CB.amber)}
+            ${this._statCard(totalSevere, 'BN nặng', `Tổng ${n} ngày (T2–T6)`, this._CB.red)}
         </div>
 
         <div class="card" style="padding:12px;margin-bottom:12px;border-radius:10px">
