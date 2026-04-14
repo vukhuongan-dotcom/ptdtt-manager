@@ -756,14 +756,27 @@ def _emr_background_refresh():
     """Background thread: refresh cache every 2 min, keep-alive every 20 min"""
     import time
     login_counter = 0
+    # Initial login on thread start
+    try:
+        emr_login()
+    except Exception as e:
+        print(f'[EMR-BG] Initial login error: {e}')
     while True:
-        time.sleep(EMR_CACHE_TTL)  # 2 min
-        login_counter += 1
-        # Keep-alive: re-login every 20 min (10 cycles × 2 min)
-        if login_counter >= 10:
-            emr_login()
-            login_counter = 0
-        fetch_emr_data(force=True)
+        try:
+            time.sleep(EMR_CACHE_TTL)  # 2 min
+            login_counter += 1
+            # Keep-alive: re-login every 20 min (10 cycles × 2 min)
+            if login_counter >= 10:
+                try:
+                    emr_login()
+                except Exception as e:
+                    print(f'[EMR-BG] Keep-alive login error: {e}')
+                login_counter = 0
+            fetch_emr_data(force=True)
+        except Exception as e:
+            now = datetime.now().strftime('%H:%M:%S')
+            print(f'[{now}] ❌ EMR background refresh error: {e}')
+            time.sleep(30)  # Wait 30s before retry on error
 
 @app.route('/api/emr')
 def emr_proxy():
@@ -893,12 +906,22 @@ _ensure_log_dir()
 _cleanup_old_logs(90)
 _init_auth_from_db()
 
+# ── Start EMR background thread (works under both Gunicorn and direct run) ──
+_emr_bg_started = False
+def _start_emr_background():
+    global _emr_bg_started
+    if _emr_bg_started:
+        return
+    _emr_bg_started = True
+    threading.Thread(target=_emr_background_refresh, daemon=True).start()
+    print('[EMR] Background refresh thread started (every 2 min)')
+
+# Auto-start when module is loaded (Gunicorn worker or direct run)
+_start_emr_background()
+
 if __name__ == '__main__':
     print(f'\n  🏥 PTDTT Manager Server (Flask)')
     print(f'  ================================')
-    threading.Thread(target=emr_login, daemon=True).start()
-    # Start background EMR cache refresh (every 2 min) + session keep-alive (every 20 min)
-    threading.Thread(target=_emr_background_refresh, daemon=True).start()
     print(f'  🌐 http://0.0.0.0:{PORT}')
     print(f'  📡 EMR Proxy: /api/emr')
     print(f'  💾 Data API: /api/data')
