@@ -1477,7 +1477,22 @@ const ReportsPage = {
         }
     },
 
-    _chartOpts(stepSize) {
+    _chartOpts(datasets) {
+        // Auto-compute Y range from all datasets for better trend visibility
+        let allVals = [];
+        datasets.forEach(ds => {
+            if (ds.data) allVals = allVals.concat(ds.data.filter(v => v != null));
+        });
+        const dataMin = allVals.length ? Math.min(...allVals) : 0;
+        const dataMax = allVals.length ? Math.max(...allVals) : 10;
+        const range = dataMax - dataMin || 1;
+        const padding = Math.max(Math.ceil(range * 0.15), 1);
+        const yMin = Math.max(0, dataMin - padding);
+        const yMax = dataMax + padding;
+        // Smart step: aim for 5-8 grid lines
+        const rawStep = (yMax - yMin) / 6;
+        const stepSize = rawStep <= 1 ? 1 : rawStep <= 3 ? 2 : rawStep <= 7 ? 5 : Math.ceil(rawStep / 5) * 5;
+
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -1523,7 +1538,7 @@ const ReportsPage = {
                     callbacks: {
                         title: (items) => {
                             if (!items.length) return '';
-                            return '📅 ' + items[0].label;
+                            return '\ud83d\udcc5 ' + items[0].label;
                         },
                         label: (ctx) => {
                             const val = ctx.parsed.y;
@@ -1537,7 +1552,7 @@ const ReportsPage = {
                         },
                         afterBody: (items) => {
                             if (!items.length) return '';
-                            return '─────────────';
+                            return '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500';
                         }
                     }
                 }
@@ -1549,7 +1564,8 @@ const ReportsPage = {
                     border: { display: false }
                 },
                 y: {
-                    beginAtZero: true,
+                    min: yMin,
+                    suggestedMax: yMax,
                     grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
                     ticks: { font: { size: 10 }, stepSize, color: '#94a3b8', padding: 6 },
                     border: { display: false }
@@ -1588,19 +1604,17 @@ const ReportsPage = {
         this._destroyChart('chart16h');
         const ctx16 = document.getElementById('chart16h');
         if (ctx16 && r16.length > 0) {
+            const ds16 = [
+                this._ds('Tổng BN',   r16.map(r => r.totalPatients || 0),                              C.blue,   { fill: true, thick: true, order: 0 }),
+                this._ds('Nhập viện',  r16.map(r => r.admissions || 0),                                 C.green),
+                this._ds('Xuất viện',  r16.map(r => r.discharges || 0),                                 C.amber,  { dash: [8, 4] }),
+                this._ds('Ca mổ',      r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)),     C.purple, { dash: [4, 4] }),
+                this._ds('BN nặng',    r16.map(r => r.severePatients || 0),                             C.red,    { dash: [2, 3] })
+            ];
             this._chartInstances['chart16h'] = new Chart(ctx16, {
                 type: 'line',
-                data: {
-                    labels: lbl16,
-                    datasets: [
-                        this._ds('Tổng BN',   r16.map(r => r.totalPatients || 0),                              C.blue,   { fill: true, thick: true, order: 0 }),
-                        this._ds('Nhập viện',  r16.map(r => r.admissions || 0),                                 C.green),
-                        this._ds('Xuất viện',  r16.map(r => r.discharges || 0),                                 C.amber,  { dash: [8, 4] }),
-                        this._ds('Ca mổ',      r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)),     C.purple, { dash: [4, 4] }),
-                        this._ds('BN nặng',    r16.map(r => r.severePatients || 0),                             C.red,    { dash: [2, 3] })
-                    ]
-                },
-                options: this._chartOpts(5)
+                data: { labels: lbl16, datasets: ds16 },
+                options: this._chartOpts(ds16)
             });
         }
 
@@ -1610,19 +1624,17 @@ const ReportsPage = {
         this._destroyChart('chart7h');
         const ctx7 = document.getElementById('chart7h');
         if (ctx7 && r7.length > 0) {
+            const ds7 = [
+                this._ds('Tổng BN',  r7.map(r => r.totalPatients || 0), C.blue,   { fill: true, thick: true, order: 0 }),
+                this._ds('Từ HSCC',  r7.map(r => r.fromHSCC || 0),      C.red,    { dash: [2, 3] }),
+                this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0),   C.green),
+                this._ds('Từ ICU',   r7.map(r => r.fromICU || 0),        C.amber,  { dash: [8, 4] }),
+                this._ds('Giải áp',  r7.map(r => r.fromGiaiAp || 0),     C.purple, { dash: [4, 4] })
+            ];
             this._chartInstances['chart7h'] = new Chart(ctx7, {
                 type: 'line',
-                data: {
-                    labels: lbl7,
-                    datasets: [
-                        this._ds('Tổng BN',  r7.map(r => r.totalPatients || 0), C.blue,   { fill: true, thick: true, order: 0 }),
-                        this._ds('Từ HSCC',  r7.map(r => r.fromHSCC || 0),      C.red,    { dash: [2, 3] }),
-                        this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0),   C.green),
-                        this._ds('Từ ICU',   r7.map(r => r.fromICU || 0),        C.amber,  { dash: [8, 4] }),
-                        this._ds('Giải áp',  r7.map(r => r.fromGiaiAp || 0),     C.purple, { dash: [4, 4] })
-                    ]
-                },
-                options: this._chartOpts(1)
+                data: { labels: lbl7, datasets: ds7 },
+                options: this._chartOpts(ds7)
             });
         }
     }
