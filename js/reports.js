@@ -2,6 +2,7 @@
 const ReportsPage = {
     activeTab: 'report16h',
     selectedDate: new Date().toISOString().split('T')[0],
+    chartRange: 'week', // week | month | all
 
     render() {
         return `
@@ -20,9 +21,12 @@ const ReportsPage = {
             <button class="staff-subtab ${this.activeTab === 'report7h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report7h')">
                 👩‍⚕️ Báo cáo 7h <span class="staff-subtab-count">ĐD trực BV</span>
             </button>
+            <button class="staff-subtab ${this.activeTab === 'stats' ? 'active' : ''}" onclick="ReportsPage.switchTab('stats')">
+                📊 Thống kê <span class="staff-subtab-count">Biểu đồ</span>
+            </button>
         </div>
 
-        ${this.activeTab === 'report16h' ? this.renderReport16h() : this.renderReport7h()}
+        ${this.activeTab === 'report16h' ? this.renderReport16h() : this.activeTab === 'report7h' ? this.renderReport7h() : this.renderStats()}
         `;
     },
 
@@ -1317,5 +1321,248 @@ const ReportsPage = {
         </div>`;
 
         Modal.open('📖 Hướng dẫn sử dụng Module Báo cáo', guideHTML);
+    },
+
+    // ========== STATS TAB — Line Charts ==========
+    _chartInstances: {},
+
+    renderStats() {
+        const r = this.chartRange;
+        setTimeout(() => this._initCharts(), 100);
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+            <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0">📊 Thống kê báo cáo theo thời gian</h3>
+            <div style="display:flex;gap:6px">
+                <button class="btn btn-sm ${r==='week'?'btn-primary':'btn-secondary'}" onclick="ReportsPage.setChartRange('week')">Tuần</button>
+                <button class="btn btn-sm ${r==='month'?'btn-primary':'btn-secondary'}" onclick="ReportsPage.setChartRange('month')">Tháng</button>
+                <button class="btn btn-sm ${r==='all'?'btn-primary':'btn-secondary'}" onclick="ReportsPage.setChartRange('all')">Tất cả</button>
+            </div>
+        </div>
+
+        <div class="card" style="padding:16px;margin-bottom:16px">
+            <h4 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin:0 0 12px">🩺 Báo cáo 16h — BS trực khoa</h4>
+            <div style="position:relative;height:280px"><canvas id="chart16h"></canvas></div>
+        </div>
+
+        <div class="card" style="padding:16px">
+            <h4 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin:0 0 12px">👩‍⚕️ Báo cáo 7h — ĐD trực BV</h4>
+            <div style="position:relative;height:280px"><canvas id="chart7h"></canvas></div>
+        </div>
+        `;
+    },
+
+    setChartRange(range) {
+        this.chartRange = range;
+        App.renderCurrentPage();
+    },
+
+    _getDateRange() {
+        const now = new Date();
+        if (this.chartRange === 'week') {
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            return { start, end: now };
+        }
+        if (this.chartRange === 'month') {
+            const start = new Date(now);
+            start.setDate(start.getDate() - 29);
+            return { start, end: now };
+        }
+        return { start: null, end: null }; // all
+    },
+
+    _filterByRange(reports) {
+        const { start, end } = this._getDateRange();
+        let filtered = reports.filter(r => r.date).sort((a, b) => a.date.localeCompare(b.date));
+        if (start) {
+            const startStr = start.toISOString().split('T')[0];
+            const endStr = end.toISOString().split('T')[0];
+            filtered = filtered.filter(r => r.date >= startStr && r.date <= endStr);
+        }
+        return filtered;
+    },
+
+    _fmtDateLabel(dateStr) {
+        const d = new Date(dateStr);
+        const days = ['CN','T2','T3','T4','T5','T6','T7'];
+        return `${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    },
+
+    _destroyChart(id) {
+        if (this._chartInstances[id]) {
+            this._chartInstances[id].destroy();
+            delete this._chartInstances[id];
+        }
+    },
+
+    _initCharts() {
+        if (typeof Chart === 'undefined') return;
+
+        // ── Report 16h chart ──
+        const r16 = this._filterByRange(Store.getAll('reports16h') || []);
+        const labels16 = r16.map(r => this._fmtDateLabel(r.date));
+
+        this._destroyChart('chart16h');
+        const ctx16 = document.getElementById('chart16h');
+        if (ctx16) {
+            this._chartInstances['chart16h'] = new Chart(ctx16, {
+                type: 'line',
+                data: {
+                    labels: labels16,
+                    datasets: [
+                        {
+                            label: 'Tổng BN',
+                            data: r16.map(r => r.totalPatients || 0),
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2,132,199,0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#0284c7'
+                        },
+                        {
+                            label: 'Nhập viện',
+                            data: r16.map(r => r.admissions || 0),
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5,150,105,0.08)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#059669'
+                        },
+                        {
+                            label: 'Xuất viện',
+                            data: r16.map(r => r.discharges || 0),
+                            borderColor: '#d97706',
+                            backgroundColor: 'rgba(217,119,6,0.08)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#d97706'
+                        },
+                        {
+                            label: 'Ca mổ',
+                            data: r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)),
+                            borderColor: '#7c3aed',
+                            backgroundColor: 'rgba(124,58,237,0.08)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#7c3aed'
+                        },
+                        {
+                            label: 'BN nặng',
+                            data: r16.map(r => r.severePatients || 0),
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220,38,38,0.08)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#dc2626',
+                            borderDash: [5, 3]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+                        tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 }, stepSize: 5 } }
+                    }
+                }
+            });
+        }
+
+        // ── Report 7h chart ──
+        const r7 = this._filterByRange(Store.getAll('reports7h') || []);
+        const labels7 = r7.map(r => this._fmtDateLabel(r.date));
+
+        this._destroyChart('chart7h');
+        const ctx7 = document.getElementById('chart7h');
+        if (ctx7) {
+            this._chartInstances['chart7h'] = new Chart(ctx7, {
+                type: 'line',
+                data: {
+                    labels: labels7,
+                    datasets: [
+                        {
+                            label: 'Tổng BN',
+                            data: r7.map(r => r.totalPatients || 0),
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2,132,199,0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#0284c7'
+                        },
+                        {
+                            label: 'Từ HSCC',
+                            data: r7.map(r => r.fromHSCC || 0),
+                            borderColor: '#dc2626',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#dc2626'
+                        },
+                        {
+                            label: 'Hồi tỉnh',
+                            data: r7.map(r => r.fromHoiTinh || 0),
+                            borderColor: '#059669',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#059669'
+                        },
+                        {
+                            label: 'Từ ICU',
+                            data: r7.map(r => r.fromICU || 0),
+                            borderColor: '#d97706',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#d97706'
+                        },
+                        {
+                            label: 'Giải áp',
+                            data: r7.map(r => r.fromGiaiAp || 0),
+                            borderColor: '#7c3aed',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#7c3aed'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+                        tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleFont: { size: 12 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 11 }, stepSize: 1 } }
+                    }
+                }
+            });
+        }
     }
 };
