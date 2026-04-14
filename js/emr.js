@@ -1,155 +1,86 @@
 // ===== EMR PATIENT DATA FETCHER =====
-// Scrapes real-time patient data from BV Bình Dân EMR system
-// URL: https://emr.com.vn:83/DienBienLamSang/Index1
-// Auto-refreshes every 5 minutes
+// Receives pre-parsed JSON from server (server handles HTML scraping + caching)
+// Auto-refreshes every 2 minutes
+// Falls back to localStorage cache for instant display
 
 const EMR = {
-    url: 'https://emr.com.vn:83/DienBienLamSang/Index1',
-    refreshInterval: 5 * 60 * 1000, // 5 minutes
+    refreshInterval: 2 * 60 * 1000, // 2 minutes (matches server cache TTL)
     _timer: null,
     _lastData: null,
     _lastFetch: null,
-    _status: 'idle', // idle | loading | success | error
+    _status: 'idle', // idle | loading | success | error | auth-required
 
-    // Parse HTML and extract patient data from EMR table
-    parseHTML(html) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const rows = doc.querySelectorAll('table tbody tr');
-
-        const patients = [];
-        rows.forEach(tr => {
-            const cells = tr.querySelectorAll('td');
-            if (cells.length < 4) return;
-
-            const stt = cells[0]?.innerText?.trim();
-            const maHoTen = cells[1]?.innerHTML || '';
-            const ngayVao = cells[2]?.innerText?.trim();
-            const phong = cells[3]?.innerText?.trim();
-
-            // Parse mã nhập viện and họ tên from "26014824<br>Lê Mạnh Tuấn"
-            const parts = maHoTen.split(/<br\s*\/?>/i);
-            const maNhapVien = parts[0]?.replace(/<[^>]*>/g, '').trim() || '';
-            const hoTen = parts[1]?.replace(/<[^>]*>/g, '').trim() || '';
-
-            patients.push({
-                stt: parseInt(stt) || 0,
-                maNhapVien,
-                hoTen,
-                ngayVao,
-                phong
-            });
-        });
-
-        return patients;
-    },
-
-    // Filter: exclude patients in "CC" rooms
-    getDepartmentPatients(allPatients) {
-        return allPatients.filter(p =>
-            !p.phong.toUpperCase().includes('CC') &&
-            !p.phong.toUpperCase().startsWith('CC')
-        );
-    },
-
-    getCCPatients(allPatients) {
-        return allPatients.filter(p =>
-            p.phong.toUpperCase().includes('CC') ||
-            p.phong.toUpperCase().startsWith('CC')
-        );
-    },
-
-    // Group patients by room
-    getByRoom(patients) {
-        const rooms = {};
-        patients.forEach(p => {
-            if (!rooms[p.phong]) rooms[p.phong] = [];
-            rooms[p.phong].push(p);
-        });
-        return rooms;
-    },
-
-    // Fetch data from EMR (try proxy first, then direct)
+    // Fetch pre-parsed JSON from server proxy (no more client-side HTML parsing)
     async fetchData() {
         this._status = 'loading';
         try {
-            let html = '';
+            const proxyRes = await fetch('/api/emr');
 
-            // Try proxy endpoint first (when served via node server.js)
-            const isHTTP = window.location.protocol.startsWith('http');
-            const proxyUrl = isHTTP ? '/api/emr' : null;
-
-            if (proxyUrl) {
-                try {
-                    const proxyRes = await fetch(proxyUrl);
-                    if (proxyRes.status === 401) {
-                        const info = await proxyRes.json().catch(() => ({}));
-                        this._status = 'auth-required';
-                        this._loginUrl = info.loginUrl || '/emr-login';
-                        console.warn('[EMR] Session expired. Login at:', this._loginUrl);
-                        window.dispatchEvent(new CustomEvent('emr-data-error', { detail: 'auth-required' }));
-                        return null;
-                    }
-                    if (proxyRes.ok) {
-                        html = await proxyRes.text();
-                    }
-                } catch (e) {
-                    // Proxy not available, try direct
-                }
+            if (proxyRes.status === 401) {
+                const info = await proxyRes.json().catch(() => ({}));
+                this._status = 'auth-required';
+                this._loginUrl = info.loginUrl || '/emr-login';
+                console.warn('[EMR] Session expired. Login at:', this._loginUrl);
+                window.dispatchEvent(new CustomEvent('emr-data-error', { detail: 'auth-required' }));
+                return null;
             }
 
-            // Fallback: try direct fetch (works if CORS is allowed)
-            if (!html) {
-                const response = await fetch(this.url, {
-                    credentials: 'include',
-                    mode: 'cors',
-                    headers: { 'Accept': 'text/html' }
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                html = await response.text();
+            if (!proxyRes.ok) {
+                const err = await proxyRes.json().catch(() => ({ error: 'Unknown' }));
+                throw new Error(err.error || `HTTP ${proxyRes.status}`);
             }
 
-            if (!html || html.length < 100) throw new Error('Empty response');
-            const allPatients = this.parseHTML(html);
+            const data = await proxyRes.json();
+            if (!data || !data.totalAll && data.totalAll !== 0) throw new Error('Invalid response');
 
-            this._lastData = {
-                all: allPatients,
-                department: this.getDepartmentPatients(allPatients),
-                cc: this.getCCPatients(allPatients),
-                byRoom: this.getByRoom(this.getDepartmentPatients(allPatients)),
-                totalAll: allPatients.length,
-                totalDept: this.getDepartmentPatients(allPatients).length,
-                totalCC: this.getCCPatients(allPatients).length,
-                fetchTime: new Date()
-            };
-
+            this._lastData = data;
             this._lastFetch = new Date();
             this._status = 'success';
-            console.log(`[EMR] Fetched ${allPatients.length} patients (${this._lastData.totalDept} dept, ${this._lastData.totalCC} CC)`);
 
-            // Dispatch event for UI updates
+            // Persist to localStorage for instant display on next load
+            try {
+                localStorage.setItem('emr_cache', JSON.stringify(data));
+                localStorage.setItem('emr_cache_time', this._lastFetch.toISOString());
+            } catch (e) { /* quota exceeded — ignore */ }
+
+            console.log(`[EMR] Got ${data.totalAll} patients (${data.totalDept} dept, ${data.totalCC} CC)`);
             window.dispatchEvent(new CustomEvent('emr-data-updated', { detail: this._lastData }));
             return this._lastData;
         } catch (err) {
             this._status = 'error';
             console.warn('[EMR] Fetch failed:', err.message);
-
-            // If CORS error, try no-cors (won't get body but signals issue)
-            if (err.message.includes('CORS') || err.message.includes('NetworkError') || err.name === 'TypeError') {
-                console.info('[EMR] CORS blocked. The app needs to be served via HTTP or use a CORS proxy.');
-            }
-
             window.dispatchEvent(new CustomEvent('emr-data-error', { detail: err.message }));
             return null;
         }
     },
 
+    // Load cached data from localStorage instantly (before network fetch)
+    _loadLocalCache() {
+        try {
+            const cached = localStorage.getItem('emr_cache');
+            const cachedTime = localStorage.getItem('emr_cache_time');
+            if (cached && cachedTime) {
+                this._lastData = JSON.parse(cached);
+                this._lastFetch = new Date(cachedTime);
+                this._status = 'success';
+                console.log(`[EMR] Loaded localStorage cache (${this._lastData.totalDept} dept, from ${this.getTimeSinceUpdate()})`);
+                window.dispatchEvent(new CustomEvent('emr-data-updated', { detail: this._lastData }));
+                return true;
+            }
+        } catch (e) { /* corrupt cache — ignore */ }
+        return false;
+    },
+
     // Start auto-refresh
     startAutoRefresh() {
         this.stopAutoRefresh();
-        this.fetchData(); // immediate first fetch
+        // 1. Show cached data instantly
+        this._loadLocalCache();
+        // 2. Fetch fresh data from server
+        this.fetchData();
+        // 3. Auto-refresh every 2 min
         this._timer = setInterval(() => this.fetchData(), this.refreshInterval);
-        console.log('[EMR] Auto-refresh started (every 5 min)');
+        console.log('[EMR] Auto-refresh started (every 2 min)');
     },
 
     stopAutoRefresh() {

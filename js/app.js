@@ -24,8 +24,8 @@ const App = {
 
         if (Auth.isLoggedIn()) {
             this.showApp();
-            // Start EMR real-time patient data fetch (every 5 min)
-            setTimeout(() => EMR.startAutoRefresh(), 1000);
+            // Start EMR real-time patient data fetch (instant localStorage cache + server refresh)
+            EMR.startAutoRefresh();
         } else {
             this.showLogin();
         }

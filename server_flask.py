@@ -600,6 +600,12 @@ opener = urllib.request.build_opener(
 )
 _emr_logged_in = False
 
+# ── Cache ──
+_emr_cache = None          # parsed JSON data
+_emr_cache_time = None     # datetime of last successful fetch
+_emr_cache_lock = threading.Lock()
+EMR_CACHE_TTL = 120        # seconds (2 minutes)
+
 def emr_login():
     global _emr_logged_in
     now = datetime.now().strftime('%H:%M:%S')
@@ -642,7 +648,56 @@ def emr_login():
         _emr_logged_in = False
         return False
 
-def fetch_emr_data():
+def _parse_emr_html(html):
+    """Parse EMR HTML table → list of patient dicts (server-side)"""
+    patients = []
+    # Find all <tr> inside <tbody>
+    tbody_match = re.search(r'<tbody[^>]*>(.*?)</tbody>', html, re.DOTALL | re.IGNORECASE)
+    if not tbody_match:
+        return patients
+    tbody = tbody_match.group(1)
+    rows = re.findall(r'<tr[^>]*>(.*?)</tr>', tbody, re.DOTALL | re.IGNORECASE)
+    for row in rows:
+        cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL | re.IGNORECASE)
+        if len(cells) < 4:
+            continue
+        stt = re.sub(r'<[^>]*>', '', cells[0]).strip()
+        ma_ho_ten = cells[1]
+        ngay_vao = re.sub(r'<[^>]*>', '', cells[2]).strip()
+        phong = re.sub(r'<[^>]*>', '', cells[3]).strip()
+        # Parse "26014824<br>Lê Mạnh Tuấn"
+        parts = re.split(r'<br\s*/?>',  ma_ho_ten, flags=re.IGNORECASE)
+        ma_nhap_vien = re.sub(r'<[^>]*>', '', parts[0]).strip() if parts else ''
+        ho_ten = re.sub(r'<[^>]*>', '', parts[1]).strip() if len(parts) > 1 else ''
+        patients.append({
+            'stt': int(stt) if stt.isdigit() else 0,
+            'maNhapVien': ma_nhap_vien,
+            'hoTen': ho_ten,
+            'ngayVao': ngay_vao,
+            'phong': phong
+        })
+    return patients
+
+def _build_emr_json(patients):
+    """Build structured JSON from patient list"""
+    dept = [p for p in patients if 'CC' not in p['phong'].upper()]
+    cc = [p for p in patients if 'CC' in p['phong'].upper()]
+    by_room = {}
+    for p in dept:
+        by_room.setdefault(p['phong'], []).append(p)
+    return {
+        'all': patients,
+        'department': dept,
+        'cc': cc,
+        'byRoom': by_room,
+        'totalAll': len(patients),
+        'totalDept': len(dept),
+        'totalCC': len(cc),
+        'fetchTime': datetime.now().isoformat()
+    }
+
+def _fetch_emr_html():
+    """Raw fetch from EMR, with auto-login retry"""
     global _emr_logged_in
     try:
         req = urllib.request.Request(EMR_DATA_URL, headers={
@@ -671,16 +726,63 @@ def fetch_emr_data():
     except Exception as e:
         return None, str(e)
 
+def fetch_emr_data(force=False):
+    """Fetch + parse + cache. Returns (json_data, error)"""
+    global _emr_cache, _emr_cache_time
+    # Return cache if fresh
+    if not force and _emr_cache and _emr_cache_time:
+        age = (datetime.now() - _emr_cache_time).total_seconds()
+        if age < EMR_CACHE_TTL:
+            return _emr_cache, None
+    # Fetch fresh
+    html, error = _fetch_emr_html()
+    if error:
+        # Return stale cache if available
+        if _emr_cache:
+            now = datetime.now().strftime('%H:%M:%S')
+            print(f'[{now}] ⚠️ EMR fetch error ({error}), returning stale cache')
+            return _emr_cache, None
+        return None, error
+    patients = _parse_emr_html(html)
+    data = _build_emr_json(patients)
+    with _emr_cache_lock:
+        _emr_cache = data
+        _emr_cache_time = datetime.now()
+    now = datetime.now().strftime('%H:%M:%S')
+    print(f'[{now}] ✅ EMR cache updated: {data["totalDept"]} dept, {data["totalCC"]} CC')
+    return data, None
+
+def _emr_background_refresh():
+    """Background thread: refresh cache every 2 min, keep-alive every 20 min"""
+    import time
+    login_counter = 0
+    while True:
+        time.sleep(EMR_CACHE_TTL)  # 2 min
+        login_counter += 1
+        # Keep-alive: re-login every 20 min (10 cycles × 2 min)
+        if login_counter >= 10:
+            emr_login()
+            login_counter = 0
+        fetch_emr_data(force=True)
+
 @app.route('/api/emr')
 def emr_proxy():
-    html, error = fetch_emr_data()
+    data, error = fetch_emr_data()
     if error:
         return jsonify({'error': error}), 502
-    return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    return jsonify(data)
 
 @app.route('/api/emr-status')
 def emr_status():
-    return jsonify({'loggedIn': _emr_logged_in, 'user': EMR_USER})
+    cache_age = None
+    if _emr_cache_time:
+        cache_age = int((datetime.now() - _emr_cache_time).total_seconds())
+    return jsonify({
+        'loggedIn': _emr_logged_in,
+        'user': EMR_USER,
+        'cacheAge': cache_age,
+        'cached': _emr_cache is not None
+    })
 
 # ────────────────────────────── SHCM File API ──────────────────────────────
 SHCM_DIR = os.path.join(DATA_DIR, 'shcm-files')
@@ -791,6 +893,8 @@ if __name__ == '__main__':
     print(f'\n  🏥 PTDTT Manager Server (Flask)')
     print(f'  ================================')
     threading.Thread(target=emr_login, daemon=True).start()
+    # Start background EMR cache refresh (every 2 min) + session keep-alive (every 20 min)
+    threading.Thread(target=_emr_background_refresh, daemon=True).start()
     print(f'  🌐 http://0.0.0.0:{PORT}')
     print(f'  📡 EMR Proxy: /api/emr')
     print(f'  💾 Data API: /api/data')
