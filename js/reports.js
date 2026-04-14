@@ -1343,13 +1343,15 @@ const ReportsPage = {
         const r16 = this._filterByRange(Store.getAll('reports16h') || []);
         const r7 = this._filterByRange(Store.getAll('reports7h') || []);
 
-        const avg = (arr, key) => arr.length ? Math.round(arr.reduce((s, r) => s + (r[key] || 0), 0) / arr.length) : 0;
+        const avg = (arr, key) => arr.length ? (arr.reduce((s, r) => s + (r[key] || 0), 0) / arr.length) : 0;
         const sum = (arr, key) => arr.reduce((s, r) => s + (r[key] || 0), 0);
-        const avgBN = avg(r16, 'totalPatients');
-        const totalSurgery = r16.reduce((s, r) => s + (r.surgeryTotal || 0) + (r.surgery2Total || 0), 0);
+        const avgBN = r16.length ? Math.round(avg(r16, 'totalPatients')) : 0;
+        const avgSurgery = r16.length ? (r16.reduce((s, r) => s + (r.surgeryTotal || 0) + (r.surgery2Total || 0), 0) / r16.length) : 0;
+        const avgSurgeryStr = avgSurgery % 1 === 0 ? avgSurgery.toString() : avgSurgery.toFixed(1);
         const totalAdmit = sum(r16, 'admissions');
         const totalDischarge = sum(r16, 'discharges');
         const totalSevere = sum(r16, 'severePatients');
+        const n = r16.length;
 
         setTimeout(() => this._initCharts(), 150);
 
@@ -1367,13 +1369,12 @@ const ReportsPage = {
             </div>` : `<span style="font-size:0.78rem;color:var(--text-muted)">${label}</span>`}
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px">
-            ${this._statCard(r16.length, 'Báo cáo', this._CB.grey)}
-            ${this._statCard(avgBN, 'BN/ngày', this._CB.blue)}
-            ${this._statCard(totalSurgery, 'Ca mổ', this._CB.purple)}
-            ${this._statCard(totalAdmit, 'Nhập', this._CB.green)}
-            ${this._statCard(totalDischarge, 'Xuất', this._CB.amber)}
-            ${this._statCard(totalSevere, 'Nặng', this._CB.red)}
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">
+            ${this._statCard(avgBN, 'BN/ngày', 'Trung bình BN nội trú', this._CB.blue)}
+            ${this._statCard(avgSurgeryStr, 'Mổ/ngày', 'TB ca mổ (P1+P2)', this._CB.purple)}
+            ${this._statCard(totalAdmit, 'Nhập viện', `Tổng ${n} ngày`, this._CB.green)}
+            ${this._statCard(totalDischarge, 'Xuất viện', `Tổng ${n} ngày`, this._CB.amber)}
+            ${this._statCard(totalSevere, 'BN nặng', `Tổng ${n} ngày`, this._CB.red)}
         </div>
 
         <div class="card" style="padding:12px;margin-bottom:12px;border-radius:10px">
@@ -1396,10 +1397,11 @@ const ReportsPage = {
         `;
     },
 
-    _statCard(value, label, color) {
-        return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center">
-            <div style="font-size:1.2rem;font-weight:800;color:${color};line-height:1.1">${value}</div>
-            <div style="font-size:0.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">${label}</div>
+    _statCard(value, label, annotation, color) {
+        return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:6px 4px 8px;text-align:center">
+            <div style="font-size:0.58rem;color:var(--text-muted);font-weight:500;letter-spacing:0.02em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${annotation}</div>
+            <div style="font-size:1.25rem;font-weight:800;color:${color};line-height:1.1">${value}</div>
+            <div style="font-size:0.64rem;color:var(--text-secondary);font-weight:700;margin-top:1px">${label}</div>
         </div>`;
     },
 
