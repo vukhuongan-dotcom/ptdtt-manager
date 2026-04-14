@@ -1324,6 +1324,16 @@ const ReportsPage = {
     },
 
     // ========== STATS TAB — Interactive Charts ==========
+    // Color-blind safe palette (Wong 2011 + distinct line patterns)
+    // https://www.nature.com/articles/nmeth.1618
+    _CB: {
+        blue:   '#0072B2', // Tổng BN
+        green:  '#009E73', // Nhập viện / Hồi tỉnh
+        amber:  '#E69F00', // Xuất viện / Từ ICU
+        purple: '#CC79A7', // Ca mổ / Giải áp
+        red:    '#D55E00', // BN nặng / Từ HSCC
+        grey:   '#64748b'
+    },
     _chartInstances: {},
     _weekOffset: 0,
 
@@ -1333,72 +1343,63 @@ const ReportsPage = {
         const r16 = this._filterByRange(Store.getAll('reports16h') || []);
         const r7 = this._filterByRange(Store.getAll('reports7h') || []);
 
-        // Summary metrics for 16h
-        const avgBN = r16.length ? Math.round(r16.reduce((s, r) => s + (r.totalPatients || 0), 0) / r16.length) : 0;
+        const avg = (arr, key) => arr.length ? Math.round(arr.reduce((s, r) => s + (r[key] || 0), 0) / arr.length) : 0;
+        const sum = (arr, key) => arr.reduce((s, r) => s + (r[key] || 0), 0);
+        const avgBN = avg(r16, 'totalPatients');
         const totalSurgery = r16.reduce((s, r) => s + (r.surgeryTotal || 0) + (r.surgery2Total || 0), 0);
-        const totalAdmit = r16.reduce((s, r) => s + (r.admissions || 0), 0);
-        const totalDischarge = r16.reduce((s, r) => s + (r.discharges || 0), 0);
-        const totalSevere = r16.reduce((s, r) => s + (r.severePatients || 0), 0);
-        const reportCount = r16.length;
+        const totalAdmit = sum(r16, 'admissions');
+        const totalDischarge = sum(r16, 'discharges');
+        const totalSevere = sum(r16, 'severePatients');
 
         setTimeout(() => this._initCharts(), 150);
 
         return `
-        <!-- Time range controls -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;gap:6px">
-                <button class="btn btn-sm ${range==='week'?'btn-primary':'btn-secondary'}" style="font-size:0.78rem" onclick="ReportsPage.setChartRange('week')">Tuần</button>
-                <button class="btn btn-sm ${range==='month'?'btn-primary':'btn-secondary'}" style="font-size:0.78rem" onclick="ReportsPage.setChartRange('month')">Tháng</button>
-                <button class="btn btn-sm ${range==='all'?'btn-primary':'btn-secondary'}" style="font-size:0.78rem" onclick="ReportsPage.setChartRange('all')">Tất cả</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:4px">
+                ${['week','month','all'].map(r => `<button class="btn btn-sm ${range===r?'btn-primary':'btn-secondary'}" style="font-size:0.76rem;padding:5px 12px" onclick="ReportsPage.setChartRange('${r}')">${r==='week'?'Tuần':r==='month'?'Tháng':'Tất cả'}</button>`).join('')}
             </div>
             ${range !== 'all' ? `
-            <div style="display:flex;align-items:center;gap:8px">
-                <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:1rem" onclick="ReportsPage.shiftRange(-1)">◀</button>
-                <span style="font-size:0.82rem;font-weight:600;color:var(--text-primary);min-width:160px;text-align:center">${label}</span>
-                <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:1rem" onclick="ReportsPage.shiftRange(1)" ${this._weekOffset >= 0 ? 'disabled' : ''}>▶</button>
-                ${this._weekOffset < 0 ? `<button class="btn btn-sm btn-secondary" style="font-size:0.72rem;padding:4px 8px" onclick="ReportsPage._weekOffset=0;App.renderCurrentPage()">Hiện tại</button>` : ''}
-            </div>` : `<span style="font-size:0.82rem;color:var(--text-muted)">${label}</span>`}
+            <div style="display:flex;align-items:center;gap:6px">
+                <button class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:0.9rem;line-height:1" onclick="ReportsPage.shiftRange(-1)">‹</button>
+                <span style="font-size:0.8rem;font-weight:600;color:var(--text-primary);min-width:180px;text-align:center">${label}</span>
+                <button class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:0.9rem;line-height:1" onclick="ReportsPage.shiftRange(1)" ${this._weekOffset >= 0 ? 'disabled style="padding:3px 8px;font-size:0.9rem;line-height:1;opacity:0.3"' : ''}>›</button>
+                ${this._weekOffset < 0 ? `<button class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px" onclick="ReportsPage._weekOffset=0;App.renderCurrentPage()">↺</button>` : ''}
+            </div>` : `<span style="font-size:0.78rem;color:var(--text-muted)">${label}</span>`}
         </div>
 
-        <!-- Summary cards -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px">
-            ${this._statCard('📊', 'Báo cáo', reportCount, '#64748b', 'ngày')}
-            ${this._statCard('🏥', 'BN TB', avgBN, '#0284c7', '/ngày')}
-            ${this._statCard('🔪', 'Ca mổ', totalSurgery, '#7c3aed', 'tổng')}
-            ${this._statCard('📥', 'Nhập', totalAdmit, '#059669', 'tổng')}
-            ${this._statCard('📤', 'Xuất', totalDischarge, '#d97706', 'tổng')}
-            ${this._statCard('⚠️', 'Nặng', totalSevere, '#dc2626', 'tổng')}
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px">
+            ${this._statCard(r16.length, 'Báo cáo', this._CB.grey)}
+            ${this._statCard(avgBN, 'BN/ngày', this._CB.blue)}
+            ${this._statCard(totalSurgery, 'Ca mổ', this._CB.purple)}
+            ${this._statCard(totalAdmit, 'Nhập', this._CB.green)}
+            ${this._statCard(totalDischarge, 'Xuất', this._CB.amber)}
+            ${this._statCard(totalSevere, 'Nặng', this._CB.red)}
         </div>
 
-        <!-- Chart 16h -->
-        <div class="card" style="padding:14px 14px 10px;margin-bottom:14px;border-radius:12px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <h4 style="font-size:0.88rem;font-weight:700;color:var(--text-primary);margin:0">🩺 BS trực khoa (16h)</h4>
-                <span style="font-size:0.72rem;color:var(--text-muted)">${r16.length} báo cáo</span>
+        <div class="card" style="padding:12px;margin-bottom:12px;border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:0.82rem;font-weight:700;color:var(--text-primary)">BS trực khoa · 16h</span>
+                <span style="font-size:0.7rem;color:var(--text-muted)">${r16.length} ngày</span>
             </div>
-            <div style="position:relative;height:260px"><canvas id="chart16h"></canvas></div>
-            ${r16.length === 0 ? '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding:40px 0">Chưa có dữ liệu trong khoảng thời gian này</p>' : ''}
+            <div style="position:relative;height:240px"><canvas id="chart16h"></canvas></div>
+            ${r16.length === 0 ? '<p style="text-align:center;color:var(--text-muted);font-size:0.8rem;padding:50px 0">Không có dữ liệu</p>' : ''}
         </div>
 
-        <!-- Chart 7h -->
-        <div class="card" style="padding:14px 14px 10px;border-radius:12px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <h4 style="font-size:0.88rem;font-weight:700;color:var(--text-primary);margin:0">👩‍⚕️ ĐD trực BV (7h)</h4>
-                <span style="font-size:0.72rem;color:var(--text-muted)">${r7.length} báo cáo</span>
+        <div class="card" style="padding:12px;border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:0.82rem;font-weight:700;color:var(--text-primary)">ĐD trực BV · 7h</span>
+                <span style="font-size:0.7rem;color:var(--text-muted)">${r7.length} ngày</span>
             </div>
-            <div style="position:relative;height:260px"><canvas id="chart7h"></canvas></div>
-            ${r7.length === 0 ? '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding:40px 0">Chưa có dữ liệu trong khoảng thời gian này</p>' : ''}
+            <div style="position:relative;height:240px"><canvas id="chart7h"></canvas></div>
+            ${r7.length === 0 ? '<p style="text-align:center;color:var(--text-muted);font-size:0.8rem;padding:50px 0">Không có dữ liệu</p>' : ''}
         </div>
         `;
     },
 
-    _statCard(icon, label, value, color, unit) {
-        return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;transition:transform .15s;cursor:default" 
-            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" 
-            onmouseout="this.style.transform='';this.style.boxShadow=''">
-            <div style="font-size:1.1rem">${icon}</div>
-            <div style="font-size:1.3rem;font-weight:800;color:${color};line-height:1.2">${value}</div>
-            <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600">${label} <span style="opacity:0.7">${unit}</span></div>
+    _statCard(value, label, color) {
+        return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center">
+            <div style="font-size:1.2rem;font-weight:800;color:${color};line-height:1.1">${value}</div>
+            <div style="font-size:0.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">${label}</div>
         </div>`;
     },
 
@@ -1414,41 +1415,51 @@ const ReportsPage = {
         App.renderCurrentPage();
     },
 
+    // Week = Monday→Sunday (Google Calendar style)
+    _getMonday(d) {
+        const dt = new Date(d);
+        const day = dt.getDay();
+        const diff = day === 0 ? -6 : 1 - day; // Mon=1, Sun→go back 6
+        dt.setDate(dt.getDate() + diff);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    },
+
     _getDateRange() {
         const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
         const offset = this._weekOffset || 0;
+
         if (this.chartRange === 'week') {
-            const end = new Date(now);
-            end.setDate(end.getDate() + offset * 7);
-            const start = new Date(end);
-            start.setDate(start.getDate() - 6);
-            const pad = n => String(n).padStart(2, '0');
-            const label = `${pad(start.getDate())}/${pad(start.getMonth()+1)} — ${pad(end.getDate())}/${pad(end.getMonth()+1)}/${end.getFullYear()}`;
-            return { start, end, label };
+            // Monday of current week + offset
+            const mon = this._getMonday(now);
+            mon.setDate(mon.getDate() + offset * 7);
+            const sun = new Date(mon);
+            sun.setDate(sun.getDate() + 6);
+            sun.setHours(23, 59, 59);
+            const label = `T2 ${pad(mon.getDate())}/${pad(mon.getMonth()+1)} — CN ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}/${sun.getFullYear()}`;
+            return { start: mon, end: sun, label };
         }
         if (this.chartRange === 'month') {
-            const end = new Date(now);
-            end.setDate(end.getDate() + offset * 30);
-            const start = new Date(end);
-            start.setDate(start.getDate() - 29);
-            const months = ['Th01','Th02','Th03','Th04','Th05','Th06','Th07','Th08','Th09','Th10','Th11','Th12'];
-            const label = `${start.getDate()}/${months[start.getMonth()]} — ${end.getDate()}/${months[end.getMonth()]}/${end.getFullYear()}`;
+            // Calendar month
+            const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+            const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+            const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59);
+            const months = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+            const label = `${months[ref.getMonth()]}/${ref.getFullYear()}`;
             return { start, end, label };
         }
-        const all16 = (Store.getAll('reports16h') || []).filter(r => r.date);
-        const all7 = (Store.getAll('reports7h') || []).filter(r => r.date);
-        const allDates = [...all16, ...all7].map(r => r.date).sort();
-        const total = all16.length + all7.length;
-        return { start: null, end: null, label: `${total} báo cáo (toàn bộ)` };
+        const total = (Store.getAll('reports16h') || []).length + (Store.getAll('reports7h') || []).length;
+        return { start: null, end: null, label: `${total} báo cáo · Toàn bộ` };
     },
 
     _filterByRange(reports) {
         const { start, end } = this._getDateRange();
         let filtered = reports.filter(r => r.date).sort((a, b) => a.date.localeCompare(b.date));
         if (start) {
-            const startStr = start.toISOString().split('T')[0];
-            const endStr = end.toISOString().split('T')[0];
-            filtered = filtered.filter(r => r.date >= startStr && r.date <= endStr);
+            const s = start.toISOString().split('T')[0];
+            const e = end.toISOString().split('T')[0];
+            filtered = filtered.filter(r => r.date >= s && r.date <= e);
         }
         return filtered;
     },
@@ -1471,61 +1482,97 @@ const ReportsPage = {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            animation: { duration: 400, easing: 'easeOutQuart' },
+            animation: { duration: 350, easing: 'easeOutQuart' },
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: { padding: 14, usePointStyle: true, pointStyle: 'circle', font: { size: 11, weight: '500' } },
-                    onClick: function(e, legendItem, legend) {
-                        const idx = legendItem.datasetIndex;
-                        const chart = legend.chart;
-                        const meta = chart.getDatasetMeta(idx);
-                        meta.hidden = meta.hidden === null ? !chart.data.datasets[idx].hidden : null;
-                        chart.update();
+                    labels: {
+                        padding: 16, usePointStyle: true, pointStyle: 'line',
+                        font: { size: 11, weight: '500' },
+                        generateLabels: (chart) => {
+                            return chart.data.datasets.map((ds, i) => ({
+                                text: ds.label,
+                                fillStyle: ds.borderColor,
+                                strokeStyle: ds.borderColor,
+                                lineWidth: ds.borderWidth,
+                                lineDash: ds.borderDash || [],
+                                hidden: chart.getDatasetMeta(i).hidden,
+                                datasetIndex: i,
+                                pointStyle: 'line'
+                            }));
+                        }
+                    },
+                    onClick: (e, item, legend) => {
+                        const meta = legend.chart.getDatasetMeta(item.datasetIndex);
+                        meta.hidden = meta.hidden === null ? !legend.chart.data.datasets[item.datasetIndex].hidden : null;
+                        legend.chart.update();
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(15,23,42,0.92)',
+                    backgroundColor: '#0f172a',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#cbd5e1',
                     titleFont: { size: 12, weight: '700' },
                     bodyFont: { size: 11 },
                     padding: 12,
-                    cornerRadius: 10,
+                    cornerRadius: 8,
                     displayColors: true,
-                    boxPadding: 4,
+                    boxWidth: 14,
+                    boxHeight: 2,
+                    boxPadding: 6,
                     callbacks: {
-                        title: (items) => items[0]?.label || '',
-                        label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+                        title: (items) => {
+                            if (!items.length) return '';
+                            return '📅 ' + items[0].label;
+                        },
+                        label: (ctx) => {
+                            const val = ctx.parsed.y;
+                            const ds = ctx.chart.data.datasets[0];
+                            const total = ds.data[ctx.dataIndex];
+                            let suffix = '';
+                            if (ctx.datasetIndex > 0 && total > 0) {
+                                suffix = ` (${Math.round(val/total*100)}%)`;
+                            }
+                            return ` ${ctx.dataset.label}: ${val}${suffix}`;
+                        },
+                        afterBody: (items) => {
+                            if (!items.length) return '';
+                            return '─────────────';
+                        }
                     }
                 }
             },
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { font: { size: 10, weight: '500' }, maxRotation: 45, color: '#64748b' }
+                    ticks: { font: { size: 10, weight: '500' }, maxRotation: 0, color: '#64748b' },
+                    border: { display: false }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
-                    ticks: { font: { size: 10 }, stepSize, color: '#94a3b8' }
+                    grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+                    ticks: { font: { size: 10 }, stepSize, color: '#94a3b8', padding: 6 },
+                    border: { display: false }
                 }
             }
         };
     },
 
+    // Dataset builder with color-blind safe styling
     _ds(label, data, color, opts = {}) {
         return {
             label,
             data,
             borderColor: color,
-            backgroundColor: opts.fill ? color + '18' : 'transparent',
-            borderWidth: opts.thick ? 2.5 : 2,
-            tension: 0.35,
+            backgroundColor: opts.fill ? color + '15' : 'transparent',
+            borderWidth: opts.thick ? 3 : 2,
+            tension: 0.3,
             fill: !!opts.fill,
-            pointRadius: data.length > 15 ? 2 : 4,
+            pointRadius: data.length > 20 ? 0 : 3,
             pointHoverRadius: 6,
-            pointBackgroundColor: color,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 1.5,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: color,
+            pointBorderWidth: 2,
             borderDash: opts.dash || [],
             order: opts.order || 1
         };
@@ -1533,6 +1580,7 @@ const ReportsPage = {
 
     _initCharts() {
         if (typeof Chart === 'undefined') return;
+        const C = this._CB;
 
         // ── Report 16h ──
         const r16 = this._filterByRange(Store.getAll('reports16h') || []);
@@ -1545,11 +1593,11 @@ const ReportsPage = {
                 data: {
                     labels: lbl16,
                     datasets: [
-                        this._ds('Tổng BN', r16.map(r => r.totalPatients || 0), '#0284c7', { fill: true, thick: true, order: 0 }),
-                        this._ds('Nhập viện', r16.map(r => r.admissions || 0), '#059669'),
-                        this._ds('Xuất viện', r16.map(r => r.discharges || 0), '#d97706'),
-                        this._ds('Ca mổ', r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)), '#7c3aed'),
-                        this._ds('BN nặng', r16.map(r => r.severePatients || 0), '#dc2626', { dash: [5, 3] })
+                        this._ds('Tổng BN',   r16.map(r => r.totalPatients || 0),                              C.blue,   { fill: true, thick: true, order: 0 }),
+                        this._ds('Nhập viện',  r16.map(r => r.admissions || 0),                                 C.green),
+                        this._ds('Xuất viện',  r16.map(r => r.discharges || 0),                                 C.amber,  { dash: [8, 4] }),
+                        this._ds('Ca mổ',      r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)),     C.purple, { dash: [4, 4] }),
+                        this._ds('BN nặng',    r16.map(r => r.severePatients || 0),                             C.red,    { dash: [2, 3] })
                     ]
                 },
                 options: this._chartOpts(5)
@@ -1567,11 +1615,11 @@ const ReportsPage = {
                 data: {
                     labels: lbl7,
                     datasets: [
-                        this._ds('Tổng BN', r7.map(r => r.totalPatients || 0), '#0284c7', { fill: true, thick: true, order: 0 }),
-                        this._ds('Từ HSCC', r7.map(r => r.fromHSCC || 0), '#dc2626'),
-                        this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0), '#059669'),
-                        this._ds('Từ ICU', r7.map(r => r.fromICU || 0), '#d97706'),
-                        this._ds('Giải áp', r7.map(r => r.fromGiaiAp || 0), '#7c3aed')
+                        this._ds('Tổng BN',  r7.map(r => r.totalPatients || 0), C.blue,   { fill: true, thick: true, order: 0 }),
+                        this._ds('Từ HSCC',  r7.map(r => r.fromHSCC || 0),      C.red,    { dash: [2, 3] }),
+                        this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0),   C.green),
+                        this._ds('Từ ICU',   r7.map(r => r.fromICU || 0),        C.amber,  { dash: [8, 4] }),
+                        this._ds('Giải áp',  r7.map(r => r.fromGiaiAp || 0),     C.purple, { dash: [4, 4] })
                     ]
                 },
                 options: this._chartOpts(1)
