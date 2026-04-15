@@ -183,8 +183,9 @@ def static_files(path):
 
 # ────────────────────────────── Data API ──────────────────────────────
 @app.route('/api/data', methods=['GET'])
+@require_auth
 def get_data():
-    """Return the entire JSON database (sensitive fields stripped)"""
+    """Return the entire JSON database (sensitive fields stripped, auth required)"""
     data = load_data()
     # Strip sensitive auth-related fields from response
     safe_data = {k: v for k, v in data.items() if k not in ('customPasswords', 'customAdmins', 'disabledAccounts')}
@@ -206,6 +207,7 @@ def get_data_version():
     return jsonify({'version': _get_file_version()})
 
 @app.route('/api/download-image', methods=['POST'])
+@require_auth
 def download_image():
     """Receive base64 image data, return as file download with proper filename"""
     body = request.get_json(force=True)
@@ -228,8 +230,9 @@ def download_image():
     )
 
 @app.route('/api/data/<collection>', methods=['GET'])
+@require_auth
 def get_collection(collection):
-    """Return a single collection"""
+    """Return a single collection (auth required)"""
     data = load_data()
     return jsonify(data.get(collection, []))
 
@@ -779,8 +782,9 @@ def _emr_background_refresh():
             time.sleep(30)  # Wait 30s before retry on error
 
 @app.route('/api/emr')
+@require_auth
 def emr_proxy():
-    """Non-blocking: always return cached data. Never wait for EMR fetch."""
+    """Non-blocking: always return cached data. Auth required — patient data."""
     if _emr_cache:
         return jsonify(_emr_cache)
     # No cache yet — try a quick fetch but with short timeout
