@@ -78,7 +78,10 @@ const EMR = {
 
             // Path 1: Server proxy (returns pre-parsed JSON, cached)
             try {
-                const proxyRes = await fetch('/api/emr');
+                const emrHeaders = {};
+                const token = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+                if (token) emrHeaders['Authorization'] = 'Bearer ' + token;
+                const proxyRes = await fetch('/api/emr', { headers: emrHeaders });
                 if (proxyRes.status === 401) {
                     this._status = 'auth-required';
                     window.dispatchEvent(new CustomEvent('emr-data-error', { detail: 'auth-required' }));

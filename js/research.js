@@ -580,9 +580,12 @@ const ResearchPage = {
 
             // Download via server
             const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            const dlHeaders = { 'Content-Type': 'application/json' };
+            const dlToken = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+            if (dlToken) dlHeaders['Authorization'] = 'Bearer ' + dlToken;
             const resp = await fetch('/api/download-image', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: dlHeaders,
                 body: JSON.stringify({ image: dataUrl, filename: `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}.jpg` })
             });
             if (resp.ok) {

@@ -588,9 +588,12 @@ const SchedulePage = {
             // Helper: download image via server
             const downloadImage = async (canvasEl, fname) => {
                 const dataUrl = canvasEl.toDataURL('image/jpeg', 0.95);
+                const dlHeaders = { 'Content-Type': 'application/json' };
+                const dlToken = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+                if (dlToken) dlHeaders['Authorization'] = 'Bearer ' + dlToken;
                 const resp = await fetch('/api/download-image', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: dlHeaders,
                     body: JSON.stringify({ image: dataUrl, filename: fname })
                 });
                 if (resp.ok) {
