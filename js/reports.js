@@ -1,8 +1,14 @@
 // ===== REPORTS PAGE — Báo cáo hàng ngày =====
 const ReportsPage = {
     activeTab: 'report16h',
-    selectedDate: new Date().toISOString().split('T')[0],
+    selectedDate: (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    })(),
     chartRange: 'week', // week | month | all
+    _showArchive16h: false,
+    _showArchive7h: false,
+    _historyPreviewCount: 10,
 
     render() {
         return `
@@ -50,6 +56,7 @@ const ReportsPage = {
     renderReport16h() {
         const reports = Store.getAll('reports16h') || [];
         const todayReport = reports.find(r => r.date === this.selectedDate);
+        const latestReport = this._getLatestReport(reports);
         const isWeekend = this._isWeekend(this.selectedDate);
 
         return `
@@ -70,10 +77,16 @@ const ReportsPage = {
             </div>` : ''}
         </div>
 
-        ${isWeekend ? this.renderWeekendNotice() : (todayReport ? this.renderReport16hCard(todayReport) : this.renderNoReport())}
+        ${isWeekend ? this.renderWeekendNotice() : (todayReport ? this.renderReport16hCard(todayReport) : this.renderNoReport({
+            date: this.selectedDate,
+            latestReport,
+            emptyLabel: 'Chưa có báo cáo cho ngày',
+            emptyHint: 'Bấm "Tạo báo cáo" để bắt đầu',
+            icon: '📝'
+        }))}
 
         <div style="margin-top:20px">
-            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo gần đây</h3>
+            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo 16h (${reports.length})</h3>
             ${this.renderReportHistory(reports)}
         </div>
         `;
@@ -88,12 +101,17 @@ const ReportsPage = {
         </div>`;
     },
 
-    renderNoReport() {
+    renderNoReport({ date, latestReport, emptyLabel, emptyHint, icon }) {
         return `
         <div class="card" style="text-align:center;padding:40px">
-            <div style="font-size:2.5rem;margin-bottom:12px">📝</div>
-            <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:8px">Chưa có báo cáo cho ngày ${this.formatDateVN(this.selectedDate)}</p>
-            <p style="font-size:0.82rem;color:var(--text-muted)">Bấm "Tạo báo cáo" để bắt đầu</p>
+            <div style="font-size:2.5rem;margin-bottom:12px">${icon || '📝'}</div>
+            <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:8px">${emptyLabel} ${this.formatDateVN(date)}</p>
+            <p style="font-size:0.82rem;color:var(--text-muted)">${emptyHint}</p>
+            ${latestReport ? `<div style="margin-top:14px">
+                <button class="btn btn-secondary btn-sm" onclick="ReportsPage.viewDate('${latestReport.date}')">
+                    Xem báo cáo gần nhất: ${this.formatDateVN(latestReport.date)}
+                </button>
+            </div>` : ''}
         </div>`;
     },
 
@@ -174,11 +192,15 @@ const ReportsPage = {
         </div>`;
     },
 
-    _showArchive: false,
-
-    toggleArchive() {
-        this._showArchive = !this._showArchive;
+    toggleArchive(type) {
+        const key = type === 'report7h' ? '_showArchive7h' : '_showArchive16h';
+        this[key] = !this[key];
         App.renderCurrentPage();
+    },
+
+    _getLatestReport(reports) {
+        if (!reports.length) return null;
+        return [...reports].sort((a, b) => b.date.localeCompare(a.date))[0] || null;
     },
 
     _renderHistoryRows(items) {
@@ -193,34 +215,64 @@ const ReportsPage = {
         </tr>`).join('');
     },
 
-    renderReportHistory(reports) {
-        const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
-        const recent = sorted.slice(0, 5);
-        const archive = sorted.slice(5);
-        if (!recent.length) return '<p style="color:var(--text-muted);font-size:0.82rem">Chưa có lịch sử báo cáo</p>';
+    _renderHistoryRows7h(items) {
+        return items.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}', 'report7h')" style="cursor:pointer" class="${r.date === this.selectedDate ? 'report-row-active' : ''}">
+            <td><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
+            <td style="text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
+            <td style="text-align:center;color:#ef4444">${r.fromHSCC || '—'}</td>
+            <td style="text-align:center;color:#3b82f6">${r.fromHoiTinh || '—'}</td>
+            <td style="text-align:center;color:#7c3aed">${r.fromICU || '—'}</td>
+            <td style="text-align:center;color:#22c55e">${r.fromGiaiAp || '—'}</td>
+            <td style="font-size:0.82rem;color:var(--text-secondary)">${r.reporterName || '—'}</td>
+            <td><button class="btn-icon" onclick="event.stopPropagation();ReportsPage.viewDate('${r.date}', 'report7h')" title="Xem">👁</button></td>
+        </tr>`).join('');
+    },
 
+    _renderHistoryTable(tableHead, rows, style = '') {
+        return `<div class="card staff-table-card" style="${style}"><table>
+            ${tableHead}
+            <tbody>${rows}</tbody>
+        </table></div>`;
+    },
+
+    _renderHistoryWithArchive({ type, reports, previewCount, tableHead, rowRenderer, emptyMessage }) {
+        const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
+        const recent = sorted.slice(0, previewCount);
+        const archive = sorted.slice(previewCount);
+        const selectedInArchive = archive.some(r => r.date === this.selectedDate);
+        const is7h = type === 'report7h';
+        const archiveKey = is7h ? '_showArchive7h' : '_showArchive16h';
+        const showArchive = this[archiveKey] || selectedInArchive;
+
+        if (!recent.length) {
+            return `<p style="color:var(--text-muted);font-size:0.82rem">${emptyMessage}</p>`;
+        }
+
+        let html = this._renderHistoryTable(tableHead, rowRenderer(recent));
+        if (!archive.length) return html;
+
+        html += `<div style="margin-top:10px">
+            <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.toggleArchive('${type}')">
+                ${showArchive ? '📁 Ẩn lưu trữ' : `📂 Xem lưu trữ (${archive.length} báo cáo cũ)`}
+            </button>
+            ${showArchive ? this._renderHistoryTable(tableHead, rowRenderer(archive), 'margin-top:8px;opacity:0.88') : ''}
+        </div>`;
+
+        return html;
+    },
+
+    renderReportHistory(reports) {
         const tableHead = `<thead><tr>
             <th>Ngày</th><th>Tổng BN</th><th>Nhập</th><th>Xuất</th><th>Ca mổ</th><th>BS báo cáo</th><th style="width:60px"></th>
         </tr></thead>`;
-
-        let html = `<div class="card staff-table-card"><table>
-            ${tableHead}
-            <tbody>${this._renderHistoryRows(recent)}</tbody>
-        </table></div>`;
-
-        if (archive.length > 0) {
-            html += `<div style="margin-top:10px">
-                <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.toggleArchive()">
-                    ${this._showArchive ? '📁 Ẩn lưu trữ' : `📂 Xem lưu trữ (${archive.length} báo cáo cũ)`}
-                </button>
-                ${this._showArchive ? `<div class="card staff-table-card" style="margin-top:8px;opacity:0.85"><table>
-                    ${tableHead}
-                    <tbody>${this._renderHistoryRows(archive)}</tbody>
-                </table></div>` : ''}
-            </div>`;
-        }
-
-        return html;
+        return this._renderHistoryWithArchive({
+            type: 'report16h',
+            reports,
+            previewCount: this._historyPreviewCount,
+            tableHead,
+            rowRenderer: items => this._renderHistoryRows(items),
+            emptyMessage: 'Chưa có lịch sử báo cáo'
+        });
     },
 
     // ========== FORM 16h ==========
@@ -657,6 +709,7 @@ const ReportsPage = {
     renderReport7h() {
         const reports = Store.getAll('reports7h') || [];
         const todayReport = reports.find(r => r.date === this.selectedDate);
+        const latestReport = this._getLatestReport(reports);
 
         return `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -676,15 +729,16 @@ const ReportsPage = {
             </div>
         </div>
 
-        ${todayReport ? this.renderReport7hCard(todayReport) : `
-        <div class="card" style="text-align:center;padding:40px">
-            <div style="font-size:2.5rem;margin-bottom:12px">📋</div>
-            <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:8px">Chưa có báo cáo 7h cho ngày ${this.formatDateVN(this.selectedDate)}</p>
-            <p style="font-size:0.82rem;color:var(--text-muted)">Bấm "Tạo báo cáo 7h" để bắt đầu</p>
-        </div>`}
+        ${todayReport ? this.renderReport7hCard(todayReport) : this.renderNoReport({
+            date: this.selectedDate,
+            latestReport,
+            emptyLabel: 'Chưa có báo cáo 7h cho ngày',
+            emptyHint: 'Bấm "Tạo báo cáo 7h" để bắt đầu',
+            icon: '📋'
+        })}
 
         <div style="margin-top:20px">
-            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo 7h gần đây</h3>
+            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo 7h (${reports.length})</h3>
             ${this.renderReport7hHistory(reports)}
         </div>
         `;
@@ -767,36 +821,17 @@ const ReportsPage = {
     },
 
     renderReport7hHistory(reports) {
-        const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
-        const recent = sorted.slice(0, 5);
-        if (recent.length === 0) return '<p style="font-size:0.85rem;color:var(--text-muted)">Chưa có báo cáo nào</p>';
-
-        return `<div class="card" style="padding:0;overflow:hidden">
-            <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
-                <thead><tr style="background:var(--bg-hover)">
-                    <th style="padding:10px;text-align:left;font-weight:600;color:var(--text-secondary)">NGÀY</th>
-                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">TỔNG BN</th>
-                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">HSCC</th>
-                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">HỒI TỈNH</th>
-                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">ICU</th>
-                    <th style="padding:10px;text-align:center;font-weight:600;color:var(--text-secondary)">GIẢI ÁP</th>
-                    <th style="padding:10px;text-align:left;font-weight:600;color:var(--text-secondary)">ĐD BÁO CÁO</th>
-                    <th style="padding:10px"></th>
-                </tr></thead>
-                <tbody>
-                ${recent.map(r => `<tr style="border-top:1px solid var(--border);cursor:pointer" onclick="ReportsPage.viewDate('${r.date}');ReportsPage.switchTab('report7h')">
-                    <td style="padding:10px"><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
-                    <td style="padding:10px;text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
-                    <td style="padding:10px;text-align:center;color:#ef4444">${r.fromHSCC || '—'}</td>
-                    <td style="padding:10px;text-align:center;color:#3b82f6">${r.fromHoiTinh || '—'}</td>
-                    <td style="padding:10px;text-align:center;color:#7c3aed">${r.fromICU || '—'}</td>
-                    <td style="padding:10px;text-align:center;color:#22c55e">${r.fromGiaiAp || '—'}</td>
-                    <td style="padding:10px">${r.reporterName || '—'}</td>
-                    <td style="padding:10px;text-align:center">👁️</td>
-                </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>`;
+        const tableHead = `<thead><tr>
+            <th>Ngày</th><th>Tổng BN</th><th>HSCC</th><th>Hồi tỉnh</th><th>ICU</th><th>Giải áp</th><th>ĐD báo cáo</th><th style="width:60px"></th>
+        </tr></thead>`;
+        return this._renderHistoryWithArchive({
+            type: 'report7h',
+            reports,
+            previewCount: this._historyPreviewCount,
+            tableHead,
+            rowRenderer: items => this._renderHistoryRows7h(items),
+            emptyMessage: 'Chưa có báo cáo nào'
+        });
     },
 
     openReport7hForm(editDate) {
@@ -1138,12 +1173,16 @@ const ReportsPage = {
 
     // ========== HELPERS ==========
     changeDate(date) { this.selectedDate = date; App.renderCurrentPage(); },
-    goToday() { this.selectedDate = new Date().toISOString().split('T')[0]; App.renderCurrentPage(); },
-    viewDate(date) {
+    goToday() { this.selectedDate = this._localDateStr(new Date()); App.renderCurrentPage(); },
+    viewDate(date, tab) {
+        if (tab) this.activeTab = tab;
         this.selectedDate = date;
         App.renderCurrentPage();
         setTimeout(() => {
-            const el = document.getElementById('report-export-area');
+            const targetId = tab === 'report7h' ? 'report7h-export-area' : 'report-export-area';
+            const el = document.getElementById(targetId)
+                || document.getElementById('report-export-area')
+                || document.getElementById('report7h-export-area');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     },
@@ -1152,11 +1191,14 @@ const ReportsPage = {
         const parts = dateStr.split('-');
         return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     },
+    _localDateStr(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    },
     // Get next day (or +N days) as YYYY-MM-DD string
     _getNextDay(dateStr, addDays) {
         const d = this._parseDate(dateStr);
         d.setDate(d.getDate() + (addDays || 1));
-        return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+        return this._localDateStr(d);
     },
     // Check if a date is Friday (day 5)
     _isFriday(dateStr) {
@@ -1459,15 +1501,15 @@ const ReportsPage = {
         const { start, end } = this._getDateRange();
         let filtered = reports.filter(r => r.date).sort((a, b) => a.date.localeCompare(b.date));
         if (start) {
-            const s = start.toISOString().split('T')[0];
-            const e = end.toISOString().split('T')[0];
+            const s = this._localDateStr(start);
+            const e = this._localDateStr(end);
             filtered = filtered.filter(r => r.date >= s && r.date <= e);
         }
         return filtered;
     },
 
     _fmtDateLabel(dateStr) {
-        const d = new Date(dateStr);
+        const d = this._parseDate(dateStr);
         const days = ['CN','T2','T3','T4','T5','T6','T7'];
         return `${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
     },

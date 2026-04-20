@@ -11,6 +11,7 @@ import uuid
 import ssl
 import threading
 import glob
+import shutil
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
 from http.cookiejar import CookieJar
@@ -32,6 +33,7 @@ AUTH_FILE = os.path.join(DATA_DIR, 'auth.json')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'ptdtt-jwt-secret-7937d0d7117344888dc10cc44b95ce77')
 JWT_EXPIRY_DAYS = 30
 PORT      = int(os.environ.get('PORT', 5000))
+MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2004201750'))
 
 # EMR
 EMR_BASE          = 'https://emr.com.vn:83'
@@ -62,6 +64,31 @@ def _ensure_data_dir():
     if not os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump({}, f)
+
+def snapshot_data_file(prefix='put'):
+    """Keep rolling point-in-time snapshots before full DB overwrite."""
+    if not os.path.exists(DATA_FILE):
+        return
+    snap_dir = os.path.join(DATA_DIR, 'snapshots')
+    os.makedirs(snap_dir, exist_ok=True)
+    stamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+    snap_path = os.path.join(snap_dir, f'{prefix}-{stamp}.json')
+    shutil.copy2(DATA_FILE, snap_path)
+
+    snapshots = sorted(glob.glob(os.path.join(snap_dir, f'{prefix}-*.json')))
+    while len(snapshots) > 100:
+        old = snapshots.pop(0)
+        try:
+            os.remove(old)
+        except OSError:
+            pass
+
+def _client_build():
+    raw = request.headers.get('X-Client-Build', '0') if request else '0'
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0
 
 def _get_file_version():
     """Get file modification time as version string (works across all workers)"""
@@ -197,7 +224,15 @@ def put_data():
     """Replace the entire JSON database (auth required)"""
     data = request.get_json(force=True)
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
+    client_build = _client_build()
+    if client_build < MIN_CLIENT_BUILD:
+        audit_log(user, 'data.put.rejected.stale_client', {'clientBuild': client_build, 'requiredBuild': MIN_CLIENT_BUILD})
+        return jsonify({
+            'error': 'Client too old. Please reload the page before saving.',
+            'requiredBuild': MIN_CLIENT_BUILD
+        }), 409
     audit_log(user, 'data.put', {'size': len(json.dumps(data))})
+    snapshot_data_file('data-put')
     save_data(data)
     return jsonify({'ok': True, 'version': _get_file_version()})
 
@@ -242,6 +277,13 @@ def put_collection(collection):
     """Replace a single collection (auth required)"""
     items = request.get_json(force=True)
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
+    client_build = _client_build()
+    if client_build < MIN_CLIENT_BUILD:
+        audit_log(user, f'collection.put.rejected.stale_client.{collection}', {'clientBuild': client_build, 'requiredBuild': MIN_CLIENT_BUILD})
+        return jsonify({
+            'error': 'Client too old. Please reload the page before saving.',
+            'requiredBuild': MIN_CLIENT_BUILD
+        }), 409
     audit_log(user, f'collection.put.{collection}', {'count': len(items) if isinstance(items, list) else 1})
     data = load_data()
     data[collection] = items
@@ -838,51 +880,13 @@ def shcm_list_files():
 @app.route('/api/shcm/upload', methods=['POST'])
 @require_auth
 def shcm_upload():
-    _ensure_shcm_dir()
     user = request._user
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-    f = request.files['file']
-    if not f.filename.lower().endswith('.pdf'):
-        return jsonify({'error': 'Only PDF files allowed'}), 400
-    # Max 50MB
-    f.seek(0, 2)
-    size = f.tell()
-    f.seek(0)
-    if size > 50 * 1024 * 1024:
-        return jsonify({'error': 'File too large (max 50MB)'}), 400
-    # Sanitize filename
-    from werkzeug.utils import secure_filename
-    filename = secure_filename(f.filename)
-    if not filename:
-        filename = f'shcm_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
-    # If not ending in .pdf after secure_filename
-    if not filename.lower().endswith('.pdf'):
-        filename += '.pdf'
-    filepath = os.path.join(SHCM_DIR, filename)
-    # If exists, add suffix
-    if os.path.exists(filepath):
-        base, ext = os.path.splitext(filename)
-        filename = f"{base}_{datetime.now().strftime('%H%M%S')}{ext}"
-        filepath = os.path.join(SHCM_DIR, filename)
-    f.save(filepath)
-    _write_log('shcm_upload', user.get('username', '?'), {'file': filename, 'size': size})
-
-    # Sync to Google Drive (async — don't block response)
-    import subprocess, threading
-    def _gdrive_upload():
-        try:
-            gdrive_path = "gdrive:KHOA PTDTT/03. ĐÀO TẠO - NGHIÊN CỨU/Sinh hoạt chuyên môn/BÀI ĐÃ TRÌNH"
-            subprocess.run(
-                ['rclone', 'copy', filepath, gdrive_path],
-                timeout=120, capture_output=True
-            )
-            app.logger.info(f'[SHCM] Uploaded {filename} to Google Drive')
-        except Exception as e:
-            app.logger.error(f'[SHCM] Google Drive upload failed: {e}')
-    threading.Thread(target=_gdrive_upload, daemon=True).start()
-
-    return jsonify({'success': True, 'name': filename, 'size': _format_size(size)})
+    _write_log('shcm_upload_blocked', user.get('username', '?'), {
+        'message': 'web upload disabled'
+    })
+    return jsonify({
+        'error': 'Upload PDF SHCM từ web đã bị vô hiệu hóa'
+    }), 410
 
 @app.route('/api/shcm/download/<path:filename>', methods=['GET'])
 def shcm_download(filename):
