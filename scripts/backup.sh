@@ -12,9 +12,8 @@ BACKUP_DIR="/var/backups/ptdtt"
 LOG="/var/log/ptdtt/backup.log"
 DATE=$(date '+%Y%m%d_%H%M')
 DAY_TAG=$(date '+%Y-%m-%d')
-NOW=$(date '+%Y-%m-%d %H:%M:%S')
 
-log() { echo "[$NOW] $1" | tee -a "$LOG"; }
+log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"; }
 
 mkdir -p "$BACKUP_DIR"
 
@@ -27,16 +26,29 @@ log "═════════════════════════
 # ════════════════════════════════════
 log "1/3 📁 Local backup..."
 
-# Backup data directory (db.json, auth.json, shcm-files)
+# Backup runtime data, but never re-pack backup artifacts.
 BACKUP_FILE="$BACKUP_DIR/ptdtt_full_${DATE}.tar.gz"
-tar -czf "$BACKUP_FILE" \
-    -C "$APP_DIR" \
-    data/ \
-    logs/ \
-    2>/dev/null || true
+BACKUP_TARGETS=()
+shopt -s nullglob
+for path in "$APP_DIR"/data/*; do
+    base="${path##*/}"
+    [ "$base" = "backups" ] && continue
+    BACKUP_TARGETS+=("data/$base")
+done
+shopt -u nullglob
 
-BACKUP_SIZE=$(du -h "$BACKUP_FILE" 2>/dev/null | cut -f1)
-log "  ✅ Local: $BACKUP_FILE ($BACKUP_SIZE)"
+if [ "${#BACKUP_TARGETS[@]}" -eq 0 ]; then
+    log "  ❌ Không tìm thấy dữ liệu để backup trong $APP_DIR/data"
+    exit 1
+fi
+
+if tar -czf "$BACKUP_FILE" -C "$APP_DIR" "${BACKUP_TARGETS[@]}" 2>/dev/null; then
+    BACKUP_SIZE=$(du -h "$BACKUP_FILE" 2>/dev/null | cut -f1)
+    log "  ✅ Local: $BACKUP_FILE ($BACKUP_SIZE)"
+else
+    log "  ❌ Tạo archive thất bại"
+    exit 1
+fi
 
 # Keep only 30 days of local backups
 find "$BACKUP_DIR" -name "ptdtt_full_*.tar.gz" -mtime +30 -delete 2>/dev/null
@@ -69,8 +81,15 @@ git worktree add "$BACKUP_WORKTREE" backup 2>/dev/null || {
     git worktree add "$BACKUP_WORKTREE" backup
 }
 
-# Copy data files to backup worktree
-cp -r "$APP_DIR/data/" "$BACKUP_WORKTREE/data/" 2>/dev/null || true
+# Copy runtime data to backup worktree, excluding generated backup artifacts.
+mkdir -p "$BACKUP_WORKTREE/data"
+shopt -s nullglob
+for path in "$APP_DIR"/data/*; do
+    base="${path##*/}"
+    [ "$base" = "backups" ] && continue
+    cp -R "$path" "$BACKUP_WORKTREE/data/" 2>/dev/null || true
+done
+shopt -u nullglob
 mkdir -p "$BACKUP_WORKTREE/logs-snapshot"
 # Only copy latest audit log (not all)
 cp "$APP_DIR/logs/audit_${DAY_TAG}.jsonl" "$BACKUP_WORKTREE/logs-snapshot/" 2>/dev/null || true
@@ -102,9 +121,9 @@ DRIVE_BACKUP_DIR="$APP_DIR/data/backups"
 mkdir -p "$DRIVE_BACKUP_DIR"
 
 # Copy today's backup to a web-servable location (will be pulled by Mac cron)
-cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/latest_backup.tar.gz" 2>/dev/null
+cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/latest_backup.tar.gz" 2>/dev/null || true
 # Also keep dated copy (max 7 in this dir to save disk)
-cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz" 2>/dev/null
+cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz" 2>/dev/null || true
 find "$DRIVE_BACKUP_DIR" -name "backup_*.tar.gz" -mtime +7 -delete 2>/dev/null
 
 log "  ✅ Backup sẵn sàng cho Google Drive pull"

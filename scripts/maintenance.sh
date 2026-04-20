@@ -6,9 +6,8 @@
 set -euo pipefail
 
 LOG="/var/log/ptdtt/maintenance.log"
-NOW=$(date '+%Y-%m-%d %H:%M:%S')
 
-log() { echo "[$NOW] $1" | tee -a "$LOG"; }
+log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"; }
 
 log "═══════════════════════════════════════"
 log "🔧 BẮT ĐẦU BẢO TRÌ ĐỊNH KỲ"
