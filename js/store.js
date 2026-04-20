@@ -1,7 +1,7 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
 const DATA_VERSION = 7; // Increment this when SAMPLE data changes
-const CLIENT_BUILD = 2004201750;
+const CLIENT_BUILD = 2004202110;
 
 const Store = {
     _data: null,
@@ -23,7 +23,7 @@ const Store = {
     },
 
     _localDateStr(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
     init() {
@@ -336,7 +336,7 @@ const Store = {
                 const versionResponse = await this._api('/api/data/version');
                 const versionData = await versionResponse.json();
                 if (versionData.version) this._serverVersion = versionData.version;
-            } catch (_) {}
+            } catch (_) { }
         } finally {
             this._syncingDirtyCollections = false;
             if (shouldRetry && this._serverAvailable) {
@@ -358,7 +358,7 @@ const Store = {
                     ? this._mergeServerIntoLocal(serverData)
                     : this._dirtyCollections.size
                         ? this._preserveDirtyCollections(serverData)
-                    : serverData;
+                        : serverData;
                 const oldJson = JSON.stringify(this._data);
                 const newJson = JSON.stringify(nextData);
                 if (oldJson !== newJson) {
@@ -387,7 +387,7 @@ const Store = {
         // Also update version tracking
         this._api('/api/data/version').then(r => r.json()).then(v => {
             if (v.version) this._serverVersion = v.version;
-        }).catch(() => {});
+        }).catch(() => { });
     },
 
     _startPolling() {
@@ -412,7 +412,7 @@ const Store = {
                 this._serverVersion = v.version;
                 this._syncFromServer(true);
             }
-        }).catch(() => {});
+        }).catch(() => { });
     },
 
     _stopPolling() {
@@ -514,8 +514,8 @@ const Store = {
     },
 
     getPlansByMonth(year, month) {
-        const monthStart = `${year}-${String(month+1).padStart(2,'0')}-01`;
-        const monthEnd = `${year}-${String(month+1).padStart(2,'0')}-${new Date(year, month+1, 0).getDate()}`;
+        const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`;
         return this._data.plans.filter(p => {
             const start = p.date;
             const end = p.endDate || p.date;
