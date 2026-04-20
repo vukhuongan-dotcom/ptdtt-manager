@@ -363,8 +363,14 @@ const StaffTrackingPage = {
         const note = f.get('note') || '';
         const fromDate = f.get('fromDate') || dateStr;
         const toDate = f.get('toDate') || dateStr;
+        const today = this._localDateStr(new Date());
 
-        let entries = this.getAllEntries();
+        if (!fromDate || !toDate || fromDate > toDate) {
+            Toast.warning('Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc');
+            return;
+        }
+
+        let entries = [...this.getAllEntries()];
 
         if (status === 'active') {
             // Remove entries for the range
@@ -392,10 +398,12 @@ const StaffTrackingPage = {
             }
         }
 
-        Store._data.staffStatuses = entries;
-        Store.save();
+        Store.replaceCollection('staffStatuses', entries);
+        Store.syncStaffLegacyStatus(staffId, today);
+        Store.saveCollections(['staffStatuses', 'staff']);
         Modal.close();
         App.renderCurrentPage();
+        Toast.success('Đã cập nhật tình trạng nhân viên');
     },
 
     afterRender() {}

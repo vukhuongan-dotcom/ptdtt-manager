@@ -57,7 +57,7 @@ const StaffPage = {
         const session = Auth.getSession();
         const isAdmin = session?.isAdmin;
         const myStaffId = session?.staffId;
-        const today = new Date().toISOString().split('T')[0];
+        const today = this._dateStr(new Date());
 
         const roleDefs = [
             { key: 'all', label: 'Tất cả' },
@@ -301,7 +301,7 @@ const StaffPage = {
         if (!Auth.getSession()?.isAdmin) return;
         const s = Store.getById('staff', id);
         if (!s) return;
-        const today = new Date().toISOString().split('T')[0];
+        const today = this._dateStr(new Date());
 
         // Get existing status entries for this staff
         const entries = (Store.getAll('staffStatuses') || []).filter(e => e.staffId === id && e.status !== 'active');
@@ -407,14 +407,14 @@ const StaffPage = {
         const f = new FormData(e.target);
         const statusType = f.get('statusType');
         const note = f.get('statusNote') || '';
+        const today = this._dateStr(new Date());
 
         if (statusType === 'active') {
             // Clear all per-day entries for this staff
-            let entries = Store.getAll('staffStatuses') || [];
+            let entries = [...(Store.getAll('staffStatuses') || [])];
             entries = entries.filter(e => e.staffId !== id);
-            Store._data.staffStatuses = entries;
-            // Also clear legacy staff object fields
-            Store.update('staff', id, { statusType: 'active', statusFrom: '', statusTo: '', statusNote: '' });
+            Store.replaceCollection('staffStatuses', entries);
+            Store.syncStaffLegacyStatus(id, today);
         } else {
             const fromDate = f.get('statusFrom');
             const toDate = f.get('statusTo');
@@ -424,7 +424,7 @@ const StaffPage = {
             }
 
             // Generate per-day entries
-            let entries = Store.getAll('staffStatuses') || [];
+            let entries = [...(Store.getAll('staffStatuses') || [])];
             const d = new Date(fromDate);
             const end = new Date(toDate);
             while (d <= end) {
@@ -438,13 +438,11 @@ const StaffPage = {
                 }
                 d.setDate(d.getDate() + 1);
             }
-            Store._data.staffStatuses = entries;
-
-            // Update staff object to reflect latest status (for badge display)
-            Store.update('staff', id, { statusType, statusFrom: fromDate, statusTo: toDate, statusNote: note });
+            Store.replaceCollection('staffStatuses', entries);
+            Store.syncStaffLegacyStatus(id, today);
         }
 
-        Store.save();
+        Store.saveCollections(['staffStatuses', 'staff']);
         Modal.close();
         App.renderCurrentPage();
         Toast.success('Đã cập nhật trạng thái');
@@ -452,10 +450,11 @@ const StaffPage = {
 
     // Delete a status range
     deleteStatusRange(staffId, fromDate, toDate) {
-        let entries = Store.getAll('staffStatuses') || [];
+        let entries = [...(Store.getAll('staffStatuses') || [])];
         entries = entries.filter(e => !(e.staffId === staffId && e.date >= fromDate && e.date <= toDate));
-        Store._data.staffStatuses = entries;
-        Store.save();
+        Store.replaceCollection('staffStatuses', entries);
+        Store.syncStaffLegacyStatus(staffId, this._dateStr(new Date()));
+        Store.saveCollections(['staffStatuses', 'staff']);
         // Refresh form
         this.openStatusForm(staffId);
         Toast.success('Đã xoá trạng thái');
@@ -551,7 +550,7 @@ const StaffPage = {
         });
         if (confirmed) {
             // Move to departedStaff
-            const departed = { ...s, departedDate: new Date().toISOString().split('T')[0] };
+            const departed = { ...s, departedDate: this._dateStr(new Date()) };
             if (!Store._data.departedStaff) Store._data.departedStaff = [];
             if (!Store._data.nextIds.departedStaff) Store._data.nextIds.departedStaff = 1;
             Store._data.departedStaff.push(departed);
