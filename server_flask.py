@@ -47,7 +47,7 @@ EMR_PASS = os.environ.get('EMR_PASS', '')
 
 # Allowlisted collections that admin can write via PUT /api/data/<collection>
 WRITE_COLLECTIONS = {
-    'staff', 'staffStatuses', 'schedules', 'tasks', 'plans', 'patients',
+    'staff', 'staffStatuses', 'schedules', 'tasks', 'tasksTrash', 'plans', 'patients',
     'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule',
     'notifications', 'rooms'
 }
@@ -281,11 +281,11 @@ def get_collection(collection):
     return jsonify(data.get(collection, []))
 
 @app.route('/api/data/<collection>', methods=['PUT'])
-@require_admin
+@require_auth
 def put_collection(collection):
+    """Replace a single collection (auth required, allowlist enforced)"""
     if collection not in WRITE_COLLECTIONS:
         return jsonify({'error': f'Collection "{collection}" is not writable via API'}), 403
-    """Replace a single collection (auth required)"""
     items = request.get_json(force=True)
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     client_build = _client_build()

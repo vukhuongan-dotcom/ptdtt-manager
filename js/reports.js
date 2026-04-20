@@ -3,7 +3,7 @@ const ReportsPage = {
     activeTab: 'report16h',
     selectedDate: (() => {
         const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     })(),
     chartRange: 'week', // week | month | all
     _showArchive16h: false,
@@ -186,7 +186,7 @@ const ReportsPage = {
             <!-- Footer -->
             <div style="padding:10px 22px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#475569">
                 <span>👤 BS trực khoa: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
-                <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '16:00'}</strong></span>
+                <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00'}</strong></span>
             </div>
         </div>
         </div>`;
@@ -310,7 +310,7 @@ const ReportsPage = {
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
             return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
-                class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name===defaultReporter?'#0f172a':'#cbd5e1'};background:${d.name===defaultReporter?'#0f172a':'#f1f5f9'};color:${d.name===defaultReporter?'#fff':'#334155'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
+                class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name === defaultReporter ? '#0f172a' : '#cbd5e1'};background:${d.name === defaultReporter ? '#0f172a' : '#f1f5f9'};color:${d.name === defaultReporter ? '#fff' : '#334155'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
         }).join('');
 
         const nextDay = this._getNextDay(date);
@@ -430,7 +430,7 @@ const ReportsPage = {
         } else {
             Store._data.reports16h.push(report);
         }
-        Store.save();
+        Store.saveCollections(['reports16h']);
 
         Modal.close();
         this.selectedDate = date;
@@ -637,8 +637,8 @@ const ReportsPage = {
         const fileName = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
 
         // Detect iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
         if (isIOS) {
             // iOS Safari doesn't support a.click() for blob downloads
@@ -814,7 +814,7 @@ const ReportsPage = {
             <!-- Footer -->
             <div style="padding:10px 22px;background:#f0f9ff;border-top:1px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#0369a1">
                 <span>👩‍⚕️ ĐD báo cáo: <strong style="color:#0c4a6e">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
-                <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'}) : '07:00'}</strong></span>
+                <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '07:00'}</strong></span>
             </div>
         </div>
         </div>`;
@@ -861,7 +861,7 @@ const ReportsPage = {
         // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
             return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='#f0f9ff';c.style.color='#0369a1';c.style.borderColor='#bae6fd'});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
-                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name===defaultReporter?'#0284c7':'#bae6fd'};background:${n.name===defaultReporter?'#0284c7':'#f0f9ff'};color:${n.name===defaultReporter?'#fff':'#0369a1'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
+                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? '#0284c7' : '#bae6fd'};background:${n.name === defaultReporter ? '#0284c7' : '#f0f9ff'};color:${n.name === defaultReporter ? '#fff' : '#0369a1'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
@@ -982,7 +982,7 @@ const ReportsPage = {
         } else {
             Store._data.reports7h.push(report);
         }
-        Store.save();
+        Store.saveCollections(['reports7h']);
 
         Modal.close();
         this.selectedDate = date;
@@ -1050,10 +1050,10 @@ const ReportsPage = {
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
         ctx.font = '600 8px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('TỔNG BN', 24 + boxW/2, curY + 18);
+        ctx.fillText('TỔNG BN', 24 + boxW / 2, curY + 18);
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px Inter, system-ui, sans-serif';
-        ctx.fillText(`${r.totalPatients || '—'}`, 24 + boxW/2, curY + 45);
+        ctx.fillText(`${r.totalPatients || '—'}`, 24 + boxW / 2, curY + 45);
 
         // Total received
         const totalReceived = (parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromICU) || 0) + (parseInt(r.fromGiaiAp) || 0);
@@ -1062,10 +1062,10 @@ const ReportsPage = {
         ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
         ctx.font = '600 8px Inter, system-ui, sans-serif';
-        ctx.fillText('NHẬN BN ĐÊM QUA', 24 + boxW + 10 + boxW/2, curY + 18);
+        ctx.fillText('NHẬN BN ĐÊM QUA', 24 + boxW + 10 + boxW / 2, curY + 18);
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px Inter, system-ui, sans-serif';
-        ctx.fillText(`${totalReceived}`, 24 + boxW + 10 + boxW/2, curY + 45);
+        ctx.fillText(`${totalReceived}`, 24 + boxW + 10 + boxW / 2, curY + 45);
 
         curY += 65;
         ctx.textAlign = 'left';
@@ -1192,7 +1192,7 @@ const ReportsPage = {
         return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     },
     _localDateStr(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
     // Get next day (or +N days) as YYYY-MM-DD string
     _getNextDay(dateStr, addDays) {
@@ -1211,14 +1211,14 @@ const ReportsPage = {
     },
     formatDateVN(dateStr) {
         const d = this._parseDate(dateStr);
-        return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
     },
     formatDateShort(dateStr) {
         const d = this._parseDate(dateStr);
-        return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
+        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
     },
     getDayOfWeek(dateStr) {
-        const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+        const days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
         return days[this._parseDate(dateStr).getDay()];
     },
 
@@ -1369,12 +1369,12 @@ const ReportsPage = {
     // Color-blind safe palette (Wong 2011 + distinct line patterns)
     // https://www.nature.com/articles/nmeth.1618
     _CB: {
-        blue:   '#0072B2', // Tổng BN
-        green:  '#009E73', // Nhập viện / Hồi tỉnh
-        amber:  '#E69F00', // Xuất viện / Từ ICU
+        blue: '#0072B2', // Tổng BN
+        green: '#009E73', // Nhập viện / Hồi tỉnh
+        amber: '#E69F00', // Xuất viện / Từ ICU
         purple: '#CC79A7', // Ca mổ / Giải áp
-        red:    '#D55E00', // BN nặng / Từ HSCC
-        grey:   '#64748b'
+        red: '#D55E00', // BN nặng / Từ HSCC
+        grey: '#64748b'
     },
     _chartInstances: {},
     _weekOffset: 0,
@@ -1400,7 +1400,7 @@ const ReportsPage = {
         return `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <div style="display:flex;gap:4px">
-                ${['week','month','all'].map(r => `<button class="btn btn-sm ${range===r?'btn-primary':'btn-secondary'}" style="font-size:0.76rem;padding:5px 12px" onclick="ReportsPage.setChartRange('${r}')">${r==='week'?'Tuần':r==='month'?'Tháng':'Tất cả'}</button>`).join('')}
+                ${['week', 'month', 'all'].map(r => `<button class="btn btn-sm ${range === r ? 'btn-primary' : 'btn-secondary'}" style="font-size:0.76rem;padding:5px 12px" onclick="ReportsPage.setChartRange('${r}')">${r === 'week' ? 'Tuần' : r === 'month' ? 'Tháng' : 'Tất cả'}</button>`).join('')}
             </div>
             ${range !== 'all' ? `
             <div style="display:flex;align-items:center;gap:6px">
@@ -1481,7 +1481,7 @@ const ReportsPage = {
             const sun = new Date(mon);
             sun.setDate(sun.getDate() + 6);
             sun.setHours(23, 59, 59);
-            const label = `T2 ${pad(mon.getDate())}/${pad(mon.getMonth()+1)} — CN ${pad(sun.getDate())}/${pad(sun.getMonth()+1)}/${sun.getFullYear()}`;
+            const label = `T2 ${pad(mon.getDate())}/${pad(mon.getMonth() + 1)} — CN ${pad(sun.getDate())}/${pad(sun.getMonth() + 1)}/${sun.getFullYear()}`;
             return { start: mon, end: sun, label };
         }
         if (this.chartRange === 'month') {
@@ -1489,7 +1489,7 @@ const ReportsPage = {
             const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
             const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
             const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59);
-            const months = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+            const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
             const label = `${months[ref.getMonth()]}/${ref.getFullYear()}`;
             return { start, end, label };
         }
@@ -1510,8 +1510,8 @@ const ReportsPage = {
 
     _fmtDateLabel(dateStr) {
         const d = this._parseDate(dateStr);
-        const days = ['CN','T2','T3','T4','T5','T6','T7'];
-        return `${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+        const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
     },
 
     _destroyChart(id) {
@@ -1590,7 +1590,7 @@ const ReportsPage = {
                             const total = ctx.chart.data.datasets[0].data[ctx.dataIndex];
                             let suffix = '';
                             if (ctx.datasetIndex > 0 && total > 0) {
-                                suffix = ` (${Math.round(val/total*100)}%)`;
+                                suffix = ` (${Math.round(val / total * 100)}%)`;
                             }
                             return ` ${ctx.dataset.label}: ${val}${suffix}`;
                         }
@@ -1665,10 +1665,10 @@ const ReportsPage = {
         if (ctx16 && r16.length > 0) {
             const primary16 = this._ds('Tổng BN', r16.map(r => r.totalPatients || 0), C.blue, { fill: true, primary: true });
             const secondary16 = [
-                this._ds('Nhập viện', r16.map(r => r.admissions || 0),                             C.green),
-                this._ds('Xuất viện', r16.map(r => r.discharges || 0),                             C.amber,  { dash: [8, 4] }),
-                this._ds('Ca mổ',     r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)), C.purple, { dash: [4, 4] }),
-                this._ds('BN nặng',   r16.map(r => r.severePatients || 0),                         C.red,    { dash: [2, 3] })
+                this._ds('Nhập viện', r16.map(r => r.admissions || 0), C.green),
+                this._ds('Xuất viện', r16.map(r => r.discharges || 0), C.amber, { dash: [8, 4] }),
+                this._ds('Ca mổ', r16.map(r => (r.surgeryTotal || 0) + (r.surgery2Total || 0)), C.purple, { dash: [4, 4] }),
+                this._ds('BN nặng', r16.map(r => r.severePatients || 0), C.red, { dash: [2, 3] })
             ];
             this._chartInstances['chart16h'] = new Chart(ctx16, {
                 type: 'line',
@@ -1685,10 +1685,10 @@ const ReportsPage = {
         if (ctx7 && r7.length > 0) {
             const primary7 = this._ds('Tổng BN', r7.map(r => r.totalPatients || 0), C.blue, { fill: true, primary: true });
             const secondary7 = [
-                this._ds('Từ HSCC',  r7.map(r => r.fromHSCC || 0),    C.red,    { dash: [2, 3] }),
+                this._ds('Từ HSCC', r7.map(r => r.fromHSCC || 0), C.red, { dash: [2, 3] }),
                 this._ds('Hồi tỉnh', r7.map(r => r.fromHoiTinh || 0), C.green),
-                this._ds('Từ ICU',   r7.map(r => r.fromICU || 0),      C.amber,  { dash: [8, 4] }),
-                this._ds('Giải áp',  r7.map(r => r.fromGiaiAp || 0),   C.purple, { dash: [4, 4] })
+                this._ds('Từ ICU', r7.map(r => r.fromICU || 0), C.amber, { dash: [8, 4] }),
+                this._ds('Giải áp', r7.map(r => r.fromGiaiAp || 0), C.purple, { dash: [4, 4] })
             ];
             this._chartInstances['chart7h'] = new Chart(ctx7, {
                 type: 'line',
