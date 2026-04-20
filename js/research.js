@@ -113,11 +113,7 @@ const ResearchPage = {
         <div class="card rsch-files-card">
             <div class="rsch-files-header">
                 <h3>📁 Bài Sinh hoạt Chuyên môn đã có</h3>
-                ${canEdit ? `<label class="btn btn-primary btn-sm rsch-upload-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Upload PDF
-                    <input type="file" accept=".pdf" style="display:none" onchange="ResearchPage.uploadFile(this)">
-                </label>` : ''}
+                <div class="rsch-files-note">PDF SHCM được quản lý ngoài web, không upload trực tiếp tại đây.</div>
             </div>
             <div id="shcm-files-list" class="rsch-files-list">
                 <div style="text-align:center;padding:20px;color:var(--text-muted)">Đang tải danh sách file...</div>
@@ -394,44 +390,6 @@ const ResearchPage = {
         }
     },
 
-    async uploadFile(input) {
-        if (!this._canEdit()) return;
-        const file = input.files[0];
-        if (!file) return;
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
-            Toast.error('Chỉ chấp nhận file PDF');
-            input.value = '';
-            return;
-        }
-        if (file.size > 50 * 1024 * 1024) {
-            Toast.error('File quá lớn (tối đa 50MB)');
-            input.value = '';
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            Toast.info('Đang upload...');
-            const token = Auth.getToken();
-            const resp = await fetch('/api/shcm/upload', {
-                method: 'POST',
-                headers: token ? { 'Authorization': 'Bearer ' + token } : {},
-                body: formData
-            });
-            if (!resp.ok) {
-                const err = await resp.json();
-                throw new Error(err.error || 'Upload failed');
-            }
-            Toast.success('Upload thành công!');
-            this.loadFiles();
-        } catch (err) {
-            Toast.error('Lỗi upload: ' + err.message);
-        }
-        input.value = '';
-    },
-
     async deleteFile(filename) {
         if (!this._canEdit()) return;
         if (!confirm(`Xoá file "${filename}"?`)) return;
@@ -631,4 +589,3 @@ const ResearchPage = {
         ctx.restore();
     }
 };
-
