@@ -30,18 +30,27 @@ DATA_DIR  = os.path.join(BASE_DIR, 'data')
 DATA_FILE = os.path.join(DATA_DIR, 'db.json')
 LOG_DIR   = os.path.join(BASE_DIR, 'logs')
 AUTH_FILE = os.path.join(DATA_DIR, 'auth.json')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'ptdtt-jwt-secret-7937d0d7117344888dc10cc44b95ce77')
-JWT_EXPIRY_DAYS = 30
+JWT_SECRET = os.environ.get('JWT_SECRET')
+if not JWT_SECRET:
+    raise RuntimeError('JWT_SECRET environment variable is required. Set it in /etc/systemd/system/ptdtt.service or .env')
+JWT_EXPIRY_DAYS = 7
 PORT      = int(os.environ.get('PORT', 5000))
-MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2004201750'))
+MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2004202110'))
 
 # EMR
 EMR_BASE          = 'https://emr.com.vn:83'
 EMR_DATA_URL      = f'{EMR_BASE}/DienBienLamSang/Index1'
 EMR_LOGIN_URL     = EMR_BASE + '/'
 EMR_LOGIN_POST_URL= EMR_BASE + '/'
-EMR_USER = os.environ.get('EMR_USER', 'VKAN')
-EMR_PASS = os.environ.get('EMR_PASS', 'anmd3010')
+EMR_USER = os.environ.get('EMR_USER', '')
+EMR_PASS = os.environ.get('EMR_PASS', '')
+
+# Allowlisted collections that admin can write via PUT /api/data/<collection>
+WRITE_COLLECTIONS = {
+    'staff', 'staffStatuses', 'schedules', 'tasks', 'plans', 'patients',
+    'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule',
+    'notifications', 'rooms'
+}
 
 # ────────────────────────────── Flask App ──────────────────────────────
 app = Flask(__name__, static_folder=None)
@@ -219,7 +228,7 @@ def get_data():
     return jsonify(safe_data)
 
 @app.route('/api/data', methods=['PUT'])
-@require_auth
+@require_admin
 def put_data():
     """Replace the entire JSON database (auth required)"""
     data = request.get_json(force=True)
@@ -272,8 +281,10 @@ def get_collection(collection):
     return jsonify(data.get(collection, []))
 
 @app.route('/api/data/<collection>', methods=['PUT'])
-@require_auth
+@require_admin
 def put_collection(collection):
+    if collection not in WRITE_COLLECTIONS:
+        return jsonify({'error': f'Collection "{collection}" is not writable via API'}), 403
     """Replace a single collection (auth required)"""
     items = request.get_json(force=True)
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
@@ -292,8 +303,9 @@ def put_collection(collection):
 
 # ────────────────────────────── Audit API ──────────────────────────────
 @app.route('/api/audit', methods=['GET'])
+@require_superadmin
 def get_audit_logs():
-    """Return audit logs (superadmin only, checked client-side)"""
+    """Return audit logs (superadmin only, server-enforced)"""
     _ensure_log_dir()
     days = int(request.args.get('days', 7))
     logs = []
@@ -421,16 +433,16 @@ def _init_auth_from_db():
             'color': s.get('color', '#6366f1')
         }
 
-    # Add guest account
+    # Guest account — disabled by default for security
     users['guest'] = {
-        'passwordHash': _hash_password('12345'),
+        'passwordHash': _hash_password(os.urandom(32).hex()),  # Random unguessable password
         'name': 'Khách',
         'role': 'Khách tham quan',
         'title': '',
         'staffId': 0,
         'isAdmin': False,
         'isSuperAdmin': False,
-        'disabled': False,
+        'disabled': True,  # DISABLED by default
         'color': '#94a3b8'
     }
 
@@ -514,8 +526,8 @@ def auth_change_password():
     old_pw = body.get('oldPassword', '')
     new_pw = body.get('newPassword', '')
 
-    if len(new_pw) < 3:
-        return jsonify({'error': 'Mật khẩu mới phải có ít nhất 3 ký tự'}), 400
+    if len(new_pw) < 8:
+        return jsonify({'error': 'Mật khẩu mới phải có ít nhất 8 ký tự'}), 400
 
     auth = _load_auth()
     user = auth['users'].get(payload['sub'])
@@ -526,7 +538,7 @@ def auth_change_password():
         return jsonify({'error': 'Mật khẩu cũ không đúng'}), 401
 
     user['passwordHash'] = _hash_password(new_pw)
-    user['plaintextPw'] = new_pw
+    user.pop('plaintextPw', None)  # Never store plaintext
     _save_auth(auth)
     audit_log(payload['sub'], 'auth.password.change')
     return jsonify({'ok': True})
@@ -552,7 +564,7 @@ def auth_admin_change_password():
         return jsonify({'error': 'User not found'}), 404
 
     user['passwordHash'] = _hash_password(new_pw)
-    user['plaintextPw'] = new_pw
+    user.pop('plaintextPw', None)  # Never store plaintext
     _save_auth(auth)
     audit_log(payload['sub'], 'auth.admin.password.reset', {'target': target_user})
     return jsonify({'ok': True})
@@ -628,8 +640,8 @@ def auth_list_accounts():
             'isAdmin': u.get('isAdmin', False),
             'isSuperAdmin': u.get('isSuperAdmin', False),
             'disabled': u.get('disabled', False),
-            'color': u.get('color', '#6366f1'),
-            'plaintextPw': u.get('plaintextPw', '')
+            'color': u.get('color', '#6366f1')
+            # plaintextPw removed — never expose passwords via API
         })
     return jsonify({'accounts': accounts})
 
@@ -881,7 +893,7 @@ def shcm_list_files():
 @require_auth
 def shcm_upload():
     user = request._user
-    _write_log('shcm_upload_blocked', user.get('username', '?'), {
+    audit_log(user.get('sub', '?'), 'shcm_upload_blocked', {
         'message': 'web upload disabled'
     })
     return jsonify({
@@ -905,7 +917,7 @@ def shcm_delete(filename):
     if not os.path.exists(filepath) or not filepath.startswith(SHCM_DIR):
         return jsonify({'error': 'File not found'}), 404
     os.remove(filepath)
-    _write_log('shcm_delete', user.get('username', '?'), {'file': filename})
+    audit_log(user.get('sub', '?'), 'shcm_delete', {'file': filename})
     return jsonify({'success': True})
 
 # ────────────────────────────── Init ──────────────────────────────

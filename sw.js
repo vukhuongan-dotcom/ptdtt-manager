@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2004201750';
+const CACHE_NAME = 'ptdtt-v2004202110';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -79,25 +79,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // API requests: Network first, fallback to cache
+    // API requests: Network only — NEVER cache authenticated data
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/data')) {
-        event.respondWith(
-            fetch(event.request)
-                .then(response => {
-                    // Cache successful API responses
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => {
-                            cache.put(event.request, clone);
-                        });
-                    }
-                    return response;
-                })
-                .catch(() => {
-                    // Offline: serve from cache
-                    return caches.match(event.request);
-                })
-        );
+        event.respondWith(fetch(event.request));
         return;
     }
 
