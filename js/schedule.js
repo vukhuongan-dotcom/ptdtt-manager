@@ -254,6 +254,29 @@ const SchedulePage = {
         }
     },
 
+    _upsertSchedule(weekKey, dates, updates) {
+        const schedules = [...Store.getAll('schedules')];
+        const existing = schedules.findIndex(s => s.weekKey === weekKey);
+
+        if (existing >= 0) {
+            schedules[existing] = { ...schedules[existing], ...updates };
+        } else {
+            schedules.push({
+                id: Store._data.nextIds.schedules++,
+                weekKey,
+                startDate: this._localDateStr(dates[0]),
+                endDate: this._localDateStr(dates[6]),
+                positions: {},
+                robotSurgery: [],
+                notes: '',
+                ...updates
+            });
+        }
+
+        Store.replaceCollection('schedules', schedules);
+        Store.saveCollections(['schedules']);
+    },
+
     saveSchedule() {
         if (!this.canEditSchedule()) return;
 
@@ -272,22 +295,7 @@ const SchedulePage = {
         const notes = document.getElementById('schedule-notes')?.value || '';
         const robotSurgery = this._collectRobotData();
 
-        // Save or update
-        const all = Store.getAll('schedules');
-        const existing = all.findIndex(s => s.weekKey === weekKey);
-
-        if (existing >= 0) {
-            Store.update('schedules', all[existing].id, { positions, notes, robotSurgery });
-        } else {
-            Store.add('schedules', {
-                weekKey,
-                startDate: this._localDateStr(dates[0]),
-                endDate: this._localDateStr(dates[6]),
-                positions,
-                robotSurgery,
-                notes
-            });
-        }
+        this._upsertSchedule(weekKey, dates, { positions, notes, robotSurgery });
 
         // Show saved feedback
         Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
@@ -398,20 +406,7 @@ const SchedulePage = {
     },
 
     _saveRobotToSchedule(weekKey, dates, robotSurgery) {
-        const all = Store.getAll('schedules');
-        const existing = all.findIndex(s => s.weekKey === weekKey);
-        if (existing >= 0) {
-            Store.update('schedules', all[existing].id, { robotSurgery });
-        } else {
-            Store.add('schedules', {
-                weekKey,
-                startDate: this._localDateStr(dates[0]),
-                endDate: this._localDateStr(dates[6]),
-                positions: {},
-                robotSurgery,
-                notes: ''
-            });
-        }
+        this._upsertSchedule(weekKey, dates, { robotSurgery });
     },
 
     _collectRobotData() {
@@ -458,20 +453,7 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
-        const existing = allSchedules.findIndex(s => s.weekKey === weekKey);
-
-        if (existing >= 0) {
-            Store.update('schedules', allSchedules[existing].id, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });
-        } else {
-            Store.add('schedules', {
-                weekKey,
-                startDate: this._localDateStr(dates[0]),
-                endDate: this._localDateStr(dates[6]),
-                positions: copiedPositions,
-                robotSurgery: copiedRobot,
-                notes: copiedNotes
-            });
-        }
+        this._upsertSchedule(weekKey, dates, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });
 
         // Re-render to show copied data
         App.renderCurrentPage();

@@ -14,6 +14,7 @@ const App = {
         surgery: SurgeryPage,
         'surgery-stats': SurgeryStatsPage,
         research: ResearchPage,
+        conferences: ConferencesPage,
         reports: ReportsPage,
     },
 
@@ -101,9 +102,9 @@ const App = {
         };
 
         ['mousemove', 'mousedown', 'keydown', 'click', 'scroll',
-         'touchstart', 'touchmove', 'touchend'].forEach(evt => {
-            document.addEventListener(evt, resetIdle, { passive: true });
-        });
+            'touchstart', 'touchmove', 'touchend'].forEach(evt => {
+                document.addEventListener(evt, resetIdle, { passive: true });
+            });
 
         // Visibility change — crucial for mobile (timers freeze when tab/app is hidden)
         document.addEventListener('visibilitychange', () => {
@@ -277,7 +278,7 @@ const App = {
             // Add data freshness timestamp
             const timestamp = document.createElement('div');
             timestamp.className = 'data-timestamp';
-            timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
+            timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
             timestamp.style.cssText = 'text-align:right;padding:12px 0 4px;font-size:0.75rem;color:var(--text-muted);opacity:0.6;';
             mainContent.appendChild(timestamp);
 
