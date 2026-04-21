@@ -1,10 +1,10 @@
 // ===== STAFF PAGE =====
 const STAFF_STATUSES = {
-    'active':    { label: 'Hoạt động', badge: 'badge-success', icon: '🟢', abbr: '' },
-    'leave':     { label: 'Nghỉ phép', badge: 'badge-warning', icon: '🟡', abbr: 'NP' },
-    'sick':      { label: 'Bệnh ốm',  badge: 'badge-danger',  icon: '🔴', abbr: 'B' },
-    'business':  { label: 'Công tác',  badge: 'badge-accent',  icon: '🟣', abbr: 'CT' },
-    'dayoff':    { label: 'Nghỉ bù',   badge: 'badge-info',    icon: '🔵', abbr: 'NB' }
+    'active': { label: 'Hoạt động', badge: 'badge-success', icon: '🟢', abbr: '' },
+    'leave': { label: 'Nghỉ phép', badge: 'badge-warning', icon: '🟡', abbr: 'NP' },
+    'sick': { label: 'Bệnh ốm', badge: 'badge-danger', icon: '🔴', abbr: 'B' },
+    'business': { label: 'Công tác', badge: 'badge-accent', icon: '🟣', abbr: 'CT' },
+    'dayoff': { label: 'Nghỉ bù', badge: 'badge-info', icon: '🔵', abbr: 'NB' }
 };
 
 const StaffPage = {
@@ -79,9 +79,9 @@ const StaffPage = {
         <div class="flex justify-between items-center">
             <div class="staff-filters">
                 ${roleDefs.map(r => {
-                    const cnt = getCatStaff(r.key).length;
-                    return `<button class="filter-btn ${this.currentFilter===r.key?'active':''}" onclick="StaffPage.setFilter('${r.key}')">${r.label} (${cnt})</button>`;
-                }).join('')}
+            const cnt = getCatStaff(r.key).length;
+            return `<button class="filter-btn ${this.currentFilter === r.key ? 'active' : ''}" onclick="StaffPage.setFilter('${r.key}')">${r.label} (${cnt})</button>`;
+        }).join('')}
             </div>
             <div style="display:flex;gap:8px;align-items:center">
                 <div class="search-box">
@@ -108,7 +108,7 @@ const StaffPage = {
                 </thead>
                 <tbody>
                     ${staff.length ? staff.map(s => {
-                        return `
+            return `
                     <tr>
                         <td>
                             <div class="staff-name-cell">
@@ -131,7 +131,7 @@ const StaffPage = {
                             </div>
                         </td>
                     </tr>`;
-                    }).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
+        }).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
                 </tbody>
             </table>
         </div>
@@ -254,7 +254,7 @@ const StaffPage = {
     },
 
     _dateStr(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
     fmtDate(d) {
@@ -313,8 +313,8 @@ const StaffPage = {
                 <label class="form-label" style="margin-bottom:6px">📋 Lịch sử trạng thái</label>
                 <div style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px">
                     ${ranges.map(r => {
-                        const info = STAFF_STATUSES[r.status] || STAFF_STATUSES.active;
-                        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:${StaffPage._statusColor(r.status)}15">
+            const info = STAFF_STATUSES[r.status] || STAFF_STATUSES.active;
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:${StaffPage._statusColor(r.status)}15">
                             <div style="font-size:0.8rem">
                                 <span>${info.icon} ${info.label}</span>
                                 <span style="color:var(--text-muted);margin-left:6px">${StaffPage.fmtDate(r.from)} → ${StaffPage.fmtDate(r.to)}</span>
@@ -324,7 +324,7 @@ const StaffPage = {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>`;
-                    }).join('')}
+        }).join('')}
                 </div>
             </div>` : '';
 
@@ -336,8 +336,8 @@ const StaffPage = {
                     <div class="form-group">
                         <select class="form-select" name="statusType" id="status-type-select" onchange="StaffPage.toggleDateFields()">
                             ${Object.entries(STAFF_STATUSES).map(([key, val]) =>
-                                `<option value="${key}" ${key === 'active' ? 'selected' : ''}>${val.icon} ${val.label}</option>`
-                            ).join('')}
+            `<option value="${key}" ${key === 'active' ? 'selected' : ''}>${val.icon} ${val.label}</option>`
+        ).join('')}
                         </select>
                     </div>
                     <div id="status-date-fields" style="display:none">
@@ -469,11 +469,11 @@ const StaffPage = {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Họ tên</label>
-                        <input class="form-input" name="name" value="${s?.name||''}" required>
+                        <input class="form-input" name="name" value="${s?.name || ''}" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Chức danh</label>
-                        <input class="form-input" name="title" value="${s?.title||''}" required placeholder="BS., ThS. BS, CN. ĐD...">
+                        <input class="form-input" name="title" value="${s?.title || ''}" required placeholder="BS., ThS. BS, CN. ĐD...">
                     </div>
                 </div>
                 <div class="form-row">
@@ -481,22 +481,22 @@ const StaffPage = {
                         <label class="form-label">Vai trò</label>
                         <select class="form-select" name="role">
                             ${'BS Trưởng khoa,BS Phó trưởng khoa,Bác sĩ chính,Bác sĩ học viên,Điều dưỡng trưởng,Điều dưỡng,Hộ lý,Thư ký'.split(',').map(r =>
-                                `<option value="${r}" ${s?.role===r?'selected':''}>${r}</option>`
-                            ).join('')}
+            `<option value="${r}" ${s?.role === r ? 'selected' : ''}>${r}</option>`
+        ).join('')}
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Điện thoại</label>
-                        <input class="form-input" name="phone" value="${s?.phone||''}" placeholder="0901234567">
+                        <input class="form-input" name="phone" value="${s?.phone || ''}" placeholder="0901234567">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Email</label>
-                    <input class="form-input" type="email" name="email" value="${s?.email||''}" placeholder="nguyenvana@binhdan.vn">
+                    <input class="form-input" type="email" name="email" value="${s?.email || ''}" placeholder="nguyenvana@binhdan.vn">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
-                    <button type="submit" class="btn btn-primary">${s?'Cập nhật':'Thêm mới'}</button>
+                    <button type="submit" class="btn btn-primary">${s ? 'Cập nhật' : 'Thêm mới'}</button>
                 </div>
             </form>
         `);
@@ -586,7 +586,7 @@ const StaffPage = {
             Store._data.staff.push(restored);
             // Remove from departed
             Store._data.departedStaff.splice(index, 1);
-            Store.save();
+            Store.saveCollections(['staff', 'departedStaff']);
             // Re-enable account
             Auth.enableAccount(restored.id);
             Auth.refreshAccounts();
@@ -611,7 +611,7 @@ const StaffPage = {
         });
         if (confirmed) {
             Store._data.departedStaff.splice(index, 1);
-            Store.save();
+            Store.saveCollections(['departedStaff']);
             Auth.removeAccount(s.id);
             App.renderCurrentPage();
             Toast.success(`Đã xóa vĩnh viễn ${s.name}`);
@@ -717,26 +717,26 @@ const StaffPage = {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Họ tên</label>
-                        <input class="form-input" name="name" value="${d?.name||''}" required>
+                        <input class="form-input" name="name" value="${d?.name || ''}" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Học vị</label>
-                        <input class="form-input" name="title" value="${d?.title||''}" placeholder="BSCKII, ThS,...">
+                        <input class="form-input" name="title" value="${d?.title || ''}" placeholder="BSCKII, ThS,...">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Chức vụ</label>
-                        <input class="form-input" name="position" value="${d?.position||''}" placeholder="Phó Giám đốc,...">
+                        <input class="form-input" name="position" value="${d?.position || ''}" placeholder="Phó Giám đốc,...">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Khoa / Phòng</label>
-                        <input class="form-input" name="department" value="${d?.department||''}" placeholder="Ngoại Tiêu hoá,...">
+                        <input class="form-input" name="department" value="${d?.department || ''}" placeholder="Ngoại Tiêu hoá,...">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
-                    <input class="form-input" name="note" value="${d?.note||''}" placeholder="Ghi chú thêm...">
+                    <input class="form-input" name="note" value="${d?.note || ''}" placeholder="Ghi chú thêm...">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
@@ -809,10 +809,10 @@ const StaffPage = {
             const headers1 = ['STT', 'Họ tên', 'Chức danh', 'Vai trò', 'Cơ hữu', 'SĐT', 'Ghi chú'];
             const data1 = [headers1];
             staff.forEach((s, i) => {
-                data1.push([i+1, s.name, s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.note || '']);
+                data1.push([i + 1, s.name, s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.note || '']);
             });
             const ws1 = XLSX.utils.aoa_to_sheet(data1);
-            ws1['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:22},{wch:8},{wch:14},{wch:20}];
+            ws1['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 12 }, { wch: 22 }, { wch: 8 }, { wch: 14 }, { wch: 20 }];
             XLSX.utils.book_append_sheet(wb, ws1, 'Nhan vien khoa');
 
             // Sheet 2: External doctors
@@ -820,10 +820,10 @@ const StaffPage = {
                 const headers2 = ['STT', 'Họ tên', 'Chức danh', 'Vị trí', 'Khoa/Phòng', 'Ghi chú'];
                 const data2 = [headers2];
                 external.forEach((d, i) => {
-                    data2.push([i+1, d.name, d.title, d.position || '', d.department || '', d.note || '']);
+                    data2.push([i + 1, d.name, d.title, d.position || '', d.department || '', d.note || '']);
                 });
                 const ws2 = XLSX.utils.aoa_to_sheet(data2);
-                ws2['!cols'] = [{wch:5},{wch:28},{wch:12},{wch:18},{wch:20},{wch:20}];
+                ws2['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 20 }];
                 XLSX.utils.book_append_sheet(wb, ws2, 'BS ngoai khoa');
             }
 

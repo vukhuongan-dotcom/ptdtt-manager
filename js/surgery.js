@@ -1,9 +1,9 @@
 // ===== SURGERY SCHEDULE PAGE =====
 const SURGERY_TYPES = {
     'chuongtrinh': { label: 'Chương trình', color: '#3b82f6' },
-    'yeucau':      { label: 'Yêu cầu', color: '#f59e0b' },
-    'bankhan':     { label: 'Bán khẩn', color: '#ef4444' },
-    'robot':       { label: 'Robot', color: '#1e3a5f' }
+    'yeucau': { label: 'Yêu cầu', color: '#f59e0b' },
+    'bankhan': { label: 'Bán khẩn', color: '#ef4444' },
+    'robot': { label: 'Robot', color: '#1e3a5f' }
 };
 
 // Priority doctor per day of week (getDay(): 0=Sun, 1=Mon...6=Sat)
@@ -60,12 +60,12 @@ const SurgeryPage = {
         const day = today.getDay();
         this.currentWeekStart = new Date(today);
         this.currentWeekStart.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-        this.currentWeekStart.setHours(0,0,0,0);
+        this.currentWeekStart.setHours(0, 0, 0, 0);
     },
 
     getWeekDates() {
         if (!this.currentWeekStart) this.init();
-        return Array.from({length: 7}, (_, i) => {
+        return Array.from({ length: 7 }, (_, i) => {
             const d = new Date(this.currentWeekStart);
             d.setDate(this.currentWeekStart.getDate() + i);
             return d;
@@ -75,16 +75,16 @@ const SurgeryPage = {
     getWeekKey() {
         if (!this.currentWeekStart) this.init();
         const d = this.currentWeekStart;
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
     dateStr(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
     fmtDate(d) {
-        const days = ['CN','T2','T3','T4','T5','T6','T7'];
-        return `${days[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+        const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        return `${days[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}`;
     },
 
     getSurgeries() {
@@ -100,7 +100,7 @@ const SurgeryPage = {
             const items = JSON.parse(legacy);
             if (items.length > 0 && (!Store._data.surgeries || Store._data.surgeries.length === 0)) {
                 Store._data.surgeries = items;
-                Store.save();
+                Store.saveCollections(['surgeries']);
             }
             localStorage.removeItem('ptdtt_surgeries');
         }
@@ -109,7 +109,7 @@ const SurgeryPage = {
 
     saveSurgeries(all) {
         Store._data.surgeries = all;
-        Store.save();
+        Store.saveCollections(['surgeries']);
     },
 
     render() {
@@ -118,9 +118,9 @@ const SurgeryPage = {
         const weekDates = this.getWeekDates();
         const surgeries = this.getSurgeries();
         const today = new Date();
-        today.setHours(0,0,0,0);
+        today.setHours(0, 0, 0, 0);
 
-        const weekLabel = `${weekDates[0].getDate()}/${weekDates[0].getMonth()+1} — ${weekDates[6].getDate()}/${weekDates[6].getMonth()+1}/${weekDates[6].getFullYear()}`;
+        const weekLabel = `${weekDates[0].getDate()}/${weekDates[0].getMonth() + 1} — ${weekDates[6].getDate()}/${weekDates[6].getMonth() + 1}/${weekDates[6].getFullYear()}`;
 
         // Stats
         const totalCases = surgeries.length;
@@ -163,21 +163,21 @@ const SurgeryPage = {
         <div class="surgery-summary-panel">
             <div class="surgery-summary-chips">
                 ${Object.entries(SURGERY_TYPES).map(([key, t]) => {
-                    const cnt = surgeries.filter(s => s.surgeryType === key).length;
-                    return `<div class="surgery-summary-chip">
+            const cnt = surgeries.filter(s => s.surgeryType === key).length;
+            return `<div class="surgery-summary-chip">
                         <span class="surgery-summary-dot" style="background:${t.color}"></span>
                         <span class="surgery-summary-label">${t.label}</span>
                         <span class="surgery-summary-count">${cnt}</span>
                     </div>`;
-                }).join('')}
-                ${[{key:'mo',label:'Mổ mở',color:'#e11d48'},{key:'noisoi',label:'Nội soi',color:'#16a34a'},{key:'nsth',label:'NSTH',color:'#8b5cf6'}].map(a => {
-                    const cnt = surgeries.filter(s => s.approachType === a.key).length;
-                    return `<div class="surgery-summary-chip">
+        }).join('')}
+                ${[{ key: 'mo', label: 'Mổ mở', color: '#e11d48' }, { key: 'noisoi', label: 'Nội soi', color: '#16a34a' }, { key: 'nsth', label: 'NSTH', color: '#8b5cf6' }].map(a => {
+            const cnt = surgeries.filter(s => s.approachType === a.key).length;
+            return `<div class="surgery-summary-chip">
                         <span class="surgery-summary-dot" style="background:${a.color}"></span>
                         <span class="surgery-summary-label">${a.label}</span>
                         <span class="surgery-summary-count">${cnt}</span>
                     </div>`;
-                }).join('')}
+        }).join('')}
                 <div class="surgery-summary-chip surgery-summary-total">
                     <span class="surgery-summary-label"><strong>Tổng tuần</strong></span>
                     <span class="surgery-summary-count"><strong>${totalCases}</strong></span>
@@ -187,11 +187,11 @@ const SurgeryPage = {
 
         <div class="surgery-week-grid">
             ${weekDates.map(d => {
-                const ds = this.dateStr(d);
-                const isToday = d.getTime() === today.getTime();
-                const daySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), d);
+            const ds = this.dateStr(d);
+            const isToday = d.getTime() === today.getTime();
+            const daySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), d);
 
-                return `
+            return `
                 <div class="surgery-day ${isToday ? 'today' : ''} ${d.getDay() === 0 || d.getDay() === 6 ? 'weekend' : ''}">
                     <div class="surgery-day-header">
                         <span class="surgery-day-name">${this.fmtDate(d)}</span>
@@ -199,8 +199,8 @@ const SurgeryPage = {
                     </div>
                     <div class="surgery-day-body">
                         ${daySurgeries.length ? daySurgeries.map((s, idx) => {
-                            const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
-                            return `
+                const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                return `
                             <div class="surgery-card surgery-compact" data-surgery-id="${s.id}" onclick="SurgeryPage.toggleCard(this, event)">
                                 <div class="surgery-card-compact-row">
                                     <span class="surgery-card-order">${idx + 1}</span>
@@ -224,11 +224,11 @@ const SurgeryPage = {
                                     </div>` : ''}
                                 </div>
                             </div>`;
-                        }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
+            }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
                         ${isAdmin ? `<button class="surgery-add-btn" onclick="SurgeryPage.openForm(null,'${ds}')">+ Thêm ca</button>` : ''}
                     </div>
                 </div>`;
-            }).join('')}
+        }).join('')}
         </div>
         `;
     },
@@ -288,7 +288,7 @@ const SurgeryPage = {
     getDailyStats() {
         const all = this.getAllSurgeries();
         const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const todaySurgeries = all.filter(s => s.date === today);
         const stats = { total: todaySurgeries.length };
         Object.keys(SURGERY_TYPES).forEach(k => {
@@ -361,7 +361,7 @@ const SurgeryPage = {
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Đường mổ</div>
-                    <div class="surgery-detail-value">${({mo:'Mổ mở',noisoi:'Nội soi',nsth:'Nội soi tiêu hoá',robot:'Robot'})[s.approachType] || '—'}</div>
+                    <div class="surgery-detail-value">${({ mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' })[s.approachType] || '—'}</div>
                 </div>
                 ${s.notes ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Ghi chú</div>
@@ -408,8 +408,8 @@ const SurgeryPage = {
                         <label class="form-label">Loại phẫu thuật</label>
                         <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)">
                             ${Object.entries(SURGERY_TYPES).map(([key, t]) =>
-                                `<option value="${key}" ${(s?.surgeryType || 'chuongtrinh') === key ? 'selected' : ''}>${t.label}</option>`
-                            ).join('')}
+            `<option value="${key}" ${(s?.surgeryType || 'chuongtrinh') === key ? 'selected' : ''}>${t.label}</option>`
+        ).join('')}
                         </select>
                     </div>
                 </div>
@@ -595,14 +595,14 @@ const SurgeryPage = {
         }
     },
 
-    afterRender() {},
+    afterRender() { },
 
     // ===== EXPORT SURGERY LIST AS JPEG =====
     exportTomorrowImage() {
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
-        tomorrow.setHours(0,0,0,0);
+        tomorrow.setHours(0, 0, 0, 0);
         this._exportImageForDate(tomorrow);
     },
 
@@ -624,8 +624,8 @@ const SurgeryPage = {
         const val = document.getElementById('export-date-picker')?.value;
         if (!val) return;
         const parts = val.split('-');
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-        d.setHours(0,0,0,0);
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        d.setHours(0, 0, 0, 0);
         Modal.close();
         this._exportImageForDate(d);
     },
@@ -635,8 +635,8 @@ const SurgeryPage = {
         const surgeries = this.getAllSurgeries();
         const todaySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), targetDate);
 
-        const dateLabel = `${targetDate.getDate()}/${targetDate.getMonth()+1}/${targetDate.getFullYear()}`;
-        const dayNames = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
+        const dateLabel = `${targetDate.getDate()}/${targetDate.getMonth() + 1}/${targetDate.getFullYear()}`;
+        const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
         const dayName = dayNames[targetDate.getDay()];
 
         // Count by type
@@ -652,7 +652,7 @@ const SurgeryPage = {
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                 const bgColor = i % 2 === 0 ? '#ffffff' : '#f8fafc';
                 rows += `<tr style="background:${bgColor};border-bottom:1px solid #cbd5e1">
-                    <td style="padding:12px 10px;text-align:center;font-weight:700;color:#000;font-size:14px">${i+1}</td>
+                    <td style="padding:12px 10px;text-align:center;font-weight:700;color:#000;font-size:14px">${i + 1}</td>
                     <td style="padding:12px 10px;font-size:14px"><strong style="color:#000">${s.patientName}</strong></td>
                     <td style="padding:12px 10px;text-align:center;font-size:13px;color:#111">${s.birthYear || '—'}</td>
                     <td style="padding:12px 10px;font-size:13px;color:#111">${s.admissionId || '—'}</td>
@@ -759,7 +759,7 @@ const SurgeryPage = {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Lich_mo_${ds.replace(/-/g,'')}.jpg`;
+                a.download = `Lich_mo_${ds.replace(/-/g, '')}.jpg`;
                 a.click();
                 URL.revokeObjectURL(url);
                 document.body.removeChild(container);
