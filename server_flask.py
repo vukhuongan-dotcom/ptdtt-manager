@@ -22,6 +22,7 @@ from flask import Flask, request, jsonify, send_from_directory, abort, Response
 import base64
 import jwt as pyjwt
 import bcrypt
+import html as html_mod
 from functools import wraps
 
 # ────────────────────────────── Config ──────────────────────────────
@@ -35,7 +36,11 @@ if not JWT_SECRET:
     raise RuntimeError('JWT_SECRET environment variable is required. Set it in /etc/systemd/system/ptdtt.service or .env')
 JWT_EXPIRY_DAYS = 7
 PORT      = int(os.environ.get('PORT', 5000))
-MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2004202110'))
+MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2104201745'))
+PASSWORD_MIN_LENGTH = int(os.environ.get('PASSWORD_MIN_LENGTH', '10'))
+LOGIN_WINDOW_MINUTES = int(os.environ.get('LOGIN_WINDOW_MINUTES', '15'))
+LOGIN_MAX_ATTEMPTS = int(os.environ.get('LOGIN_MAX_ATTEMPTS', '5'))
+LOGIN_LOCKOUT_MINUTES = int(os.environ.get('LOGIN_LOCKOUT_MINUTES', '15'))
 
 # EMR
 EMR_BASE          = 'https://emr.com.vn:83'
@@ -49,7 +54,8 @@ EMR_PASS = os.environ.get('EMR_PASS', '')
 WRITE_COLLECTIONS = {
     'staff', 'staffStatuses', 'schedules', 'tasks', 'tasksTrash', 'plans', 'patients',
     'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule', 'surgeries',
-    'notifications', 'rooms', 'departedStaff', 'externalDoctors'
+    'notifications', 'rooms', 'departedStaff', 'externalDoctors', 'shcmSettings',
+    'conferences'
 }
 
 # ────────────────────────────── Flask App ──────────────────────────────
@@ -58,6 +64,11 @@ app = Flask(__name__, static_folder=None)
 # Prevent caching on API responses
 @app.after_request
 def add_no_cache_headers(response):
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('Referrer-Policy', 'same-origin')
+    response.headers.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
     if request.path.startswith('/api/'):
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
@@ -228,9 +239,9 @@ def get_data():
     return jsonify(safe_data)
 
 @app.route('/api/data', methods=['PUT'])
-@require_admin
+@require_superadmin
 def put_data():
-    """Replace the entire JSON database (auth required)"""
+    """Replace the entire JSON database (superadmin only)"""
     data = request.get_json(force=True)
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     client_build = _client_build()
@@ -286,7 +297,13 @@ def put_collection(collection):
     """Replace a single collection (auth required, allowlist enforced)"""
     if collection not in WRITE_COLLECTIONS:
         return jsonify({'error': f'Collection "{collection}" is not writable via API'}), 403
-    items = request.get_json(force=True)
+    payload = request.get_json(force=True)
+    if isinstance(payload, dict) and 'items' in payload:
+        items = payload.get('items', [])
+        next_id = payload.get('nextId')
+    else:
+        items = payload
+        next_id = None
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     client_build = _client_build()
     if client_build < MIN_CLIENT_BUILD:
@@ -295,9 +312,14 @@ def put_collection(collection):
             'error': 'Client too old. Please reload the page before saving.',
             'requiredBuild': MIN_CLIENT_BUILD
         }), 409
-    audit_log(user, f'collection.put.{collection}', {'count': len(items) if isinstance(items, list) else 1})
+    audit_log(user, f'collection.put.{collection}', {
+        'count': len(items) if isinstance(items, list) else 1,
+        'nextId': next_id
+    })
     data = load_data()
     data[collection] = items
+    if next_id is not None:
+        data.setdefault('nextIds', {})[collection] = next_id
     save_data(data)
     return jsonify({'ok': True})
 
@@ -327,6 +349,110 @@ def get_audit_logs():
 
 # ────────────────────────────── Auth Helpers ──────────────────────────────
 _auth_lock = threading.Lock()
+_login_attempt_lock = threading.Lock()
+_login_attempts = {}
+
+def _request_ip():
+    forwarded = request.headers.get('X-Forwarded-For', '') if request else ''
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr if request else None
+
+def _prune_login_attempts(now=None):
+    now = now or datetime.utcnow()
+    cutoff = now - timedelta(minutes=LOGIN_WINDOW_MINUTES)
+    stale_keys = []
+    for key, state in _login_attempts.items():
+        locked_until = state.get('lockedUntil')
+        window_start = state.get('windowStart', now)
+        if locked_until and locked_until > now:
+            continue
+        if window_start < cutoff:
+            stale_keys.append(key)
+    for key in stale_keys:
+        _login_attempts.pop(key, None)
+
+def _get_login_attempt_state(username, ip):
+    key = f'{(username or "").lower()}|{ip or "unknown"}'
+    now = datetime.utcnow()
+    with _login_attempt_lock:
+        _prune_login_attempts(now)
+        state = _login_attempts.get(key)
+        if not state:
+            return {'locked': False, 'retryAfter': 0, 'remaining': LOGIN_MAX_ATTEMPTS}
+        locked_until = state.get('lockedUntil')
+        if locked_until and locked_until > now:
+            retry_after = max(1, int((locked_until - now).total_seconds()))
+            return {'locked': True, 'retryAfter': retry_after, 'remaining': 0}
+        remaining = max(0, LOGIN_MAX_ATTEMPTS - state.get('count', 0))
+        return {'locked': False, 'retryAfter': 0, 'remaining': remaining}
+
+def _record_login_failure(username, ip):
+    key = f'{(username or "").lower()}|{ip or "unknown"}'
+    now = datetime.utcnow()
+    with _login_attempt_lock:
+        _prune_login_attempts(now)
+        state = _login_attempts.get(key)
+        window_start = now
+        count = 0
+        if state and state.get('windowStart') and state['windowStart'] >= now - timedelta(minutes=LOGIN_WINDOW_MINUTES):
+            window_start = state['windowStart']
+            count = state.get('count', 0)
+        count += 1
+        locked_until = None
+        if count >= LOGIN_MAX_ATTEMPTS:
+            locked_until = now + timedelta(minutes=LOGIN_LOCKOUT_MINUTES)
+        _login_attempts[key] = {
+            'windowStart': window_start,
+            'count': count,
+            'lockedUntil': locked_until
+        }
+        retry_after = max(1, int((locked_until - now).total_seconds())) if locked_until else 0
+        return {
+            'locked': locked_until is not None,
+            'retryAfter': retry_after,
+            'remaining': max(0, LOGIN_MAX_ATTEMPTS - count)
+        }
+
+def _clear_login_failures(username, ip):
+    key = f'{(username or "").lower()}|{ip or "unknown"}'
+    with _login_attempt_lock:
+        _login_attempts.pop(key, None)
+
+def _validate_password_policy(password, username=''):
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return f'Mật khẩu phải có ít nhất {PASSWORD_MIN_LENGTH} ký tự'
+    if not re.search(r'[A-Za-zÀ-ỹ]', password):
+        return 'Mật khẩu phải có ít nhất 1 chữ cái'
+    if not re.search(r'\d', password):
+        return 'Mật khẩu phải có ít nhất 1 chữ số'
+    if username and password.strip().lower() == username.strip().lower():
+        return 'Mật khẩu không được trùng với tên đăng nhập'
+    return None
+
+def _sanitize_auth_payload(auth):
+    changed = False
+    users = auth.get('users')
+    if not isinstance(users, dict):
+        auth['users'] = {}
+        users = auth['users']
+        changed = True
+    for record in users.values():
+        if isinstance(record, dict) and 'plaintextPw' in record:
+            record.pop('plaintextPw', None)
+            changed = True
+    return changed
+
+def _purge_legacy_db_auth_fields():
+    db_data = load_data()
+    changed = False
+    for key in ('customPasswords', 'customAdmins', 'disabledAccounts'):
+        if key in db_data:
+            db_data.pop(key, None)
+            changed = True
+    if changed:
+        save_data(db_data)
+        print('[Auth] ✅ Removed legacy auth fields from db.json')
 
 def _load_auth():
     """Load auth data from auth.json"""
@@ -334,7 +460,10 @@ def _load_auth():
         return {'users': {}}
     with _auth_lock:
         with open(AUTH_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            auth = json.load(f)
+    if _sanitize_auth_payload(auth):
+        _save_auth(auth)
+    return auth
 
 def _save_auth(data):
     """Save auth data to auth.json"""
@@ -458,12 +587,31 @@ def auth_login():
     body = request.get_json(force=True)
     username = body.get('username', '').strip().lower()
     password = body.get('password', '')
+    client_ip = _request_ip()
+
+    attempt_state = _get_login_attempt_state(username, client_ip)
+    if attempt_state['locked']:
+        audit_log(username, 'auth.login.blocked', {
+            'ip': client_ip,
+            'retryAfter': attempt_state['retryAfter']
+        })
+        response = jsonify({
+            'error': f'Đăng nhập tạm bị khóa do nhập sai quá nhiều lần. Vui lòng thử lại sau {LOGIN_LOCKOUT_MINUTES} phút.',
+            'retryAfter': attempt_state['retryAfter']
+        })
+        response.headers['Retry-After'] = str(attempt_state['retryAfter'])
+        return response, 429
 
     auth = _load_auth()
     user = auth.get('users', {}).get(username)
 
     if not user:
-        audit_log(username, 'auth.login.fail', {'reason': 'not_found'})
+        status = _record_login_failure(username, client_ip)
+        audit_log(username, 'auth.login.fail', {
+            'reason': 'not_found',
+            'ip': client_ip,
+            'remaining': status['remaining']
+        })
         return jsonify({'error': 'Tài khoản không tồn tại'}), 401
 
     if user.get('disabled'):
@@ -471,9 +619,22 @@ def auth_login():
         return jsonify({'error': 'Tài khoản đã bị vô hiệu hoá. Liên hệ quản trị viên.'}), 403
 
     if not _check_password(password, user['passwordHash']):
-        audit_log(username, 'auth.login.fail', {'reason': 'wrong_password'})
+        status = _record_login_failure(username, client_ip)
+        audit_log(username, 'auth.login.fail', {
+            'reason': 'wrong_password',
+            'ip': client_ip,
+            'remaining': status['remaining']
+        })
+        if status['locked']:
+            response = jsonify({
+                'error': f'Đăng nhập tạm bị khóa do nhập sai quá nhiều lần. Vui lòng thử lại sau {LOGIN_LOCKOUT_MINUTES} phút.',
+                'retryAfter': status['retryAfter']
+            })
+            response.headers['Retry-After'] = str(status['retryAfter'])
+            return response, 429
         return jsonify({'error': 'Mật khẩu không đúng'}), 401
 
+    _clear_login_failures(username, client_ip)
     token = _create_jwt(username, user)
     audit_log(username, 'auth.login.success')
 
@@ -526,8 +687,9 @@ def auth_change_password():
     old_pw = body.get('oldPassword', '')
     new_pw = body.get('newPassword', '')
 
-    if len(new_pw) < 8:
-        return jsonify({'error': 'Mật khẩu mới phải có ít nhất 8 ký tự'}), 400
+    password_error = _validate_password_policy(new_pw, payload['sub'])
+    if password_error:
+        return jsonify({'error': password_error}), 400
 
     auth = _load_auth()
     user = auth['users'].get(payload['sub'])
@@ -557,6 +719,10 @@ def auth_admin_change_password():
     body = request.get_json(force=True)
     target_user = body.get('username', '')
     new_pw = body.get('newPassword', '')
+
+    password_error = _validate_password_policy(new_pw, target_user)
+    if password_error:
+        return jsonify({'error': password_error}), 400
 
     auth = _load_auth()
     user = auth['users'].get(target_user)
@@ -724,14 +890,16 @@ def _parse_emr_html(html):
         phong = re.sub(r'<[^>]*>', '', cells[3]).strip()
         # Parse "26014824<br>Lê Mạnh Tuấn"
         parts = re.split(r'<br\s*/?>',  ma_ho_ten, flags=re.IGNORECASE)
-        ma_nhap_vien = re.sub(r'<[^>]*>', '', parts[0]).strip() if parts else ''
-        ho_ten = re.sub(r'<[^>]*>', '', parts[1]).strip() if len(parts) > 1 else ''
+        ma_nhap_vien = html_mod.unescape(re.sub(r'<[^>]*>', '', parts[0]).strip()) if parts else ''
+        ho_ten = html_mod.unescape(re.sub(r'<[^>]*>', '', parts[1]).strip()) if len(parts) > 1 else ''
+        ngay_vao_clean = html_mod.unescape(ngay_vao)
+        phong_clean = html_mod.unescape(phong)
         patients.append({
             'stt': int(stt) if stt.isdigit() else 0,
             'maNhapVien': ma_nhap_vien,
             'hoTen': ho_ten,
-            'ngayVao': ngay_vao,
-            'phong': phong
+            'ngayVao': ngay_vao_clean,
+            'phong': phong_clean
         })
     return patients
 
@@ -848,13 +1016,13 @@ def emr_proxy():
     return jsonify({'error': error or 'EMR not available yet, data loading in background'}), 502
 
 @app.route('/api/emr-status')
+@require_admin
 def emr_status():
     cache_age = None
     if _emr_cache_time:
         cache_age = int((datetime.now() - _emr_cache_time).total_seconds())
     return jsonify({
         'loggedIn': _emr_logged_in,
-        'user': EMR_USER,
         'cacheAge': cache_age,
         'cached': _emr_cache is not None
     })
@@ -925,6 +1093,7 @@ _ensure_data_dir()
 _ensure_log_dir()
 _cleanup_old_logs(90)
 _init_auth_from_db()
+_purge_legacy_db_auth_fields()
 
 # ── Start EMR background thread (works under both Gunicorn and direct run) ──
 _emr_bg_started = False

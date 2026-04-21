@@ -1,7 +1,7 @@
 // ===== EMR PATIENT DATA FETCHER =====
 // Dual-path: tries server proxy first (/api/emr), falls back to direct browser fetch
 // Server proxy works when VPS can reach EMR; direct works on hospital network
-// Auto-refreshes every 2 minutes with localStorage instant cache
+// Auto-refreshes every 2 minutes with in-memory cache only
 
 const EMR = {
     url: 'https://emr.com.vn:83/DienBienLamSang/Index1',
@@ -27,9 +27,11 @@ const EMR = {
             const ngayVao = cells[2]?.innerText?.trim();
             const phong = cells[3]?.innerText?.trim();
 
+            // Decode HTML entities (&#xE0; → à) via DOM
+            const _decode = s => { const el = document.createElement('span'); el.innerHTML = s; return el.textContent || ''; };
             const parts = maHoTen.split(/<br\s*\/?>/i);
-            const maNhapVien = parts[0]?.replace(/<[^>]*>/g, '').trim() || '';
-            const hoTen = parts[1]?.replace(/<[^>]*>/g, '').trim() || '';
+            const maNhapVien = _decode(parts[0]?.replace(/<[^>]*>/g, '').trim() || '');
+            const hoTen = _decode(parts[1]?.replace(/<[^>]*>/g, '').trim() || '');
 
             patients.push({
                 stt: parseInt(stt) || 0,
@@ -135,12 +137,6 @@ const EMR = {
             this._lastFetch = new Date();
             this._status = 'success';
 
-            // Persist to localStorage for instant display on next load
-            try {
-                localStorage.setItem('emr_cache', JSON.stringify(data));
-                localStorage.setItem('emr_cache_time', this._lastFetch.toISOString());
-            } catch (e) { /* quota exceeded */ }
-
             console.log(`[EMR] Got ${data.totalAll} patients (${data.totalDept} dept, ${data.totalCC} CC)`);
             window.dispatchEvent(new CustomEvent('emr-data-updated', { detail: this._lastData }));
             return this._lastData;
@@ -152,31 +148,18 @@ const EMR = {
         }
     },
 
-    // Load cached data from localStorage instantly
-    _loadLocalCache() {
-        try {
-            const cached = localStorage.getItem('emr_cache');
-            const cachedTime = localStorage.getItem('emr_cache_time');
-            if (cached && cachedTime) {
-                this._lastData = JSON.parse(cached);
-                this._lastFetch = new Date(cachedTime);
-                this._status = 'success';
-                console.log(`[EMR] Loaded localStorage cache (${this._lastData.totalDept} dept, ${this.getTimeSinceUpdate()})`);
-                window.dispatchEvent(new CustomEvent('emr-data-updated', { detail: this._lastData }));
-                return true;
-            }
-        } catch (e) { /* corrupt cache */ }
-        return false;
+    clearRuntimeCache() {
+        this._lastData = null;
+        this._lastFetch = null;
+        this._status = 'idle';
     },
 
     // Start auto-refresh
     startAutoRefresh() {
         this.stopAutoRefresh();
-        // 1. Show cached data instantly
-        this._loadLocalCache();
-        // 2. Fetch fresh data from server/direct
+        // Fetch fresh data from server/direct
         this.fetchData();
-        // 3. Auto-refresh every 2 min
+        // Auto-refresh every 2 min
         this._timer = setInterval(() => this.fetchData(), this.refreshInterval);
         console.log('[EMR] Auto-refresh started (every 2 min)');
     },
