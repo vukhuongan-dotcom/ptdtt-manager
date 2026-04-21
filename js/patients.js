@@ -85,9 +85,9 @@ const PatientsPage = {
 
         <div class="flex justify-between items-center" style="margin-bottom:16px">
             <div class="staff-filters" style="flex-wrap:wrap;gap:6px">
-                <button class="filter-btn ${this.roomFilter==='all'?'active':''}" onclick="PatientsPage.setFilter('all')">Tất cả (${emr.totalDept})</button>
+                <button class="filter-btn ${this.roomFilter === 'all' ? 'active' : ''}" onclick="PatientsPage.setFilter('all')">Tất cả (${emr.totalDept})</button>
                 ${roomKeys.map(r => `
-                    <button class="filter-btn ${this.roomFilter===r?'active':''}" onclick="PatientsPage.setFilter('${r}')">${r} (${rooms[r].length})</button>
+                    <button class="filter-btn ${this.roomFilter === r ? 'active' : ''}" onclick="PatientsPage.setFilter('${r}')">${r} (${rooms[r].length})</button>
                 `).join('')}
             </div>
             <div class="search-box">
@@ -130,7 +130,11 @@ const PatientsPage = {
 
     search(q) {
         // Don't re-render while IME is composing (Telex/VNI)
-        if (this._composing) return;
+        // But DO clear pending timer to prevent mid-composition re-render
+        if (this._composing) {
+            clearTimeout(this._searchTimer);
+            return;
+        }
         this.searchQuery = q;
         // Debounce: wait 300ms after last keystroke before re-rendering
         clearTimeout(this._searchTimer);
@@ -149,6 +153,10 @@ const PatientsPage = {
     },
 
     afterRender() {
+        // Reset composing flag — if previous input was destroyed mid-composition,
+        // compositionend never fired, leaving _composing stuck as true forever
+        this._composing = false;
+
         // Bind IME composition events to prevent re-render during Telex input
         const el = document.getElementById('patient-search');
         if (el) {

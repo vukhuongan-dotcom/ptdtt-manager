@@ -283,7 +283,10 @@ const StaffPage = {
     _searchTimer: null,
 
     search(q) {
-        if (this._composing) return;
+        if (this._composing) {
+            clearTimeout(this._searchTimer);
+            return;
+        }
         this.searchQuery = q;
         clearTimeout(this._searchTimer);
         this._searchTimer = setTimeout(() => App.renderCurrentPage(), 300);
@@ -781,6 +784,8 @@ const StaffPage = {
     },
 
     afterRender() {
+        this._composing = false; // Reset in case compositionend never fired
+
         const el = document.getElementById('staff-search');
         if (el) {
             el.addEventListener('compositionstart', () => { this._composing = true; });
