@@ -75,8 +75,27 @@ def add_no_cache_headers(response):
         response.headers['Expires'] = '0'
     return response
 
-# Thread-safe data lock
-_data_lock = threading.Lock()
+# Cross-process file lock (works across Gunicorn workers)
+import fcntl
+_DB_LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', '.db.lock')
+
+class _CrossProcessLock:
+    """File-based lock using fcntl.flock — works across Gunicorn workers."""
+    def __init__(self, path):
+        self._path = path
+        self._fd = None
+    def __enter__(self):
+        os.makedirs(os.path.dirname(self._path), exist_ok=True)
+        self._fd = open(self._path, 'a+')
+        fcntl.flock(self._fd, fcntl.LOCK_EX)
+        return self
+    def __exit__(self, *args):
+        if self._fd:
+            fcntl.flock(self._fd, fcntl.LOCK_UN)
+            self._fd.close()
+            self._fd = None
+
+_data_lock = _CrossProcessLock(_DB_LOCK_FILE)
 
 # ────────────────────────────── Data helpers ──────────────────────────────
 def _ensure_data_dir():
@@ -131,6 +150,36 @@ def save_data(data):
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp, DATA_FILE)
+
+class atomic_update:
+    """Context manager for atomic read-modify-write on db.json.
+    Holds cross-process file lock for the entire duration.
+    Usage:
+        with atomic_update() as data:
+            data['surgeries'] = new_surgeries
+    # save_data is called automatically on exit
+    """
+    def __init__(self):
+        self._data = None
+    def __enter__(self):
+        _ensure_data_dir()
+        self._fd = open(_DB_LOCK_FILE, 'a+')
+        fcntl.flock(self._fd, fcntl.LOCK_EX)
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            self._data = json.load(f)
+        return self._data
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            if exc_type is None and self._data is not None:
+                self._data['_lastModified'] = datetime.now().isoformat()
+                tmp = DATA_FILE + '.tmp'
+                with open(tmp, 'w', encoding='utf-8') as f:
+                    json.dump(self._data, f, ensure_ascii=False, indent=2)
+                os.replace(tmp, DATA_FILE)
+        finally:
+            fcntl.flock(self._fd, fcntl.LOCK_UN)
+            self._fd.close()
+        return False
 
 # ────────────────────────────── Audit Logging ──────────────────────────────
 def _ensure_log_dir():
@@ -316,11 +365,10 @@ def put_collection(collection):
         'count': len(items) if isinstance(items, list) else 1,
         'nextId': next_id
     })
-    data = load_data()
-    data[collection] = items
-    if next_id is not None:
-        data.setdefault('nextIds', {})[collection] = next_id
-    save_data(data)
+    with atomic_update() as data:
+        data[collection] = items
+        if next_id is not None:
+            data.setdefault('nextIds', {})[collection] = next_id
     return jsonify({'ok': True})
 
 # ────────────────────────────── Audit API ──────────────────────────────
