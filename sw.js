@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2004202110';
+const CACHE_NAME = 'ptdtt-v2304231450';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -53,6 +53,12 @@ const STATIC_ASSETS = [
     '/img/icon-512.png',
     '/manifest.json'
 ];
+const STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
+
+function isCacheableStaticRequest(request, url) {
+    if (request.method !== 'GET' || url.origin !== self.location.origin) return false;
+    return STATIC_ASSET_PATHS.has(url.pathname);
+}
 
 // Install: precache static assets
 self.addEventListener('install', event => {
@@ -61,6 +67,12 @@ self.addEventListener('install', event => {
             .then(cache => cache.addAll(STATIC_ASSETS))
             .then(() => self.skipWaiting())
     );
+});
+
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
 
 // Activate: remove old caches
@@ -75,8 +87,9 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Fetch: Network-first for API, Cache-first for static
+// Fetch: Network only for API, cache only for static allowlist
 self.addEventListener('fetch', event => {
+    if (event.request.method !== 'GET') return;
     const url = new URL(event.request.url);
 
     // API requests: Network only — NEVER cache authenticated data
@@ -85,25 +98,31 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // ALL other requests: Network first, fallback to cache
+    // Navigations: always prefer fresh HTML, fallback to the cached shell when offline
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match('/index.html'))
+        );
+        return;
+    }
+
+    if (!isCacheableStaticRequest(event.request, url)) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     event.respondWith(
-        fetch(event.request)
-            .then(response => {
+        caches.match(url.pathname, { ignoreSearch: true }).then(cached => {
+            if (cached) return cached;
+            return fetch(event.request).then(response => {
                 if (response.ok) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, clone);
+                        cache.put(url.pathname, clone);
                     });
                 }
                 return response;
-            })
-            .catch(() => {
-                return caches.match(event.request).then(cached => {
-                    if (cached) return cached;
-                    if (event.request.mode === 'navigate') {
-                        return caches.match('/index.html');
-                    }
-                });
-            })
+            });
+        }).catch(() => caches.match(url.pathname, { ignoreSearch: true }))
     );
 });
