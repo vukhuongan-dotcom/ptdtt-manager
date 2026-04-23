@@ -89,10 +89,10 @@ const ResearchPage = {
                     </thead>
                     <tbody>
                         ${items.map((item, idx) => {
-                            const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
-                            const d = item.presentDate ? new Date(item.presentDate) : null;
-                            const dateLabel = d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}` : '—';
-                            return `<tr class="rsch-row rsch-row-${item.status}">
+            const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
+            const d = item.presentDate ? new Date(item.presentDate) : null;
+            const dateLabel = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '—';
+            return `<tr class="rsch-row rsch-row-${item.status}">
                                 <td class="rsch-stt">${idx + 1}</td>
                                 <td class="rsch-doctor">${item.doctorName}</td>
                                 <td class="rsch-title">${item.title}</td>
@@ -103,7 +103,7 @@ const ResearchPage = {
                                     <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá">🗑️</button>
                                 </td>` : ''}
                             </tr>`;
-                        }).join('')}
+        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -124,7 +124,55 @@ const ResearchPage = {
 
     afterRender() {
         this.loadFiles();
+        this._autoStatusTransition();
+        this._autoDedupDates();
         this._syncAllPlans();
+    },
+
+    // Auto-transition: registered → pending after 1 week
+    _autoStatusTransition() {
+        const now = new Date();
+        const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+        const items = Store.getAll('shcmSchedule');
+        let changed = 0;
+        items.forEach(item => {
+            if (item.status !== 'registered') return;
+            // Use createdAt if available, otherwise use presentDate as proxy
+            const refDate = item.createdAt ? new Date(item.createdAt) : null;
+            if (!refDate) return;
+            if (now - refDate >= ONE_WEEK) {
+                Store.update('shcmSchedule', item.id, { status: 'pending' });
+                changed++;
+            }
+        });
+        if (changed > 0) console.log(`[SHCM] Auto-transitioned ${changed} registered → pending`);
+    },
+
+    // Auto-dedup: shift items with duplicate dates +14 days
+    _autoDedupDates() {
+        const items = Store.getAll('shcmSchedule')
+            .filter(i => i.presentDate)
+            .sort((a, b) => a.presentDate.localeCompare(b.presentDate) || a.id - b.id);
+        const seen = new Map(); // date → first item id
+        let shifted = 0;
+        items.forEach(item => {
+            if (seen.has(item.presentDate)) {
+                // Duplicate — shift this item +14 days from the last item on this date
+                const d = new Date(item.presentDate);
+                d.setDate(d.getDate() + 14);
+                const newDate = d.toISOString().split('T')[0];
+                Store.update('shcmSchedule', item.id, { presentDate: newDate });
+                if (item.planId) Store.update('plans', item.planId, { date: newDate });
+                shifted++;
+                seen.set(newDate, item.id); // track the new date too
+            } else {
+                seen.set(item.presentDate, item.id);
+            }
+        });
+        if (shifted > 0) {
+            console.log(`[SHCM] Auto-shifted ${shifted} duplicate-date entries +2 weeks`);
+            Toast.info(`Đã tự dời ${shifted} bài trùng ngày (+2 tuần)`);
+        }
     },
 
     // Bulk-sync all SHCM entries → Plans (update existing + create missing)
@@ -171,13 +219,15 @@ const ResearchPage = {
                             <input class="form-input" type="text" name="presentDateDisplay" 
                                 placeholder="dd/mm/yyyy" 
                                 pattern="\\d{2}/\\d{2}/\\d{4}" 
-                                value="${item?.presentDate ? (() => { const d = new Date(item.presentDate); return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); })() : ''}"
-                                style="flex:1">
+                                value="${item?.presentDate ? (() => { const d = new Date(item.presentDate); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); })() : ''}"
+                                style="flex:1"
+                                oninput="ResearchPage._checkDateConflict(this.form, ${id || 0})">
                             <input type="date" name="presentDate" value="${item?.presentDate || ''}" 
                                 style="width:40px;padding:6px 4px;opacity:0.6;cursor:pointer" 
                                 title="Chọn từ lịch" 
-                                onchange="const d=new Date(this.value);this.form.presentDateDisplay.value=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()">
+                                onchange="const d=new Date(this.value);this.form.presentDateDisplay.value=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();ResearchPage._checkDateConflict(this.form, ${id || 0})">
                         </div>
+                        <div id="shcm-date-conflict" style="display:none;margin-top:6px;padding:8px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;color:#c2410c;font-size:13px"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tiến độ</label>
@@ -193,6 +243,30 @@ const ResearchPage = {
                 </div>
             </form>
         `);
+    },
+
+    // Real-time duplicate date check in form
+    _checkDateConflict(form, editingId) {
+        const warn = document.getElementById('shcm-date-conflict');
+        if (!warn) return;
+        const displayVal = form.presentDateDisplay?.value?.trim();
+        let isoDate = null;
+        if (displayVal && /^\d{2}\/\d{2}\/\d{4}$/.test(displayVal)) {
+            const [dd, mm, yyyy] = displayVal.split('/');
+            isoDate = `${yyyy}-${mm}-${dd}`;
+        } else if (form.presentDate?.value) {
+            isoDate = form.presentDate.value;
+        }
+        if (!isoDate) { warn.style.display = 'none'; return; }
+        const conflict = Store.getAll('shcmSchedule').find(i =>
+            i.presentDate === isoDate && i.id !== editingId
+        );
+        if (conflict) {
+            warn.style.display = 'block';
+            warn.innerHTML = `⚠️ Trùng ngày với bài của <strong>${conflict.doctorName}</strong>: "${conflict.title}". Bài trùng sẽ tự dời +2 tuần khi lưu.`;
+        } else {
+            warn.style.display = 'none';
+        }
     },
 
     save(e, id) {
@@ -218,7 +292,10 @@ const ResearchPage = {
             title: f.get('title'),
             status: f.get('status'),
             presentDate,
+            createdAt: id ? undefined : new Date().toISOString(), // track creation time for auto-status
         };
+        // Remove undefined keys (don't overwrite createdAt on edit)
+        Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
 
         if (id) {
             // Check if date changed — cascade subsequent items
@@ -248,7 +325,7 @@ const ResearchPage = {
         const items = Store.getAll('shcmSchedule')
             .filter(i => i.id >= 12)
             .sort((a, b) => a.id - b.id);
-        
+
         const idx = items.findIndex(i => i.id === changedId);
         if (idx < 0) return;
 
@@ -259,7 +336,7 @@ const ResearchPage = {
             const nextDate = new Date(prevDate);
             nextDate.setDate(nextDate.getDate() + 14);
             const newDateStr = nextDate.toISOString().split('T')[0];
-            
+
             if (items[i].presentDate !== newDateStr) {
                 Store.update('shcmSchedule', items[i].id, { presentDate: newDateStr });
                 // Also update linked plan
@@ -428,7 +505,7 @@ const ResearchPage = {
             const fmtDate = (ds) => {
                 if (!ds) return '—';
                 const d = new Date(ds);
-                return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+                return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
             };
 
             // Status label
@@ -544,14 +621,14 @@ const ResearchPage = {
             const resp = await fetch('/api/download-image', {
                 method: 'POST',
                 headers: dlHeaders,
-                body: JSON.stringify({ image: dataUrl, filename: `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}.jpg` })
+                body: JSON.stringify({ image: dataUrl, filename: `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.jpg` })
             });
             if (resp.ok) {
                 const blob = await resp.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}.jpg`;
+                a.download = `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.jpg`;
                 a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();
