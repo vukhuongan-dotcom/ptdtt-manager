@@ -1,7 +1,7 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
 const DATA_VERSION = 7; // Increment this when SAMPLE data changes
-const CLIENT_BUILD = 2004202110;
+const CLIENT_BUILD = 2104201745;
 
 const Store = {
     _data: null,
@@ -40,7 +40,16 @@ const Store = {
                 plans: [...SAMPLE_PLANS],
                 patients: [...SAMPLE_PATIENTS],
                 schedules: [...SAMPLE_SCHEDULES],
-                nextIds: { staff: SAMPLE_STAFF.length + 1, externalDoctors: 200, tasks: SAMPLE_TASKS.length + 1, plans: SAMPLE_PLANS.length + 1, patients: SAMPLE_PATIENTS.length + 1, schedules: SAMPLE_SCHEDULES.length + 1 }
+                conferences: [],
+                nextIds: {
+                    staff: SAMPLE_STAFF.length + 1,
+                    externalDoctors: 200,
+                    tasks: SAMPLE_TASKS.length + 1,
+                    plans: SAMPLE_PLANS.length + 1,
+                    patients: SAMPLE_PATIENTS.length + 1,
+                    schedules: SAMPLE_SCHEDULES.length + 1,
+                    conferences: 1
+                }
             };
             this._saveLocal(); // Only localStorage, NOT server
             localStorage.removeItem('ptdtt_accounts');
@@ -55,7 +64,9 @@ const Store = {
             if (!this._data.nextIds.tasksTrash) this._data.nextIds.tasksTrash = 1;
             if (!this._data.staffStatuses) this._data.staffStatuses = [];
             if (!this._data.departedStaff) this._data.departedStaff = [];
-            if (!this._data.disabledAccounts) this._data.disabledAccounts = [];
+            if (this._data.disabledAccounts) delete this._data.disabledAccounts;
+            if (this._data.customPasswords) delete this._data.customPasswords;
+            if (this._data.customAdmins) delete this._data.customAdmins;
             // SHCM collections
             if (!this._data.shcmSchedule || this._data.shcmSchedule.length === 0) {
                 this._data.shcmSchedule = typeof SAMPLE_SHCM !== 'undefined' ? JSON.parse(JSON.stringify(SAMPLE_SHCM)) : [];
@@ -67,6 +78,10 @@ const Store = {
                 this._data.nextIds.shcmSettings = 2;
             }
             if (!this._data.nextIds.shcmSettings) this._data.nextIds.shcmSettings = 2;
+            if (!this._data.conferences) this._data.conferences = [];
+            if (!this._data.nextIds.conferences) {
+                this._data.nextIds.conferences = Math.max(0, ...this._data.conferences.map(item => item?.id || 0)) + 1;
+            }
             SAMPLE_SCHEDULES.forEach(sample => {
                 if (!this._data.schedules.find(s => s.weekKey === sample.weekKey)) {
                     const entry = JSON.parse(JSON.stringify(sample));
@@ -87,8 +102,19 @@ const Store = {
         this._syncToServer();
     },
 
+    _buildCollectionPayload(collection) {
+        const payload = {
+            items: this._clone(this._data?.[collection] ?? [])
+        };
+        if (Object.prototype.hasOwnProperty.call(this._data?.nextIds || {}, collection)) {
+            payload.nextId = this._data.nextIds[collection];
+        }
+        return payload;
+    },
+
     saveCollections(collections) {
         const unique = [...new Set((collections || []).filter(Boolean))];
+        if (!unique.length) return;
         localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
         unique.forEach(collection => this._dirtyCollections.add(collection));
         this._queueDirtyCollectionsSync();
@@ -240,8 +266,8 @@ const Store = {
             if (response.status === 401 && typeof Auth !== 'undefined') {
                 console.warn('[Store] 401 Unauthorized — logging out');
                 Auth.logout();
-                if (typeof App !== 'undefined' && App.renderLogin) {
-                    App.renderLogin();
+                if (typeof App !== 'undefined' && App.showLogin) {
+                    App.showLogin();
                 }
                 throw new Error('Unauthorized');
             }
@@ -307,7 +333,7 @@ const Store = {
             const collections = [...this._dirtyCollections];
 
             for (const collection of collections) {
-                const payload = JSON.stringify(this._data[collection] ?? []);
+                const payload = JSON.stringify(this._buildCollectionPayload(collection));
 
                 try {
                     const response = await this._api(`/api/data/${encodeURIComponent(collection)}`, {
@@ -318,7 +344,7 @@ const Store = {
                     await response.json();
                     this._serverAvailable = true;
 
-                    if (JSON.stringify(this._data[collection] ?? []) === payload) {
+                    if (JSON.stringify(this._buildCollectionPayload(collection)) === payload) {
                         this._dirtyCollections.delete(collection);
                     } else {
                         shouldRetry = true;
@@ -483,7 +509,7 @@ const Store = {
     add(collection, item) {
         item.id = this._data.nextIds[collection]++;
         this._data[collection].push(item);
-        this.save();
+        this.saveCollections([collection]);
         return item;
     },
 
@@ -491,7 +517,7 @@ const Store = {
         const idx = this._data[collection].findIndex(item => item.id === id);
         if (idx !== -1) {
             this._data[collection][idx] = { ...this._data[collection][idx], ...updates };
-            this.save();
+            this.saveCollections([collection]);
             return this._data[collection][idx];
         }
         return null;
@@ -500,7 +526,7 @@ const Store = {
     remove(collection, id) {
         this._deletedIds.add(id);
         this._data[collection] = this._data[collection].filter(item => item.id !== id);
-        this.save();
+        this.saveCollections([collection]);
     },
 
     // Specific queries
