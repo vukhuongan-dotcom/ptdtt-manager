@@ -92,9 +92,29 @@ const Store = {
             this._saveLocal(); // Only localStorage, NOT server
         }
 
-        // Load from server FIRST, then start polling
+        // Only start authenticated sync if JWT already exists (returning user).
+        // For fresh login, App.onLoginSuccess() calls startAuthenticatedSync().
+        if (typeof Auth !== 'undefined' && Auth.getToken()) {
+            this.startAuthenticatedSync();
+        }
+    },
+
+    // Start server sync + polling. Safe to call multiple times.
+    startAuthenticatedSync() {
         this._syncFromServer();
         this._startPolling();
+    },
+
+    // Reset sync state on logout — prevents stale data leaking to next session
+    resetForLogout() {
+        this._stopPolling();
+        this._hasLoadedServerOnce = false;
+        this._serverVersion = null;
+        this._syncing = false;
+        this._syncingDirtyCollections = false;
+        this._dirtyCollections.clear();
+        this._deletedIds.clear();
+        this._pendingSaveAfterSync = false;
     },
 
     save() {
@@ -429,8 +449,13 @@ const Store = {
         this._api('/api/data/version').then(r => r.json()).then(v => {
             if (!v.version) return;
             if (this._serverVersion === null) {
-                // First check — just store the version
                 this._serverVersion = v.version;
+                // First successful version check: if we never loaded server data,
+                // do a full sync now (fixes post-login stale state)
+                if (!this._hasLoadedServerOnce) {
+                    console.log('[Store] 🔄 First version check after auth — syncing...');
+                    this._syncFromServer(true);
+                }
                 return;
             }
             if (v.version !== this._serverVersion) {

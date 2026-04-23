@@ -39,6 +39,7 @@ const App = {
         localStorage.removeItem(this._IDLE_KEY);
         document.getElementById('idle-warning-bar')?.remove();
         Notifications.stopPolling();
+        Store.resetForLogout();
         if (typeof EMR !== 'undefined') {
             EMR.stopAutoRefresh();
             EMR.clearRuntimeCache();
@@ -60,10 +61,8 @@ const App = {
         const loginContainer = document.getElementById('login-container');
         if (loginContainer) loginContainer.remove();
 
-        // Re-sync data from server now that we have a valid JWT token.
-        // The initial _syncFromServer during Store.init() fails (401, no token yet),
-        // so this is the first time we can actually fetch server data.
-        Store._syncFromServer();
+        // Start authenticated server sync + polling now that JWT is available
+        Store.startAuthenticatedSync();
 
         this.showApp();
     },
