@@ -3,6 +3,7 @@ const Auth = {
     SESSION_KEY: 'ptdtt_session',
     TOKEN_KEY: 'ptdtt_jwt',
     SUPERADMIN_USERNAME: 'vkan',
+    PASSWORD_MIN_LENGTH: 10,
     IDLE_TIMEOUT_MS: 5 * 60 * 1000, // 5 minutes
     _lastActivity: Date.now(),
     _idleTimer: null,
@@ -65,6 +66,22 @@ const Auth = {
 
     _removeToken() {
         localStorage.removeItem(this.TOKEN_KEY);
+    },
+
+    validatePassword(password, username = '') {
+        if ((password || '').length < this.PASSWORD_MIN_LENGTH) {
+            return `Mật khẩu phải có ít nhất ${this.PASSWORD_MIN_LENGTH} ký tự`;
+        }
+        if (!/[A-Za-zÀ-ỹ]/.test(password)) {
+            return 'Mật khẩu phải có ít nhất 1 chữ cái';
+        }
+        if (!/\d/.test(password)) {
+            return 'Mật khẩu phải có ít nhất 1 chữ số';
+        }
+        if (username && password.trim().toLowerCase() === username.trim().toLowerCase()) {
+            return 'Mật khẩu không được trùng với tên đăng nhập';
+        }
+        return '';
     },
 
     // Decode JWT payload without verification (for client-side display only)
@@ -321,8 +338,8 @@ const Auth = {
         Modal.open('Đổi mật khẩu', `
             <form onsubmit="Auth.handleChangePassword(event)">
                 ${this._pwField('pw-current', 'Mật khẩu hiện tại', 'required')}
-                ${this._pwField('pw-new', 'Mật khẩu mới', 'required minlength="4"')}
-                ${this._pwField('pw-confirm', 'Xác nhận mật khẩu mới', 'required minlength="4"')}
+                ${this._pwField('pw-new', 'Mật khẩu mới', `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
+                ${this._pwField('pw-confirm', 'Xác nhận mật khẩu mới', `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
                 <div id="pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
@@ -340,6 +357,8 @@ const Auth = {
         const errEl = document.getElementById('pw-error');
 
         if (newPw !== confirm) { errEl.textContent = 'Mật khẩu xác nhận không khớp'; return; }
+        const passwordError = this.validatePassword(newPw, this.getSession()?.username || '');
+        if (passwordError) { errEl.textContent = passwordError; return; }
         const result = await this.changePassword(current, newPw);
         if (result.success) {
             Modal.close();
@@ -427,7 +446,7 @@ const Auth = {
     openResetPasswordFor(username, name) {
         Modal.open(`Đổi mật khẩu: ${name}`, `
             <form onsubmit="Auth.handleResetPassword(event, '${username}')">
-                ${this._pwField('reset-pw-new', `Mật khẩu mới cho <strong>${name}</strong> (${username})`, 'required minlength="4" placeholder="Nhập mật khẩu mới"')}
+                ${this._pwField('reset-pw-new', `Mật khẩu mới cho <strong>${name}</strong> (${username})`, `required minlength="${this.PASSWORD_MIN_LENGTH}" placeholder="Ít nhất ${this.PASSWORD_MIN_LENGTH} ký tự, có chữ và số"`)}
                 <div id="reset-pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Auth.openManagePasswords()">Quay lại</button>
@@ -440,6 +459,11 @@ const Auth = {
     async handleResetPassword(e, username) {
         e.preventDefault();
         const newPw = document.getElementById('reset-pw-new').value;
+        const passwordError = this.validatePassword(newPw, username);
+        if (passwordError) {
+            document.getElementById('reset-pw-error').textContent = passwordError;
+            return;
+        }
         const result = await this.changeUserPassword(username, newPw);
         if (result.success) {
             Toast.success(`Đã đổi mật khẩu thành công cho ${username}!`);

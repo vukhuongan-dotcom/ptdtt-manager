@@ -7,7 +7,13 @@ const AuditLog = {
         Modal.open('📋 Lịch sử hoạt động', '<div style="text-align:center;padding:20px">Đang tải...</div>');
 
         try {
-            const resp = await fetch(`/api/audit?days=${days}&_t=${Date.now()}`);
+            const token = Auth.getToken();
+            const resp = await fetch(`/api/audit?days=${days}&_t=${Date.now()}`, {
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            });
+            if (resp.status === 401 || resp.status === 403) {
+                throw new Error('Bạn không có quyền xem audit log');
+            }
             const data = await resp.json();
             const logs = data.logs || [];
 

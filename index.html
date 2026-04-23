@@ -145,9 +145,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script src="js/xlsx.full.min.js"></script>
-    <script src="js/data.js?v=14041632"></script>
-    <script src="js/store.js?v=2004202110"></script>
-    <script src="js/auth.js?v=2004202110"></script>
+    <script src="js/data.js?v=2304231450"></script>
+    <script src="js/store.js?v=2304231450"></script>
+    <script src="js/auth.js?v=2304231450"></script>
     <script src="js/utils.js?v=14041632"></script>
     <script src="js/dashboard.js?v=2004201705"></script>
     <script src="js/staff.js?v=2004201705"></script>
@@ -157,7 +157,7 @@
     <script src="js/patients.js?v=14041632"></script>
     <script src="js/schedule.js?v=2004201750"></script>
     <script src="js/surgery.js?v=14041632"></script>
-    <script src="js/emr.js?v=14041632"></script>
+    <script src="js/emr.js?v=2304231450"></script>
     <script src="js/surgery-stats.js?v=14041632"></script>
     <script src="js/research.js?v=2004201555"></script>
 
@@ -166,8 +166,8 @@
     <script src="js/notifications.js?v=14041632"></script>
     <script src="js/search.js?v=14041632"></script>
     <script src="js/onboarding.js?v=14041632"></script>
-    <script src="js/audit-log.js?v=14041632"></script>
-    <script src="js/app.js?v=14041632"></script>
+    <script src="js/audit-log.js?v=2304231450"></script>
+    <script src="js/app.js?v=2304231450"></script>
 
     <!-- Offline Banner -->
     <div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;text-align:center;padding:8px 16px;font-size:0.82rem;font-weight:600;font-family:Inter,system-ui,sans-serif">
@@ -177,14 +177,15 @@
     <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
+            let swControllerRefreshing = false;
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (swControllerRefreshing) return;
+                swControllerRefreshing = true;
+                window.location.reload();
+            });
+
             window.addEventListener('load', async () => {
-                // Clear ALL old caches first
-                try {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(cacheNames.map(n => caches.delete(n)));
-                    console.log('Cleared old caches:', cacheNames);
-                } catch(e) { console.log('Cache clear error:', e); }
-                // Register new SW
                 try {
                     const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
                     console.log('SW registered:', reg.scope);
