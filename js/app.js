@@ -24,8 +24,6 @@ const App = {
 
         if (Auth.isLoggedIn()) {
             this.showApp();
-            // Start EMR real-time patient data fetch (instant localStorage cache + server refresh)
-            EMR.startAutoRefresh();
         } else {
             this.showLogin();
         }
@@ -33,6 +31,18 @@ const App = {
 
     // === Login Flow ===
     showLogin() {
+        if (this._idleTimer) {
+            clearInterval(this._idleTimer);
+            this._idleTimer = null;
+        }
+        this._idleWarned = false;
+        localStorage.removeItem(this._IDLE_KEY);
+        document.getElementById('idle-warning-bar')?.remove();
+        Notifications.stopPolling();
+        if (typeof EMR !== 'undefined') {
+            EMR.stopAutoRefresh();
+            EMR.clearRuntimeCache();
+        }
         document.getElementById('app').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
 
@@ -50,6 +60,11 @@ const App = {
         const loginContainer = document.getElementById('login-container');
         if (loginContainer) loginContainer.remove();
 
+        // Re-sync data from server now that we have a valid JWT token.
+        // The initial _syncFromServer during Store.init() fails (401, no token yet),
+        // so this is the first time we can actually fetch server data.
+        Store._syncFromServer();
+
         this.showApp();
     },
 
@@ -60,6 +75,9 @@ const App = {
         this.bindNavigation();
         this.navigate('dashboard');
         Notifications.startPolling();
+        if (typeof EMR !== 'undefined') {
+            EMR.startAutoRefresh();
+        }
 
         // Start idle auto-logout (15 min)
         this._startIdleTimer();
