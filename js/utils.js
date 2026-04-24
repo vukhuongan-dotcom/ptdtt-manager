@@ -117,14 +117,16 @@ const Utils = {
         const diagonal = Math.hypot(w, h);
         const mainText = options.mainText || 'KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG';
         const subText = options.subText || 'Bệnh viện Bình Dân';
-        const mainOpacity = options.mainOpacity ?? 0.06;
-        const subOpacity = options.subOpacity ?? 0.045;
+        const color = options.color || '15, 23, 42';
+        const mainOpacity = options.mainOpacity ?? 0.1;
+        const subOpacity = options.subOpacity ?? 0.075;
+        const strokeOpacity = options.strokeOpacity ?? 0.12;
 
-        const mainSize = Math.max(52, Math.min(180, Math.round(shortSide * 0.072)));
-        const subSize = Math.max(24, Math.min(84, Math.round(mainSize * 0.5)));
-        const stripeStep = Math.max(Math.round(shortSide * 0.26), Math.round(mainSize * 2.3));
-        const stripeLimit = Math.max(shortSide * 0.56, stripeStep);
-        const xOffset = Math.round(diagonal * 0.07);
+        const mainSize = Math.max(72, Math.min(240, Math.round(shortSide * 0.085)));
+        const subSize = Math.max(28, Math.min(96, Math.round(mainSize * 0.52)));
+        const stripeStep = Math.max(Math.round(shortSide * 0.22), Math.round(mainSize * 1.95));
+        const stripeLimit = Math.max(Math.round(diagonal * 0.65), stripeStep * 2);
+        const xOffset = Math.round(diagonal * 0.08);
 
         ctx.save();
         if (typeof ctx.resetTransform === 'function') {
@@ -141,12 +143,18 @@ const Utils = {
         for (let y = -stripeLimit; y <= stripeLimit; y += stripeStep) {
             const x = stripeIndex % 2 === 0 ? -xOffset : xOffset;
 
-            ctx.fillStyle = `rgba(15, 23, 42, ${mainOpacity})`;
+            ctx.strokeStyle = `rgba(${color}, ${strokeOpacity})`;
+            ctx.lineWidth = Math.max(2, Math.round(mainSize * 0.035));
             ctx.font = `800 ${mainSize}px Inter, Arial, sans-serif`;
+            ctx.strokeText(mainText, x, y);
+            ctx.fillStyle = `rgba(${color}, ${mainOpacity})`;
             ctx.fillText(mainText, x, y);
 
-            ctx.fillStyle = `rgba(15, 23, 42, ${subOpacity})`;
+            ctx.strokeStyle = `rgba(${color}, ${Math.max(0.04, strokeOpacity * 0.7)})`;
+            ctx.lineWidth = Math.max(1.5, Math.round(subSize * 0.05));
             ctx.font = `600 ${subSize}px Inter, Arial, sans-serif`;
+            ctx.strokeText(subText, x, y + Math.round(mainSize * 0.72));
+            ctx.fillStyle = `rgba(${color}, ${subOpacity})`;
             ctx.fillText(subText, x, y + Math.round(mainSize * 0.72));
 
             stripeIndex += 1;

@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2304231450';
+const CACHE_NAME = 'ptdtt-v2404261643';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -111,8 +111,25 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    if (url.search) {
+        event.respondWith(
+            fetch(event.request).then(response => {
+                if (response.ok) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, clone);
+                    });
+                }
+                return response;
+            }).catch(() =>
+                caches.match(event.request).then(cached => cached || caches.match(url.pathname))
+            )
+        );
+        return;
+    }
+
     event.respondWith(
-        caches.match(url.pathname, { ignoreSearch: true }).then(cached => {
+        caches.match(url.pathname).then(cached => {
             if (cached) return cached;
             return fetch(event.request).then(response => {
                 if (response.ok) {
@@ -123,6 +140,6 @@ self.addEventListener('fetch', event => {
                 }
                 return response;
             });
-        }).catch(() => caches.match(url.pathname, { ignoreSearch: true }))
+        }).catch(() => caches.match(url.pathname))
     );
 });
