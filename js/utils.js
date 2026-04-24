@@ -118,15 +118,15 @@ const Utils = {
         const mainText = options.mainText || 'KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG';
         const subText = options.subText || 'Bệnh viện Bình Dân';
         const color = options.color || '15, 23, 42';
-        const mainOpacity = options.mainOpacity ?? 0.1;
-        const subOpacity = options.subOpacity ?? 0.075;
-        const strokeOpacity = options.strokeOpacity ?? 0.12;
+        const mainOpacity = options.mainOpacity ?? 0.045;
+        const subOpacity = options.subOpacity ?? 0.03;
+        const strokeOpacity = options.strokeOpacity ?? 0;
 
-        const mainSize = Math.max(72, Math.min(240, Math.round(shortSide * 0.085)));
-        const subSize = Math.max(28, Math.min(96, Math.round(mainSize * 0.52)));
-        const stripeStep = Math.max(Math.round(shortSide * 0.22), Math.round(mainSize * 1.95));
-        const stripeLimit = Math.max(Math.round(diagonal * 0.65), stripeStep * 2);
-        const xOffset = Math.round(diagonal * 0.08);
+        const mainSize = Math.max(64, Math.min(210, Math.round(shortSide * 0.076)));
+        const subSize = Math.max(24, Math.min(78, Math.round(mainSize * 0.46)));
+        const stripeStep = Math.max(Math.round(shortSide * 0.29), Math.round(mainSize * 2.4));
+        const stripeLimit = Math.max(Math.round(diagonal * 0.55), stripeStep * 1.5);
+        const xOffset = Math.round(diagonal * 0.06);
 
         ctx.save();
         if (typeof ctx.resetTransform === 'function') {
@@ -143,19 +143,23 @@ const Utils = {
         for (let y = -stripeLimit; y <= stripeLimit; y += stripeStep) {
             const x = stripeIndex % 2 === 0 ? -xOffset : xOffset;
 
-            ctx.strokeStyle = `rgba(${color}, ${strokeOpacity})`;
-            ctx.lineWidth = Math.max(2, Math.round(mainSize * 0.035));
             ctx.font = `800 ${mainSize}px Inter, Arial, sans-serif`;
-            ctx.strokeText(mainText, x, y);
+            if (strokeOpacity > 0) {
+                ctx.strokeStyle = `rgba(${color}, ${strokeOpacity})`;
+                ctx.lineWidth = Math.max(1.25, Math.round(mainSize * 0.018));
+                ctx.strokeText(mainText, x, y);
+            }
             ctx.fillStyle = `rgba(${color}, ${mainOpacity})`;
             ctx.fillText(mainText, x, y);
 
-            ctx.strokeStyle = `rgba(${color}, ${Math.max(0.04, strokeOpacity * 0.7)})`;
-            ctx.lineWidth = Math.max(1.5, Math.round(subSize * 0.05));
             ctx.font = `600 ${subSize}px Inter, Arial, sans-serif`;
-            ctx.strokeText(subText, x, y + Math.round(mainSize * 0.72));
+            if (strokeOpacity > 0) {
+                ctx.strokeStyle = `rgba(${color}, ${Math.max(0.02, strokeOpacity * 0.55)})`;
+                ctx.lineWidth = Math.max(1, Math.round(subSize * 0.025));
+                ctx.strokeText(subText, x, y + Math.round(mainSize * 0.7));
+            }
             ctx.fillStyle = `rgba(${color}, ${subOpacity})`;
-            ctx.fillText(subText, x, y + Math.round(mainSize * 0.72));
+            ctx.fillText(subText, x, y + Math.round(mainSize * 0.7));
 
             stripeIndex += 1;
         }
