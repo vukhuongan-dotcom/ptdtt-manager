@@ -104,6 +104,55 @@ const Utils = {
 
     chevronRight() {
         return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`;
+    },
+
+    applyExportWatermark(canvas, options = {}) {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const shortSide = Math.min(w, h);
+        const diagonal = Math.hypot(w, h);
+        const mainText = options.mainText || 'KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG';
+        const subText = options.subText || 'Bệnh viện Bình Dân';
+        const mainOpacity = options.mainOpacity ?? 0.06;
+        const subOpacity = options.subOpacity ?? 0.045;
+
+        const mainSize = Math.max(52, Math.min(180, Math.round(shortSide * 0.072)));
+        const subSize = Math.max(24, Math.min(84, Math.round(mainSize * 0.5)));
+        const stripeStep = Math.max(Math.round(shortSide * 0.26), Math.round(mainSize * 2.3));
+        const stripeLimit = Math.max(shortSide * 0.56, stripeStep);
+        const xOffset = Math.round(diagonal * 0.07);
+
+        ctx.save();
+        if (typeof ctx.resetTransform === 'function') {
+            ctx.resetTransform();
+        } else {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate(-Math.atan2(h, w));
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let stripeIndex = 0;
+        for (let y = -stripeLimit; y <= stripeLimit; y += stripeStep) {
+            const x = stripeIndex % 2 === 0 ? -xOffset : xOffset;
+
+            ctx.fillStyle = `rgba(15, 23, 42, ${mainOpacity})`;
+            ctx.font = `800 ${mainSize}px Inter, Arial, sans-serif`;
+            ctx.fillText(mainText, x, y);
+
+            ctx.fillStyle = `rgba(15, 23, 42, ${subOpacity})`;
+            ctx.font = `600 ${subSize}px Inter, Arial, sans-serif`;
+            ctx.fillText(subText, x, y + Math.round(mainSize * 0.72));
+
+            stripeIndex += 1;
+        }
+
+        ctx.restore();
     }
 };
 

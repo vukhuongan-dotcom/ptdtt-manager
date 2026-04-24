@@ -650,19 +650,6 @@ const ResearchPage = {
 
     // Watermark (same pattern as SchedulePage)
     _addWatermark(canvas) {
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width;
-        const h = canvas.height;
-        ctx.save();
-        ctx.translate(w / 2, h / 2);
-        ctx.rotate(-Math.atan2(h, w));
-        ctx.font = `bold ${Math.round(w * 0.04)}px Inter, Arial, sans-serif`;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -Math.round(h * 0.02));
-        ctx.font = `${Math.round(w * 0.02)}px Inter, Arial, sans-serif`;
-        ctx.fillText('Bệnh viện Bình Dân', 0, Math.round(h * 0.04));
-        ctx.restore();
+        Utils.applyExportWatermark(canvas);
     }
 };

@@ -739,21 +739,7 @@ const SurgeryPage = {
 
         const target = container.querySelector('#surgery-export-target');
         html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
-            // Add watermark — diagonal bottom-left → top-right
-            const ctx = canvasEl.getContext('2d');
-            const cw = canvasEl.width;
-            const ch = canvasEl.height;
-            ctx.save();
-            ctx.translate(cw / 2, ch / 2);
-            ctx.rotate(-Math.atan2(ch, cw));
-            ctx.font = `bold ${Math.round(cw * 0.055)}px Inter, system-ui, sans-serif`;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -Math.round(ch * 0.02));
-            ctx.font = `${Math.round(cw * 0.025)}px Inter, system-ui, sans-serif`;
-            ctx.fillText('Bệnh viện Bình Dân', 0, Math.round(ch * 0.04));
-            ctx.restore();
+            Utils.applyExportWatermark(canvasEl);
 
             canvasEl.toBlob(blob => {
                 const url = URL.createObjectURL(blob);
