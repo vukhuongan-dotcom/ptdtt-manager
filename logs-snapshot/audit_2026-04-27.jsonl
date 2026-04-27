@@ -1,0 +1,8 @@
+{"ts": "2026-04-27T05:42:58.850876", "user": "ltnthao", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 23, "nextId": null}}
+{"ts": "2026-04-27T12:38:09.875986", "user": "vkan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 51}}
+{"ts": "2026-04-27T12:38:14.255338", "user": "vkan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 51}}
+{"ts": "2026-04-27T14:33:35.093161", "user": "bnsnam", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-04-27T15:41:26.392527", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-04-27T22:11:03.661308", "user": "bnsnam", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-04-27T22:17:31.690171", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-04-27T22:25:51.389506", "user": "bnsnam", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
