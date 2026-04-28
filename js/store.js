@@ -1,7 +1,7 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
 const DATA_VERSION = 7; // Increment this when SAMPLE data changes
-const CLIENT_BUILD = 2804281640;
+const CLIENT_BUILD = 2804281705;
 
 const Store = {
     _data: null,
@@ -12,6 +12,7 @@ const Store = {
     _pendingSaveAfterSync: false,
     _syncingDirtyCollections: false,
     _initialSyncPromise: null,
+    _collectionSaveWaiters: [],
     _pollBound: false,
 
     // Save to localStorage only (no server push) — used during init
@@ -156,7 +157,7 @@ const Store = {
         if (!unique.length) return;
         localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
         unique.forEach(collection => this._dirtyCollections.add(collection));
-        this._queueDirtyCollectionsSync();
+        return this._queueDirtyCollectionsSync();
     },
 
 
@@ -371,22 +372,40 @@ const Store = {
 
     _queueDirtyCollectionsSync() {
         if (this._collectionSaveDebounce) clearTimeout(this._collectionSaveDebounce);
-        this._collectionSaveDebounce = setTimeout(() => this._flushDirtyCollections(), 300);
+        return new Promise(resolve => {
+            this._collectionSaveWaiters.push(resolve);
+            this._collectionSaveDebounce = setTimeout(async () => {
+                let result;
+                try {
+                    result = await this._flushDirtyCollections();
+                } catch (e) {
+                    result = { ok: false, errors: [{ error: e, message: e.message || 'Lỗi lưu dữ liệu' }] };
+                }
+                const waiters = this._collectionSaveWaiters.splice(0);
+                waiters.forEach(done => done(result || { ok: true, errors: [] }));
+            }, 300);
+        });
     },
 
     async _flushDirtyCollections() {
-        if (this._syncingDirtyCollections || !this._dirtyCollections.size) return;
+        if (this._syncingDirtyCollections) return { ok: true, pending: true, errors: [] };
+        if (!this._dirtyCollections.size) return { ok: true, errors: [] };
 
         if (!this._hasLoadedServerOnce) {
-            this.startAuthenticatedSync()?.finally(() => {
-                if (this._dirtyCollections.size) this._queueDirtyCollectionsSync();
-            });
             console.log('[Store] ⏳ Delaying collection push until initial server sync completes');
-            return;
+            await this.startAuthenticatedSync();
+            if (!this._hasLoadedServerOnce) {
+                return {
+                    ok: false,
+                    errors: [{ message: 'Chưa đồng bộ được dữ liệu server. Vui lòng thử lại sau vài giây.' }]
+                };
+            }
+            return this._flushDirtyCollections();
         }
 
         this._syncingDirtyCollections = true;
         let shouldRetry = false;
+        const errors = [];
 
         try {
             const collections = [...this._dirtyCollections];
@@ -420,6 +439,7 @@ const Store = {
                     if (!permanent) {
                         shouldRetry = true;
                     }
+                    errors.push({ collection, error: e, message: e.message || 'Lỗi lưu dữ liệu' });
                     this._notifySyncError(`Chưa lưu được ${collection}: ${e.message}`);
                 }
             }
@@ -431,10 +451,11 @@ const Store = {
             } catch (_) { }
         } finally {
             this._syncingDirtyCollections = false;
-            if (shouldRetry && this._serverAvailable) {
+            if (shouldRetry) {
                 this._queueDirtyCollectionsSync();
             }
         }
+        return { ok: errors.length === 0, errors };
     },
 
     _syncFromServer(quiet) {
@@ -471,7 +492,6 @@ const Store = {
             this._pendingSaveAfterSync = false;
             this._syncing = false;
             if (shouldRetrySave) this._syncToServer();
-            if (this._dirtyCollections.size) this._queueDirtyCollectionsSync();
         }).catch(e => {
             if (e.message !== 'Unauthorized') {
                 this._serverAvailable = false;

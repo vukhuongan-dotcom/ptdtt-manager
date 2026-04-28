@@ -36,7 +36,7 @@ if not JWT_SECRET:
     raise RuntimeError('JWT_SECRET environment variable is required. Set it in /etc/systemd/system/ptdtt.service or .env')
 JWT_EXPIRY_HOURS = int(os.environ.get('JWT_EXPIRY_HOURS', '8'))
 PORT      = int(os.environ.get('PORT', 5000))
-MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2804281640'))
+MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2804281705'))
 PASSWORD_MIN_LENGTH = int(os.environ.get('PASSWORD_MIN_LENGTH', '10'))
 LOGIN_WINDOW_MINUTES = int(os.environ.get('LOGIN_WINDOW_MINUTES', '15'))
 LOGIN_MAX_ATTEMPTS = int(os.environ.get('LOGIN_MAX_ATTEMPTS', '5'))
