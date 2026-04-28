@@ -127,8 +127,8 @@ const App = {
     },
 
     // === Idle Auto-Logout (15 minutes) ===
-    IDLE_TIMEOUT: 15 * 60 * 1000, // 15 minutes in ms
-    IDLE_WARNING: 14 * 60 * 1000, // warn at 14 min
+    IDLE_TIMEOUT: 5 * 60 * 1000, // 5 minutes in ms
+    IDLE_WARNING: 4 * 60 * 1000, // warn at 4 min
     _idleTimer: null,
     _idleWarned: false,
     _IDLE_KEY: 'ptdtt_lastActivity',
