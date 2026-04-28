@@ -106,6 +106,8 @@ const App = {
     showApp() {
         document.getElementById('auth-checking')?.remove();
         document.getElementById('app').style.display = 'flex';
+        // Restore modal-overlay to CSS-controlled display (was set inline by _showAuthChecking)
+        document.getElementById('modal-overlay').style.display = '';
         this.updateSidebarUser();
         this.updateMobileHeader();
         this.bindNavigation();
