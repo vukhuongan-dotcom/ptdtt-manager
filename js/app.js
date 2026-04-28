@@ -42,7 +42,7 @@ const App = {
 
         // Server confirmed session — safe to init store and show app
         Store.init();
-        Store.startAuthenticatedSync();
+        await Store.startAuthenticatedSync();
         this.showApp();
     },
 
@@ -89,13 +89,16 @@ const App = {
         loginContainer.innerHTML = LoginPage.render();
     },
 
-    onLoginSuccess() {
+    async onLoginSuccess() {
         const loginContainer = document.getElementById('login-container');
         if (loginContainer) loginContainer.remove();
         document.getElementById('auth-checking')?.remove();
 
+        // Show loading while syncing data from server
+        this._showAuthChecking();
+
         // Start authenticated server sync + polling now that JWT is available
-        Store.startAuthenticatedSync();
+        await Store.startAuthenticatedSync();
 
         this.showApp();
     },
