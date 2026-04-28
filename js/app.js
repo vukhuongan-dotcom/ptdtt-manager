@@ -117,7 +117,7 @@ const App = {
             EMR.startAutoRefresh();
         }
 
-        // Start idle auto-logout (15 min)
+        // Start idle auto-logout (5 min)
         this._startIdleTimer();
 
         // Auto-start onboarding for first-time users
@@ -126,7 +126,7 @@ const App = {
         }
     },
 
-    // === Idle Auto-Logout (15 minutes) ===
+    // === Idle Auto-Logout (5 minutes) ===
     IDLE_TIMEOUT: 5 * 60 * 1000, // 5 minutes in ms
     IDLE_WARNING: 4 * 60 * 1000, // warn at 4 min
     _idleTimer: null,
