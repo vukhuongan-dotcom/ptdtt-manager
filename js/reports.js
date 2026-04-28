@@ -394,8 +394,14 @@ const ReportsPage = {
         `);
     },
 
-    saveReport16h(e, date) {
+    async saveReport16h(e, date) {
         e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalSubmitText = submitBtn?.innerHTML || '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Đang lưu...';
+        }
         const fd = new FormData(e.target);
         const session = Auth.getSession();
 
@@ -430,7 +436,14 @@ const ReportsPage = {
         } else {
             Store._data.reports16h.push(report);
         }
-        Store.saveCollections(['reports16h']);
+        const saved = await Store.saveCollections(['reports16h']);
+        if (!saved?.ok) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalSubmitText;
+            }
+            return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được báo cáo 16h. Vui lòng thử lại.');
+        }
 
         Modal.close();
         this.selectedDate = date;
@@ -951,8 +964,14 @@ const ReportsPage = {
         if (totalInput) totalInput.value = ct + yc + robot;
     },
 
-    saveReport7h(e, date) {
+    async saveReport7h(e, date) {
         e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalSubmitText = submitBtn?.innerHTML || '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Đang lưu...';
+        }
         const fd = new FormData(e.target);
         const session = Auth.getSession();
 
@@ -982,7 +1001,14 @@ const ReportsPage = {
         } else {
             Store._data.reports7h.push(report);
         }
-        Store.saveCollections(['reports7h']);
+        const saved = await Store.saveCollections(['reports7h']);
+        if (!saved?.ok) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalSubmitText;
+            }
+            return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được báo cáo 7h. Vui lòng thử lại.');
+        }
 
         Modal.close();
         this.selectedDate = date;

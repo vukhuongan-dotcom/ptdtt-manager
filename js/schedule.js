@@ -261,6 +261,10 @@ const SchedulePage = {
     _upsertSchedule(weekKey, dates, updates) {
         const schedules = [...Store.getAll('schedules')];
         const existing = schedules.findIndex(s => s.weekKey === weekKey);
+        if (!Store._data.nextIds) Store._data.nextIds = {};
+        if (!Number.isFinite(Store._data.nextIds.schedules)) {
+            Store._data.nextIds.schedules = Math.max(0, ...schedules.map(s => s?.id || 0)) + 1;
+        }
 
         if (existing >= 0) {
             schedules[existing] = { ...schedules[existing], ...updates };
@@ -278,10 +282,10 @@ const SchedulePage = {
         }
 
         Store.replaceCollection('schedules', schedules);
-        Store.saveCollections(['schedules']);
+        return Store.saveCollections(['schedules']);
     },
 
-    saveSchedule() {
+    async saveSchedule() {
         if (!this.canEditSchedule()) return;
         if (!confirm('Xác nhận LƯU lịch phân công tuần này?\nDữ liệu hiện tại trên bảng sẽ được ghi nhận.')) return;
 
@@ -300,20 +304,26 @@ const SchedulePage = {
         const notes = document.getElementById('schedule-notes')?.value || '';
         const robotSurgery = this._collectRobotData();
 
-        this._upsertSchedule(weekKey, dates, { positions, notes, robotSurgery });
+        const saved = await this._upsertSchedule(weekKey, dates, { positions, notes, robotSurgery });
+        if (!saved?.ok) {
+            return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch phân công. Vui lòng thử lại.');
+        }
 
         // Show saved feedback
         Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
     },
 
-    clearSchedule() {
+    async clearSchedule() {
         if (!this.canEditSchedule()) return;
         if (!confirm('⚠️ XOÁ TOÀN BỘ lịch phân công tuần này?\nTất cả các ô sẽ trở về trống. Hành động này không thể hoàn tác.')) return;
 
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
 
-        this._upsertSchedule(weekKey, dates, { positions: {}, notes: '', robotSurgery: [] });
+        const saved = await this._upsertSchedule(weekKey, dates, { positions: {}, notes: '', robotSurgery: [] });
+        if (!saved?.ok) {
+            return Toast.error(saved?.errors?.[0]?.message || 'Chưa xoá được lịch phân công. Vui lòng thử lại.');
+        }
         App.renderCurrentPage();
         Toast.success('Đã xoá toàn bộ lịch phân công tuần.', 'Xoá lịch');
     },
@@ -391,7 +401,7 @@ const SchedulePage = {
         </div>`;
     },
 
-    addRobotEntry() {
+    async addRobotEntry() {
         if (!this.canEditSchedule()) return;
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -404,11 +414,12 @@ const SchedulePage = {
             doctors: [null, null, null]
         });
 
-        this._saveRobotToSchedule(weekKey, dates, robotSurgery);
+        const saved = await this._saveRobotToSchedule(weekKey, dates, robotSurgery);
+        if (!saved?.ok) return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch Robot.');
         App.renderCurrentPage();
     },
 
-    removeRobotEntry(idx) {
+    async removeRobotEntry(idx) {
         if (!this.canEditSchedule()) return;
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -418,12 +429,13 @@ const SchedulePage = {
         const robotSurgery = [...schedule.robotSurgery];
         robotSurgery.splice(idx, 1);
 
-        this._saveRobotToSchedule(weekKey, dates, robotSurgery);
+        const saved = await this._saveRobotToSchedule(weekKey, dates, robotSurgery);
+        if (!saved?.ok) return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch Robot.');
         App.renderCurrentPage();
     },
 
     _saveRobotToSchedule(weekKey, dates, robotSurgery) {
-        this._upsertSchedule(weekKey, dates, { robotSurgery });
+        return this._upsertSchedule(weekKey, dates, { robotSurgery });
     },
 
     _collectRobotData() {
@@ -445,7 +457,7 @@ const SchedulePage = {
         return entries;
     },
 
-    copyFromPrevWeek() {
+    async copyFromPrevWeek() {
         if (!this.canEditSchedule()) {
             Toast.warning('Bạn không có quyền chỉnh sửa lịch phân công.');
             return;
@@ -472,7 +484,10 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
-        this._upsertSchedule(weekKey, dates, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });
+        const saved = await this._upsertSchedule(weekKey, dates, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });
+        if (!saved?.ok) {
+            return Toast.error(saved?.errors?.[0]?.message || 'Chưa sao chép được lịch tuần.');
+        }
 
         // Re-render to show copied data
         App.renderCurrentPage();
