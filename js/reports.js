@@ -307,6 +307,16 @@ const ReportsPage = {
         // Auto-sum surgery total = CT + YC + Robot
         const autoSumSurgery = (prefix) => `ReportsPage._autoSumSurgery('${prefix}')`;
 
+        // Read-only total display (auto-calculated)
+        const readonlyTotal = (name, val, color, label) => `
+            <div style="text-align:center">
+                <div style="font-size:0.68rem;font-weight:700;color:${color};margin-bottom:3px;white-space:nowrap">${label}</div>
+                <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+                    <input type="number" name="${name}" value="${val}" min="0" readonly
+                        style="width:52px;text-align:center;font-size:1.1rem;font-weight:800;border:2px solid ${color}44;border-radius:6px;padding:4px 1px;color:${color};background:${color}08;cursor:default">
+                </div>
+            </div>`;
+
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
             return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
@@ -355,7 +365,7 @@ const ReportsPage = {
                 <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:6px">
                     <div style="font-size:0.72rem;font-weight:700;color:#1d4ed8;margin-bottom:5px">🔪 Bệnh mổ ${nextDayLabel}</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px" oninput="${autoSumSurgery('surgery')}">
-                        ${stepper16('surgeryTotal', e.surgeryTotal || 0, '#1d4ed8', 'Tổng')}
+                        ${readonlyTotal('surgeryTotal', (e.surgeryCT || 0) + (e.surgeryYC || 0) + (e.surgeryRobot || 0), '#1d4ed8', 'Tổng')}
                         ${stepper16('surgeryCT', e.surgeryCT || 0, '#0369a1', 'CT')}
                         ${stepper16('surgeryYC', e.surgeryYC || 0, '#6366f1', 'Yêu cầu')}
                         ${stepper16('surgeryRobot', e.surgeryRobot || 0, '#0d9488', 'Robot')}
@@ -366,7 +376,7 @@ const ReportsPage = {
                 <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:6px">
                     <div style="font-size:0.72rem;font-weight:700;color:#15803d;margin-bottom:5px">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px" oninput="${autoSumSurgery('surgery2')}">
-                        ${stepper16('surgery2Total', e.surgery2Total || 0, '#15803d', 'Tổng')}
+                        ${readonlyTotal('surgery2Total', (e.surgery2CT || 0) + (e.surgery2YC || 0) + (e.surgery2Robot || 0), '#15803d', 'Tổng')}
                         ${stepper16('surgery2CT', e.surgery2CT || 0, '#059669', 'CT')}
                         ${stepper16('surgery2YC', e.surgery2YC || 0, '#10b981', 'Yêu cầu')}
                         ${stepper16('surgery2Robot', e.surgery2Robot || 0, '#0d9488', 'Robot')}
