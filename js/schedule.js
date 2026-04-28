@@ -28,7 +28,7 @@ const SchedulePage = {
 
     // Timezone-safe YYYY-MM-DD formatter (avoids UTC shift from toISOString)
     _localDateStr(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
     getWeekDates(offset) {
@@ -147,6 +147,10 @@ const SchedulePage = {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     Sao chép tuần trước
                 </button>
+                <button class="btn btn-danger" onclick="SchedulePage.clearSchedule()" style="background:#ef4444">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Xoá lịch
+                </button>
                 <button class="btn btn-primary" onclick="SchedulePage.saveSchedule()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Lưu lịch
@@ -171,14 +175,14 @@ const SchedulePage = {
                     <tr>
                         <th class="schedule-pos-header">Vị trí</th>
                         ${dates.map((d, i) => {
-                            const dateStr = SchedulePage._localDateStr(d);
-                            const isToday = dateStr === today;
-                            const dayNum = d.getDate();
-                            return `<th class="schedule-day-header ${isToday ? 'today' : ''} ${i >= 5 ? 'weekend' : ''}">
+            const dateStr = SchedulePage._localDateStr(d);
+            const isToday = dateStr === today;
+            const dayNum = d.getDate();
+            return `<th class="schedule-day-header ${isToday ? 'today' : ''} ${i >= 5 ? 'weekend' : ''}">
                                 <span class="schedule-day-name">${DAY_LABELS[i]}</span>
-                                <span class="schedule-day-date">${dayNum}/${d.getMonth()+1}</span>
+                                <span class="schedule-day-date">${dayNum}/${d.getMonth() + 1}</span>
                             </th>`;
-                        }).join('')}
+        }).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -279,6 +283,7 @@ const SchedulePage = {
 
     saveSchedule() {
         if (!this.canEditSchedule()) return;
+        if (!confirm('Xác nhận LƯU lịch phân công tuần này?\nDữ liệu hiện tại trên bảng sẽ được ghi nhận.')) return;
 
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -299,6 +304,18 @@ const SchedulePage = {
 
         // Show saved feedback
         Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
+    },
+
+    clearSchedule() {
+        if (!this.canEditSchedule()) return;
+        if (!confirm('⚠️ XOÁ TOÀN BỘ lịch phân công tuần này?\nTất cả các ô sẽ trở về trống. Hành động này không thể hoàn tác.')) return;
+
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+
+        this._upsertSchedule(weekKey, dates, { positions: {}, notes: '', robotSurgery: [] });
+        App.renderCurrentPage();
+        Toast.success('Đã xoá toàn bộ lịch phân công tuần.', 'Xoá lịch');
     },
 
     prevWeek() { this.weekOffset--; App.renderCurrentPage(); },
@@ -331,44 +348,44 @@ const SchedulePage = {
                 </thead>
                 <tbody id="robot-tbody">
                     ${robotEntries.length ? robotEntries.map((entry, idx) => {
-                        if (isAdmin) {
-                            return `<tr>
+            if (isAdmin) {
+                return `<tr>
                                 <td>
                                     <select class="schedule-select has-value" data-robot="day" data-idx="${idx}">
                                         ${dates.map((d, i) => {
-                                            const dStr = SchedulePage._localDateStr(d);
-                                            const label = `${DAY_LABELS[i]}, ${d.getDate()}/${d.getMonth()+1}`;
-                                            return `<option value="${dStr}" ${entry.day === dStr ? 'selected' : ''}>${label}</option>`;
-                                        }).join('')}
+                    const dStr = SchedulePage._localDateStr(d);
+                    const label = `${DAY_LABELS[i]}, ${d.getDate()}/${d.getMonth() + 1}`;
+                    return `<option value="${dStr}" ${entry.day === dStr ? 'selected' : ''}>${label}</option>`;
+                }).join('')}
                                     </select>
                                 </td>
                                 <td>
                                     <select class="schedule-select has-value" data-robot="session" data-idx="${idx}">
-                                        <option value="1" ${entry.session==1?'selected':''}>Ca 1</option>
-                                        <option value="2" ${entry.session==2?'selected':''}>Ca 2</option>
-                                        <option value="3" ${entry.session==3?'selected':''}>Ca 3</option>
+                                        <option value="1" ${entry.session == 1 ? 'selected' : ''}>Ca 1</option>
+                                        <option value="2" ${entry.session == 2 ? 'selected' : ''}>Ca 2</option>
+                                        <option value="3" ${entry.session == 3 ? 'selected' : ''}>Ca 3</option>
                                     </select>
                                 </td>
-                                ${[0,1,2].map(slot => `<td>
+                                ${[0, 1, 2].map(slot => `<td>
                                     <select class="schedule-select ${entry.doctors?.[slot] ? 'has-value' : ''}" data-robot="doc${slot}" data-idx="${idx}" onchange="SchedulePage.onCellChange(this)">
                                         <option value="">—</option>
-                                        ${bsOptions.map(s => `<option value="${s.id}" ${entry.doctors?.[slot]==s.id?'selected':''}>${this.getShortName(s.id)}</option>`).join('')}
+                                        ${bsOptions.map(s => `<option value="${s.id}" ${entry.doctors?.[slot] == s.id ? 'selected' : ''}>${this.getShortName(s.id)}</option>`).join('')}
                                     </select>
                                 </td>`).join('')}
                                 <td><button class="btn-icon" onclick="SchedulePage.removeRobotEntry(${idx})" title="Xoá">${Utils.deleteIcon()}</button></td>
                             </tr>`;
-                        } else {
-                            const dayDate = new Date(entry.day);
-                            const dayLabel = DAY_LABELS[dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day)] || entry.day;
-                            const dayNum = dayDate.getDate();
-                            const dayMonth = dayDate.getMonth() + 1;
-                            return `<tr>
+            } else {
+                const dayDate = new Date(entry.day);
+                const dayLabel = DAY_LABELS[dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day)] || entry.day;
+                const dayNum = dayDate.getDate();
+                const dayMonth = dayDate.getMonth() + 1;
+                return `<tr>
                                 <td>${dayLabel}, ${dayNum}/${dayMonth}</td>
                                 <td>Ca ${entry.session}</td>
-                                ${[0,1,2].map(slot => `<td>${entry.doctors?.[slot] ? this.getShortName(entry.doctors[slot]) : '—'}</td>`).join('')}
+                                ${[0, 1, 2].map(slot => `<td>${entry.doctors?.[slot] ? this.getShortName(entry.doctors[slot]) : '—'}</td>`).join('')}
                             </tr>`;
-                        }
-                    }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center;color:var(--text-muted);padding:20px">Chưa có lịch mổ Robot tuần này</td></tr>`}
+            }
+        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center;color:var(--text-muted);padding:20px">Chưa có lịch mổ Robot tuần này</td></tr>`}
                 </tbody>
             </table>
         </div>`;
@@ -419,7 +436,7 @@ const SchedulePage = {
             entries.push({
                 day: dayEl.value,
                 session: parseInt(sessionEl.value),
-                doctors: [0,1,2].map(slot => {
+                doctors: [0, 1, 2].map(slot => {
                     const el = row.querySelector(`[data-robot="doc${slot}"]`);
                     return el && el.value ? parseInt(el.value) : null;
                 })
@@ -446,6 +463,8 @@ const SchedulePage = {
             return;
         }
 
+        if (!confirm('Sao chép lịch tuần trước vào tuần này?\nDữ liệu hiện tại của tuần này sẽ bị GHI ĐÈ.')) return;
+
         // Copy data directly in store
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -457,6 +476,7 @@ const SchedulePage = {
 
         // Re-render to show copied data
         App.renderCurrentPage();
+        Toast.success('Đã sao chép lịch tuần trước thành công!', 'Sao chép lịch');
     },
 
     afterRender() {
@@ -510,7 +530,7 @@ const SchedulePage = {
             });
 
             const notes = schedule?.notes || '';
-            const dateRange = `${dates[0].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})} – ${dates[6].toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
+            const dateRange = `${dates[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} – ${dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
 
             const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
             <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
@@ -526,7 +546,7 @@ const SchedulePage = {
                         <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:left;width:120px;font-size:13px;font-weight:700">Vị trí</th>
                         ${dates.map((d, i) => `<th style="border:1.5px solid #94a3b8;background:${i >= 5 ? '#fef3c7' : '#e2e8f0'};padding:10px 6px;text-align:center">
                             <div style="font-weight:700;font-size:13px;color:#000">${DAY_LABELS[i]}</div>
-                            <div style="color:#111;font-size:13px;font-weight:700">${d.getDate()}/${d.getMonth()+1}</div>
+                            <div style="color:#111;font-size:13px;font-weight:700">${d.getDate()}/${d.getMonth() + 1}</div>
                         </th>`).join('')}
                     </tr></thead>
                     <tbody>
@@ -598,8 +618,8 @@ const SchedulePage = {
             // Build filenames
             const pad = n => String(n).padStart(2, '0');
             const d0 = dates[0], d6 = dates[6];
-            const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth()+1)}`;
-            const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth()+1)}-${d6.getFullYear()}`;
+            const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth() + 1)}`;
+            const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth() + 1)}-${d6.getFullYear()}`;
 
             // 1) Download schedule image
             const scheduleFilename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
@@ -614,7 +634,7 @@ const SchedulePage = {
                     const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
                     const dayNum = dayDate.getDate();
                     const dayMonth = dayDate.getMonth() + 1;
-                    const docs = [0,1,2].map(slot => {
+                    const docs = [0, 1, 2].map(slot => {
                         if (entry.doctors?.[slot]) {
                             const member = staff.find(s => s.id === parseInt(entry.doctors[slot]));
                             return member ? (this.getShortName(member.id) || member.name.split(' ').pop()) : '—';
