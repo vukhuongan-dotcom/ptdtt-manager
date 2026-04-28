@@ -5,7 +5,7 @@
     <!-- One-time cache migration — runs BEFORE any other script -->
     <script>
         (function () {
-            var REQUIRED_VER = '2804281740';
+            var REQUIRED_VER = '2804281755';
             if (localStorage.getItem('ptdtt_cache_ver') === REQUIRED_VER) return;
             // Nuke all service workers and caches
             if ('serviceWorker' in navigator) {
@@ -288,7 +288,7 @@
     <script src="js/search.js?v=14041632"></script>
     <script src="js/onboarding.js?v=14041632"></script>
     <script src="js/audit-log.js?v=2304231450"></script>
-    <script src="js/app.js?v=2804281740"></script>
+    <script src="js/app.js?v=2804281755"></script>
 
     <!-- Offline Banner -->
     <div id="offline-banner"
