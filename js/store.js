@@ -1,7 +1,7 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
 const DATA_VERSION = 7; // Increment this when SAMPLE data changes
-const CLIENT_BUILD = 2104201745;
+const CLIENT_BUILD = 2804281640;
 
 const Store = {
     _data: null,
@@ -11,6 +11,8 @@ const Store = {
     _hasLoadedServerOnce: false,
     _pendingSaveAfterSync: false,
     _syncingDirtyCollections: false,
+    _initialSyncPromise: null,
+    _pollBound: false,
 
     // Save to localStorage only (no server push) — used during init
     _saveLocal() {
@@ -99,17 +101,26 @@ const Store = {
             this._saveLocal(); // Only localStorage, NOT server
         }
 
-        // Only start authenticated sync if JWT already exists (returning user).
-        // For fresh login, App.onLoginSuccess() calls startAuthenticatedSync().
-        if (typeof Auth !== 'undefined' && Auth.getToken()) {
-            this.startAuthenticatedSync();
-        }
+        // Authenticated server sync is intentionally started by App after
+        // the session is validated. Keeping init local-only avoids duplicate
+        // sync races that can swallow edits made immediately after login.
     },
 
     // Start server sync + polling. Safe to call multiple times.
     startAuthenticatedSync() {
-        this._syncFromServer();
+        if (!this._initialSyncPromise) {
+            this._initialSyncPromise = this._syncFromServer(true)
+                .catch(e => {
+                    this._serverAvailable = false;
+                    if (e.message !== 'Unauthorized' && e.message !== 'StaleClient') {
+                        console.warn('[Store] Initial sync failed:', e.message);
+                    }
+                    return null;
+                })
+                .finally(() => { this._initialSyncPromise = null; });
+        }
         this._startPolling();
+        return this._initialSyncPromise;
     },
 
     // Reset sync state on logout — prevents stale data leaking to next session
@@ -119,6 +130,7 @@ const Store = {
         this._serverVersion = null;
         this._syncing = false;
         this._syncingDirtyCollections = false;
+        this._initialSyncPromise = null;
         this._dirtyCollections.clear();
         this._deletedIds.clear();
         this._pendingSaveAfterSync = false;
@@ -273,6 +285,11 @@ const Store = {
     },
 
     // Cache-busting: prevent browser/proxy from caching API calls
+    _notifySyncError(message) {
+        console.warn('[Store] Sync error:', message);
+        if (typeof Toast !== 'undefined') Toast.error(message);
+    },
+
     _api(url, opts) {
         const sep = url.includes('?') ? '&' : '?';
         if (!opts) opts = {};
@@ -288,7 +305,7 @@ const Store = {
             const session = (typeof Auth !== 'undefined') ? Auth.getSession() : null;
             opts.headers['X-User'] = session ? session.username : 'anonymous';
         }
-        return fetch(url + sep + '_t=' + Date.now(), opts).then(response => {
+        return fetch(url + sep + '_t=' + Date.now(), opts).then(async response => {
             // Handle 401 Unauthorized — token expired or invalid
             if (response.status === 401 && typeof Auth !== 'undefined') {
                 console.warn('[Store] 401 Unauthorized — logging out');
@@ -306,6 +323,14 @@ const Store = {
                 setTimeout(() => window.location.reload(), 1200);
                 throw new Error('StaleClient');
             }
+            if (!response.ok) {
+                let detail = null;
+                try { detail = await response.clone().json(); } catch (_) { }
+                const error = new Error(detail?.error || `HTTP ${response.status}`);
+                error.status = response.status;
+                error.detail = detail;
+                throw error;
+            }
             return response;
         });
     },
@@ -315,7 +340,7 @@ const Store = {
         this._saveDebounce = setTimeout(() => {
             if (!this._hasLoadedServerOnce) {
                 this._pendingSaveAfterSync = true;
-                if (!this._syncing) this._syncFromServer(true);
+                this.startAuthenticatedSync();
                 console.log('[Store] ⏳ Delaying push until initial server sync completes');
                 return;
             }
@@ -335,7 +360,12 @@ const Store = {
                 // Clear deleted IDs after successful push
                 this._deletedIds.clear();
                 console.log('[Store] ✅ Merged & saved to server, version:', res.version);
-            }).catch(() => { this._serverAvailable = false; });
+            }).catch(e => {
+                this._serverAvailable = false;
+                if (e.message !== 'Unauthorized' && e.message !== 'StaleClient') {
+                    this._notifySyncError(`Không thể lưu dữ liệu lên server: ${e.message}`);
+                }
+            });
         }, 300);
     },
 
@@ -348,7 +378,9 @@ const Store = {
         if (this._syncingDirtyCollections || !this._dirtyCollections.size) return;
 
         if (!this._hasLoadedServerOnce) {
-            if (!this._syncing) this._syncFromServer(true);
+            this.startAuthenticatedSync()?.finally(() => {
+                if (this._dirtyCollections.size) this._queueDirtyCollectionsSync();
+            });
             console.log('[Store] ⏳ Delaying collection push until initial server sync completes');
             return;
         }
@@ -368,8 +400,9 @@ const Store = {
                         headers: { 'Content-Type': 'application/json' },
                         body: payload
                     });
-                    await response.json();
+                    const result = await response.json();
                     this._serverAvailable = true;
+                    if (result.version) this._serverVersion = result.version;
 
                     if (JSON.stringify(this._buildCollectionPayload(collection)) === payload) {
                         this._dirtyCollections.delete(collection);
@@ -379,9 +412,15 @@ const Store = {
 
                     console.log(`[Store] ✅ Saved collection ${collection}`);
                 } catch (e) {
-                    if (e.message !== 'Unauthorized' && e.message !== 'StaleClient') {
-                        this._serverAvailable = false;
+                    if (e.message === 'Unauthorized' || e.message === 'StaleClient') {
+                        continue;
                     }
+                    this._serverAvailable = false;
+                    const permanent = [400, 403, 404].includes(e.status);
+                    if (!permanent) {
+                        shouldRetry = true;
+                    }
+                    this._notifySyncError(`Chưa lưu được ${collection}: ${e.message}`);
                 }
             }
 
@@ -399,10 +438,13 @@ const Store = {
     },
 
     _syncFromServer(quiet) {
-        if (this._syncing) return;
+        if (this._syncing) return this._initialSyncPromise || Promise.resolve();
         this._syncing = true;
-        this._api('/api/data').then(r => r.json()).then(serverData => {
-            if (serverData && serverData._version) {
+        const syncPromise = this._api('/api/data').then(r => r.json()).then(serverData => {
+            if (serverData && typeof serverData === 'object' && !Array.isArray(serverData)) {
+                if (serverData._version == null && this._data?._version != null) {
+                    serverData._version = this._data._version;
+                }
                 // Remove any locally-deleted IDs from server data before applying
                 if (this._deletedIds.size > 0 && serverData.surgeries) {
                     serverData.surgeries = serverData.surgeries.filter(s => !this._deletedIds.has(s.id));
@@ -436,20 +478,29 @@ const Store = {
             }
             this._syncing = false;
             if (!quiet) console.log('[Store] Server not available, using localStorage');
+            if (e.message !== 'Unauthorized' && e.message !== 'StaleClient') {
+                throw e;
+            }
         });
         // Also update version tracking
         this._api('/api/data/version').then(r => r.json()).then(v => {
             if (v.version) this._serverVersion = v.version;
         }).catch(() => { });
+        return syncPromise;
     },
 
     _startPolling() {
         if (this._pollTimer) clearInterval(this._pollTimer);
         this._pollTimer = setInterval(() => this._checkForUpdates(), 10000);
         // Sync immediately when user returns to this tab
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) this._checkForUpdates();
-        });
+        if (!this._pollBound) {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+                    this._checkForUpdates();
+                }
+            });
+            this._pollBound = true;
+        }
     },
 
     _checkForUpdates() {
@@ -461,7 +512,7 @@ const Store = {
                 // do a full sync now (fixes post-login stale state)
                 if (!this._hasLoadedServerOnce) {
                     console.log('[Store] 🔄 First version check after auth — syncing...');
-                    this._syncFromServer(true);
+                    this.startAuthenticatedSync();
                 }
                 return;
             }
