@@ -17,16 +17,47 @@ const App = {
         reports: ReportsPage,
     },
 
-    init() {
-        Store.init();
-        Auth.init();
+    async init() {
         this.bindModal();
+        Auth.init();
 
-        if (Auth.isLoggedIn()) {
-            this.showApp();
-        } else {
+        const token = Auth.getToken();
+        if (!token) {
+            // No token at all — go straight to login
+            Store.init();
             this.showLogin();
+            return;
         }
+
+        // Token exists — validate with server before showing app
+        this._showAuthChecking();
+        const session = await Auth.validateStoredSession();
+
+        if (!session) {
+            // Token invalid/expired/disabled — show login
+            Store.init();
+            this.showLogin();
+            return;
+        }
+
+        // Server confirmed session — safe to init store and show app
+        Store.init();
+        Store.startAuthenticatedSync();
+        this.showApp();
+    },
+
+    _showAuthChecking() {
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('modal-overlay').style.display = 'none';
+        // Remove any existing login/auth-checking containers
+        document.getElementById('login-container')?.remove();
+        document.getElementById('auth-checking')?.remove();
+
+        const div = document.createElement('div');
+        div.id = 'auth-checking';
+        div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg-main,#0f172a);color:#94a3b8;font-family:Inter,system-ui,sans-serif;font-size:0.95rem;gap:10px';
+        div.innerHTML = '<div style="width:20px;height:20px;border:2px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite"></div> Đang xác thực phiên...';
+        document.body.appendChild(div);
     },
 
     // === Login Flow ===
@@ -38,6 +69,7 @@ const App = {
         this._idleWarned = false;
         localStorage.removeItem(this._IDLE_KEY);
         document.getElementById('idle-warning-bar')?.remove();
+        document.getElementById('auth-checking')?.remove();
         Notifications.stopPolling();
         Store.resetForLogout();
         if (typeof EMR !== 'undefined') {
@@ -60,6 +92,7 @@ const App = {
     onLoginSuccess() {
         const loginContainer = document.getElementById('login-container');
         if (loginContainer) loginContainer.remove();
+        document.getElementById('auth-checking')?.remove();
 
         // Start authenticated server sync + polling now that JWT is available
         Store.startAuthenticatedSync();

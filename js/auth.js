@@ -1,12 +1,9 @@
-// ===== AUTHENTICATION MODULE (JWT — Phase 3) =====
+// ===== AUTHENTICATION MODULE (JWT — Phase 3 + P0 Security) =====
 const Auth = {
     SESSION_KEY: 'ptdtt_session',
     TOKEN_KEY: 'ptdtt_jwt',
     SUPERADMIN_USERNAME: 'vkan',
     PASSWORD_MIN_LENGTH: 10,
-    IDLE_TIMEOUT_MS: 5 * 60 * 1000, // 5 minutes
-    _lastActivity: Date.now(),
-    _idleTimer: null,
 
     init() {
         // Check if we have a stored JWT token
@@ -19,53 +16,26 @@ const Auth = {
                 this.logout();
             }
         }
-        // Start idle monitor
-        this._startIdleMonitor();
     },
-
-    // ===== IDLE AUTO-LOGOUT =====
-    _startIdleMonitor() {
-        // Track user activity events (desktop + mobile)
-        const resetIdle = () => { this._lastActivity = Date.now(); };
-        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'touchmove', 'click'];
-        events.forEach(evt => document.addEventListener(evt, resetIdle, { passive: true }));
-
-        // Check every 30s if idle timeout exceeded
-        this._idleTimer = setInterval(() => this._checkIdle(), 30000);
-
-        // Also check on visibility change (handles mobile tab switch / screen lock)
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                this._checkIdle();
-            }
-        });
-    },
-
-    _checkIdle() {
-        if (!this.isLoggedIn()) return;
-        const elapsed = Date.now() - this._lastActivity;
-        if (elapsed >= this.IDLE_TIMEOUT_MS) {
-            this.logout();
-            if (typeof App !== 'undefined') App.showLogin();
-            // Brief toast before redirect
-            if (typeof Toast !== 'undefined') {
-                Toast.info('Phiên đăng nhập đã hết hạn do không hoạt động (5 phút).');
-            }
-        }
-    },
-
 
     // ===== TOKEN MANAGEMENT =====
+    // Token is stored in sessionStorage by default (cleared on browser close).
+    // Only stored in localStorage when user checks "Ghi nhớ thiết bị này".
     getToken() {
-        return localStorage.getItem(this.TOKEN_KEY);
+        return sessionStorage.getItem(this.TOKEN_KEY) || localStorage.getItem(this.TOKEN_KEY);
     },
 
-    _saveToken(token) {
-        localStorage.setItem(this.TOKEN_KEY, token);
+    _saveToken(token, remember = false) {
+        if (remember) {
+            localStorage.setItem(this.TOKEN_KEY, token);
+        } else {
+            sessionStorage.setItem(this.TOKEN_KEY, token);
+        }
     },
 
     _removeToken() {
         localStorage.removeItem(this.TOKEN_KEY);
+        sessionStorage.removeItem(this.TOKEN_KEY);
     },
 
     validatePassword(password, username = '') {
@@ -97,7 +67,7 @@ const Auth = {
     },
 
     // ===== LOGIN =====
-    async login(username, password) {
+    async login(username, password, remember = false) {
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -112,7 +82,7 @@ const Auth = {
             }
 
             // Save JWT token
-            this._saveToken(result.token);
+            this._saveToken(result.token, remember);
 
             // Save session info for quick access (from server response, not client-generated)
             const session = {
@@ -136,10 +106,55 @@ const Auth = {
         }
     },
 
-    // Logout
+    // ===== SERVER-VALIDATED SESSION =====
+    async validateStoredSession() {
+        const token = this.getToken();
+        if (!token) return null;
+
+        try {
+            const response = await fetch('/api/auth/me', {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                this.logout();
+                return null;
+            }
+
+            const user = await response.json();
+            // Update cached session with live server data
+            const session = {
+                staffId: user.staffId,
+                username: user.username,
+                name: user.name,
+                role: user.role,
+                title: user.title || '',
+                isAdmin: user.isAdmin,
+                isSuperAdmin: user.isSuperAdmin || false,
+                color: user.color || '#6366f1',
+                loginTime: new Date().toISOString()
+            };
+            localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            return session;
+        } catch (e) {
+            // Network error — if offline, don't auto-logout but don't grant access
+            console.warn('[Auth] Cannot reach server for session validation:', e.message);
+            return null;
+        }
+    },
+
+    // Logout — cleans ALL sensitive data
     logout() {
-        localStorage.removeItem(this.SESSION_KEY);
+        // Token
         this._removeToken();
+        // Session
+        localStorage.removeItem(this.SESSION_KEY);
+        sessionStorage.removeItem(this.SESSION_KEY);
+        // Idle tracking
+        localStorage.removeItem('ptdtt_lastActivity');
+        // Business data cache (sensitive hospital data)
+        localStorage.removeItem('ptdtt_manager');
     },
 
     // Get current session
@@ -499,6 +514,10 @@ const LoginPage = {
                         <label class="form-label">Mật khẩu</label>
                         <input class="form-input" type="password" id="login-password" name="password" placeholder="••••••" required>
                     </div>
+                    <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:0">
+                        <input type="checkbox" id="login-remember" style="width:16px;height:16px;accent-color:#6366f1">
+                        <label for="login-remember" style="font-size:0.82rem;color:#94a3b8;cursor:pointer;user-select:none">Ghi nhớ thiết bị này</label>
+                    </div>
                     <button type="submit" class="login-btn">Đăng nhập</button>
                 </form>
 
@@ -526,7 +545,8 @@ const LoginPage = {
             loginBtn.innerHTML = '⏳ Đang đăng nhập...';
         }
 
-        const result = await Auth.login(username, password);
+        const remember = document.getElementById('login-remember')?.checked || false;
+        const result = await Auth.login(username, password, remember);
 
         if (loginBtn) {
             loginBtn.disabled = false;

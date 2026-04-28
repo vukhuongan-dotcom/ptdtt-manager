@@ -34,7 +34,7 @@ AUTH_FILE = os.path.join(DATA_DIR, 'auth.json')
 JWT_SECRET = os.environ.get('JWT_SECRET')
 if not JWT_SECRET:
     raise RuntimeError('JWT_SECRET environment variable is required. Set it in /etc/systemd/system/ptdtt.service or .env')
-JWT_EXPIRY_DAYS = 7
+JWT_EXPIRY_HOURS = int(os.environ.get('JWT_EXPIRY_HOURS', '8'))
 PORT      = int(os.environ.get('PORT', 5000))
 MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2104201745'))
 PASSWORD_MIN_LENGTH = int(os.environ.get('PASSWORD_MIN_LENGTH', '10'))
@@ -218,14 +218,36 @@ def _cleanup_old_logs(days=90):
 
 # ────────────────────────────── Auth Middleware ──────────────────────────────
 def _get_current_user():
-    """Extract and verify JWT from Authorization header. Returns payload or None."""
+    """Extract and verify JWT from Authorization header.
+    Returns payload dict with live user info, or None.
+    Validates: JWT signature, expiry, user exists, user not disabled."""
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return None
-    return _verify_jwt(auth_header[7:])
+    payload = _verify_jwt(auth_header[7:])
+    if not payload:
+        return None
+    # Server-side validation: check user still exists and is active
+    try:
+        auth_data = _load_auth()
+        username = payload.get('sub')
+        user = auth_data.get('users', {}).get(username)
+        if not user:
+            return None  # User deleted
+        if user.get('disabled'):
+            return None  # User disabled by admin
+        # Enrich payload with live server data (not stale JWT claims)
+        payload['name'] = user.get('name', payload.get('name', ''))
+        payload['role'] = user.get('role', payload.get('role', ''))
+        payload['isAdmin'] = user.get('isAdmin', False)
+        payload['isSuperAdmin'] = user.get('isSuperAdmin', False)
+        payload['staffId'] = user.get('staffId', payload.get('staffId', 0))
+    except Exception:
+        pass  # If auth.json read fails, still allow JWT-only auth
+    return payload
 
 def require_auth(f):
-    """Decorator: require valid JWT for this endpoint"""
+    """Decorator: require valid JWT + active user for this endpoint"""
     @wraps(f)
     def decorated(*args, **kwargs):
         payload = _get_current_user()
@@ -539,7 +561,7 @@ def _create_jwt(username, user_data):
         'isAdmin': user_data.get('isAdmin', False),
         'isSuperAdmin': user_data.get('isSuperAdmin', False),
         'staffId': user_data.get('staffId', 0),
-        'exp': datetime.utcnow() + timedelta(days=JWT_EXPIRY_DAYS),
+        'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS),
         'iat': datetime.utcnow()
     }
     return pyjwt.encode(payload, JWT_SECRET, algorithm='HS256')
@@ -702,14 +724,10 @@ def auth_login():
 
 @app.route('/api/auth/me', methods=['GET'])
 def auth_me():
-    """Return current user info from JWT"""
-    auth_header = request.headers.get('Authorization', '')
-    if not auth_header.startswith('Bearer '):
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    payload = _verify_jwt(auth_header[7:])
+    """Return current user info — validates JWT + checks user is active server-side"""
+    payload = _get_current_user()
     if not payload:
-        return jsonify({'error': 'Token expired or invalid'}), 401
+        return jsonify({'error': 'Token expired, invalid, or account disabled'}), 401
 
     return jsonify({
         'username': payload['sub'],
@@ -717,7 +735,8 @@ def auth_me():
         'role': payload.get('role', ''),
         'isAdmin': payload.get('isAdmin', False),
         'isSuperAdmin': payload.get('isSuperAdmin', False),
-        'staffId': payload.get('staffId', 0)
+        'staffId': payload.get('staffId', 0),
+        'color': payload.get('color', '#6366f1')
     })
 
 @app.route('/api/auth/password', methods=['PUT'])
