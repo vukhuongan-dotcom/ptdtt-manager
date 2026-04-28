@@ -48,7 +48,9 @@ const Store = {
                     plans: SAMPLE_PLANS.length + 1,
                     patients: SAMPLE_PATIENTS.length + 1,
                     schedules: SAMPLE_SCHEDULES.length + 1,
-                    conferences: 1
+                    conferences: 1,
+                    reports16h: 1,
+                    reports7h: 1
                 }
             };
             this._saveLocal(); // Only localStorage, NOT server
@@ -82,6 +84,11 @@ const Store = {
             if (!this._data.nextIds.conferences) {
                 this._data.nextIds.conferences = Math.max(0, ...this._data.conferences.map(item => item?.id || 0)) + 1;
             }
+            // Reports collections
+            if (!this._data.reports16h) this._data.reports16h = [];
+            if (!this._data.nextIds.reports16h) this._data.nextIds.reports16h = Math.max(0, ...this._data.reports16h.map(r => r?.id || 0)) + 1;
+            if (!this._data.reports7h) this._data.reports7h = [];
+            if (!this._data.nextIds.reports7h) this._data.nextIds.reports7h = Math.max(0, ...this._data.reports7h.map(r => r?.id || 0)) + 1;
             SAMPLE_SCHEDULES.forEach(sample => {
                 if (!this._data.schedules.find(s => s.weekKey === sample.weekKey)) {
                     const entry = JSON.parse(JSON.stringify(sample));
