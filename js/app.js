@@ -104,6 +104,7 @@ const App = {
     },
 
     showApp() {
+        document.getElementById('auth-checking')?.remove();
         document.getElementById('app').style.display = 'flex';
         this.updateSidebarUser();
         this.updateMobileHeader();

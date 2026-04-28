@@ -58,7 +58,7 @@ const Store = {
             };
             this._saveLocal(); // Only localStorage, NOT server
             localStorage.removeItem('ptdtt_accounts');
-            localStorage.removeItem('ptdtt_session');
+            // NOTE: Do NOT remove ptdtt_session here — Auth manages session independently
         } else {
             this._data = parsed;
             if (!this._data.schedules) this._data.schedules = [];
