@@ -2,6 +2,30 @@
 <html lang="vi">
 
 <head>
+    <!-- One-time cache migration — runs BEFORE any other script -->
+    <script>
+        (function () {
+            var REQUIRED_VER = '2804281740';
+            if (localStorage.getItem('ptdtt_cache_ver') === REQUIRED_VER) return;
+            // Nuke all service workers and caches
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (regs) {
+                    regs.forEach(function (r) { r.unregister(); });
+                });
+            }
+            if ('caches' in window) {
+                caches.keys().then(function (names) {
+                    names.forEach(function (n) { caches.delete(n); });
+                });
+            }
+            // Clear stale business data (session is preserved)
+            localStorage.removeItem('ptdtt_manager');
+            localStorage.removeItem('ptdtt_lastActivity');
+            localStorage.setItem('ptdtt_cache_ver', REQUIRED_VER);
+            // Force clean reload after cache purge
+            setTimeout(function () { location.reload(); }, 200);
+        })();
+    </script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
