@@ -22,6 +22,22 @@ log() {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" | tee -a "$LOG_FILE"
 }
 
+purge_stale_git_metadata() {
+    local git_dir="$DRIVE_REPO/.git"
+
+    if [ ! -e "$git_dir" ]; then
+        return 0
+    fi
+
+    if [ "$MODE" = "dry" ]; then
+        log "DRY RUN: would remove stale .git metadata from Drive mirror"
+        return 0
+    fi
+
+    rm -rf "$git_dir"
+    log "🧹 Removed stale .git metadata from Drive mirror"
+}
+
 require_drive_access() {
     if [ ! -d "$DRIVE_REPO" ]; then
         log "❌ Drive mirror path not found: $DRIVE_REPO"
@@ -63,6 +79,8 @@ require_drive_access
 if ! git -C "$REPO_ROOT" diff --quiet --ignore-submodules HEAD -- || [ -n "$(git -C "$REPO_ROOT" ls-files --others --exclude-standard)" ]; then
     log "ℹ️ Local repo has uncommitted changes; Drive mirror will sync committed HEAD only."
 fi
+
+purge_stale_git_metadata
 
 TMP_DIR="$(mktemp -d /tmp/ptdtt-drive-export.XXXXXX)"
 trap 'rm -rf "$TMP_DIR"' EXIT
