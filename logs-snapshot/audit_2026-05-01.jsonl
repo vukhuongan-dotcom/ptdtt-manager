@@ -1,0 +1,6 @@
+{"ts": "2026-05-01T04:46:22.534253", "user": "ptttien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 27, "nextId": null}}
+{"ts": "2026-05-01T05:40:53.689376", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-01T05:41:01.867712", "user": "vkan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 51}}
+{"ts": "2026-05-01T06:02:34.621294", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-01T08:37:06.955140", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-01T19:03:32.321782", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
