@@ -18,7 +18,8 @@ Giam khoi luong Google Drive phai dong bo khi backup PTDTT, nhung van giu duoc k
   - Drive chi giu `7` ban `backup_*.tar.gz` moi nhat.
   - Local staging van giu cleanup theo `30` ngay nhu truoc.
 - `scripts/sync-drive-mirror.sh`
-  - Tu dong xoa `.git` cu trong Drive mirror truoc khi `rsync`.
+  - Tu dong xoa `.git` cu trong Drive mirror truoc khi sync.
+  - Chuyen sang sync tang dan theo commit, chi cap nhat cac file thay doi tu lan mirror thanh cong truoc.
 
 ## Checklist xac minh VPS dang dung backup moi
 
