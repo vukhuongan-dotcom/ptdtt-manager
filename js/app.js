@@ -192,7 +192,7 @@ const App = {
             setTimeout(() => {
                 const err = document.getElementById('login-error');
                 if (err) {
-                    err.textContent = '⏰ Phiên đăng nhập đã hết hạn do không hoạt động (15 phút).';
+                    err.textContent = '⏰ Phiên đăng nhập đã hết hạn do không hoạt động (5 phút).';
                     err.style.display = 'block';
                     err.style.color = '#f59e0b';
                 }
@@ -200,7 +200,7 @@ const App = {
             return;
         }
 
-        // Warning at 14 min
+        // Warning at 4 min (1 min before logout)
         if (idle >= this.IDLE_WARNING && !this._idleWarned) {
             this._idleWarned = true;
             this._showIdleWarning();
