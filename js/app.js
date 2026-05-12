@@ -103,6 +103,9 @@ const App = {
         this.showApp();
     },
 
+    // Pages that require admin role to access
+    _adminOnlyPages: ['surgery-stats'],
+
     showApp() {
         document.getElementById('auth-checking')?.remove();
         document.getElementById('app').style.display = 'flex';
@@ -110,6 +113,7 @@ const App = {
         document.getElementById('modal-overlay').style.display = '';
         this.updateSidebarUser();
         this.updateMobileHeader();
+        this.updateNavVisibility();
         this.bindNavigation();
         this.navigate('dashboard');
         Notifications.startPolling();
@@ -124,6 +128,18 @@ const App = {
         if (Onboarding.shouldShow()) {
             setTimeout(() => Onboarding.start(), 800);
         }
+    },
+
+    // Hide nav items that are admin-only for non-admin users
+    updateNavVisibility() {
+        const isAdmin = this.isAdmin();
+        this._adminOnlyPages.forEach(page => {
+            const navItem = document.getElementById(`nav-${page}`);
+            if (navItem) navItem.style.display = isAdmin ? '' : 'none';
+        });
+        // Hide patients tab (disabled)
+        const navPatients = document.getElementById('nav-patients');
+        if (navPatients) navPatients.style.display = 'none';
     },
 
     // === Idle Auto-Logout (5 minutes) ===
@@ -307,6 +323,16 @@ const App = {
     },
 
     navigate(page) {
+        // Guard: patients tab is disabled
+        if (page === 'patients') {
+            return;
+        }
+        // Guard: admin-only pages
+        if (this._adminOnlyPages.includes(page) && !this.isAdmin()) {
+            Toast.show('⛔ Chức năng này chỉ dành cho quản trị viên.', 'error');
+            return;
+        }
+
         this.currentPage = page;
 
         // Update nav
@@ -358,6 +384,11 @@ const App = {
     isAdmin() {
         const session = Auth.getSession();
         return session ? session.isAdmin : false;
+    },
+
+    isSuperAdmin() {
+        const session = Auth.getSession();
+        return session ? session.isSuperAdmin : false;
     },
 
     getCurrentUser() {

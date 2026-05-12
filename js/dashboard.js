@@ -80,22 +80,34 @@ const DashboardPage = {
                     </div>
                 </div>
                 ${(() => {
-                    const emr = EMR.getData();
-                    const emrStatus = EMR.getStatus();
-                    if (emr && emr.totalDept > 0) {
-                        const roomCount = Object.keys(emr.byRoom).length;
-                        return `<div class="stat-value">${emr.totalDept}</div>
-                            <div class="stat-change"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:4px;animation:pulse 2s infinite"></span>${roomCount} phòng · ${EMR.getTimeSinceUpdate()}</div>`;
-                    } else if (emrStatus === 'auth-required') {
-                        return `<div class="stat-value" style="font-size:1.2rem;color:var(--text-muted)">—</div>
-                            <div class="stat-change"><a href="/emr-login" target="_blank" style="color:#ef4444;text-decoration:underline">Cần đăng nhập EMR</a></div>`;
-                    } else if (emrStatus === 'loading') {
-                        return `<div class="stat-value" style="font-size:1.2rem;color:var(--text-muted)">…</div>
-                            <div class="stat-change">Đang tải dữ liệu EMR</div>`;
-                    } else {
-                        return `<div class="stat-value">${pStats.total - pStats.discharged}</div>
-                            <div class="stat-change">${pStats.preOp} chờ mổ · ${pStats.postOp} sau mổ</div>`;
+                    // Read from 7h/16h reports — no EMR
+                    const nowH = new Date();
+                    const todayStr = `${nowH.getFullYear()}-${String(nowH.getMonth()+1).padStart(2,'0')}-${String(nowH.getDate()).padStart(2,'0')}`;
+                    const hour = nowH.getHours();
+                    let patientCount = 0;
+                    let sourceLabel = '';
+                    if (hour >= 16) {
+                        const rep16 = (Store.getAll('reports16h') || []).find(r => r.date === todayStr);
+                        if (rep16 && rep16.totalPatients) { patientCount = rep16.totalPatients; sourceLabel = 'BC 16h hôm nay'; }
                     }
+                    if (!sourceLabel && hour >= 7) {
+                        const rep7 = (Store.getAll('reports7h') || []).find(r => r.date === todayStr);
+                        if (rep7 && rep7.totalPatients) { patientCount = rep7.totalPatients; sourceLabel = 'BC 7h hôm nay'; }
+                    }
+                    if (!sourceLabel) {
+                        const all16 = (Store.getAll('reports16h') || []).filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
+                        if (all16[0]) { patientCount = all16[0].totalPatients; sourceLabel = `BC 16h ${Utils.formatDateShort(all16[0].date)}`; }
+                        else {
+                            const all7 = (Store.getAll('reports7h') || []).filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
+                            if (all7[0]) { patientCount = all7[0].totalPatients; sourceLabel = `BC 7h ${Utils.formatDateShort(all7[0].date)}`; }
+                        }
+                    }
+                    if (patientCount > 0) {
+                        return `<div class="stat-value">${patientCount}</div>
+                            <div class="stat-change">📋 ${sourceLabel}</div>`;
+                    }
+                    return `<div class="stat-value" style="font-size:1.2rem;color:var(--text-muted)">—</div>
+                            <div class="stat-change">Chưa có báo cáo hôm nay</div>`;
                 })()}
             </div>
             <div class="stat-card slide-up" style="animation-delay:0.1s">

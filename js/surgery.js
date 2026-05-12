@@ -43,10 +43,25 @@ function sortSurgeries(surgeries, date) {
     });
 }
 
-// Check if current user is a doctor (can edit surgery schedule)
-function canEditSurgery() {
+// Check if a week is locked (more than 7 days since Monday of that week)
+// Only super admin can edit locked weeks
+function isWeekLocked(weekMondayStr) {
+    if (!weekMondayStr) return false;
+    const monday = new Date(weekMondayStr + 'T00:00:00');
+    const now = new Date();
+    const daysSince = (now - monday) / (1000 * 60 * 60 * 24);
+    return daysSince > 7;
+}
+
+// Check if current user can edit surgery schedule for a given week
+function canEditSurgery(weekMondayStr) {
     const session = Auth.getSession();
     if (!session) return false;
+    // Super admin can always edit
+    if (session.isSuperAdmin) return true;
+    // Check week lock
+    if (weekMondayStr && isWeekLocked(weekMondayStr)) return false;
+    // Admin or doctor can edit current/future weeks
     if (session.isAdmin) return true;
     const role = session.role || '';
     return role.includes('Bác sĩ') || role.includes('Trưởng khoa') || role.includes('Phó trưởng khoa');
@@ -114,7 +129,9 @@ const SurgeryPage = {
 
     render() {
         if (!this.currentWeekStart) this.init();
-        const isAdmin = canEditSurgery();
+        const weekKey = this.getWeekKey();
+        const locked = isWeekLocked(weekKey);
+        const canEdit = canEditSurgery(weekKey);
         const weekDates = this.getWeekDates();
         const surgeries = this.getSurgeries();
         const today = new Date();
@@ -139,11 +156,15 @@ const SurgeryPage = {
                 <button class="btn btn-secondary" onclick="SurgeryPage.exportCustomDateImage()">
                     📅 Xuất theo ngày
                 </button>
-                ${isAdmin ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()">
+                ${canEdit ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()">
                     ${Utils.plusIcon()} Thêm ca mổ
                 </button>` : ''}
             </div>
         </div>
+
+        ${locked ? `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#92400e">
+            🔒 <strong>Tuần này đã bị khoá</strong> — Dữ liệu lịch mổ sau 1 tuần không thể chỉnh sửa. Chỉ Super Admin mới có thể mở khoá.
+        </div>` : ''}
 
         <div class="surgery-controls">
             <div class="calendar-nav">
@@ -217,15 +238,15 @@ const SurgeryPage = {
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                         ${s.duration ? `<span class="surgery-card-duration">⏱ ${s.duration}p</span>` : ''}
                                     </div>
-                                    ${isAdmin ? `<div style="margin-top:6px;display:flex;gap:4px">
+                                    ${canEdit ? `<div style="margin-top:6px;display:flex;gap:4px">
                                         <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px;color:var(--danger)" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
-                                    </div>` : ''}
+                                    </div>` : `<div style="margin-top:6px"><button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
                                 </div>
                             </div>`;
             }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
-                        ${isAdmin ? `<button class="surgery-add-btn" onclick="SurgeryPage.openForm(null,'${ds}')">+ Thêm ca</button>` : ''}
+                        ${canEdit ? `<button class="surgery-add-btn" onclick="SurgeryPage.openForm(null,'${ds}')">+ Thêm ca</button>` : ''}
                     </div>
                 </div>`;
         }).join('')}
@@ -318,7 +339,7 @@ const SurgeryPage = {
         const all = this.getAllSurgeries();
         const s = all.find(x => x.id === id);
         if (!s) return;
-        const isAdmin = canEditSurgery();
+        const canEdit = canEditSurgery(s.date ? s.date.substring(0,10) : this.getWeekKey());
         const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
 
         Modal.open('Chi tiết ca mổ', `
@@ -369,7 +390,7 @@ const SurgeryPage = {
                 </div>` : ''}
             </div>
             <div class="modal-footer">
-                ${isAdmin ? `
+                ${canEdit ? `
                     <button type="button" class="btn btn-danger" onclick="SurgeryPage.deleteSurgery(${s.id})">Xoá</button>
                     <button type="button" class="btn btn-secondary" onclick="Modal.close();SurgeryPage.openForm(${s.id})">Chỉnh sửa</button>
                 ` : ''}
@@ -380,7 +401,7 @@ const SurgeryPage = {
 
     // Form
     openForm(id, date) {
-        if (!canEditSurgery()) return;
+        if (!canEditSurgery(this.getWeekKey())) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         const all = this.getAllSurgeries();
         const s = id ? all.find(x => x.id === id) : null;
         const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
@@ -522,7 +543,7 @@ const SurgeryPage = {
     },
 
     save(e, id) {
-        if (!canEditSurgery()) return;
+        if (!canEditSurgery(this.getWeekKey())) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         e.preventDefault();
         const f = new FormData(e.target);
         // approachType: if surgeryType is robot, force 'robot' (select may be disabled)
@@ -562,7 +583,7 @@ const SurgeryPage = {
     },
 
     async deleteSurgery(id) {
-        if (!canEditSurgery()) return;
+        if (!canEditSurgery(this.getWeekKey())) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         const all = this.getAllSurgeries();
         const s = all.find(x => x.id === id);
         if (!s) return;

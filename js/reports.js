@@ -37,19 +37,37 @@ const ReportsPage = {
     },
 
     switchTab(tab) {
+        // Stats tab: admin only
+        if (tab === 'stats' && !App.isAdmin()) {
+            Toast.show('⛔ Tab Thống kê chỉ dành cho quản trị viên.', 'error');
+            return;
+        }
         this.activeTab = tab;
         App.renderCurrentPage();
     },
 
-    // ========== Auto-fill patient count from EMR ==========
+    // ========== Patient count from reports (no EMR) ==========
     getAutoPatientCount() {
-        // Priority: EMR real-time data → manual patient stats
-        if (typeof EMR !== 'undefined') {
-            const emr = EMR.getData();
-            if (emr && emr.totalDept > 0) return emr.totalDept;
+        // Read from latest 7h or 16h report — NO EMR
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const hour = now.getHours();
+        // After 16h: prefer 16h report of today
+        if (hour >= 16) {
+            const rep16 = (Store.getAll('reports16h') || []).find(r => r.date === todayStr);
+            if (rep16 && rep16.totalPatients) return rep16.totalPatients;
         }
-        const pStats = Store.getPatientStats();
-        return pStats ? (pStats.total - pStats.discharged) : 0;
+        // After 7h: prefer 7h report of today
+        if (hour >= 7) {
+            const rep7 = (Store.getAll('reports7h') || []).find(r => r.date === todayStr);
+            if (rep7 && rep7.totalPatients) return rep7.totalPatients;
+        }
+        // Fallback: most recent available report (16h then 7h)
+        const all16 = (Store.getAll('reports16h') || []).filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
+        if (all16[0]) return all16[0].totalPatients;
+        const all7 = (Store.getAll('reports7h') || []).filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
+        if (all7[0]) return all7[0].totalPatients;
+        return 0;
     },
 
     // ========== REPORT 16H ==========
