@@ -1,0 +1,161 @@
+{"ts": "2026-05-13T05:49:23.848815", "user": "ptttien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T05:51:29.622435", "user": "ntdinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T05:54:13.055928", "user": "ptttien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 39, "nextId": null}}
+{"ts": "2026-05-13T06:18:17.587685", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T06:23:34.700234", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T06:27:00.377735", "user": "ntdinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T06:28:45.376763", "user": "ntdinh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1676, "nextId": null}}
+{"ts": "2026-05-13T06:42:31.784119", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T07:05:25.428134", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T07:20:45.363686", "user": "ntdinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T07:21:40.286189", "user": "ntdinh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1677, "nextId": null}}
+{"ts": "2026-05-13T08:02:55.711769", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "115.78.236.147", "remaining": 4}}
+{"ts": "2026-05-13T08:03:02.584039", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:04:04.068322", "user": "nmnphuong", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1678, "nextId": null}}
+{"ts": "2026-05-13T08:13:27.399685", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:22:45.021453", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:25:44.724381", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:26:35.647719", "user": "nhtanh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1679, "nextId": null}}
+{"ts": "2026-05-13T08:34:16.109555", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:34:46.786632", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:35:24.894644", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1680, "nextId": null}}
+{"ts": "2026-05-13T08:38:19.809048", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:46:23.324232", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:47:21.070972", "user": "nhhoang", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1681, "nextId": null}}
+{"ts": "2026-05-13T08:50:15.695399", "user": "nhhoang", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1681, "nextId": null}}
+{"ts": "2026-05-13T08:51:03.336676", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T08:51:45.466578", "user": "nhhoang", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1681, "nextId": null}}
+{"ts": "2026-05-13T09:06:32.645012", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T09:09:56.019620", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T09:11:02.926306", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T09:19:24.415292", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T09:21:13.776084", "user": "hkxhang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:02:00.570954", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:03:11.836152", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1682, "nextId": null}}
+{"ts": "2026-05-13T10:15:09.842343", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:15:51.570189", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:16:59.023975", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:17:57.103120", "user": "thmduc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1683, "nextId": null}}
+{"ts": "2026-05-13T10:18:15.542337", "user": "thmduc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1683, "nextId": null}}
+{"ts": "2026-05-13T10:24:37.048451", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:26:37.294224", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T10:26:44.593728", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 3}}
+{"ts": "2026-05-13T10:26:50.056495", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:28:13.062345", "user": "nmnphuong", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1684, "nextId": null}}
+{"ts": "2026-05-13T10:28:28.553296", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:28:43.546737", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:29:00.474869", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:31:08.227956", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:33:08.488331", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1685, "nextId": null}}
+{"ts": "2026-05-13T10:33:33.392020", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1685, "nextId": null}}
+{"ts": "2026-05-13T10:34:31.078894", "user": "bnsnam", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:35:36.018460", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:39:12.417698", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:49:50.841442", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:50:37.447527", "user": "lvhoan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1685, "nextId": null}}
+{"ts": "2026-05-13T10:52:05.921026", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T10:54:15.427098", "user": "nmnphuong", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1686, "nextId": null}}
+{"ts": "2026-05-13T10:54:42.175754", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:04:14.541823", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:05:40.490382", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1687, "nextId": null}}
+{"ts": "2026-05-13T11:08:14.394098", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:09:38.670965", "user": "bnsnam", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:25:12.749332", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:28:54.934237", "user": "ntmngoc", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "115.78.236.147", "remaining": 4}}
+{"ts": "2026-05-13T11:28:59.058280", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:29:54.364765", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1688, "nextId": null}}
+{"ts": "2026-05-13T11:30:24.720826", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:32:42.376232", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:33:56.647238", "user": "hmhuy", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1689, "nextId": null}}
+{"ts": "2026-05-13T11:36:48.046043", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:38:55.932297", "user": "lvhoan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1690, "nextId": null}}
+{"ts": "2026-05-13T11:39:23.235946", "user": "lvhoan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1689, "nextId": null}}
+{"ts": "2026-05-13T11:39:54.740676", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:46:58.093307", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T11:53:37.349510", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:01:03.720198", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:01:51.507743", "user": "lvhoan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1690, "nextId": null}}
+{"ts": "2026-05-13T12:18:31.540501", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:18:58.741739", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T12:19:03.996339", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 3}}
+{"ts": "2026-05-13T12:19:10.718648", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T12:19:18.418665", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:19:27.567031", "user": "ntmngoc", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1691, "nextId": null}}
+{"ts": "2026-05-13T12:36:13.239113", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:45:12.763000", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:52:25.117085", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T12:54:30.414902", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T13:07:12.483912", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T13:14:25.438473", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T13:23:20.781509", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T13:26:05.615219", "user": "ntnthuy", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T13:26:17.134564", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T13:27:26.475127", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T13:56:22.404497", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:17:44.590573", "user": "duc.thm", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T14:17:49.963041", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:20:33.574365", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:20:34.090033", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:21:37.380737", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:25:31.533185", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:26:18.701409", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:38:56.178884", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:48:22.228825", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:52:38.804029", "user": "duc.thm", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T14:52:43.618219", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:55:28.364547", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T14:57:03.885525", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:09:44.929920", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:11:21.461923", "user": "nhtanh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1692, "nextId": null}}
+{"ts": "2026-05-13T15:12:10.462590", "user": "nhtanh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1692, "nextId": null}}
+{"ts": "2026-05-13T15:13:01.147018", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:16:05.657718", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:16:23.905157", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:19:15.357569", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:39:24.555242", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T15:41:55.491605", "user": "nhtanh", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-05-13T15:44:59.828814", "user": "nhtanh", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 3}}
+{"ts": "2026-05-13T15:45:03.673731", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:03:55.089387", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:05:21.867517", "user": "nhtanh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1693, "nextId": null}}
+{"ts": "2026-05-13T16:05:32.663053", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:08:55.065227", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:12:54.431104", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:18:28.455619", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:23:10.103202", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:33:57.238914", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:34:40.150725", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:37:34.205009", "user": "vcnguyen", "action": "collection.put.reports16h", "ip": "127.0.0.1", "details": {"count": 28, "nextId": null}}
+{"ts": "2026-05-13T16:39:50.082199", "user": "vcnguyen", "action": "collection.put.reports16h", "ip": "127.0.0.1", "details": {"count": 28, "nextId": null}}
+{"ts": "2026-05-13T16:41:04.155296", "user": "vcnguyen", "action": "collection.put.reports16h", "ip": "127.0.0.1", "details": {"count": 28, "nextId": null}}
+{"ts": "2026-05-13T16:49:18.471198", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:49:46.026447", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T16:50:05.029610", "user": "nhtanh", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1692, "nextId": null}}
+{"ts": "2026-05-13T17:02:52.312603", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:06:32.923603", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:07:55.182683", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:11:37.339521", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:29:17.032427", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:38:38.243873", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:39:09.896683", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T17:58:06.952447", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T18:01:27.672206", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T18:18:51.862519", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T18:37:14.136648", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T18:49:18.353526", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T18:59:03.398327", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:01:05.548914", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:10:23.134043", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:12:00.566750", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:25:50.030160", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:38:09.480105", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:40:46.059118", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T19:58:15.700730", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T20:05:47.051992", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T20:05:49.944153", "user": "ghtquy", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 58, "nextId": 79}}
+{"ts": "2026-05-13T20:27:45.180726", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T21:24:35.960934", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T21:27:25.236596", "user": "lmhau", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1692, "nextId": null}}
+{"ts": "2026-05-13T21:44:11.377156", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T22:05:00.407170", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-13T22:09:12.865230", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
