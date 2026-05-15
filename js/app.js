@@ -107,6 +107,9 @@ const App = {
     // Pages that require admin role to access
     _adminOnlyPages: ['surgery-stats'],
 
+    // Pages that require super admin role to access
+    _superAdminOnlyPages: ['conferences'],
+
     showApp() {
         document.getElementById('auth-checking')?.remove();
         document.getElementById('app').style.display = 'flex';
@@ -131,12 +134,19 @@ const App = {
         }
     },
 
-    // Hide nav items that are admin-only for non-admin users
+    // Hide nav items based on role
     updateNavVisibility() {
         const isAdmin = this.isAdmin();
+        const isSuperAdmin = this.isSuperAdmin();
+        // Admin-only pages
         this._adminOnlyPages.forEach(page => {
             const navItem = document.getElementById(`nav-${page}`);
             if (navItem) navItem.style.display = isAdmin ? '' : 'none';
+        });
+        // Super-admin-only pages
+        this._superAdminOnlyPages.forEach(page => {
+            const navItem = document.getElementById(`nav-${page}`);
+            if (navItem) navItem.style.display = isSuperAdmin ? '' : 'none';
         });
         // Hide patients tab (disabled)
         const navPatients = document.getElementById('nav-patients');
@@ -331,6 +341,11 @@ const App = {
         // Guard: admin-only pages
         if (this._adminOnlyPages.includes(page) && !this.isAdmin()) {
             Toast.show('⛔ Chức năng này chỉ dành cho quản trị viên.', 'error');
+            return;
+        }
+        // Guard: super-admin-only pages
+        if (this._superAdminOnlyPages.includes(page) && !this.isSuperAdmin()) {
+            Toast.show('⛔ Chức năng này chỉ dành cho Super Admin.', 'error');
             return;
         }
 
