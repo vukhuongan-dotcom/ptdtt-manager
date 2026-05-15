@@ -14,6 +14,7 @@ const App = {
         surgery: SurgeryPage,
         'surgery-stats': SurgeryStatsPage,
         research: ResearchPage,
+        conferences: ConferencesPage,
         reports: ReportsPage,
     },
 
