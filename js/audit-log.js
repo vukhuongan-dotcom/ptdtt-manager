@@ -177,31 +177,38 @@ const AuditLog = {
         // Translate count → meaningful sentence, hide nextId
         if (d.count !== undefined) {
             const collMap = {
-                'collection.put.surgeries':      'ca mổ',
-                'collection.put.staff':          'nhân sự',
-                'collection.put.staffStatuses':  'trạng thái nhân sự',
-                'collection.put.schedules':      'lịch mổ',
-                'collection.put.shcmSchedule':   'kế hoạch SHCM',
-                'collection.put.plans':          'kế hoạch',
-                'collection.put.tasks':          'công việc',
-                'collection.put.notifications':  'thông báo',
-                'collection.put.externalDoctors':'bác sĩ ngoài',
-                'collection.put.reports7h':      'báo cáo 7h',
-                'collection.put.reports16h':     'báo cáo 16h',
-                'data.put':                      'toàn bộ dữ liệu',
+                'collection.put.surgeries':      ['danh sách ca mổ', 'ca mổ'],
+                'collection.put.staff':          ['danh sách nhân sự', 'nhân viên'],
+                'collection.put.staffStatuses':  ['trạng thái nhân sự', 'bản ghi'],
+                'collection.put.schedules':      ['lịch mổ tuần', 'tuần'],
+                'collection.put.shcmSchedule':   ['kế hoạch SHCM', 'mục'],
+                'collection.put.plans':          ['kế hoạch khoa', 'kế hoạch'],
+                'collection.put.tasks':          ['danh sách công việc', 'việc'],
+                'collection.put.notifications':  ['thông báo', 'thông báo'],
+                'collection.put.externalDoctors':['danh sách bác sĩ ngoài', 'bác sĩ'],
+                'collection.put.reports7h':      ['báo cáo 7 giờ', 'báo cáo'],
+                'collection.put.reports16h':     ['báo cáo 16 giờ', 'báo cáo'],
             };
-            const label = collMap[action] || 'bản ghi';
-            return `<span style="color:var(--text-muted);font-size:0.75rem">Đã lưu <b>${d.count}</b> ${label} (không có chi tiết — log cũ)</span>`;
+            const info = collMap[action];
+            const listName = info ? info[0] : 'dữ liệu';
+            const unit     = info ? info[1] : 'bản ghi';
+            // Explain: count = total records in the system at time of save, NOT number of changes
+            return `<span style="color:var(--text-muted);font-size:0.75rem">
+                Đã cập nhật <b>${listName}</b>
+                <span style="color:var(--text-secondary)">— hệ thống hiện có <b>${d.count}</b> ${unit}</span>
+                <span title="Con số này là tổng số ${unit} trong hệ thống lúc lưu, không phải số lượng thay đổi. Để xem chi tiết thay đổi cụ thể, cần xem log từ hôm nay trở đi." style="cursor:help;color:var(--text-muted);border-bottom:1px dashed;font-size:0.7rem"> ⓘ</span>
+            </span>`;
         }
 
         // Case 4: data.put with size
         if (d.size) {
             const kb = (d.size / 1024).toFixed(1);
-            return `<span style="color:var(--text-muted);font-size:0.75rem">Lưu toàn bộ DB (${kb} KB)</span>`;
+            return `<span style="color:var(--text-muted);font-size:0.75rem">Lưu toàn bộ cơ sở dữ liệu (${kb} KB)</span>`;
         }
 
-        // Fallback: hide unknown technical fields gracefully
+        // Fallback
         return '<span style="color:var(--text-muted);font-size:0.75rem">Đã lưu thành công</span>';
+
     },
 
     _toggle(btn) {
