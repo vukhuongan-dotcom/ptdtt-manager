@@ -71,7 +71,8 @@
         background: none;
         border: 1px solid rgba(239,68,68,0.3);
         color: #ef4444;
-        padding: 4px 8px;
+        padding: 6px 12px;
+        min-height: 44px; /* A3: WCAG 2.5.5 touch target */
         border-radius: 6px;
         font-size: 0.68rem;
         font-weight: 600;
@@ -127,6 +128,7 @@
         padding: 7px 4px 5px;
         font-size: 0.6rem;
         min-width: 56px;
+        min-height: 44px; /* A3: WCAG 2.5.5 touch target */
         text-align: center;
         justify-content: center;
         align-items: center;
