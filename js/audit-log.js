@@ -174,7 +174,6 @@ const AuditLog = {
         }
 
         // Case 3: Old-format entries — only have {count, nextId}
-        // Translate count → meaningful sentence, hide nextId
         if (d.count !== undefined) {
             const collMap = {
                 'collection.put.surgeries':      ['danh sách ca mổ', 'ca mổ'],
@@ -192,12 +191,14 @@ const AuditLog = {
             const info = collMap[action];
             const listName = info ? info[0] : 'dữ liệu';
             const unit     = info ? info[1] : 'bản ghi';
-            // Explain: count = total records in the system at time of save, NOT number of changes
-            return `<span style="color:var(--text-muted);font-size:0.75rem">
-                Đã cập nhật <b>${listName}</b>
-                <span style="color:var(--text-secondary)">— hệ thống hiện có <b>${d.count}</b> ${unit}</span>
-                <span title="Con số này là tổng số ${unit} trong hệ thống lúc lưu, không phải số lượng thay đổi. Để xem chi tiết thay đổi cụ thể, cần xem log từ hôm nay trở đi." style="cursor:help;color:var(--text-muted);border-bottom:1px dashed;font-size:0.7rem"> ⓘ</span>
-            </span>`;
+            return `<div style="font-size:0.78rem;line-height:1.6">
+                <div>Đã cập nhật <b>${listName}</b> — lúc đó hệ thống có <b>${d.count}</b> ${unit}</div>
+                <div style="margin-top:5px;padding:6px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:0.72rem;color:#92400e">
+                    ⚠️ <b>Nội dung thay đổi cụ thể không được lưu lại</b><br>
+                    Hệ thống chỉ ghi chi tiết thêm/sửa/xoá từ <b>15/05/2026</b> trở đi.
+                    Các thao tác trước đó chỉ biết "có cập nhật", không biết cụ thể là gì.
+                </div>
+            </div>`;
         }
 
         // Case 4: data.put with size
