@@ -103,30 +103,105 @@ const AuditLog = {
     _val(v) {
         if (v === null || v === undefined || v === '') return '<i style="color:var(--text-muted)">trống</i>';
         if (typeof v === 'boolean') return v ? 'Có' : 'Không';
-        return String(v).substring(0, 80);
+        return String(v).substring(0, 120);
+    },
+
+    // Translate auth detail fields to human-readable Vietnamese
+    _authDetail(action, d) {
+        if (!d) return '';
+        if (action === 'auth.login.fail') {
+            const reasons = {
+                'invalid_password': 'Sai mật khẩu',
+                'too_many_attempts': 'Quá nhiều lần thử',
+                'disabled': 'Tài khoản bị khoá',
+                'user_not_found': 'Tài khoản không tồn tại',
+            };
+            const r = reasons[d.reason] || d.reason || 'Không xác định';
+            const rem = d.remaining != null ? ` (còn ${d.remaining} lần thử)` : '';
+            return `<span style="color:#ef4444;font-size:0.78rem">Lý do: ${r}${rem}</span>`;
+        }
+        if (action === 'auth.login.blocked') {
+            const s = d.retryAfter ? ` — chờ ${Math.ceil(d.retryAfter/60)} phút` : '';
+            return `<span style="color:#ef4444;font-size:0.78rem">Tài khoản tạm khoá${s}</span>`;
+        }
+        if (action === 'auth.admin.password.reset') {
+            return `<span style="color:#f59e0b;font-size:0.78rem">Reset mật khẩu cho: <b>${d.target || '?'}</b></span>`;
+        }
+        if (action === 'auth.admin.toggle') {
+            const q = d.isAdmin ? 'Cấp quyền admin cho' : 'Thu quyền admin của';
+            return `<span style="color:#8b5cf6;font-size:0.78rem">${q}: <b>${d.target || '?'}</b></span>`;
+        }
+        if (action === 'auth.admin.disable') {
+            const q = d.disabled ? 'Khoá tài khoản' : 'Mở tài khoản';
+            return `<span style="color:#f59e0b;font-size:0.78rem">${q}: <b>${d.target || '?'}</b></span>`;
+        }
+        if (action === 'shcm_delete') {
+            return `<span style="color:#ef4444;font-size:0.78rem">Xoá file: <b>${d.file || '?'}</b></span>`;
+        }
+        if (action === 'shcm_upload_blocked') {
+            return `<span style="color:#ef4444;font-size:0.78rem">Upload bị chặn: ${d.reason || ''}</span>`;
+        }
+        return '';
     },
 
     _formatDetail(log) {
         const d = log.details;
-        if (!d) return '';
-        if (d.diff) {
-            const summary = [];
-            if (d.added) summary.push(`<span class="al-badge-add">+${d.added}</span>`);
-            if (d.removed) summary.push(`<span class="al-badge-remove">−${d.removed}</span>`);
-            if (d.changed) summary.push(`<span class="al-badge-change">✎${d.changed}</span>`);
-            const summaryHtml = summary.length
-                ? `<span class="al-summary">${summary.join(' ')}</span>`
-                : `<span style="color:var(--text-muted);font-size:0.72rem">Không thay đổi</span>`;
-            const diffHtml = this._renderDiff(d.diff);
-            return `<div>${summaryHtml}${diffHtml ? `<button class="al-toggle-btn" onclick="AuditLog._toggle(this)">▼ Chi tiết</button>
-                <div class="al-diff-detail" style="display:none">${diffHtml}</div>` : ''}</div>`;
+        const action = log.action || '';
+
+        // Case 1: auth/system events — show human text
+        if (action.startsWith('auth.') || action.startsWith('shcm_')) {
+            return this._authDetail(action, d);
         }
-        // Fallback: render as compact key=value
-        const kv = Object.entries(d)
-            .filter(([k]) => !['diff'].includes(k))
-            .map(([k,v]) => `<span class="al-kv"><b>${k}:</b> ${this._val(v)}</span>`)
-            .join(' ');
-        return `<span style="font-size:0.73rem;color:var(--text-muted)">${kv}</span>`;
+
+        if (!d) return '<span style="color:var(--text-muted);font-size:0.75rem">—</span>';
+
+        // Case 2: New-format entries with full diff data
+        if (d.diff) {
+            const noop = !d.added && !d.removed && !d.changed;
+            if (noop) {
+                return `<span style="color:var(--text-muted);font-size:0.75rem">Lưu thành công, không có nội dung thay đổi</span>`;
+            }
+            const parts = [];
+            if (d.added)   parts.push(`<span class="al-badge-add">+${d.added} thêm mới</span>`);
+            if (d.removed) parts.push(`<span class="al-badge-remove">−${d.removed} đã xoá</span>`);
+            if (d.changed) parts.push(`<span class="al-badge-change">✎${d.changed} đã sửa</span>`);
+            const summaryHtml = `<span class="al-summary">${parts.join(' ')}</span>`;
+            const diffHtml = this._renderDiff(d.diff);
+            return `<div>${summaryHtml}${diffHtml
+                ? `<button class="al-toggle-btn" onclick="AuditLog._toggle(this)">▼ Xem chi tiết</button>
+                   <div class="al-diff-detail" style="display:none">${diffHtml}</div>`
+                : ''}</div>`;
+        }
+
+        // Case 3: Old-format entries — only have {count, nextId}
+        // Translate count → meaningful sentence, hide nextId
+        if (d.count !== undefined) {
+            const collMap = {
+                'collection.put.surgeries':      'ca mổ',
+                'collection.put.staff':          'nhân sự',
+                'collection.put.staffStatuses':  'trạng thái nhân sự',
+                'collection.put.schedules':      'lịch mổ',
+                'collection.put.shcmSchedule':   'kế hoạch SHCM',
+                'collection.put.plans':          'kế hoạch',
+                'collection.put.tasks':          'công việc',
+                'collection.put.notifications':  'thông báo',
+                'collection.put.externalDoctors':'bác sĩ ngoài',
+                'collection.put.reports7h':      'báo cáo 7h',
+                'collection.put.reports16h':     'báo cáo 16h',
+                'data.put':                      'toàn bộ dữ liệu',
+            };
+            const label = collMap[action] || 'bản ghi';
+            return `<span style="color:var(--text-muted);font-size:0.75rem">Đã lưu <b>${d.count}</b> ${label} (không có chi tiết — log cũ)</span>`;
+        }
+
+        // Case 4: data.put with size
+        if (d.size) {
+            const kb = (d.size / 1024).toFixed(1);
+            return `<span style="color:var(--text-muted);font-size:0.75rem">Lưu toàn bộ DB (${kb} KB)</span>`;
+        }
+
+        // Fallback: hide unknown technical fields gracefully
+        return '<span style="color:var(--text-muted);font-size:0.75rem">Đã lưu thành công</span>';
     },
 
     _toggle(btn) {
