@@ -16,11 +16,40 @@
     color: var(--text-secondary);
 }
 
-/* Week grid */
+/* ── Sticky header zone ── */
+.surgery-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bg-primary);
+    padding-bottom: 4px;
+    /* Extend background edge-to-edge to cover scroll content below */
+    margin: 0 -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+/* ── Horizontal scroll zone ── */
+.surgery-scroll-zone {
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Negative margin trick so scrollbar sits at page edge */
+    margin: 0 -20px;
+    padding: 0 20px 12px;
+    /* Custom thin scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+.surgery-scroll-zone::-webkit-scrollbar { height: 6px; }
+.surgery-scroll-zone::-webkit-scrollbar-track { background: transparent; }
+.surgery-scroll-zone::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.surgery-scroll-zone::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Week grid — flex so columns don't compress */
 .surgery-week-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    display: flex;
     gap: 8px;
+    min-width: max-content; /* allow horizontal expansion */
 }
 
 .surgery-day {
@@ -30,6 +59,8 @@
     min-height: 300px;
     display: flex;
     flex-direction: column;
+    width: 200px;        /* fixed column width per day */
+    flex-shrink: 0;
 }
 .surgery-day.today {
     border-color: var(--primary);
@@ -296,11 +327,14 @@
     border-left: 2px solid var(--border);
 }
 
+/* Responsive: on small screens, narrow the day columns slightly */
 @media (max-width: 1200px) {
-    .surgery-week-grid { grid-template-columns: repeat(4, 1fr); }
+    .surgery-day { width: 185px; }
     .surgery-summary-panel { flex-direction: column; gap: 10px; align-items: flex-start; }
 }
 @media (max-width: 768px) {
-    .surgery-week-grid { grid-template-columns: 1fr; }
+    .surgery-day { width: 170px; }
+    .surgery-sticky-header { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+    .surgery-scroll-zone { margin: 0 -12px; padding: 0 12px 12px; }
     .surgery-summary-chips { flex-wrap: wrap; }
 }

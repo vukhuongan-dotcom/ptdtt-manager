@@ -33,6 +33,7 @@ body {
     margin-left: var(--sidebar-width);
     padding: 28px 32px;
     overflow-y: auto;
+    overflow-x: hidden;   /* horizontal scroll handled per-section (e.g. surgery-scroll-zone) */
     height: 100vh;
     scroll-behavior: smooth;
 }

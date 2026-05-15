@@ -144,6 +144,7 @@ const SurgeryPage = {
         const todayCases = surgeries.filter(s => s.date === this.dateStr(today)).length;
 
         return `
+        <div class="surgery-sticky-header">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Lịch mổ tuần</h1>
@@ -205,7 +206,9 @@ const SurgeryPage = {
                 </div>
             </div>
         </div>
+        </div><!-- end .surgery-sticky-header -->
 
+        <div class="surgery-scroll-zone">
         <div class="surgery-week-grid">
             ${weekDates.map(d => {
             const ds = this.dateStr(d);
@@ -251,6 +254,7 @@ const SurgeryPage = {
                 </div>`;
         }).join('')}
         </div>
+        </div><!-- end .surgery-scroll-zone -->
         `;
     },
 
