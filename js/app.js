@@ -351,9 +351,15 @@ const App = {
 
         this.currentPage = page;
 
-        // Update nav
+        // Update nav active state + aria-current (A4: accessibility)
         document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.toggle('active', item.dataset.page === page);
+            const isCurrent = item.dataset.page === page;
+            item.classList.toggle('active', isCurrent);
+            if (isCurrent) {
+                item.setAttribute('aria-current', 'page');
+            } else {
+                item.removeAttribute('aria-current');
+            }
         });
 
         this.renderCurrentPage();
