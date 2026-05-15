@@ -164,6 +164,42 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 .form-textarea { resize: vertical; min-height: 80px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+/* FormController (P1) — validation & loading states */
+.fc-error {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+.fc-error-msg {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--danger-light, #f87171);
+    font-weight: 500;
+}
+.fc-global-error {
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--border-radius-sm);
+    color: var(--danger-light, #f87171);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.fc-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: fc-spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+@keyframes fc-spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Badges */
 .badge {
     display: inline-flex;

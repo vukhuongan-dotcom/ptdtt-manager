@@ -168,6 +168,155 @@ const Utils = {
     }
 };
 
+// ===== GLOBAL FORM CONTROLLER (P1) =====
+// Centralized form management: validation, error display, loading state, submit lifecycle.
+// Usage:
+//   FormController.handle(form, {
+//     validate: (data) => ({ field: 'Error message' }) | null,
+//     onSubmit: async (data) => { ... },
+//     onSuccess: (result) => { ... },
+//     onError: (err) => { ... },
+//     autosaveKey: 'form-key'   // optional
+//   });
+const FormController = {
+
+    // Attach controller to a form element
+    handle(formEl, options = {}) {
+        if (!formEl) return;
+        const { validate, onSubmit, onSuccess, onError, autosaveKey } = options;
+
+        // Tag for autosave integration
+        if (autosaveKey) formEl.dataset.autosaveKey = autosaveKey;
+
+        formEl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            this.clearErrors(formEl);
+
+            const raw = new FormData(formEl);
+            const data = Object.fromEntries(raw.entries());
+
+            // Client-side validation
+            if (validate) {
+                const errors = validate(data);
+                if (errors && Object.keys(errors).length > 0) {
+                    this.showErrors(formEl, errors);
+                    // Focus first error field
+                    const firstField = Object.keys(errors)[0];
+                    const el = formEl.querySelector(`[name="${firstField}"]`);
+                    if (el) el.focus();
+                    return;
+                }
+            }
+
+            // Loading state
+            this.setLoading(formEl, true);
+            try {
+                const result = await (onSubmit ? onSubmit(data, raw) : null);
+                if (autosaveKey) FormAutoSave.discard(autosaveKey);
+                if (onSuccess) onSuccess(result, data);
+            } catch (err) {
+                console.error('[FormController]', err);
+                const msg = err?.message || 'Có lỗi xảy ra. Vui lòng thử lại.';
+                this.showGlobalError(formEl, msg);
+                if (onError) onError(err);
+                Toast.show(`❌ ${msg}`, 'error');
+            } finally {
+                this.setLoading(formEl, false);
+            }
+        });
+
+        // Live validation: clear error on field input
+        formEl.addEventListener('input', (e) => {
+            const field = e.target.name;
+            if (field) this.clearFieldError(formEl, field);
+        });
+    },
+
+    // Show per-field errors: inserts .fc-error-msg below each field
+    showErrors(formEl, errors) {
+        Object.entries(errors).forEach(([field, msg]) => {
+            const el = formEl.querySelector(`[name="${field}"]`);
+            if (!el) return;
+            el.classList.add('fc-error');
+            el.setAttribute('aria-invalid', 'true');
+            el.setAttribute('aria-describedby', `fc-err-${field}`);
+            const span = document.createElement('span');
+            span.className = 'fc-error-msg';
+            span.id = `fc-err-${field}`;
+            span.role = 'alert';
+            span.textContent = msg;
+            el.insertAdjacentElement('afterend', span);
+        });
+    },
+
+    // Show global error banner inside form
+    showGlobalError(formEl, msg) {
+        this.clearGlobalError(formEl);
+        const div = document.createElement('div');
+        div.className = 'fc-global-error';
+        div.role = 'alert';
+        div.innerHTML = `<span>❌ ${msg}</span>`;
+        formEl.prepend(div);
+    },
+
+    clearErrors(formEl) {
+        formEl.querySelectorAll('.fc-error').forEach(el => {
+            el.classList.remove('fc-error');
+            el.removeAttribute('aria-invalid');
+            el.removeAttribute('aria-describedby');
+        });
+        formEl.querySelectorAll('.fc-error-msg').forEach(el => el.remove());
+        this.clearGlobalError(formEl);
+    },
+
+    clearFieldError(formEl, field) {
+        const el = formEl.querySelector(`[name="${field}"]`);
+        if (!el) return;
+        el.classList.remove('fc-error');
+        el.removeAttribute('aria-invalid');
+        const msg = formEl.querySelector(`#fc-err-${field}`);
+        if (msg) msg.remove();
+    },
+
+    clearGlobalError(formEl) {
+        formEl.querySelectorAll('.fc-global-error').forEach(el => el.remove());
+    },
+
+    // Disable form + show loading spinner on submit button
+    setLoading(formEl, loading) {
+        const btn = formEl.querySelector('button[type="submit"], .btn-primary[type="submit"]');
+        if (!btn) return;
+        btn.disabled = loading;
+        if (loading) {
+            btn._originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="fc-spinner"></span> Đang lưu...`;
+        } else if (btn._originalText) {
+            btn.innerHTML = btn._originalText;
+        }
+    },
+
+    // Convenience: extract and coerce FormData to typed object
+    getData(formEl) {
+        const raw = new FormData(formEl);
+        return Object.fromEntries(raw.entries());
+    },
+
+    // Common validators
+    validators: {
+        required: (value, label = 'Trường này') =>
+            (!value || !value.toString().trim()) ? `${label} không được để trống` : null,
+        minLength: (value, min, label = 'Trường này') =>
+            value && value.length < min ? `${label} cần ít nhất ${min} ký tự` : null,
+        year: (value, label = 'Năm') => {
+            const y = parseInt(value);
+            return (isNaN(y) || y < 1900 || y > new Date().getFullYear() + 1)
+                ? `${label} không hợp lệ` : null;
+        },
+        numeric: (value, label = 'Giá trị') =>
+            isNaN(parseFloat(value)) ? `${label} phải là số` : null,
+    }
+};
+
 // ===== FORM AUTO-SAVE (P1) =====
 // Saves form state to sessionStorage every 30s to prevent data loss on idle timeout.
 // Key format: "formDraft_<formKey>" — set via data-autosave-key on <form>
