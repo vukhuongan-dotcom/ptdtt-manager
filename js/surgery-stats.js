@@ -104,17 +104,23 @@ const SurgeryStatsPage = {
     },
 
     // Get EMR room for a patient (by matching name)
-    getPatientRoom(patientName) {
-        if (typeof EMR === 'undefined') return '—';
-        const data = EMR.getData();
-        if (!data || !data.patients) return '—';
-        const name = patientName.trim().toLowerCase();
-        const match = data.patients.find(p => {
-            const emrName = (p.name || p.hoTen || '').trim().toLowerCase();
-            return emrName === name || emrName.includes(name) || name.includes(emrName);
-        });
-        return match ? (match.room || match.phong || '—') : '—';
+    // NOTE: EMR integration disabled (2026-05-12) pending Director approval.
+    // To re-enable: restore the block below and remove the early return.
+    //
+    // Original logic:
+    //   if (typeof EMR === 'undefined') return '—';
+    //   const data = EMR.getData();
+    //   if (!data || !data.patients) return '—';
+    //   const name = patientName.trim().toLowerCase();
+    //   const match = data.patients.find(p => {
+    //       const emrName = (p.name || p.hoTen || '').trim().toLowerCase();
+    //       return emrName === name || emrName.includes(name) || name.includes(emrName);
+    //   });
+    //   return match ? (match.room || match.phong || '—') : '—';
+    getPatientRoom(patientName) { // eslint-disable-line no-unused-vars
+        return '—'; // EMR disconnected — re-enable when integration is approved
     },
+
 
     // Compute detailed stats grouped by doctor
     computeDetailedStats() {
