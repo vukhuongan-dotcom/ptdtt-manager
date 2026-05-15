@@ -168,8 +168,89 @@ const Utils = {
     }
 };
 
+// ===== FORM AUTO-SAVE (P1) =====
+// Saves form state to sessionStorage every 30s to prevent data loss on idle timeout.
+// Key format: "formDraft_<formKey>" — set via data-autosave-key on <form>
+const FormAutoSave = {
+    _timers: {},
+
+    // Start auto-saving a form. formKey identifies the form (e.g. 'surgery-edit-123')
+    start(formKey) {
+        this.stop(formKey); // clear any existing timer
+        this._restore(formKey);
+        this._timers[formKey] = setInterval(() => this._save(formKey), 30000);
+        // Also save on every input change (debounced)
+        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        if (form) {
+            form._autosaveHandler = () => this._save(formKey);
+            form.addEventListener('input', form._autosaveHandler);
+            form.addEventListener('change', form._autosaveHandler);
+        }
+    },
+
+    stop(formKey) {
+        clearInterval(this._timers[formKey]);
+        delete this._timers[formKey];
+    },
+
+    discard(formKey) {
+        this.stop(formKey);
+        try { sessionStorage.removeItem(`formDraft_${formKey}`); } catch(e) {}
+        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        if (form && form._autosaveHandler) {
+            form.removeEventListener('input', form._autosaveHandler);
+            form.removeEventListener('change', form._autosaveHandler);
+        }
+    },
+
+    _save(formKey) {
+        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        if (!form) return;
+        const data = {};
+        form.querySelectorAll('[name]').forEach(el => {
+            if (el.type !== 'file') data[el.name] = el.value;
+        });
+        try {
+            sessionStorage.setItem(`formDraft_${formKey}`, JSON.stringify({ ts: Date.now(), data }));
+        } catch(e) {}
+    },
+
+    _restore(formKey) {
+        try {
+            const raw = sessionStorage.getItem(`formDraft_${formKey}`);
+            if (!raw) return;
+            const { ts, data } = JSON.parse(raw);
+            // Only restore drafts < 8 hours old
+            if (Date.now() - ts > 8 * 3600 * 1000) {
+                sessionStorage.removeItem(`formDraft_${formKey}`);
+                return;
+            }
+            setTimeout(() => {
+                const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+                if (!form) return;
+                let restored = false;
+                Object.entries(data).forEach(([name, value]) => {
+                    const el = form.querySelector(`[name="${name}"]`);
+                    if (el && value !== undefined && value !== '') {
+                        el.value = value;
+                        // Trigger change event for dependent selects (e.g. surgeryType)
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                        restored = true;
+                    }
+                });
+                if (restored) Toast.show('📋 Đã khôi phục bản nháp chưa lưu', 'info');
+            }, 100);
+        } catch(e) {}
+    },
+
+    // Call on form submit success to clear the draft
+    clear(formKey) { this.discard(formKey); }
+};
+
 // ===== MODAL =====
 const Modal = {
+    _currentFormKey: null,
+
     open(title, bodyHTML) {
         const overlay = document.getElementById('modal-overlay');
         document.getElementById('modal-title').textContent = title;
@@ -180,12 +261,30 @@ const Modal = {
         setTimeout(() => {
             const closeBtn = document.getElementById('modal-close');
             if (closeBtn) closeBtn.focus();
+            // Auto-save: start if form has data-autosave-key
+            const form = document.querySelector('#modal-body form[data-autosave-key]');
+            if (form) {
+                this._currentFormKey = form.dataset.autosaveKey;
+                FormAutoSave.start(this._currentFormKey);
+            }
         }, 50);
     },
+
     close() {
         const overlay = document.getElementById('modal-overlay');
         overlay.classList.remove('active');
         overlay.setAttribute('aria-hidden', 'true');
+        // Stop auto-save timer (keep draft — user may reopen)
+        if (this._currentFormKey) {
+            FormAutoSave.stop(this._currentFormKey);
+            this._currentFormKey = null;
+        }
+    },
+
+    // Call on successful save to discard draft
+    clearDraft(formKey) {
+        FormAutoSave.discard(formKey);
+        this._currentFormKey = null;
     }
 };
 

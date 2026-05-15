@@ -408,8 +408,9 @@ const SurgeryPage = {
         const staff = Store.getAll('staff').filter(st => st.role.includes('Bác sĩ') || st.role.includes('Trưởng khoa') || st.role.includes('Phó trưởng khoa'));
         const extDocs = Store.getAll('externalDoctors') || [];
 
+        const formKey = `surgery-${id || 'new'}`;
         Modal.open(s ? 'Chỉnh sửa ca mổ' : 'Thêm ca mổ', `
-            <form onsubmit="SurgeryPage.save(event, ${id || 0})">
+            <form onsubmit="SurgeryPage.save(event, ${id || 0})" data-autosave-key="${formKey}">
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Họ tên bệnh nhân</label>
@@ -578,8 +579,12 @@ const SurgeryPage = {
             all.push(data);
         }
         this.saveSurgeries(all);
+        // P1: Clear auto-save draft on successful save
+        const formKey = `surgery-${id || 'new'}`;
+        Modal.clearDraft(formKey);
         Modal.close();
         App.renderCurrentPage();
+        Toast.success(id ? 'Đã cập nhật ca mổ' : 'Đã thêm ca mổ');
     },
 
     async deleteSurgery(id) {

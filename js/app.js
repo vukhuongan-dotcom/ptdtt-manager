@@ -419,4 +419,10 @@ const App = {
 };
 
 // Boot
-document.addEventListener('DOMContentLoaded', () => App.init());
+// Note: Using defer on this script means DOM is already parsed when we run.
+// DOMContentLoaded has already fired, so we call App.init() directly.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => App.init());
+} else {
+    App.init();
+}
