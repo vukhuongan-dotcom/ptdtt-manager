@@ -171,12 +171,21 @@ const Utils = {
 // ===== MODAL =====
 const Modal = {
     open(title, bodyHTML) {
+        const overlay = document.getElementById('modal-overlay');
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-body').innerHTML = bodyHTML;
-        document.getElementById('modal-overlay').classList.add('active');
+        overlay.classList.add('active');
+        overlay.setAttribute('aria-hidden', 'false');
+        // Move focus to close button for keyboard accessibility
+        setTimeout(() => {
+            const closeBtn = document.getElementById('modal-close');
+            if (closeBtn) closeBtn.focus();
+        }, 50);
     },
     close() {
-        document.getElementById('modal-overlay').classList.remove('active');
+        const overlay = document.getElementById('modal-overlay');
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
     }
 };
 
