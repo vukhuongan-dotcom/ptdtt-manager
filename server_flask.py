@@ -216,6 +216,73 @@ def audit_log(user, action, details=None):
     except Exception as e:
         print(f'[Audit] Error writing log: {e}')
 
+
+# Fields to display per collection in diff summaries
+_DIFF_LABEL_FIELDS = {
+    'surgeries':      ['patientName', 'birthYear', 'date', 'mainSurgeon', 'diagnosis', 'method', 'approachType', 'duration', 'notes'],
+    'staff':          ['name', 'role', 'title', 'phone', 'email', 'status'],
+    'staffStatuses':  ['staffId', 'date', 'status', 'note'],
+    'schedules':      ['weekKey', 'date', 'surgeon', 'notes'],
+    'shcmSchedule':   ['date', 'title', 'presenter', 'type', 'location'],
+    'plans':          ['title', 'type', 'date', 'status', 'assignee'],
+    'tasks':          ['title', 'assignee', 'status', 'dueDate', 'priority'],
+    'notifications':  ['title', 'content', 'type'],
+}
+
+def _record_label(rec, collection):
+    """Return a short human-readable label for a record."""
+    fields = _DIFF_LABEL_FIELDS.get(collection, [])
+    parts = [str(rec.get(f, '')) for f in fields[:3] if rec.get(f)]
+    return ' — '.join(parts) if parts else f"id={rec.get('id', '?')}"
+
+def diff_collection(old_items, new_items, collection):
+    """
+    Compare two lists of records (keyed by 'id') and return a structured diff:
+    {
+      added:   [ {id, label, record} ],
+      removed: [ {id, label, record} ],
+      changed: [ {id, label, from: {field: old_val}, to: {field: new_val}} ]
+    }
+    Only includes field-level diff for watched fields, ignores 'updatedBy' noise.
+    """
+    IGNORE_FIELDS = {'updatedBy', 'createdBy', 'id'}
+    watch_fields = set(_DIFF_LABEL_FIELDS.get(collection, []))
+
+    old_map = {r['id']: r for r in old_items if isinstance(r, dict) and 'id' in r}
+    new_map = {r['id']: r for r in new_items if isinstance(r, dict) and 'id' in r}
+
+    added, removed, changed = [], [], []
+
+    for rid, rec in new_map.items():
+        if rid not in old_map:
+            added.append({'id': rid, 'label': _record_label(rec, collection), 'record': rec})
+
+    for rid, rec in old_map.items():
+        if rid not in new_map:
+            removed.append({'id': rid, 'label': _record_label(rec, collection), 'record': rec})
+
+    for rid in set(old_map) & set(new_map):
+        old_r, new_r = old_map[rid], new_map[rid]
+        frm, to = {}, {}
+        all_keys = (set(old_r) | set(new_r)) - IGNORE_FIELDS
+        for k in all_keys:
+            # Only track meaningful field changes (watched fields or any non-ignored)
+            if watch_fields and k not in watch_fields:
+                continue
+            ov, nv = old_r.get(k), new_r.get(k)
+            if ov != nv:
+                frm[k] = ov
+                to[k] = nv
+        if frm:
+            changed.append({
+                'id': rid,
+                'label': _record_label(new_r, collection),
+                'from': frm,
+                'to': to
+            })
+
+    return {'added': added, 'removed': removed, 'changed': changed}
+
 def _cleanup_old_logs(days=90):
     """Remove audit logs older than N days"""
     _ensure_log_dir()
@@ -396,10 +463,35 @@ def put_collection(collection):
             'error': 'Client too old. Please reload the page before saving.',
             'requiredBuild': MIN_CLIENT_BUILD
         }), 409
-    audit_log(user, f'collection.put.{collection}', {
-        'count': len(items) if isinstance(items, list) else 1,
-        'nextId': next_id
-    })
+
+    # Compute diff before writing (only for list-of-objects with 'id' field)
+    diff_detail = None
+    if isinstance(items, list) and items and isinstance(items[0], dict) and 'id' in items[0]:
+        try:
+            current_data = load_data()
+            old_items = current_data.get(collection, [])
+            if isinstance(old_items, list):
+                diff = diff_collection(old_items, items, collection)
+                diff_detail = {
+                    'count': len(items),
+                    'nextId': next_id,
+                    'added': len(diff['added']),
+                    'removed': len(diff['removed']),
+                    'changed': len(diff['changed']),
+                    'diff': {
+                        'added': diff['added'][:20],    # cap to avoid huge logs
+                        'removed': diff['removed'][:20],
+                        'changed': diff['changed'][:20]
+                    }
+                }
+        except Exception as ex:
+            print(f'[Audit] diff_collection error: {ex}')
+
+    if diff_detail is None:
+        diff_detail = {'count': len(items) if isinstance(items, list) else 1, 'nextId': next_id}
+
+    audit_log(user, f'collection.put.{collection}', diff_detail)
+
     with atomic_update() as data:
         data[collection] = items
         if next_id is not None:
