@@ -554,6 +554,15 @@ const SurgeryPage = {
             Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
             return;
         }
+
+        // Item 7: Audit trail — who created/updated this record
+        const session = Auth.getSession();
+        const actorMeta = session ? {
+            username: session.username,
+            name: session.name || session.username,
+            at: new Date().toISOString()
+        } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
+
         const data = {
             patientName: f.get('patientName'),
             birthYear: f.get('birthYear'),
@@ -573,9 +582,16 @@ const SurgeryPage = {
         const all = this.getAllSurgeries();
         if (id) {
             const idx = all.findIndex(x => x.id === id);
-            if (idx !== -1) all[idx] = { ...all[idx], ...data };
+            if (idx !== -1) {
+                all[idx] = {
+                    ...all[idx],
+                    ...data,
+                    updatedBy: actorMeta   // audit trail: who last edited
+                };
+            }
         } else {
             data.id = Date.now();
+            data.createdBy = actorMeta;    // audit trail: who created
             all.push(data);
         }
         this.saveSurgeries(all);
