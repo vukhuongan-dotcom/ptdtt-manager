@@ -229,7 +229,7 @@ const SurgeryPage = {
                                 <div class="surgery-card-compact-row">
                                     <span class="surgery-card-order">${idx + 1}</span>
                                     <span class="surgery-type-dot" style="background:${typeInfo.color}" title="${typeInfo.label}"></span>
-                                    <span class="surgery-card-compact-name">${s.patientName}</span>
+                                    <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
                                     <span class="surgery-card-yob">${s.birthYear || ''}</span>
                                 </div>
                                 <div class="surgery-card-detail">
@@ -350,7 +350,7 @@ const SurgeryPage = {
             <div class="surgery-detail">
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Bệnh nhân</div>
-                    <div class="surgery-detail-value"><strong>${s.patientName}</strong> — NS: ${s.birthYear || '—'}</div>
+                    <div class="surgery-detail-value"><strong>${Utils.toProperCase(s.patientName)}</strong> — NS: ${s.birthYear || '—'}</div>
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Số nhập viện</div>
@@ -568,7 +568,7 @@ const SurgeryPage = {
         } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
 
         const data = {
-            patientName: f.get('patientName'),
+            patientName: Utils.toProperCase(f.get('patientName')),
             birthYear: f.get('birthYear'),
             admissionId: f.get('admissionId'),
             surgeryType: surgeryType,
@@ -614,7 +614,8 @@ const SurgeryPage = {
         if (!s) return;
         const confirmed = await Confirm.show({
             title: 'Xóa ca mổ',
-            message: `Bạn có chắc chắn muốn xóa ca mổ của BN <strong>${s.patientName}</strong>?<br>Hành động này không thể hoàn tác.`,
+            message: `Bạn có chắc chắn muốn xóa ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong>?<br>Hành động này không thể hoàn tác.`,
+
             icon: '🗑️',
             type: 'danger',
             confirmText: 'Xóa ca mổ',
@@ -625,7 +626,7 @@ const SurgeryPage = {
         this.saveSurgeries(all.filter(x => x.id !== id));
         if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
-        Toast.success(`Đã xóa ca mổ của BN ${s.patientName}`);
+        Toast.success(`Đã xóa ca mổ của BN ${Utils.toProperCase(s.patientName)}`);
     },
 
     // Auto-select approach when surgery type changes
@@ -699,7 +700,7 @@ const SurgeryPage = {
                 const bgColor = i % 2 === 0 ? '#ffffff' : '#f8fafc';
                 rows += `<tr style="background:${bgColor};border-bottom:1px solid #cbd5e1">
                     <td style="padding:12px 10px;text-align:center;font-weight:700;color:#000;font-size:14px">${i + 1}</td>
-                    <td style="padding:12px 10px;font-size:14px"><strong style="color:#000">${s.patientName}</strong></td>
+                    <td style="padding:12px 10px;font-size:14px"><strong style="color:#000">${Utils.toProperCase(s.patientName)}</strong></td>
                     <td style="padding:12px 10px;text-align:center;font-size:13px;color:#111">${s.birthYear || '—'}</td>
                     <td style="padding:12px 10px;font-size:13px;color:#111">${s.admissionId || '—'}</td>
                     <td style="padding:12px 10px;font-size:13px;color:#0a1628;font-weight:600">${s.diagnosis || '—'}</td>

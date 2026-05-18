@@ -63,6 +63,21 @@ const Utils = {
         }[t] || '';
     },
 
+    /**
+     * Normalize a person's name to Title Case.
+     * Handles Vietnamese and ALL-CAPS input correctly.
+     * Examples:
+     *   "NGUYỄN TẤN MINH" → "Nguyễn Tấn Minh"
+     *   "trần thị lan"     → "Trần Thị Lan"
+     *   "lê VĂN an"        → "Lê Văn An"
+     */
+    toProperCase(str) {
+        if (!str || typeof str !== 'string') return str;
+        return str.trim()
+            .toLowerCase()
+            .replace(/(^|[\s\-])(\S)/g, (_, sep, ch) => sep + ch.toUpperCase());
+    },
+
     getStaffName(id) {
         const s = Store.getById('staff', id);
         if (s) return s.name;
