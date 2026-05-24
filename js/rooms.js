@@ -1,16 +1,17 @@
 // ===== ROOM MAP PAGE =====
+// Cập nhật phân công nhân sự: 24/05/2026
 const ROOM_DATA = [
-    { room: '705', doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'CH' }] },
-    { room: '706', doctors: [{ id: 8,  role: 'chính' }, { id: 22, role: 'NT' }] },
-    { room: '707', doctors: [{ id: 9,  role: 'chính' }, { id: 13, role: 'NT' }] },
-    { room: '708', doctors: [{ id: 4,  role: 'chính' }, { id: 15, role: 'NT' }] },
-    { room: '709', doctors: [{ id: 11, role: 'chính' }, { id: 17, role: 'NT' }] },
-    { room: '710', doctors: [{ id: 7,  role: 'chính' }, { id: 14, role: 'NT' }] },
-    { room: '711', doctors: [{ id: 10, role: 'chính' }] },
-    { room: '712', doctors: [{ id: 10, role: 'chính' }] },
-    { room: '712A', doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },
-    { room: '719', doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },
-    { room: '718', doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }] },
+    { room: '705',  doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },  // BS Quy + BS LM.Hậu
+    { room: '706',  doctors: [{ id: 8,  role: 'chính' }, { id: 22, role: 'NT' }] },  // BS Quy + BS Định
+    { room: '707',  doctors: [{ id: 9,  role: 'chính' }, { id: 13, role: 'NT' }] },  // giữ nguyên
+    { room: '708',  doctors: [{ id: 4,  role: 'chính' }, { id: 14, role: 'NT' }] },  // BS Tuấn + BS Hoàng
+    { room: '709',  doctors: [{ id: 11, role: 'chính' }, { id: 17, role: 'NT' }] },  // giữ nguyên
+    { room: '710',  doctors: [{ id: 7,  role: 'chính' }, { id: 15, role: 'NT' }] },  // BS Phú + BS Trâm Anh
+    { room: '711',  doctors: [{ id: 10, role: 'chính' }] },                           // BS Như Đức
+    { room: '712',  doctors: [{ id: 6,  role: 'chính' }, { id: 10, role: 'NT' }] },  // BS Nguyện + BS Như Đức
+    { room: '712A', doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },  // BS Nguyện + BS Phương
+    { room: '719',  doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },  // BS Nguyện + BS Phương
+    { room: '718',  doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }] }, // giữ nguyên
 ];
 
 const RoomsPage = {
