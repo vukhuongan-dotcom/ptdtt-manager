@@ -279,7 +279,6 @@ const ConferencesPage = {
                         <span class="cp-pres-lang ${p.language === 'en' ? 'cp-lang-en' : 'cp-lang-vi'}">${p.language.toUpperCase()}</span>
                         <span class="cp-pres-title">${p.title}</span>
                         <span class="cp-pres-who">— ${p.presenter}</span>
-                        ${p.session ? `<span class="cp-pres-session">${p.session}</span>` : ''}
                     </div>`).join('');
                 return `<div class="cp-day-block">
                     <div class="cp-day-label">📅 ${label}</div>
