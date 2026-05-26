@@ -108,7 +108,7 @@ const App = {
     _adminOnlyPages: ['surgery-stats'],
 
     // Pages that require super admin role to access
-    _superAdminOnlyPages: ['conferences'],
+    _superAdminOnlyPages: [],
 
     showApp() {
         document.getElementById('auth-checking')?.remove();

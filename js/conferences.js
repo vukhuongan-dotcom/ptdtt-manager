@@ -106,6 +106,11 @@ const ConferencesPage = {
         return s.isAdmin === true;
     },
 
+    // Mọi user đăng nhập đều xuất được ảnh
+    _canExport() {
+        return !!Auth.getSession();
+    },
+
     _ensureSeedData() {
         const items = Store.getAll('conferences');
         // Only seed if completely empty
@@ -226,7 +231,8 @@ const ConferencesPage = {
 
     render() {
         this._ensureSeedData();
-        const canEdit = this._canEdit();
+        const canEdit   = this._canEdit();
+        const canExport = this._canExport();
 
         // Only show conferences WITH presentations
         const all = Store.getAll('conferences')
@@ -331,7 +337,7 @@ const ConferencesPage = {
                 <div class="cp-card-footer">
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                         ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
-                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>
+                        ${canExport ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>` : ''}
                     </div>
                     ${canEdit ? `<div style="display:flex;gap:6px">
                         <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})">✏️ Sửa</button>
@@ -344,7 +350,7 @@ const ConferencesPage = {
         return `
         <div class="page-header">
             <div>
-                <h1 class="page-title">Báo cáo khoa học — Khoa PTĐTT</h1>
+                <h1 class="page-title">Báo cáo khoa học</h1>
                 <p class="page-subtitle">Thống kê tham gia báo cáo tại hội nghị trong nước & quốc tế</p>
             </div>
             ${canEdit ? `<button class="btn btn-primary" onclick="ConferencesPage.openForm()">
