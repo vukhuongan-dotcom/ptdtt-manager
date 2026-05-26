@@ -623,7 +623,12 @@ const ConferencesPage = {
                 const url = URL.createObjectURL(blob);
                 const a   = document.createElement('a');
                 a.href    = url;
-                a.download = `BaoCaoKhoaHoc_${item.startDate ? item.startDate.replace(/-/g,'') : 'conf'}.jpg`;
+                const confNameSlug = (item.name || 'HoiNghi')
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                    .replace(/đ/gi,'d').replace(/[^a-zA-Z0-9\s]/g,'')
+                    .trim().replace(/\s+/g,'_');
+                const todaySlug = new Date().toLocaleDateString('vi-VN').replace(/\//g,'');
+                a.download = `BaoCaoKhoaHoc_${confNameSlug}_${todaySlug}.jpg`;
                 a.click();
                 URL.revokeObjectURL(url);
                 document.body.removeChild(container);
