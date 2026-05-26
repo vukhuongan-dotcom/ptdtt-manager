@@ -282,16 +282,27 @@
 
 .cp-pres-title {
     flex: 1;
+    font-size: 0.8rem;
     color: var(--text-primary);
-    font-weight: 500;
     line-height: 1.4;
 }
 
 .cp-pres-who {
-    font-size: 0.72rem;
-    color: var(--text-muted);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+.cp-pres-session {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-style: italic;
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Card footer */

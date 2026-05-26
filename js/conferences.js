@@ -271,16 +271,18 @@ const ConferencesPage = {
             const dateKeys = Object.keys(byDate).sort();
             const presPreview = dateKeys.map(d => {
                 const dt = new Date(d);
-                const label = `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}`;
-                const rows = byDate[d].map(p => `
+                const days = ['CN','T2','T3','T4','T5','T6','T7'];
+                const label = `${days[dt.getDay()]} ${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}`;
+                const rows = byDate[d].sort((a,b) => (a.time||'').localeCompare(b.time||'')).map(p => `
                     <div class="cp-pres-row">
                         <span class="cp-pres-time">${p.time}</span>
                         <span class="cp-pres-lang ${p.language === 'en' ? 'cp-lang-en' : 'cp-lang-vi'}">${p.language.toUpperCase()}</span>
                         <span class="cp-pres-title">${p.title}</span>
                         <span class="cp-pres-who">— ${p.presenter}</span>
+                        ${p.session ? `<span class="cp-pres-session">${p.session}</span>` : ''}
                     </div>`).join('');
                 return `<div class="cp-day-block">
-                    <div class="cp-day-label">📅 Ngày ${label}</div>
+                    <div class="cp-day-label">📅 ${label}</div>
                     ${rows}
                 </div>`;
             }).join('');
