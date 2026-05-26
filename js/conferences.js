@@ -562,7 +562,6 @@ const ConferencesPage = {
                 </div>`;
         }).join('');
 
-        // Presenters summary
         const sorted = this._sortedPresenters(pres);
         const presenterChips = sorted.map(name => {
             const leader = this._LEADERSHIP_ORDER.find(l => name.includes(l.match));
@@ -572,6 +571,7 @@ const ConferencesPage = {
         }).join('');
 
         const exportDate = new Date().toLocaleDateString('vi-VN');
+        const exporter = Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống';
 
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
@@ -584,16 +584,19 @@ const ConferencesPage = {
                     <div style="font-size:13px;color:#cbd5e1;margin-top:2px">Bệnh viện Bình Dân · TP. Hồ Chí Minh</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-size:16px;font-weight:700;color:#ffffff">BÁO CÁO KHOA HỌC</div>
-                    <div style="font-size:12px;color:#67e8f9;font-weight:600;margin-top:2px">${item.name}</div>
+                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.5px">BÁO CÁO KHOA HỌC</div>
+                    <div style="font-size:13px;color:#cbd5e1;margin-top:2px">&nbsp;</div>
                 </div>
             </div>
 
-            <!-- Conference info bar -->
-            <div style="padding:12px 36px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
-                <span style="font-size:13px;font-weight:700;color:#0f172a">📅 ${item.dates}</span>
-                <span style="font-size:13px;color:#334155">📍 ${item.location}${item.venue?' — '+item.venue:''}</span>
-                <span style="margin-left:auto;font-size:13px;font-weight:700;color:#0891b2">Tổng: ${pres.length} bài báo cáo · ${sorted.length} báo cáo viên</span>
+            <!-- Conference info bar: tên hội nghị nổi bật + ngày + địa điểm -->
+            <div style="padding:14px 36px;background:#f0f9ff;border-bottom:2px solid #bae6fd">
+                <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:6px">${item.name}</div>
+                <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+                    <span style="font-size:13px;font-weight:600;color:#334155">📅 ${item.dates}</span>
+                    <span style="font-size:13px;color:#334155">📍 ${item.location}${item.venue?' — '+item.venue:''}</span>
+                    <span style="margin-left:auto;font-size:13px;font-weight:700;color:#0891b2">Tổng: ${pres.length} bài báo cáo · ${sorted.length} báo cáo viên</span>
+                </div>
             </div>
 
             <!-- Content -->
@@ -607,7 +610,7 @@ const ConferencesPage = {
 
             <!-- Footer -->
             <div style="padding:10px 36px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;background:#f8fafc">
-                <span>Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</span>
+                <span>Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân · Xuất bởi: ${exporter}</span>
                 <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} ngày ${exportDate}</span>
             </div>
         </div>`;
