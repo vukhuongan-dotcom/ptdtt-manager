@@ -244,12 +244,12 @@ const ConferencesPage = {
         let items = this._filterYear === 'all' ? all
             : all.filter(c => new Date(c.startDate).getFullYear() === parseInt(this._filterYear));
 
-        // Global stats
-        const totalConf   = all.length;
+        // Global stats — tính theo thời gian thực
+        const pastConf    = all.filter(c => this._getStatus(c) === 'past').length;
         const totalPres   = all.reduce((s, c) => s + c.presentations.length, 0);
         const totalPresenterSet = new Set(all.flatMap(c => c.presentations.map(p => p.presenter)));
         const totalPresenterCount = totalPresenterSet.size;
-        const upcoming = all.filter(c => { const s = this._getStatus(c); return s === 'soon' || s === 'now' || s === 'upcoming'; }).length;
+        const upcoming    = all.filter(c => { const s = this._getStatus(c); return s === 'soon' || s === 'now' || s === 'upcoming'; }).length;
 
         // Year tab pills
         const yearTabs = [
@@ -361,7 +361,7 @@ const ConferencesPage = {
         <!-- Summary stats -->
         <div class="cp-stats-row">
             <div class="cp-stat-card">
-                <span class="cp-stat-big">${totalConf}</span>
+                <span class="cp-stat-big">${pastConf}</span>
                 <span class="cp-stat-label">Hội nghị đã tham gia</span>
             </div>
             <div class="cp-stat-card cp-stat-highlight">
