@@ -325,14 +325,7 @@ const ConferencesPage = {
                     </div>
                 </div>
 
-                <div class="cp-presenter-chips">
-                    ${presenters.map(p => {
-                        const leader = this._LEADERSHIP_ORDER.find(l => p.includes(l.match));
-                        return `<span class="cp-presenter-chip ${leader ? 'cp-presenter-leader' : ''}" onclick="ConferencesPage.openPresenterModal(${item.id})" style="cursor:pointer" title="Xem chi tiết">
-                            ${leader ? '⭐' : '🎤'} ${p}
-                        </span>`;
-                    }).join('')}
-                </div>
+                <div class="cp-pres-list">${presPreview}</div>
 
                 <div class="cp-card-footer">
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
