@@ -317,6 +317,113 @@
 .conf-empty-icon { font-size: 3rem; margin-bottom: 12px; }
 .conf-empty-text { font-size: 1rem; font-weight: 500; }
 
+/* ── Presenter chips — leadership variant ── */
+.cp-presenter-chip.cp-presenter-leader {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-color: #f59e0b;
+    color: #78350f;
+    font-weight: 700;
+}
+
+.cp-chip-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #92400e;
+    background: rgba(255,255,255,0.7);
+    padding: 1px 5px;
+    border-radius: 6px;
+    margin-left: 2px;
+}
+
+/* ── Presenter modal list ── */
+.cp-pm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.cp-pm-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    background: var(--bg-secondary);
+    transition: background 0.12s;
+}
+
+.cp-pm-row:hover { background: var(--bg-tertiary); }
+
+.cp-pm-row.cp-pm-leader {
+    background: linear-gradient(135deg, rgba(254,243,199,0.5), rgba(253,230,138,0.15));
+    border-color: rgba(245,158,11,0.3);
+}
+
+.cp-pm-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #0e7490);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.cp-pm-leader .cp-pm-avatar {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.cp-pm-info { flex: 1; min-width: 0; }
+
+.cp-pm-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.cp-pm-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cp-pm-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.cp-pm-sessions { display: flex; flex-direction: column; gap: 4px; }
+
+.cp-pm-session {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .cp-stats-row { grid-template-columns: repeat(2, 1fr); }
@@ -329,3 +436,4 @@
     .cp-card-head { flex-direction: column; }
     .cp-pres-time { min-width: 70px; font-size: 0.68rem; }
 }
+

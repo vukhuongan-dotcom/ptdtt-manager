@@ -138,9 +138,94 @@ const ConferencesPage = {
         return { text: `Còn ${diff} ngày`, cls: 'conf-cd-upcoming' };
     },
 
-    // ── Unique presenters across a list of presentations ──
+    // ── Ban chủ nhiệm khoa — thứ tự ưu tiên ──
+    _LEADERSHIP_ORDER: [
+        { match: 'Nguyễn Phú Hữu',        rank: 0, badge: 'Trưởng khoa' },
+        { match: 'Vũ Khương An',           rank: 1, badge: 'Phó trưởng khoa' },
+        { match: 'Nguyễn Thị Ngọc Thùy',  rank: 2, badge: 'Điều dưỡng trưởng' }
+    ],
+
+    // ── Unique presenters, sorted: leadership first ──
     _uniquePresenters(presentations) {
         return [...new Set(presentations.map(p => p.presenter))];
+    },
+
+    _sortedPresenters(presentations) {
+        const unique = this._uniquePresenters(presentations);
+        const order = this._LEADERSHIP_ORDER;
+        return unique.sort((a, b) => {
+            const ra = order.find(l => a.includes(l.match));
+            const rb = order.find(l => b.includes(l.match));
+            if (ra && rb) return ra.rank - rb.rank;
+            if (ra) return -1;
+            if (rb) return 1;
+            return a.localeCompare(b, 'vi');
+        });
+    },
+
+    // ── Modal: danh sách báo cáo viên thông minh ──
+    openPresenterModal(confId) {
+        const item = Store.getById('conferences', confId);
+        if (!item) return;
+        const pres = item.presentations || [];
+        const sorted = this._sortedPresenters(pres);
+        const order = this._LEADERSHIP_ORDER;
+
+        // For each presenter: count presentations, collect sessions
+        const presMap = {};
+        pres.forEach(p => {
+            if (!presMap[p.presenter]) presMap[p.presenter] = { count: 0, sessions: [], langs: { en: 0, vi: 0 } };
+            presMap[p.presenter].count++;
+            presMap[p.presenter].sessions.push({ time: p.time, session: p.session, date: p.date, lang: p.language });
+            presMap[p.presenter].langs[p.language]++;
+        });
+
+        const fmtDate = d => {
+            if (!d) return '';
+            const dt = new Date(d);
+            return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}`;
+        };
+
+        const rows = sorted.map(name => {
+            const info    = presMap[name];
+            const leader  = order.find(l => name.includes(l.match));
+            const sessions = info.sessions
+                .sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.time||'').localeCompare(b.time||''))
+                .map(s => `<div class="cp-pm-session">
+                    <span class="cp-pres-time">${fmtDate(s.date)} ${s.time}</span>
+                    <span class="cp-pres-lang ${s.lang==='en'?'cp-lang-en':'cp-lang-vi'}">${s.lang.toUpperCase()}</span>
+                    <span style="font-size:0.75rem;color:var(--text-muted)">${s.session}</span>
+                </div>`).join('');
+
+            return `<div class="cp-pm-row ${leader ? 'cp-pm-leader' : ''}">
+                <div class="cp-pm-avatar">${this._presenterInitial(name)}</div>
+                <div class="cp-pm-info">
+                    <div class="cp-pm-name">
+                        ${name}
+                        ${leader ? `<span class="cp-pm-badge">${leader.badge}</span>` : ''}
+                    </div>
+                    <div class="cp-pm-stats">
+                        <span>${info.count} bài báo cáo</span>
+                        ${info.langs.en > 0 ? `<span class="cp-lang-en" style="font-size:0.65rem;padding:1px 6px;border-radius:6px">${info.langs.en} EN</span>` : ''}
+                        ${info.langs.vi > 0 ? `<span class="cp-lang-vi" style="font-size:0.65rem;padding:1px 6px;border-radius:6px">${info.langs.vi} VI</span>` : ''}
+                    </div>
+                    <div class="cp-pm-sessions">${sessions}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        Modal.open(`🎤 Báo cáo viên — ${item.name}`, `
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px">
+                ${sorted.length} báo cáo viên · ${pres.length} bài báo cáo
+            </div>
+            <div class="cp-pm-list">${rows}</div>
+        `);
+    },
+
+    _presenterInitial(name) {
+        // Lấy chữ cái cuối của họ tên (thường là tên)
+        const parts = name.replace(/^(BS|CKII|CKI|CNĐD|ThS|TS|GS|PGS)\s*/gi,'').trim().split(/\s+/);
+        return (parts[parts.length - 1] || name)[0].toUpperCase();
     },
 
     render() {
@@ -177,7 +262,7 @@ const ConferencesPage = {
             const cd     = this._countdown(item);
             const rg     = CONF_REGIONS[item.region] || CONF_REGIONS.domestic;
             const pres   = item.presentations || [];
-            const presenters = this._uniquePresenters(pres);
+            const presenters = this._sortedPresenters(pres);
 
             // Group presentations by date for preview
             const byDate = {};
@@ -230,9 +315,9 @@ const ConferencesPage = {
                         <span class="cp-stat-num">${pres.length}</span>
                         <span class="cp-stat-unit">bài báo cáo</span>
                     </div>
-                    <div class="cp-stat-pill cp-stat-person">
+                    <div class="cp-stat-pill cp-stat-person" style="cursor:pointer" onclick="ConferencesPage.openPresenterModal(${item.id})" title="Xem danh sách báo cáo viên">
                         <span class="cp-stat-num">${presenters.length}</span>
-                        <span class="cp-stat-unit">báo cáo viên</span>
+                        <span class="cp-stat-unit">báo cáo viên ↗</span>
                     </div>
                     <div class="cp-stat-pill cp-stat-lang">
                         <span class="cp-stat-num">${pres.filter(p=>p.language==='en').length}</span>
@@ -245,21 +330,27 @@ const ConferencesPage = {
                 </div>
 
                 <div class="cp-presenter-chips">
-                    ${presenters.map(p => `<span class="cp-presenter-chip">🎤 ${p}</span>`).join('')}
+                    ${presenters.map(p => {
+                        const leader = this._LEADERSHIP_ORDER.find(l => p.includes(l.match));
+                        return `<span class="cp-presenter-chip ${leader ? 'cp-presenter-leader' : ''}" onclick="ConferencesPage.openPresenterModal(${item.id})" style="cursor:pointer" title="Xem chi tiết">
+                            ${leader ? '⭐' : '🎤'} ${p}
+                            ${leader ? `<span class="cp-chip-badge">${leader.badge}</span>` : ''}
+                        </span>`;
+                    }).join('')}
                 </div>
 
                 <div class="cp-pres-list">${presPreview}</div>
 
-                ${item.website ? `<div class="cp-card-footer">
-                    <a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>
+                <div class="cp-card-footer">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
+                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>
+                    </div>
                     ${canEdit ? `<div style="display:flex;gap:6px">
                         <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})">✏️ Sửa</button>
                         <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})">🗑️</button>
                     </div>` : ''}
-                </div>` : canEdit ? `<div class="cp-card-footer" style="justify-content:flex-end">
-                    <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})">✏️ Sửa</button>
-                    <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})">🗑️</button>
-                </div>` : ''}
+                </div>
             </div>`;
         }).join('');
 
@@ -422,5 +513,138 @@ const ConferencesPage = {
         Modal.close();
         App.renderCurrentPage();
         Toast.success('Đã xoá hội nghị');
+    },
+
+    // ── Xuất ảnh lịch báo cáo ──
+    exportImage(confId) {
+        const item = Store.getById('conferences', confId);
+        if (!item) return;
+        const pres = item.presentations || [];
+        if (!pres.length) { Toast.error('Không có bài báo cáo để xuất!'); return; }
+
+        // Group by date
+        const byDate = {};
+        pres.forEach(p => {
+            const k = p.date || '';
+            if (!byDate[k]) byDate[k] = [];
+            byDate[k].push(p);
+        });
+        const dateKeys = Object.keys(byDate).sort();
+
+        const fmtDateFull = d => {
+            if (!d) return '';
+            const dt  = new Date(d);
+            const days = ['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+            return `${days[dt.getDay()]}, ${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}`;
+        };
+
+        // Build table rows for each day
+        const dayBlocks = dateKeys.map(d => {
+            const dayPres = byDate[d].sort((a,b) => (a.time||'').localeCompare(b.time||''));
+            const rows = dayPres.map((p, i) => {
+                const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+                const langBg  = p.language === 'en' ? '#dbeafe' : '#dcfce7';
+                const langClr = p.language === 'en' ? '#1d4ed8' : '#15803d';
+                return `<tr style="background:${bg};border-bottom:1px solid #e2e8f0">
+                    <td style="padding:10px 12px;white-space:nowrap;font-size:13px;font-weight:700;color:#0891b2;width:100px">${p.time || '—'}</td>
+                    <td style="padding:10px 12px;width:36px;text-align:center">
+                        <span style="background:${langBg};color:${langClr};font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px">${p.language.toUpperCase()}</span>
+                    </td>
+                    <td style="padding:10px 12px;font-size:13px;color:#0f172a;line-height:1.45">${p.title}</td>
+                    <td style="padding:10px 12px;font-size:12px;color:#475569;white-space:nowrap;min-width:160px">${p.presenter}</td>
+                    <td style="padding:10px 12px;font-size:11px;color:#94a3b8;font-style:italic">${p.session || ''}</td>
+                </tr>`;
+            }).join('');
+            return `
+                <div style="margin-bottom:20px">
+                    <div style="background:linear-gradient(90deg,#0f172a,#1e3a5f);padding:9px 16px;border-radius:8px 8px 0 0">
+                        <span style="color:#67e8f9;font-size:13px;font-weight:700">📅 ${fmtDateFull(d)}</span>
+                        <span style="color:#94a3b8;font-size:12px;margin-left:10px">${dayPres.length} bài báo cáo</span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+                        <thead>
+                            <tr style="background:#f1f5f9">
+                                <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Giờ</th>
+                                <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase"></th>
+                                <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Tiêu đề báo cáo</th>
+                                <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Báo cáo viên</th>
+                                <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Phiên</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+        }).join('');
+
+        // Presenters summary
+        const sorted = this._sortedPresenters(pres);
+        const presenterChips = sorted.map(name => {
+            const leader = this._LEADERSHIP_ORDER.find(l => name.includes(l.match));
+            return `<span style="display:inline-flex;align-items:center;gap:5px;background:${leader?'#fef3c7':'#f8fafc'};border:1px solid ${leader?'#fde68a':'#e2e8f0'};padding:4px 12px;border-radius:20px;font-size:12px;color:#0f172a;font-weight:600;margin:3px">
+                ${leader?'⭐':'🎤'} ${name}${leader?` <span style="font-size:10px;color:#92400e;font-weight:700">${leader.badge}</span>`:''}
+            </span>`;
+        }).join('');
+
+        const exportDate = new Date().toLocaleDateString('vi-VN');
+
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+        container.innerHTML = `
+        <div id="conf-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Inter',Arial,sans-serif;color:#0f172a;">
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                    <div style="font-size:13px;color:#cbd5e1;margin-top:2px">Bệnh viện Bình Dân · TP. Hồ Chí Minh</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:16px;font-weight:700;color:#ffffff">BÁO CÁO KHOA HỌC</div>
+                    <div style="font-size:12px;color:#67e8f9;font-weight:600;margin-top:2px">${item.name}</div>
+                </div>
+            </div>
+
+            <!-- Conference info bar -->
+            <div style="padding:12px 36px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+                <span style="font-size:13px;font-weight:700;color:#0f172a">📅 ${item.dates}</span>
+                <span style="font-size:13px;color:#334155">📍 ${item.location}${item.venue?' — '+item.venue:''}</span>
+                <span style="margin-left:auto;font-size:13px;font-weight:700;color:#0891b2">Tổng: ${pres.length} bài báo cáo · ${sorted.length} báo cáo viên</span>
+            </div>
+
+            <!-- Content -->
+            <div style="padding:20px 36px 8px">${dayBlocks}</div>
+
+            <!-- Presenter summary -->
+            <div style="padding:12px 36px 20px">
+                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Báo cáo viên của khoa</div>
+                <div style="display:flex;flex-wrap:wrap;gap:0">${presenterChips}</div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:10px 36px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;background:#f8fafc">
+                <span>Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</span>
+                <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} ngày ${exportDate}</span>
+            </div>
+        </div>`;
+        document.body.appendChild(container);
+
+        const target = container.querySelector('#conf-export-target');
+        html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
+            Utils.applyExportWatermark(canvasEl);
+            canvasEl.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a   = document.createElement('a');
+                a.href    = url;
+                a.download = `BaoCaoKhoaHoc_${item.startDate ? item.startDate.replace(/-/g,'') : 'conf'}.jpg`;
+                a.click();
+                URL.revokeObjectURL(url);
+                document.body.removeChild(container);
+                Toast.success('Đã xuất ảnh lịch báo cáo!');
+            }, 'image/jpeg', 0.95);
+        }).catch(err => {
+            console.error('Conf export failed:', err);
+            Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
+            document.body.removeChild(container);
+        });
     }
 };
+
