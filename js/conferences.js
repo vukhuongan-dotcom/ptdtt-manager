@@ -26,7 +26,8 @@ const CONF_SEED_DATA = [
         organizer: "Malaysian Society of Colorectal Surgeons & ASEAN CRS",
         website: "https://colorectalmy.org/coloproctology2026/",
         note: "",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "Digestive Disease Week (DDW) 2026",
@@ -40,7 +41,105 @@ const CONF_SEED_DATA = [
         organizer: "AASLD & partner societies",
         website: "https://ddw.org",
         note: "Hội nghị tiêu hoá lớn nhất thế giới",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
+    },
+    {
+        name: "VSCS 2026 & UCSC 2026 — Hội nghị Phẫu thuật Đại trực tràng Việt Nam thường niên",
+        nameVi: "Hội nghị Phẫu thuật Đại trực tràng Việt Nam: Phẫu thuật Đại trực tràng trong kỉ nguyên hiện đại",
+        dates: "05–06/06/2026",
+        startDate: "2026-06-05",
+        endDate: "2026-06-06",
+        location: "Nha Trang, Khánh Hoà — Khách sạn InterContinental",
+        region: "domestic",
+        category: "colorectal",
+        organizer: "Chi hội Phẫu thuật Đại trực tràng Việt Nam & Bệnh viện Đại học Y Dược TP.HCM",
+        website: "https://vscs.com.vn/en",
+        note: "",
+        deadlines: "",
+        presentations: [
+            {
+                date: "2026-06-05",
+                session: "Báo cáo khoa học: Đại trực tràng 1",
+                time: "13:00–13:10",
+                title: "Ung thư chính giữa đại tràng ngang: Đâu là cách tiếp cận tối ưu?",
+                titleEn: "",
+                presenter: "BS CKII Phạm Thị Tuyết Minh",
+                language: "vi",
+                role: "speaker"
+            },
+            {
+                date: "2026-06-05",
+                session: "Scientific Session: Colorectal Surgery 2",
+                time: "13:00–13:10",
+                title: "Low Gastrointestinal Bleeding Due To Meckel's Diverticulum In Adult Patients: A Case Report",
+                titleEn: "",
+                presenter: "BS Nguyễn Tấn Định",
+                language: "en",
+                role: "speaker"
+            },
+            {
+                date: "2026-06-05",
+                session: "Scientific Session: Colorectal Surgery 2",
+                time: "13:10–13:20",
+                title: "Surgical Outcomes of Sigmoid Colon–Bladder Fistula Management at Binh Dan Hospital",
+                titleEn: "",
+                presenter: "BS Phạm Vĩnh Phú",
+                language: "en",
+                role: "speaker"
+            },
+            {
+                date: "2026-06-05",
+                session: "Scientific Session: Colorectal Surgery 2",
+                time: "13:20–13:30",
+                title: "Early Outcomes of Robot-Assisted Laparoscopic Surgery for Rectal Cancer With or Without Neoadjuvant Therapy",
+                titleEn: "",
+                presenter: "BS CKII Vũ Khương An",
+                language: "en",
+                role: "speaker"
+            },
+            {
+                date: "2026-06-05",
+                session: "Báo cáo khoa học: Đại trực tràng 3",
+                time: "14:45–14:55",
+                title: "Kết quả sớm ứng dụng kỹ thuật nối đại trực tràng hai stapler cải tiến trong phẫu thuật nội soi cắt trước",
+                titleEn: "",
+                presenter: "BS CKII Vũ Ngọc Anh Tuấn",
+                language: "vi",
+                role: "speaker"
+            },
+            {
+                date: "2026-06-05",
+                session: "Colorectal Surgery Video Session",
+                time: "15:25–15:35",
+                title: "Robot-assisted Low Anterior Resection for Rectal Cancer with side-to-end anastomosis",
+                titleEn: "",
+                presenter: "BS CKII Nguyễn Phú Hữu",
+                language: "en",
+                role: "speaker",
+                note: "Đồng thời là Chủ tọa phiên Video Session"
+            },
+            {
+                date: "2026-06-05",
+                session: "Hội thảo: Nâng cao chăm sóc người bệnh PT Đại trực tràng có lỗ mở ra da",
+                time: "16:10–16:40",
+                title: "Kết quả chăm sóc viêm da quanh hậu môn nhân tạo mức độ trung bình tại Khoa Phẫu thuật Đại trực tràng Bệnh viện Bình Dân",
+                titleEn: "",
+                presenter: "CNĐD Nguyễn Thị Ngọc Thùy",
+                language: "vi",
+                role: "speaker"
+            },
+            {
+                date: "2026-06-06",
+                session: "Phiên 1: Điều trị Phẫu thuật Ung thư Đại trực tràng",
+                time: "09:00–09:15",
+                title: "Kết quả dài hạn của phẫu thuật đại tràng trực tràng bằng robot so với phẫu thuật nội soi thông thường: Kinh nghiệm tại Việt Nam",
+                titleEn: "",
+                presenter: "BS CKII Nguyễn Phú Hữu",
+                language: "vi",
+                role: "speaker"
+            }
+        ]
     },
     {
         name: "APAGE IBD Forum 2026",
@@ -54,7 +153,8 @@ const CONF_SEED_DATA = [
         organizer: "Asia Pacific Association of Gastroenterology",
         website: "https://www.apage.org",
         note: "Chuyên đề bệnh viêm ruột (IBD)",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "ISUCRS 2026 Congress",
@@ -68,7 +168,8 @@ const CONF_SEED_DATA = [
         organizer: "International Society of University Colon & Rectal Surgeons",
         website: "https://isucrs2026.com",
         note: "Theme: Innovations and Collaborations in Colorectal Surgery",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "IFSO 29th World Congress",
@@ -82,7 +183,8 @@ const CONF_SEED_DATA = [
         organizer: "International Federation for the Surgery of Obesity",
         website: "https://ifso2026.org",
         note: "",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "ISDE 22nd World Congress — Esophageal Diseases",
@@ -96,7 +198,8 @@ const CONF_SEED_DATA = [
         organizer: "International Society for Diseases of the Esophagus",
         website: "https://isde-congress.net",
         note: "",
-        deadlines: "Early registration: 11/06/2026"
+        deadlines: "Early registration: 11/06/2026",
+        presentations: []
     },
     {
         name: "ESCP 21st Scientific Meeting",
@@ -110,7 +213,8 @@ const CONF_SEED_DATA = [
         organizer: "European Society of Coloproctology",
         website: "https://escp.eu.com",
         note: "Hội nghị đại trực tràng hàng đầu châu Âu",
-        deadlines: "Abstract: 27/04/2026"
+        deadlines: "Abstract: 27/04/2026",
+        presentations: []
     },
     {
         name: "ACS Clinical Congress 2026",
@@ -124,7 +228,8 @@ const CONF_SEED_DATA = [
         organizer: "American College of Surgeons",
         website: "https://facs.org/clincon2026",
         note: "",
-        deadlines: "Submissions: 01/07 – 01/08/2026"
+        deadlines: "Submissions: 01/07 – 01/08/2026",
+        presentations: []
     },
     {
         name: "WCOG 2026 — World Congress of Gastroenterology",
@@ -138,7 +243,8 @@ const CONF_SEED_DATA = [
         organizer: "APAGE / WGO",
         website: "https://www.apage.org",
         note: "",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "UEG Week 2026",
@@ -152,7 +258,8 @@ const CONF_SEED_DATA = [
         organizer: "United European Gastroenterology",
         website: "https://ueg.eu/week",
         note: "Hybrid — tham dự online hoặc tại chỗ",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "ESSO 45th Congress — Surgical Oncology Without Borders",
@@ -166,7 +273,8 @@ const CONF_SEED_DATA = [
         organizer: "European Society of Surgical Oncology",
         website: "https://esso45.essoweb.org",
         note: "Theme: Innovations and Challenges Worldwide",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "81st Japan Society of Coloproctology Annual Meeting",
@@ -180,7 +288,8 @@ const CONF_SEED_DATA = [
         organizer: "Japan Society of Coloproctology",
         website: "https://www.coloproctology.gr.jp/modules/en/",
         note: "",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "SAGES Annual Meeting 2027",
@@ -194,21 +303,8 @@ const CONF_SEED_DATA = [
         organizer: "Society of American Gastrointestinal and Endoscopic Surgeons",
         website: "https://sages.org/meetings",
         note: "",
-        deadlines: ""
-    },
-    {
-        name: "Hội nghị Phẫu thuật Đại trực tràng Việt Nam 2026",
-        nameVi: "",
-        dates: "2026 (TBD)",
-        startDate: "2026-08-01",
-        endDate: "2026-08-01",
-        location: "Việt Nam (TBD)",
-        region: "domestic",
-        category: "colorectal",
-        organizer: "Hội Phẫu thuật viên Đại trực tràng Việt Nam",
-        website: "https://vscs.com.vn/en",
-        note: "Ngày và địa điểm chưa công bố chính thức",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     },
     {
         name: "APFCP 2027 & 15th ASSR Congress",
@@ -222,12 +318,13 @@ const CONF_SEED_DATA = [
         organizer: "Asia Pacific Federation of Coloproctology",
         website: "https://www.apfcp2027.org",
         note: "Ngoài khoảng 1 năm nhưng đáng theo dõi",
-        deadlines: ""
+        deadlines: "",
+        presentations: []
     }
 ];
 
 const ConferencesPage = {
-    _filters: { region: 'all', category: 'all', status: 'all' },
+    _filters: { region: 'all', category: 'all', status: 'all', time: 'all' },
 
     _canEdit() {
         const s = Auth.getSession();
@@ -285,6 +382,34 @@ const ConferencesPage = {
         return `${months[d.getMonth()]} ${d.getFullYear()}`;
     },
 
+    // ── Time filter helpers ──
+    _inThisWeek(item) {
+        const now = new Date();
+        const day = now.getDay();
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+        monday.setHours(0, 0, 0, 0);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        const start = new Date(item.startDate);
+        const end = new Date(item.endDate);
+        return start <= sunday && end >= monday;
+    },
+    _inThisMonth(item) {
+        const now = new Date();
+        const start = new Date(item.startDate);
+        const end = new Date(item.endDate);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        return start <= monthEnd && end >= monthStart;
+    },
+    _inThisYear(item) {
+        const yr = new Date().getFullYear();
+        return new Date(item.startDate).getFullYear() === yr ||
+               new Date(item.endDate).getFullYear() === yr;
+    },
+
     render() {
         this._ensureSeedData();
         const canEdit = this._canEdit();
@@ -301,6 +426,9 @@ const ConferencesPage = {
                 return s === this._filters.status;
             });
         }
+        if (this._filters.time === 'week')  items = items.filter(i => this._inThisWeek(i));
+        if (this._filters.time === 'month') items = items.filter(i => this._inThisMonth(i));
+        if (this._filters.time === 'year')  items = items.filter(i => this._inThisYear(i));
 
         // Stats
         const total = all.length;
@@ -315,6 +443,8 @@ const ConferencesPage = {
             const cd = this._countdown(item);
             const rg = CONF_REGIONS[item.region] || CONF_REGIONS.international;
             const cat = CONF_CATEGORIES[item.category] || CONF_CATEGORIES.other;
+            const presentations = item.presentations || [];
+            const presCount = presentations.length;
 
             let monthHeader = '';
             const thisMonth = this._monthLabel(item.startDate);
@@ -327,12 +457,19 @@ const ConferencesPage = {
                 status === 'now' ? `<span class="conf-badge conf-badge-now">🔴 Đang diễn ra</span>` :
                     status === 'soon' ? `<span class="conf-badge conf-badge-soon">🔥 Sắp diễn ra</span>` : '';
 
+            const presBadge = presCount > 0
+                ? `<button class="conf-pres-badge" onclick="event.stopPropagation();ConferencesPage.openPresentations(${item.id})" title="Xem bài báo cáo của khoa">
+                       🎤 <strong>${presCount}</strong> bài báo cáo
+                   </button>`
+                : '';
+
             return `${monthHeader}
             <div class="conf-card ${status === 'past' ? 'conf-past' : ''} ${status === 'soon' ? 'conf-soon' : ''} ${status === 'now' ? 'conf-now' : ''}" data-region="${item.region}">
                 <div class="conf-badges">
                     <span class="conf-badge ${rg.badgeClass}">${rg.icon} ${rg.label}</span>
                     <span class="conf-badge ${cat.badgeClass}">${cat.label}</span>
                     ${statusBadge}
+                    ${presBadge}
                 </div>
                 <div class="conf-name">${item.name}</div>
                 ${item.nameVi ? `<div class="conf-name-vi">${item.nameVi}</div>` : ''}
@@ -370,6 +507,15 @@ const ConferencesPage = {
             </div>`;
         }).join('');
 
+        // Time filter tab pills
+        const timeTabs = [
+            { key: 'all',   label: 'Tất cả' },
+            { key: 'week',  label: 'Tuần này' },
+            { key: 'month', label: 'Tháng này' },
+            { key: 'year',  label: 'Năm này' },
+        ].map(t => `<button class="conf-time-tab ${this._filters.time === t.key ? 'active' : ''}"
+            onclick="ConferencesPage.setTimeFilter('${t.key}')">${t.label}</button>`).join('');
+
         return `
         <div class="page-header">
             <div>
@@ -390,6 +536,9 @@ const ConferencesPage = {
             <div class="conf-stat-card conf-stat-asean"><span class="conf-stat-val">${domestic}</span><span class="conf-stat-lbl">Trong nước / ASEAN</span></div>
             <div class="conf-stat-card conf-stat-soon"><span class="conf-stat-val">${soon}</span><span class="conf-stat-lbl">Sắp diễn ra</span></div>
         </div>
+
+        <!-- Time tabs -->
+        <div class="conf-time-tabs">${timeTabs}</div>
 
         <!-- Filters -->
         <div class="conf-filters">
@@ -431,11 +580,69 @@ const ConferencesPage = {
         `;
     },
 
+    setTimeFilter(key) {
+        this._filters.time = key;
+        App.renderCurrentPage();
+    },
+
     applyFilters() {
         this._filters.region = document.getElementById('conf-filter-region')?.value || 'all';
         this._filters.category = document.getElementById('conf-filter-category')?.value || 'all';
         this._filters.status = document.getElementById('conf-filter-status')?.value || 'all';
         App.renderCurrentPage();
+    },
+
+    // ── Presentations modal ──
+    openPresentations(id) {
+        const item = Store.getById('conferences', id);
+        if (!item) return;
+        const presentations = item.presentations || [];
+        if (!presentations.length) return;
+
+        // Group by date
+        const byDate = {};
+        presentations.forEach(p => {
+            const key = p.date || 'other';
+            if (!byDate[key]) byDate[key] = [];
+            byDate[key].push(p);
+        });
+
+        const fmtDate = d => {
+            if (!d || d === 'other') return 'Không rõ ngày';
+            const dt = new Date(d);
+            const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+            return `${days[dt.getDay()]}, ${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}`;
+        };
+
+        const contentHtml = Object.keys(byDate).sort().map(date => {
+            const dayPres = byDate[date].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            const rows = dayPres.map(p => `
+                <div class="conf-pres-item">
+                    <div class="conf-pres-meta">
+                        <span class="conf-pres-time">⏰ ${p.time || '—'}</span>
+                        <span class="conf-pres-session">📋 ${p.session || ''}</span>
+                        ${p.language === 'en'
+                            ? '<span class="conf-pres-lang conf-pres-lang-en">EN</span>'
+                            : '<span class="conf-pres-lang conf-pres-lang-vi">VI</span>'}
+                    </div>
+                    <div class="conf-pres-title">${p.title}</div>
+                    <div class="conf-pres-presenter">🎤 ${p.presenter}</div>
+                    ${p.note ? `<div class="conf-pres-note">📝 ${p.note}</div>` : ''}
+                </div>`).join('');
+
+            return `
+                <div class="conf-pres-day">
+                    <div class="conf-pres-day-header">📅 ${fmtDate(date)}</div>
+                    ${rows}
+                </div>`;
+        }).join('');
+
+        Modal.open(`🎤 Bài báo cáo của khoa — ${item.name}`, `
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px">
+                ${presentations.length} bài báo cáo · ${item.location}
+            </div>
+            <div class="conf-pres-list">${contentHtml}</div>
+        `);
     },
 
     // ===== CRUD =====
@@ -514,6 +721,7 @@ const ConferencesPage = {
         if (!this._canEdit()) return;
         e.preventDefault();
         const f = new FormData(e.target);
+        const existing = id ? Store.getById('conferences', id) : null;
         const data = {
             name: f.get('name'),
             nameVi: f.get('nameVi') || '',
@@ -526,7 +734,8 @@ const ConferencesPage = {
             organizer: f.get('organizer') || '',
             website: f.get('website') || '',
             deadlines: f.get('deadlines') || '',
-            note: f.get('note') || ''
+            note: f.get('note') || '',
+            presentations: existing?.presentations || []  // preserve existing presentations
         };
 
         // Auto-generate dates display if empty
