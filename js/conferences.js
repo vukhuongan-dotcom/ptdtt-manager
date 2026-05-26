@@ -194,16 +194,12 @@ const ConferencesPage = {
                 .map(s => `<div class="cp-pm-session">
                     <span class="cp-pres-time">${fmtDate(s.date)} ${s.time}</span>
                     <span class="cp-pres-lang ${s.lang==='en'?'cp-lang-en':'cp-lang-vi'}">${s.lang.toUpperCase()}</span>
-                    <span style="font-size:0.75rem;color:var(--text-muted)">${s.session}</span>
                 </div>`).join('');
 
             return `<div class="cp-pm-row ${leader ? 'cp-pm-leader' : ''}">
                 <div class="cp-pm-avatar">${this._presenterInitial(name)}</div>
                 <div class="cp-pm-info">
-                    <div class="cp-pm-name">
-                        ${name}
-                        ${leader ? `<span class="cp-pm-badge">${leader.badge}</span>` : ''}
-                    </div>
+                    <div class="cp-pm-name">${name}</div>
                     <div class="cp-pm-stats">
                         <span>${info.count} bài báo cáo</span>
                         ${info.langs.en > 0 ? `<span class="cp-lang-en" style="font-size:0.65rem;padding:1px 6px;border-radius:6px">${info.langs.en} EN</span>` : ''}
@@ -334,12 +330,9 @@ const ConferencesPage = {
                         const leader = this._LEADERSHIP_ORDER.find(l => p.includes(l.match));
                         return `<span class="cp-presenter-chip ${leader ? 'cp-presenter-leader' : ''}" onclick="ConferencesPage.openPresenterModal(${item.id})" style="cursor:pointer" title="Xem chi tiết">
                             ${leader ? '⭐' : '🎤'} ${p}
-                            ${leader ? `<span class="cp-chip-badge">${leader.badge}</span>` : ''}
                         </span>`;
                     }).join('')}
                 </div>
-
-                <div class="cp-pres-list">${presPreview}</div>
 
                 <div class="cp-card-footer">
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
