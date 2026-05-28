@@ -1,0 +1,9 @@
+{"ts": "2026-05-28T18:25:55.875111", "user": "root_test", "action": "system.permission.fix", "ip": "127.0.0.1", "details": {"msg": "Fixed logs/ permission from 755 to 775"}}
+{"ts":"test","user":"ptdtt_test","action":"system.write.test"}
+{"ts": "2026-05-28T18:28:15.932050", "user": "vkan", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "127.0.0.1", "remaining": 4}}
+{"ts": "2026-05-28T18:37:22.404641", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-28T19:20:11.600827", "user": "duc.thm", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "115.78.236.147", "remaining": 4}}
+{"ts": "2026-05-28T19:20:12.816352", "user": "duc.thm", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "115.78.236.147", "remaining": 4}}
+{"ts": "2026-05-28T19:20:34.985580", "user": "lmhau", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "115.78.236.147", "remaining": 4}}
+{"ts": "2026-05-28T19:20:40.826238", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-28T21:32:57.128288", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
