@@ -1,0 +1,7 @@
+{"ts": "2026-05-30T06:28:11.658995", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-30T06:31:46.131987", "user": "ttdanh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 56, "nextId": null}}
+{"ts": "2026-05-30T08:16:30.525127", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-30T14:04:49.919196", "user": "nhlinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-30T16:50:52.150510", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-30T17:13:57.626405", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-30T21:32:05.748184", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
