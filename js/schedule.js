@@ -566,7 +566,7 @@ const SchedulePage = {
                     </tr></thead>
                     <tbody>
                         ${tableRows.join('')}
-                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px;font-size:12px;color:#111;font-weight:500"><strong>Ghi chú:</strong> ${notes || '—'}</td></tr>
+                        <tr><td colspan="8" style="border:1.5px solid #94a3b8;padding:10px 12px;font-size:12px;color:#111;font-weight:500;vertical-align:top"><strong>Ghi chú:</strong><br>${notes ? notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : '—'}</td></tr>
                     </tbody>
                 </table>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px;color:#333">
