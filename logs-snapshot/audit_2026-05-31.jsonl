@@ -1,0 +1,48 @@
+{"ts": "2026-05-31T06:42:19.992125", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T06:44:54.986668", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 57, "nextId": null}}
+{"ts": "2026-05-31T07:12:28.584694", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T07:12:54.607371", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 11, "nextId": 7, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 6, "label": "2026-06-01", "from": {"notes": "\n", "weekKey": "2026-04-27"}, "to": {"notes": "", "weekKey": "2026-06-01"}}]}}}
+{"ts": "2026-05-31T07:17:07.660349", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 11, "nextId": 7, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T07:19:10.872672", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T07:20:49.027157", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T07:21:30.329252", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 11, "nextId": 7, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 6, "label": "2026-06-01", "from": {"notes": ""}, "to": {"notes": "BS An nghỉ phép thứ 5\nBS Định nghỉ phép thứ 5, thứ 6\nHội nghị tại Nha Trang thứ 6 - thứ 7\n"}}]}}}
+{"ts": "2026-05-31T07:23:11.000403", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 11, "nextId": 7, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 6, "label": "2026-06-01", "from": {"notes": "BS An nghỉ phép thứ 5\nBS Định nghỉ phép thứ 5, thứ 6\nHội nghị tại Nha Trang thứ 6 - thứ 7\n"}, "to": {"notes": "BS An nghỉ phép thứ 5\nBS Định nghỉ phép thứ 5, thứ 6\nBS Phúc Minh được ủy quyền trực BCN khoa thứ 6\nHội nghị tại Nha Trang thứ 6 - thứ 7\n"}}]}}}
+{"ts": "2026-05-31T07:24:23.466385", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 12, "nextId": 8, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 7, "label": "2026-06-08", "from": {"notes": "BS An nghỉ phép thứ 2", "weekKey": "2026-05-04"}, "to": {"notes": "BS An nghỉ phép thứ 5\nBS Định nghỉ phép thứ 5, thứ 6\nBS Phúc Minh được ủy quyền trực BCN khoa thứ 6\nHội nghị tại Nha Trang thứ 6 - thứ 7\n", "weekKey": "2026-06-08"}}]}}}
+{"ts": "2026-05-31T10:36:21.621183", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T10:41:48.330201", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T10:41:55.721064", "user": "nhtanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T14:01:30.037093", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T14:03:41.383614", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T14:06:50.159140", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T15:41:36.328104", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T15:48:53.255896", "user": "ltnthao", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T16:44:06.988918", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T16:50:01.546227", "user": "ltnthao", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T17:47:14.868110", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T17:48:36.128983", "user": "lvhoan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 1802, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1780224515600, "label": "Nguyễn Bá Ngọc — 1986 — 2026-05-31", "record": {"patientName": "Nguyễn Bá Ngọc", "birthYear": "1986", "admissionId": "1986", "surgeryType": "bankhan", "approachType": "mo", "date": "2026-05-31", "duration": "150", "mainSurgeon": 5, "assistSurgeon1": 11, "diagnosis": "Tắc ruột non do dính", "method": "Mổ mở thám sát gỡ dính", "notes": "", "isFirstCase": false, "id": 1780224515600, "createdBy": {"username": "lvhoan", "name": "Lê Văn Hoan", "at": "2026-05-31T10:48:35.600Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T17:58:10.991205", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T17:59:25.709953", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 12, "nextId": 8, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T18:04:17.769201", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T18:18:39.245321", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T18:27:06.492092", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T18:37:27.662726", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T18:38:40.299989", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T18:39:07.436102", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 12, "nextId": 8, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T18:39:49.215493", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 12, "nextId": 8, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T18:43:28.226657", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T18:45:02.798733", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 12, "nextId": 8, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 6, "label": "2026-06-01", "from": {"notes": "BS An nghỉ phép thứ 5\nBS Định nghỉ phép thứ 5, thứ 6\nBS Phúc Minh được ủy quyền trực BCN khoa thứ 6\nHội nghị tại Nha Trang thứ 6 - thứ 7\n"}, "to": {"notes": "BS An nghỉ phép thứ 5\nBS Định nghỉ phép thứ 5.\nBS Phúc Minh được ủy quyền trực BCN khoa thứ 6\nTham dự hội nghị tại Nha Trang thứ 6 - thứ 7: BS Hữu, BS An, BS Tuấn, BS Quy, BS Phú, BS. Minh, BS Trâm Anh, BS Định.\n"}}]}}}
+{"ts": "2026-05-31T18:55:34.548495", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T19:10:37.731539", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T19:28:33.697015", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T19:41:32.636475", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T20:37:31.361971", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T21:20:19.902270", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T21:20:34.991006", "user": "vnatuan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 60, "nextId": 81, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T21:22:44.045677", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T21:23:16.829485", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T21:25:23.266810", "user": "vnatuan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 60, "nextId": 81, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T21:27:54.289147", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-05-31T21:29:40.611889", "user": "pttminh", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 60, "nextId": 81, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-05-31T21:54:22.756195", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "116.109.220.115", "remaining": 4}}
+{"ts": "2026-05-31T21:54:42.867462", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "116.109.220.115", "remaining": 4}}
+{"ts": "2026-05-31T21:54:54.033639", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
