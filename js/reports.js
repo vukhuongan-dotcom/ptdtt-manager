@@ -12,12 +12,12 @@ const ReportsPage = {
 
     render() {
         return `
-        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="page-header rpt-header-row" style="align-items:flex-start">
             <div>
                 <h1 class="page-title">Báo cáo</h1>
                 <p class="page-subtitle">Báo cáo tình hình khoa hàng ngày</p>
             </div>
-            <button onclick="ReportsPage.showGuide()" style="background:#0284c7;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(2,132,199,0.3);transition:all .2s" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">📖 Hướng dẫn</button>
+            <button onclick="ReportsPage.showGuide()" class="rpt-guide-btn">📖 Hướng dẫn</button>
         </div>
 
         <div class="staff-subtabs">
@@ -78,15 +78,14 @@ const ReportsPage = {
         const isWeekend = this._isWeekend(this.selectedDate);
 
         return `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;gap:8px;align-items:center">
-                <label style="font-weight:600;font-size:0.85rem;color:var(--text-secondary)">Ngày:</label>
-                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)"
-                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:'Inter',system-ui,sans-serif;background:var(--bg-card);color:var(--text-primary)">
-                <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.goToday()">Hôm nay</button>
+        <div class="rpt-header-row">
+            <div class="rpt-date-controls">
+                <label class="rpt-label-date">Ngày:</label>
+                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
+                <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
-            ${!isWeekend ? `<div style="display:flex;gap:8px">
-                ${todayReport ? `<button class="btn btn-sm" style="background:#f97316;color:#fff;border:none;font-size:0.78rem" onclick="ReportsPage.exportReportImage()">
+            ${!isWeekend ? `<div class="rpt-export-btns">
+                ${todayReport ? `<button class="btn btn-sm rpt-export-orange" onclick="ReportsPage.exportReportImage()">
                     📸 Xuất hình trực khoa
                 </button>` : ''}
                 ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport16hForm()">
@@ -103,8 +102,8 @@ const ReportsPage = {
             icon: '📝'
         }))}
 
-        <div style="margin-top:20px">
-            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo 16h (${reports.length})</h3>
+        <div class="rpt-history-section">
+            <h3 class="rpt-history-heading">📋 Lịch sử báo cáo 16h (${reports.length})</h3>
             ${this.renderReportHistory(reports)}
         </div>
         `;
@@ -112,8 +111,8 @@ const ReportsPage = {
 
     renderWeekendNotice() {
         return `
-        <div class="card" style="text-align:center;padding:40px;background:linear-gradient(135deg,#fefce8,#fef9c3);border:1px solid #fde68a">
-            <div style="font-size:2.5rem;margin-bottom:12px">🏖️</div>
+        <div class="card rpt-empty-card" style="background:linear-gradient(135deg,#fefce8,#fef9c3);border:1px solid #fde68a">
+            <div class="rpt-weekend-icon">🏖️</div>
             <p style="font-size:1rem;font-weight:700;color:#92400e;margin-bottom:6px">${this.getDayOfWeek(this.selectedDate)} — Không trực khoa</p>
             <p style="font-size:0.85rem;color:#a16207">Thứ bảy và Chủ nhật không có báo cáo trực khoa 16h</p>
         </div>`;
@@ -121,11 +120,11 @@ const ReportsPage = {
 
     renderNoReport({ date, latestReport, emptyLabel, emptyHint, icon }) {
         return `
-        <div class="card" style="text-align:center;padding:40px">
-            <div style="font-size:2.5rem;margin-bottom:12px">${icon || '📝'}</div>
+        <div class="card rpt-empty-card">
+            <div class="rpt-empty-icon">${icon || '📝'}</div>
             <p style="font-size:0.95rem;color:var(--text-secondary);margin-bottom:8px">${emptyLabel} ${this.formatDateVN(date)}</p>
             <p style="font-size:0.82rem;color:var(--text-muted)">${emptyHint}</p>
-            ${latestReport ? `<div style="margin-top:14px">
+            ${latestReport ? `<div class="rpt-empty-hint-top">
                 <button class="btn btn-secondary btn-sm" onclick="ReportsPage.viewDate('${latestReport.date}')">
                     Xem báo cáo gần nhất: ${this.formatDateVN(latestReport.date)}
                 </button>
@@ -139,42 +138,42 @@ const ReportsPage = {
 
         return `
         <div id="report-export-area">
-        <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:0 4px 20px rgba(0,0,0,0.12)">
+        <div class="card rpt-report-card">
             <!-- Header: White text on dark background for maximum contrast -->
-            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%);padding:18px 22px;color:#fff;position:relative">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="rpt-card-header">
+                <div class="rpt-card-header-inner">
                     <div>
-                        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2.5px;color:#94a3b8;margin-bottom:6px;font-weight:500">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
-                        <h2 style="font-size:1.25rem;font-weight:800;margin:0;letter-spacing:0.5px;color:#fff">🩺 BÁO CÁO TRỰC KHOA LÚC 16G</h2>
-                        <div style="font-size:0.9rem;margin-top:5px;color:#e2e8f0;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
+                        <div class="rpt-card-dept">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
+                        <h2 class="rpt-card-title">🩺 BÁO CÁO TRỰC KHOA LÚC 16G</h2>
+                        <div class="rpt-card-date">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
                     </div>
                     <div class="report-no-export">
-                        ${canEdit ? `<button class="btn btn-sm" style="background:rgba(255,255,255,0.12);color:#e2e8f0;border:1px solid rgba(255,255,255,0.25);font-size:0.72rem;cursor:pointer" onclick="ReportsPage.openReport16hForm('${r.date}')">✏️ Sửa</button>` : ''}
+                        ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport16hForm('${r.date}')">✏️ Sửa</button>` : ''}
                     </div>
                 </div>
             </div>
 
             <!-- Stats: 5 high contrast colored cards in one row -->
             <div style="padding:16px 22px;background:#fff">
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+                <div class="rpt-stat-grid">
                     <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">TỔNG BN</div>
+                        <div class="rpt-stat-label">TỔNG BN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
                     <div style="background:#e11d48;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">MỔ CHƯA VỀ</div>
+                        <div class="rpt-stat-label">MỔ CHƯA VỀ</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.postOpNotReturned || '0'}</div>
                     </div>
                     <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">NHẬP VIỆN</div>
+                        <div class="rpt-stat-label">NHẬP VIỆN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.admissions || '0'}</div>
                     </div>
                     <div style="background:#d97706;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">XUẤT VIỆN</div>
+                        <div class="rpt-stat-label">XUẤT VIỆN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.discharges || '0'}</div>
                     </div>
                     <div style="background:#7c3aed;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">BN NẶNG</div>
+                        <div class="rpt-stat-label">BN NẶNG</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.severePatients || '0'}</div>
                     </div>
                 </div>
@@ -222,26 +221,26 @@ const ReportsPage = {
     },
 
     _renderHistoryRows(items) {
-        return items.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}')" style="cursor:pointer" class="${r.date === this.selectedDate ? 'report-row-active' : ''}">
-            <td><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
-            <td style="text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
+        return items.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}')" class="rpt-tr-clickable ${r.date === this.selectedDate ? 'report-row-active' : ''}">
+            <td><strong>${this.formatDateShort(r.date)}</strong><br><span class="rpt-td-date-muted">${this.getDayOfWeek(r.date)}</span></td>
+            <td class="rpt-td-center-bold">${r.totalPatients || '—'}</td>
             <td style="text-align:center;color:#22c55e">${r.admissions || '0'}</td>
             <td style="text-align:center;color:#f59e0b">${r.discharges || '0'}</td>
-            <td style="text-align:center">${r.surgeryTotal || '0'}</td>
-            <td style="font-size:0.82rem;color:var(--text-secondary)">${r.reporterName || '—'}</td>
+            <td class="rpt-td-center">${r.surgeryTotal || '0'}</td>
+            <td class="rpt-td-secondary">${r.reporterName || '—'}</td>
             <td><button class="btn-icon" onclick="event.stopPropagation();ReportsPage.viewDate('${r.date}')" title="Xem">👁</button></td>
         </tr>`).join('');
     },
 
     _renderHistoryRows7h(items) {
-        return items.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}', 'report7h')" style="cursor:pointer" class="${r.date === this.selectedDate ? 'report-row-active' : ''}">
-            <td><strong>${this.formatDateShort(r.date)}</strong><br><span style="font-size:0.75rem;color:var(--text-muted)">${this.getDayOfWeek(r.date)}</span></td>
-            <td style="text-align:center;font-weight:600">${r.totalPatients || '—'}</td>
+        return items.map(r => `<tr onclick="ReportsPage.viewDate('${r.date}', 'report7h')" class="rpt-tr-clickable ${r.date === this.selectedDate ? 'report-row-active' : ''}">
+            <td><strong>${this.formatDateShort(r.date)}</strong><br><span class="rpt-td-date-muted">${this.getDayOfWeek(r.date)}</span></td>
+            <td class="rpt-td-center-bold">${r.totalPatients || '—'}</td>
             <td style="text-align:center;color:#ef4444">${r.fromHSCC || '—'}</td>
             <td style="text-align:center;color:#3b82f6">${r.fromHoiTinh || '—'}</td>
             <td style="text-align:center;color:#7c3aed">${r.fromICU || '—'}</td>
             <td style="text-align:center;color:#22c55e">${r.fromGiaiAp || '—'}</td>
-            <td style="font-size:0.82rem;color:var(--text-secondary)">${r.reporterName || '—'}</td>
+            <td class="rpt-td-secondary">${r.reporterName || '—'}</td>
             <td><button class="btn-icon" onclick="event.stopPropagation();ReportsPage.viewDate('${r.date}', 'report7h')" title="Xem">👁</button></td>
         </tr>`).join('');
     },
@@ -263,14 +262,14 @@ const ReportsPage = {
         const showArchive = this[archiveKey] || selectedInArchive;
 
         if (!recent.length) {
-            return `<p style="color:var(--text-muted);font-size:0.82rem">${emptyMessage}</p>`;
+            return `<p class="rpt-empty-text">${emptyMessage}</p>`;
         }
 
         let html = this._renderHistoryTable(tableHead, rowRenderer(recent));
         if (!archive.length) return html;
 
-        html += `<div style="margin-top:10px">
-            <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.toggleArchive('${type}')">
+        html += `<div class="rpt-archive-section">
+            <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.toggleArchive('${type}')">
                 ${showArchive ? '📁 Ẩn lưu trữ' : `📂 Xem lưu trữ (${archive.length} báo cáo cũ)`}
             </button>
             ${showArchive ? this._renderHistoryTable(tableHead, rowRenderer(archive), 'margin-top:8px;opacity:0.88') : ''}
@@ -311,9 +310,9 @@ const ReportsPage = {
 
         // Stepper helper
         const stepper16 = (name, val, color, label) => `
-            <div style="text-align:center">
-                <div style="font-size:0.68rem;font-weight:700;color:${color};margin-bottom:3px;white-space:nowrap">${label}</div>
-                <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+            <div class="rpt-summary-cell">
+                <div class="rpt-summary-label" style="color:${color}">${label}</div>
+                <div class="rpt-summary-value-row">
                     <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
                         style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
                     <input type="number" name="${name}" value="${val}" min="0" style="width:44px;text-align:center;font-size:1rem;font-weight:700;border:2px solid ${color}44;border-radius:6px;padding:3px 1px;color:${color}">
@@ -327,9 +326,9 @@ const ReportsPage = {
 
         // Read-only total display (auto-calculated)
         const readonlyTotal = (name, val, color, label) => `
-            <div style="text-align:center">
-                <div style="font-size:0.68rem;font-weight:700;color:${color};margin-bottom:3px;white-space:nowrap">${label}</div>
-                <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+            <div class="rpt-summary-cell">
+                <div class="rpt-summary-label" style="color:${color}">${label}</div>
+                <div class="rpt-summary-value-row">
                     <input type="number" name="${name}" value="${val}" min="0" readonly
                         style="width:52px;text-align:center;font-size:1.1rem;font-weight:800;border:2px solid ${color}44;border-radius:6px;padding:4px 1px;color:${color};background:${color}08;cursor:default">
                 </div>
@@ -349,7 +348,7 @@ const ReportsPage = {
             <form onsubmit="ReportsPage.saveReport16h(event, '${date}')">
 
                 <!-- Row 1: Tổng BN + Mổ chưa về -->
-                <div style="display:flex;gap:8px;margin-bottom:8px">
+                <div class="rpt-form-2col">
                     <div style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:10px">
                         <div style="flex:1;color:#fff">
                             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:600">TỔNG BN</div>
@@ -358,7 +357,7 @@ const ReportsPage = {
                             style="width:62px;text-align:center;font-size:1.5rem;font-weight:800;border:none;border-radius:8px;padding:4px;background:rgba(255,255,255,0.12);color:#fff">
                     </div>
                     <div style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fef3c7;border-radius:10px;border:1px solid #fbbf24">
-                        <div style="flex:1">
+                        <div class="rpt-form-half">
                             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#92400e;font-weight:600">MỔ CHƯA VỀ</div>
                         </div>
                         <input type="number" name="postOpNotReturned" value="${e.postOpNotReturned || 0}" min="0"
@@ -367,7 +366,7 @@ const ReportsPage = {
                 </div>
 
                 <!-- Row 2: 3 steppers inline -->
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+                <div class="rpt-form-3col">
                     <div style="background:#ecfdf5;border-radius:8px;padding:7px 4px">
                         ${stepper16('admissions', e.admissions || 0, '#059669', '🏥 Nhập viện')}
                     </div>
@@ -382,7 +381,7 @@ const ReportsPage = {
                 <!-- Row 3: Surgery next day -->
                 <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:6px">
                     <div style="font-size:0.72rem;font-weight:700;color:#1d4ed8;margin-bottom:5px">🔪 Bệnh mổ ${nextDayLabel}</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px" oninput="${autoSumSurgery('surgery')}">
+                    <div class="rpt-form-4col-surgery" oninput="${autoSumSurgery('surgery')}">
                         ${readonlyTotal('surgeryTotal', (e.surgeryCT || 0) + (e.surgeryYC || 0) + (e.surgeryRobot || 0), '#1d4ed8', 'Tổng')}
                         ${stepper16('surgeryCT', e.surgeryCT || 0, '#0369a1', 'CT')}
                         ${stepper16('surgeryYC', e.surgeryYC || 0, '#6366f1', 'Yêu cầu')}
@@ -393,7 +392,7 @@ const ReportsPage = {
                 ${isFri ? `
                 <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:6px">
                     <div style="font-size:0.72rem;font-weight:700;color:#15803d;margin-bottom:5px">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px" oninput="${autoSumSurgery('surgery2')}">
+                    <div class="rpt-form-4col-surgery" oninput="${autoSumSurgery('surgery2')}">
                         ${readonlyTotal('surgery2Total', (e.surgery2CT || 0) + (e.surgery2YC || 0) + (e.surgery2Robot || 0), '#15803d', 'Tổng')}
                         ${stepper16('surgery2CT', e.surgery2CT || 0, '#059669', 'CT')}
                         ${stepper16('surgery2YC', e.surgery2YC || 0, '#10b981', 'Yêu cầu')}
@@ -402,15 +401,15 @@ const ReportsPage = {
                 </div>` : ''}
 
                 <!-- Row 4: Doctor quick-select -->
-                <div style="margin-bottom:6px">
-                    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👤 BS trực khoa báo cáo</div>
+                <div class="rpt-notes-section">
+                    <div class="rpt-reporter-label">👤 BS trực khoa báo cáo</div>
                     <div class="report-chips-grid">${docChips}</div>
                     <input type="hidden" id="r16h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
                 <!-- Row 5: Notes (collapsed) -->
                 <details style="margin-bottom:8px" ${e.notes ? 'open' : ''}>
-                    <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-secondary);padding:3px 0">📝 Ghi chú thêm (bấm để mở)</summary>
+                    <summary class="rpt-details-toggle">📝 Ghi chú thêm (bấm để mở)</summary>
                     <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.82rem">${e.notes || ''}</textarea>
                 </details>
 
@@ -753,15 +752,14 @@ const ReportsPage = {
         const latestReport = this._getLatestReport(reports);
 
         return `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;gap:8px;align-items:center">
-                <label style="font-weight:600;font-size:0.85rem;color:var(--text-secondary)">Ngày:</label>
-                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)"
-                    style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:'Inter',system-ui,sans-serif;background:var(--bg-card);color:var(--text-primary)">
-                <button class="btn btn-secondary btn-sm" style="font-size:0.78rem" onclick="ReportsPage.goToday()">Hôm nay</button>
+        <div class="rpt-header-row">
+            <div class="rpt-date-controls">
+                <label class="rpt-label-date">Ngày:</label>
+                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
+                <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
-            <div style="display:flex;gap:8px">
-                ${todayReport ? `<button class="btn btn-sm" style="background:#f97316;color:#fff;border:none;font-size:0.78rem" onclick="ReportsPage.exportReport7hImage()">
+            <div class="rpt-export-btns">
+                ${todayReport ? `<button class="btn btn-sm rpt-export-orange" onclick="ReportsPage.exportReport7hImage()">
                     📸 Xuất hình báo cáo 7h
                 </button>` : ''}
                 ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport7hForm()">
@@ -778,8 +776,8 @@ const ReportsPage = {
             icon: '📋'
         })}
 
-        <div style="margin-top:20px">
-            <h3 style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">📋 Lịch sử báo cáo 7h (${reports.length})</h3>
+        <div class="rpt-history-section">
+            <h3 class="rpt-history-heading">📋 Lịch sử báo cáo 7h (${reports.length})</h3>
             ${this.renderReport7hHistory(reports)}
         </div>
         `;
@@ -791,29 +789,29 @@ const ReportsPage = {
 
         return `
         <div id="report7h-export-area">
-        <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:0 4px 20px rgba(0,0,0,0.12)">
+        <div class="card rpt-report-card">
             <div style="background:linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0369a1 100%);padding:18px 22px;color:#fff;position:relative">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div class="rpt-card-inner-header">
                     <div>
                         <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2.5px;color:#7dd3fc;margin-bottom:6px;font-weight:500">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
                         <h2 style="font-size:1.25rem;font-weight:800;margin:0;letter-spacing:0.5px;color:#fff">👩‍⚕️ BÁO CÁO TÌNH HÌNH KHOA LÚC 7G SÁNG</h2>
                         <div style="font-size:0.9rem;margin-top:5px;color:#bae6fd;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
                     </div>
                     <div class="report-no-export">
-                        ${canEdit ? `<button class="btn btn-sm" style="background:rgba(255,255,255,0.12);color:#e0f2fe;border:1px solid rgba(255,255,255,0.25);font-size:0.72rem;cursor:pointer" onclick="ReportsPage.openReport7hForm('${r.date}')">✏️ Sửa</button>` : ''}
+                        ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport7hForm('${r.date}')">✏️ Sửa</button>` : ''}
                     </div>
                 </div>
             </div>
 
             <!-- Stats: 2 main cards -->
             <div style="padding:16px 22px;background:#fff">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div class="rpt-stat-grid-2">
                     <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">TỔNG BN</div>
+                        <div class="rpt-stat-label">TỔNG BN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
                     <div style="background:#059669;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
-                        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:4px;min-height:24px;display:flex;align-items:center;justify-content:center">NHẬN BN ĐÊM QUA</div>
+                        <div class="rpt-stat-label">NHẬN BN ĐÊM QUA</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${(parseInt(r.fromHSCC) || 0) + (parseInt(r.fromHoiTinh) || 0) + (parseInt(r.fromICU) || 0) + (parseInt(r.fromGiaiAp) || 0)}</div>
                     </div>
                 </div>
@@ -890,7 +888,7 @@ const ReportsPage = {
 
         // Stepper helper
         const stepper = (name, val, color) => `
-            <div style="display:flex;align-items:center;gap:4px">
+            <div class="rpt-summary-value-row">
                 <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
                     style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
                 <input type="number" name="${name}" value="${val}" min="0" style="width:52px;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid ${color}44;border-radius:8px;padding:4px 2px;color:${color}"
@@ -919,7 +917,7 @@ const ReportsPage = {
                 </div>
 
                 <!-- Row 2: 4 sources inline compact -->
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+                <div class="rpt-form-4col-surgery-mb">
                     <div style="background:#fef2f2;border-radius:8px;padding:8px 4px;text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#dc2626;margin-bottom:4px">🚑 HSCC</div>
                         ${stepper('fromHSCC', e.fromHSCC || 0, '#dc2626')}
@@ -957,15 +955,15 @@ const ReportsPage = {
                 </div>
 
                 <!-- Row 4: Reporter quick-select -->
-                <div style="margin-bottom:8px">
-                    <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:5px">👩‍⚕️ ĐD trực BV báo cáo</div>
+                <div class="rpt-notes-section" style="margin-bottom:8px">
+                    <div class="rpt-reporter-label-lg">👩‍⚕️ ĐD trực BV báo cáo</div>
                     ${nurses.length > 0 ? `<div class="report-chips-grid">${nurseChips}</div>` : ''}
                     <input type="hidden" id="r7h-reporter" name="reporterName" value="${defaultReporter}">
                 </div>
 
                 <!-- Row 5: Notes (collapsed) -->
                 <details style="margin-bottom:10px" ${e.notes ? 'open' : ''}>
-                    <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text-secondary);padding:4px 0">📝 Ghi chú thêm (bấm để mở)</summary>
+                    <summary class="rpt-details-toggle" style="font-size:0.85rem;padding:4px 0">📝 Ghi chú thêm (bấm để mở)</summary>
                     <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.88rem">${e.notes || ''}</textarea>
                 </details>
 
@@ -1279,7 +1277,7 @@ const ReportsPage = {
     // ========== GUIDE MODAL ==========
     showGuide() {
         const guideHTML = `
-        <div style="max-width:100%;font-family:'Inter',sans-serif;color:#1e293b;line-height:1.65;font-size:0.92rem">
+        <div class="rpt-guide-content">
             <div style="text-align:center;padding-bottom:12px;border-bottom:3px solid #0c4a6e;margin-bottom:18px">
                 <div style="font-size:1.3rem;font-weight:800;color:#0c4a6e;margin-bottom:4px">📋 HƯỚNG DẪN SỬ DỤNG MODULE BÁO CÁO</div>
                 <div style="font-size:0.85rem;color:#475569;font-weight:600">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</div>
@@ -1452,14 +1450,14 @@ const ReportsPage = {
         setTimeout(() => this._initCharts(), 150);
 
         return `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="rpt-header-row">
             <div style="display:flex;gap:4px">
                 ${['week', 'month', 'all'].map(r => `<button class="btn btn-sm ${range === r ? 'btn-primary' : 'btn-secondary'}" style="font-size:0.76rem;padding:5px 12px" onclick="ReportsPage.setChartRange('${r}')">${r === 'week' ? 'Tuần' : r === 'month' ? 'Tháng' : 'Tất cả'}</button>`).join('')}
             </div>
             ${range !== 'all' ? `
-            <div style="display:flex;align-items:center;gap:6px">
+            <div class="rpt-stats-nav">
                 <button class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:0.9rem;line-height:1" onclick="ReportsPage.shiftRange(-1)">‹</button>
-                <span style="font-size:0.8rem;font-weight:600;color:var(--text-primary);min-width:180px;text-align:center">${label}</span>
+                <span class="rpt-stats-range-label">${label}</span>
                 <button class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:0.9rem;line-height:1" onclick="ReportsPage.shiftRange(1)" ${this._weekOffset >= 0 ? 'disabled style="padding:3px 8px;font-size:0.9rem;line-height:1;opacity:0.3"' : ''}>›</button>
                 ${this._weekOffset < 0 ? `<button class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px" onclick="ReportsPage._weekOffset=0;App.renderCurrentPage()">↺</button>` : ''}
             </div>` : `<span style="font-size:0.78rem;color:var(--text-muted)">${label}</span>`}

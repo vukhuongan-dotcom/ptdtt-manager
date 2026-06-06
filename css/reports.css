@@ -1,4 +1,472 @@
 /* ===== Reports Page ===== */
+
+/* ── Layout / Header row ── */
+.rpt-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rpt-date-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.rpt-label-date {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.rpt-export-btns {
+    display: flex;
+    gap: 8px;
+}
+
+/* ── History section ── */
+.rpt-history-section {
+    margin-top: 20px;
+}
+
+.rpt-history-heading {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+/* ── Weekend notice ── */
+.rpt-weekend-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+/* ── Empty state card ── */
+.rpt-empty-card {
+    text-align: center;
+    padding: 40px;
+}
+
+.rpt-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.rpt-empty-hint-top {
+    margin-top: 14px;
+}
+
+/* ── Report card shell ── */
+.rpt-report-card {
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.rpt-card-inner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+/* ── Stat grid (5 cols) ── */
+.rpt-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+/* ── Stat grid (2 cols) — for 7h card ── */
+.rpt-stat-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* ── Stat label inside colored boxes ── */
+.rpt-stat-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 600;
+    margin-bottom: 4px;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── History table rows ── */
+.rpt-tr-clickable {
+    cursor: pointer;
+}
+
+.rpt-td-date-muted {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.rpt-td-center-bold {
+    text-align: center;
+    font-weight: 600;
+}
+
+.rpt-td-center {
+    text-align: center;
+}
+
+.rpt-td-secondary {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+/* ── Archive section ── */
+.rpt-archive-section {
+    margin-top: 10px;
+}
+
+.rpt-archive-btn {
+    font-size: 0.78rem;
+}
+
+/* ── Form: reporter section ── */
+.rpt-reporter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* ── Form: summary cell (stepper container) ── */
+.rpt-summary-cell {
+    text-align: center;
+}
+
+.rpt-summary-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+
+.rpt-summary-value-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    justify-content: center;
+}
+
+/* ── Form layouts ── */
+.rpt-form-2col {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.rpt-form-half {
+    flex: 1;
+}
+
+.rpt-form-3col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.rpt-form-4col-surgery {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 5px;
+}
+
+/* ── Form: notes & details ── */
+.rpt-notes-section {
+    margin-bottom: 6px;
+}
+
+.rpt-notes-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.rpt-details-toggle {
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 3px 0;
+}
+
+/* ── Reporter label (7h form, slightly larger) ── */
+.rpt-reporter-label-lg {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+/* ── Guide button (header) ── */
+.rpt-guide-btn {
+    background: #0284c7;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(2,132,199,0.3);
+    transition: all .2s;
+}
+.rpt-guide-btn:hover { background: #0369a1; }
+
+/* ── Export orange btn (inside export area) ── */
+.rpt-export-orange {
+    background: #f97316;
+    color: #fff;
+    border: none;
+    font-size: 0.78rem;
+}
+
+/* ── Edit button inside dark card header ── */
+.rpt-edit-btn {
+    background: rgba(255,255,255,0.12);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.25);
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+/* ── Date input inside controls ── */
+.rpt-date-input {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* ── Empty text (history) ── */
+.rpt-empty-text {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* ── Guide modal content ── */
+.rpt-guide-content {
+    max-width: 100%;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    line-height: 1.65;
+    font-size: 0.92rem;
+}
+
+/* ── Stats tab nav controls ── */
+.rpt-stats-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rpt-stats-range-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 180px;
+    text-align: center;
+}
+
+/* ── 4-col surgery grid for form ── */
+.rpt-form-4col-surgery-mb {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+/* ── Detail expand fields (hidden/shown by JS) ── */
+.rpt-detail-field {
+    margin-bottom: 6px;
+}
+
+/* ── Card header: dark gradient (16h report) ── */
+.rpt-card-header {
+    background: linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%);
+    padding: 18px 22px;
+    color: #fff;
+    position: relative;
+}
+
+.rpt-card-header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.rpt-card-dept {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.rpt-card-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.rpt-card-date {
+    font-size: 0.9rem;
+    margin-top: 5px;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+/* ── Card 7h header: blue gradient ── */
+.rpt-card-header-7h {
+    background: linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0369a1 100%);
+    padding: 18px 22px;
+    color: #fff;
+    position: relative;
+}
+
+.rpt-card-dept-7h {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #7dd3fc;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.rpt-card-date-7h {
+    font-size: 0.9rem;
+    margin-top: 5px;
+    color: #bae6fd;
+    font-weight: 500;
+}
+
+/* ── Stat box body padding ── */
+.rpt-stat-body {
+    padding: 16px 22px;
+    background: #fff;
+}
+
+.rpt-stat-detail-body {
+    padding: 0 22px 16px;
+    background: #fff;
+}
+
+/* ── Stat colored boxes (5-col grid items) ── */
+.rpt-box-stat {
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.rpt-box-blue  { background: #0284c7; }
+.rpt-box-red   { background: #e11d48; }
+.rpt-box-green { background: #059669; }
+.rpt-box-amber { background: #d97706; }
+.rpt-box-purple{ background: #7c3aed; }
+
+.rpt-stat-value-big {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+/* ── Left-border notification blocks (card detail) ── */
+.rpt-block {
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+}
+
+.rpt-block-blue   { background: #eff6ff; border-left: 4px solid #3b82f6; }
+.rpt-block-green  { background: #f0fdf4; border-left: 4px solid #22c55e; }
+.rpt-block-slate  { background: #f8fafc; border-left: 4px solid #94a3b8; }
+.rpt-block-red    { background: #fef2f2; border-left: 4px solid #ef4444; }
+.rpt-block-indigo { background: #eff6ff; border-left: 4px solid #3b82f6; }
+.rpt-block-purple { background: #faf5ff; border-left: 4px solid #7c3aed; }
+
+.rpt-block-label {
+    font-weight: 700;
+    font-size: 0.82rem;
+    margin-bottom: 3px;
+}
+
+/* ── Card footer ── */
+.rpt-card-footer {
+    padding: 10px 22px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.rpt-card-footer-7h {
+    padding: 10px 22px;
+    background: #f0f9ff;
+    border-top: 1px solid #bae6fd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #0369a1;
+}
+
+/* ── Form 7h: total patient row ── */
+.rpt-form-total-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg,#0c4a6e,#0369a1);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+/* ── Weekend card weekend-specific text ── */
+.rpt-weekend-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 6px;
+}
+
+.rpt-weekend-sub {
+    font-size: 0.85rem;
+    color: #a16207;
+}
+
 .report-stat-card {
     background: var(--bg-secondary);
     border-left: 3px solid var(--primary);
