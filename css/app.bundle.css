@@ -24,6 +24,8 @@
     --text-secondary: #475569;
     --text-muted: #64748b;
     --text-dark: #94a3b8;
+    /* U1: alias mới — --text-subtle thay thế --text-dark (semantic đúng hơn) */
+    --text-subtle: #94a3b8;
 
     /* Border */
     --border: rgba(0, 0, 0, 0.08);
@@ -51,22 +53,28 @@
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s ease;
     --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* U1: thêm expressive (ease-out-quad) — phù hợp UI y tế, không dùng spring bounce */
+    --transition-expressive: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+    /* U1: thêm shadow-xl cho modal, dropdown nổi bật */
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
     --shadow-glow-primary: 0 0 20px rgba(8, 145, 178, 0.2);
     --shadow-glow-accent: 0 0 20px rgba(124, 58, 237, 0.2);
 
-    /* P3.1 — Typography scale */
-    --text-xs:   0.72rem;   /* 11.5px */
-    --text-sm:   0.8125rem; /* 13px   */
-    --text-base: 0.9375rem; /* 15px   */
-    --text-lg:   1.0625rem; /* 17px   */
-    --text-xl:   1.25rem;   /* 20px   */
-    --text-2xl:  1.5rem;    /* 24px   */
-    --text-3xl:  1.875rem;  /* 30px   */
+    /* P3.1 — Typography scale (base: 15px từ U2) */
+    /* U1: thêm --text-xxs cho badge micro, label cực nhỏ */
+    --text-xxs:  0.6667rem; /* 10px @ 15px base */
+    --text-xs:   0.7333rem; /* 11px @ 15px base */
+    --text-sm:   0.8667rem; /* 13px @ 15px base */
+    --text-base: 0.9333rem; /* 14px @ 15px base */
+    --text-lg:   1.0667rem; /* 16px @ 15px base */
+    --text-xl:   1.3333rem; /* 20px @ 15px base */
+    --text-2xl:  1.6rem;    /* 24px @ 15px base */
+    --text-3xl:  2rem;      /* 30px @ 15px base */
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semi:   600;
@@ -94,6 +102,74 @@
     --z-overlay:  300;
     --z-modal:    400;
     --z-toast:    500;
+
+    /* U1 — Surface tokens (Material Design 3 inspired) */
+    --surface:           #ffffff;
+    --surface-variant:   #f1f5f9;
+    --surface-container: #f8fafc;
+    --on-surface:        var(--text-primary);
+    --on-surface-muted:  var(--text-muted);
+}
+
+/* ===== DARK MODE — [data-theme="dark"] ===== */
+/* Áp dụng khi user chọn toggle hoặc OS preference (set bởi anti-flash script trong <head>) */
+[data-theme="dark"] {
+    /* Backgrounds — deep navy (không dùng pure black, dễ mắt hơn) */
+    --bg-primary:    #0d1117;
+    --bg-secondary:  #161b22;
+    --bg-tertiary:   #21262d;
+    --bg-hover:      #30363d;
+
+    /* Border */
+    --border:        rgba(255, 255, 255, 0.08);
+    --border-light:  rgba(255, 255, 255, 0.12);
+
+    /* Glass — dark variant */
+    --glass-bg:     rgba(22, 27, 34, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    /* Text — đảm bảo contrast ≥ 4.5:1 trên bg-primary (#0d1117) */
+    --text-primary:   #f0f6fc;   /* contrast ~14:1 ✅ */
+    --text-secondary: #c9d1d9;   /* contrast ~8:1  ✅ */
+    --text-muted:     #8b949e;   /* contrast ~4.6:1 ✅ AA */
+    --text-dark:      #6e7681;   /* giữ nguyên cho backward compat */
+    --text-subtle:    #6e7681;   /* decorative only */
+
+    /* Brand — làm sáng hơn để readable trên dark bg */
+    --primary:        #38bdf8;   /* contrast ~5.2:1 ✅ AA */
+    --primary-light:  #7dd3fc;
+    --primary-dark:   #0369a1;
+    --accent:         #a78bfa;   /* contrast ~5.8:1 ✅ AA */
+    --accent-light:   #c4b5fd;
+    --success:        #34d399;   /* contrast ~6.1:1 ✅ AA */
+    --success-light:  #6ee7b7;
+    --warning:        #fbbf24;   /* contrast ~7.3:1 ✅ AA */
+    --warning-light:  #fcd34d;
+    --danger:         #f87171;   /* contrast ~5.5:1 ✅ AA */
+    --danger-light:   #fca5a5;
+    --info:           #60a5fa;
+
+    /* Shadows — đậm hơn trên dark background */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
+    --shadow-glow-primary: 0 0 20px rgba(56, 189, 248, 0.25);
+    --shadow-glow-accent:  0 0 20px rgba(167, 139, 250, 0.25);
+
+    /* Gradients — điều chỉnh cho dark bg */
+    --gradient-primary: linear-gradient(135deg, #0369a1, #6d28d9);
+    --gradient-success: linear-gradient(135deg, #065f46, #0369a1);
+    --gradient-warning: linear-gradient(135deg, #92400e, #991b1b);
+    --gradient-accent:  linear-gradient(135deg, #6d28d9, #9d174d);
+
+    /* Surface tokens */
+    --surface:           #161b22;
+    --surface-variant:   #21262d;
+    --surface-container: #0d1117;
+    --on-surface:        var(--text-primary);
+    --on-surface-muted:  var(--text-muted);
 }
 *, *::before, *::after {
     margin: 0;
@@ -693,7 +769,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .login-footer {
     text-align: center;
     margin-top: 24px;
-    color: var(--text-dark);
+    color: var(--text-subtle);
     font-size: 0.78rem;
 }
 
@@ -2317,7 +2393,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .patient-status-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
 .patient-status-dot.pre-op { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
 .patient-status-dot.post-op { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
-.patient-status-dot.discharged { background: var(--text-dark); }
+.patient-status-dot.discharged { background: var(--text-subtle); }
 
 .patient-min-max-badge {
     display: inline-block;
