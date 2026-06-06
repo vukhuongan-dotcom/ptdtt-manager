@@ -437,3 +437,39 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .skeleton-card-sm { height: 80px; }
 .skeleton-card-lg { height: 200px; }
 .skeleton-card-top { margin: 0 0 12px; }
+
+/* ===== U5: auth.js extracted styles ===== */
+.pw-toggle-wrap { position: relative; }
+.pw-toggle-wrap .form-input { padding-right: 40px; }
+.pw-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+.eye-off { display: none; }
+.pw-error { color: var(--danger); font-size: var(--text-sm, 0.8667rem); margin-bottom: 8px; }
+/* Auth user management table */
+.auth-table-row { border-bottom: 1px solid var(--border); }
+.auth-table-row.disabled { opacity: 0.5; }
+.auth-td-main { padding: 6px 8px; }
+.auth-td-user { padding: 6px 8px; color: var(--text-secondary); font-size: var(--text-sm, 0.8667rem); }
+.auth-td-badge { padding: 6px 8px; }
+.auth-td-actions { padding: 6px 8px; text-align: center; white-space: nowrap; }
+.auth-badge-superadmin { background: #7c3aed; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
+.auth-badge-admin { background: #0891b2; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
+.auth-badge-user { background: #94a3b8; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
+.auth-badge-disabled { background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
+.auth-btn-mk { font-size: var(--text-xxs, 0.6667rem); }
+.auth-td-self { color: var(--text-secondary); font-size: var(--text-xs, 0.7333rem); }
+/* Auth loading/empty states */
+.auth-loading { text-align: center; padding: 40px; }
+.auth-loading-text { margin-top: 12px; color: var(--text-secondary); }
+.auth-empty { text-align: center; padding: 40px; color: var(--text-secondary); }

@@ -360,3 +360,48 @@
         font-size: 0.6rem;
     }
 }
+
+/* ===== U5: Extracted inline styles — staff-tracking.js ===== */
+.st-absent-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+.st-absent-avatar-wrapper { width: 28px; height: 28px; font-size: var(--text-xxs, 0.6667rem); }
+.st-absent-info { flex: 1; min-width: 0; }
+.st-absent-name {
+    font-size: var(--text-sm, 0.8667rem);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.st-absent-role { font-size: var(--text-xxs, 0.6667rem); color: var(--text-muted); }
+.st-summary-card { margin-bottom: 16px; padding: 16px; }
+.st-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.st-summary-title {
+    font-size: var(--text-sm, 0.8667rem);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.st-summary-date { font-size: var(--text-xs, 0.7333rem); color: var(--text-muted); margin-top: 2px; }
+.st-summary-ratio-right { text-align: right; }
+.st-summary-pct { font-size: var(--text-xs, 0.7333rem); color: var(--text-muted); }
+.st-absent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.st-warn-low {
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.08);
+    color: var(--danger);
+    font-size: var(--text-xs, 0.7333rem);
+    font-weight: 600;
+}
+.st-filter-bar { margin-bottom: 12px; }
+.st-absent-today { background: rgba(239, 68, 68, 0.04); }

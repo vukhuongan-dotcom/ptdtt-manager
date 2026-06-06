@@ -70,33 +70,33 @@ const StaffTrackingPage = {
         const isLow = pct < 80;
 
         const absentCards = absent.length ? absent.map(a => `
-            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:${this._statusColor(a.status)}12;border:1px solid ${this._statusColor(a.status)}30">
-                <div class="st-staff-avatar" style="background:${a.color};width:28px;height:28px;font-size:0.65rem">${Utils.getInitials(a.name)}</div>
-                <div style="flex:1;min-width:0">
-                    <div style="font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div>
-                    <div style="font-size:0.68rem;color:var(--text-muted)">${a.role}</div>
+            <div class="st-absent-item" style="background:${this._statusColor(a.status)}12;border:1px solid ${this._statusColor(a.status)}30">
+                <div class="st-staff-avatar st-absent-avatar-wrapper" style="background:${a.color}">${Utils.getInitials(a.name)}</div>
+                <div class="st-absent-info">
+                    <div class="st-absent-name">${a.name}</div>
+                    <div class="st-absent-role">${a.role}</div>
                 </div>
                 <span style="font-size:0.72rem;padding:2px 6px;border-radius:4px;background:${this._statusColor(a.status)};color:#fff;white-space:nowrap">${a.statusInfo.icon} ${a.statusInfo.label}</span>
             </div>
-        `).join('') : '<span style="color:var(--text-muted);font-size:0.82rem">✅ Tất cả nhân viên có mặt</span>';
+        `).join('') : '<span class="td-muted">✅ Tất cả nhân viên có mặt</span>';
 
         return `
-        <div class="card" style="margin-bottom:16px;padding:16px;border-left:4px solid ${isLow ? '#ef4444' : '#22c55e'}">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${absent.length ? '12px' : '0'}">
+        <div class="card st-summary-card" style="border-left:4px solid ${isLow ? '#ef4444' : '#22c55e'}">
+            <div class="st-summary-header" style="margin-bottom:${absent.length ? '12px' : '0'}">
                 <div>
-                    <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary)">📊 Nhân sự hôm nay</div>
-                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'numeric', year:'numeric'})}</div>
+                    <div class="st-summary-title">📊 Nhân sự hôm nay</div>
+                    <div class="st-summary-date">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'numeric', year:'numeric'})}</div>
                 </div>
-                <div style="text-align:right">
+                <div class="st-summary-ratio-right">
                     <div style="font-size:1.4rem;font-weight:800;color:${isLow ? '#ef4444' : '#22c55e'}">${present}/${allStaff.length}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted)">có mặt (${pct}%)</div>
+                    <div class="st-summary-pct">có mặt (${pct}%)</div>
                 </div>
             </div>
             ${absent.length ? `
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+            <div class="st-absent-grid">
                 ${absentCards}
             </div>
-            ${isLow ? '<div style="margin-top:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;color:#ef4444;font-size:0.75rem;font-weight:600">⚠️ Cảnh báo: Vắng &gt;20% nhân sự — kiểm tra nhân lực!</div>' : ''}
+            ${isLow ? '<div class="st-warn-low">⚠️ Cảnh báo: Vắng &gt;20% nhân sự — kiểm tra nhân lực!</div>' : ''}
             ` : ''}
         </div>`;
     },
@@ -162,7 +162,7 @@ const StaffTrackingPage = {
                 </td>`;
             }).join('');
 
-            return `<tr${isAbsentToday ? ' style="background:rgba(239,68,68,0.04)"' : ''}>
+            return `<tr${isAbsentToday ? ' class="st-absent-today"' : ''}>
                 <td class="st-staff-cell">
                     <div class="st-staff-info">
                         <div class="st-staff-avatar" style="background:${s.color}">${Utils.getInitials(s.name)}</div>
@@ -220,7 +220,7 @@ const StaffTrackingPage = {
         </div>
 
         <!-- Filters -->
-        <div class="staff-filters" style="margin-bottom:12px">${filterBtns}</div>
+        <div class="staff-filters st-filter-bar">${filterBtns}</div>
 
         <!-- Summary -->
         <div class="st-summary">${summary}</div>

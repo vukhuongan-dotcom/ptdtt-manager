@@ -329,10 +329,10 @@ const Auth = {
         const eyeOff = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
         return `<div class="form-group">
             <label class="form-label">${label}</label>
-            <div style="position:relative">
-                <input class="form-input" type="password" id="${id}" ${extra} style="padding-right:40px">
-                <button type="button" onclick="Auth._togglePw('${id}',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);padding:4px;display:flex;align-items:center" title="Hiện/ẩn mật khẩu">
-                    <span class="eye-on">${eyeOn}</span><span class="eye-off" style="display:none">${eyeOff}</span>
+            <div class="pw-toggle-wrap">
+                <input class="form-input" type="password" id="${id}" ${extra}>
+                <button type="button" onclick="Auth._togglePw('${id}',this)" class="pw-toggle-btn" title="Hiện/ẩn mật khẩu">
+                    <span class="eye-on">${eyeOn}</span><span class="eye-off">${eyeOff}</span>
                 </button>
             </div>
         </div>`;
@@ -355,7 +355,7 @@ const Auth = {
                 ${this._pwField('pw-current', 'Mật khẩu hiện tại', 'required')}
                 ${this._pwField('pw-new', 'Mật khẩu mới', `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
                 ${this._pwField('pw-confirm', 'Xác nhận mật khẩu mới', `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
-                <div id="pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
+                <div id="pw-error" class="pw-error"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
@@ -390,16 +390,16 @@ const Auth = {
 
         // Show loading
         Modal.open('👥 Quản lý tài khoản nhân viên', `
-            <div style="text-align:center;padding:40px">
+            <div class="auth-loading">
                 <div class="spinner"></div>
-                <p style="margin-top:12px;color:var(--text-secondary)">Đang tải danh sách tài khoản...</p>
+                <p class="auth-loading-text">Đang tải danh sách tài khoản...</p>
             </div>
         `);
 
         const accounts = await this._fetchAccounts();
         if (accounts.length === 0) {
             Modal.open('👥 Quản lý tài khoản nhân viên', `
-                <div style="text-align:center;padding:40px;color:var(--text-secondary)">
+                <div class="auth-empty">
                     <p>Không thể tải danh sách tài khoản. Vui lòng thử lại.</p>
                 </div>
                 <div class="modal-footer">
@@ -421,18 +421,18 @@ const Auth = {
         const rows = accounts.filter(a => a.username !== 'guest').map((a, idx) => {
             const isSelf = a.username === this.SUPERADMIN_USERNAME;
             const isDisabled = a.disabled;
-            const badge = isSelf ? '<span style="background:#7c3aed;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Super Admin</span>' :
-                a.isAdmin ? '<span style="background:#0891b2;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">Admin</span>' :
-                    '<span style="background:#94a3b8;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem">User</span>';
-            const statusBadge = isDisabled ? ' <span style="background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem">Vô hiệu</span>' : '';
-            return `<tr style="border-bottom:1px solid var(--border)${isDisabled ? ';opacity:0.5' : ''}">
-                <td style="padding:6px 8px"><strong>${a.name}</strong>${statusBadge}</td>
-                <td style="padding:6px 8px;color:var(--text-secondary);font-size:0.82rem">${a.username}</td>
-                <td style="padding:6px 8px">${badge}</td>
-                <td style="padding:6px 8px;text-align:center;white-space:nowrap">
-                    ${!isSelf ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">🔑 MK</button>
-                    <button class="btn btn-sm" style="font-size:0.72rem;margin-left:4px;background:${a.isAdmin ? '#ef4444' : '#22c55e'};color:#fff;border:none;cursor:pointer" onclick="Auth.toggleAdmin('${a.username}')">${a.isAdmin ? '🔒 Bỏ Admin' : '🔓 Cấp Admin'}</button>` :
-                    '<span style="color:var(--text-secondary);font-size:0.75rem">—</span>'}
+            const badge = isSelf ? '<span class="auth-badge-superadmin">Super Admin</span>' :
+                a.isAdmin ? '<span class="auth-badge-admin">Admin</span>' :
+                    '<span class="auth-badge-user">User</span>';
+            const statusBadge = isDisabled ? ' <span class="auth-badge-disabled">Vô hiệu</span>' : '';
+            return `<tr class="auth-table-row${isDisabled ? ' disabled' : ''}">
+                <td class="auth-td-main"><strong>${a.name}</strong>${statusBadge}</td>
+                <td class="auth-td-user">${a.username}</td>
+                <td class="auth-td-badge">${badge}</td>
+                <td class="auth-td-actions">
+                    ${!isSelf ? `<button class="btn btn-secondary btn-sm auth-btn-mk" onclick="Auth.openResetPasswordFor('${a.username}','${a.name}')">🔑 MK</button>
+                    <button class="btn btn-sm" style="margin-left:4px;background:${a.isAdmin ? '#ef4444' : '#22c55e'};color:#fff;border:none;cursor:pointer;font-size:var(--text-xxs,0.6667rem)" onclick="Auth.toggleAdmin('${a.username}')">${a.isAdmin ? '🔒 Bỏ Admin' : '🔓 Cấp Admin'}</button>` :
+                    '<span class="auth-td-self">—</span>'}
                 </td>
             </tr>`;
         }).join('');
@@ -462,7 +462,7 @@ const Auth = {
         Modal.open(`Đổi mật khẩu: ${name}`, `
             <form onsubmit="Auth.handleResetPassword(event, '${username}')">
                 ${this._pwField('reset-pw-new', `Mật khẩu mới cho <strong>${name}</strong> (${username})`, `required minlength="${this.PASSWORD_MIN_LENGTH}" placeholder="Ít nhất ${this.PASSWORD_MIN_LENGTH} ký tự, có chữ và số"`)}
-                <div id="reset-pw-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:8px"></div>
+                <div id="reset-pw-error" class="pw-error"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Auth.openManagePasswords()">Quay lại</button>
                     <button type="submit" class="btn btn-primary">Cập nhật</button>
