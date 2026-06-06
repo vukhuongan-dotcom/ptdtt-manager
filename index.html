@@ -288,11 +288,11 @@
         crossorigin="anonymous"></script>
     <script defer src="js/xlsx.full.min.js"></script>
 
-    <!-- Core: must load in order, no defer (app bootstrap depends on these) -->
-    <script src="js/data.js?v=1505261506"></script>
-    <script src="js/store.js?v=1505261506"></script>
-    <script src="js/auth.js?v=1505261506"></script>
-    <script src="js/utils.js?v=1505261506"></script>
+    <!-- Core: defer — execute in order after DOM parsed -->
+    <script defer src="js/data.js?v=1505261506"></script>
+    <script defer src="js/store.js?v=1505261506"></script>
+    <script defer src="js/auth.js?v=1505261506"></script>
+    <script defer src="js/utils.js?v=1505261506"></script>
 
     <!-- Page modules: defer — loaded after DOM ready, in document order -->
     <script defer src="js/dashboard.js?v=1505261506"></script>
