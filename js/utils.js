@@ -1,5 +1,39 @@
 // ===== UTILITY FUNCTIONS =====
 const Utils = {
+    // ─── Lazy-load heavy libraries (script-loader, giữ global behavior) ───
+    // CDN URLs tập trung — cập nhật version tại đây khi cần
+    _LIBS: {
+        html2canvas: 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+        chartjs:     'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+        xlsx:        '/js/xlsx.full.min.js',
+    },
+    _loadingPromises: {},
+
+    /**
+     * Load một script một lần duy nhất. Trả về Promise resolve khi script sẵn sàng.
+     * @param {'html2canvas'|'chartjs'|'xlsx'} name - Tên thư viện (key trong _LIBS)
+     */
+    loadScript(name) {
+        // Kiểm tra global đã tồn tại chưa
+        const globals = { html2canvas: 'html2canvas', chartjs: 'Chart', xlsx: 'XLSX' };
+        if (window[globals[name]]) return Promise.resolve();
+        // Dùng cache để tránh load 2 lần song song
+        if (this._loadingPromises[name]) return this._loadingPromises[name];
+        const src = this._LIBS[name];
+        if (!src) return Promise.reject(new Error(`Unknown lib: ${name}`));
+        this._loadingPromises[name] = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = () => resolve();
+            s.onerror = () => {
+                delete this._loadingPromises[name];
+                reject(new Error(`Không tải được thư viện: ${name}`));
+            };
+            document.head.appendChild(s);
+        });
+        return this._loadingPromises[name];
+    },
+
     getInitials(name) {
         return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
     },

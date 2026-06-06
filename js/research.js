@@ -600,6 +600,7 @@ const ResearchPage = {
             await new Promise(r => setTimeout(r, 500));
 
             const captureEl = iframe.contentDocument.getElementById('capture');
+            await Utils.loadScript('html2canvas');
             const canvas = await html2canvas(captureEl, {
                 scale: 3,
                 useCORS: true,

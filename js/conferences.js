@@ -509,7 +509,7 @@ const ConferencesPage = {
     },
 
     // ── Xuất ảnh lịch báo cáo ──
-    exportImage(confId) {
+    async exportImage(confId) {
         const item = Store.getById('conferences', confId);
         if (!item) return;
         const pres = item.presentations || [];
@@ -624,6 +624,7 @@ const ConferencesPage = {
         document.body.appendChild(container);
 
         const target = container.querySelector('#conf-export-target');
+        await Utils.loadScript('html2canvas');
         html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
             Utils.applyExportWatermark(canvasEl);
             canvasEl.toBlob(blob => {

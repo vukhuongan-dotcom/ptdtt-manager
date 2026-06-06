@@ -367,10 +367,12 @@ const SurgeryStatsPage = {
     afterRender() {},
 
     exportExcel() {
-        if (typeof XLSX === 'undefined') {
-            Toast.error('Thư viện Excel chưa được tải. Vui lòng thử lại.');
-            return;
-        }
+        Utils.loadScript('xlsx')
+            .then(() => this._doExportExcel())
+            .catch(err => Toast.error('Không tải được thư viện Excel: ' + err.message));
+    },
+
+    _doExportExcel() {
         try {
             const allStats = this.computeDetailedStats();
             const surgeries = this.getSurgeriesInRange();

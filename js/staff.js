@@ -801,10 +801,12 @@ const StaffPage = {
     },
 
     exportExcel() {
-        if (typeof XLSX === 'undefined') {
-            Toast.error('Thư viện Excel chưa được tải. Vui lòng thử lại.');
-            return;
-        }
+        Utils.loadScript('xlsx')
+            .then(() => this._doExportExcel())
+            .catch(err => Toast.error('Không tải được thư viện Excel: ' + err.message));
+    },
+
+    _doExportExcel() {
         try {
             const wb = XLSX.utils.book_new();
             const staff = Store.getAll('staff');

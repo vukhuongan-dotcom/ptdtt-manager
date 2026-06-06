@@ -677,7 +677,7 @@ const SurgeryPage = {
         this._exportImageForDate(d);
     },
 
-    _exportImageForDate(targetDate) {
+    async _exportImageForDate(targetDate) {
         const ds = this.dateStr(targetDate);
         const surgeries = this.getAllSurgeries();
         const todaySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), targetDate);
@@ -785,6 +785,7 @@ const SurgeryPage = {
         document.body.appendChild(container);
 
         const target = container.querySelector('#surgery-export-target');
+        await Utils.loadScript('html2canvas');
         html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
             Utils.applyExportWatermark(canvasEl);
 

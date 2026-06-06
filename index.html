@@ -273,20 +273,10 @@
         </div>
     </div>
 
-    <!-- CDN Libraries: defer to not block page render — SRI hashes computed 15/05/2026 -->
-    <script defer
-        src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-        integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
-        crossorigin="anonymous"></script>
-    <script defer
-        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-        integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt"
-        crossorigin="anonymous"></script>
-    <script defer
-        src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"
-        integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/"
-        crossorigin="anonymous"></script>
-    <script defer src="js/xlsx.full.min.js"></script>
+    <!-- Heavy libraries: lazy-loaded on demand via Utils.loadScript() -->
+    <!-- html2canvas, chart.js, xlsx: loaded when user triggers export/chart -->
+    <!-- jspdf: removed (unused) -->
+
 
     <!-- Core: defer — execute in order after DOM parsed -->
     <script defer src="js/data.js?v=1505261506"></script>

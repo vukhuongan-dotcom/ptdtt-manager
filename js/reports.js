@@ -1707,8 +1707,8 @@ const ReportsPage = {
         };
     },
 
-    _initCharts() {
-        if (typeof Chart === 'undefined') return;
+    async _initCharts() {
+        await Utils.loadScript('chartjs');
         const C = this._CB;
 
         // ── Report 16h ──
