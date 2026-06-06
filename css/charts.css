@@ -97,7 +97,7 @@
     background: var(--bg-secondary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
     font-family: inherit;
 }
 .export-btn:hover {

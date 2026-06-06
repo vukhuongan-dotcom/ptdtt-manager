@@ -70,7 +70,7 @@
     text-decoration: none;
     font-size: 0.84rem;
     font-weight: 500;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), font-weight var(--transition-fast);
     position: relative;
     overflow: hidden;
 }

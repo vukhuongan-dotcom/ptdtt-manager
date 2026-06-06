@@ -201,7 +201,7 @@
     font-weight: 600;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .confirm-btn-cancel {

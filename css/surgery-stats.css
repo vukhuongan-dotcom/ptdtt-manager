@@ -24,7 +24,7 @@
     background: var(--bg-primary);
     cursor: pointer;
     color: var(--text-secondary);
-    transition: all 0.2s;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -58,7 +58,7 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-family: inherit;
 }
 .sstats-period-btn:hover {

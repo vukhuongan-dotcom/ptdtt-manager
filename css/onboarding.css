@@ -19,7 +19,7 @@
     border-radius: 8px;
     box-shadow: 0 0 0 9999px rgba(15,23,42,0.6);
     z-index: 10002;
-    transition: all 0.3s ease;
+    transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease, box-shadow 0.3s ease;
     pointer-events: none;
 }
 .onboarding-tooltip {
@@ -91,7 +91,7 @@
     cursor: pointer;
     border: none;
     font-family: inherit;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 .onb-btn-skip {
     background: transparent;

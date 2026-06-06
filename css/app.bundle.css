@@ -266,7 +266,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-normal);
+    transition: background var(--transition-normal), color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
     text-decoration: none;
 }
 
@@ -321,7 +321,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
     border: 1px solid var(--border);
     color: var(--text-muted);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 .btn-icon:hover { color: var(--primary); border-color: var(--primary); }
 
@@ -333,7 +333,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
     border-radius: var(--border-radius);
     padding: 24px;
     box-shadow: var(--glass-shadow);
-    transition: all var(--transition-normal);
+    transition: background var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
 }
 .card:hover { border-color: rgba(0,0,0,0.12); }
 
@@ -610,7 +610,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     text-decoration: none;
     font-size: 0.84rem;
     font-weight: 500;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), font-weight var(--transition-fast);
     position: relative;
     overflow: hidden;
 }
@@ -838,7 +838,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     background: var(--gradient-primary);
     color: white;
     cursor: pointer;
-    transition: all var(--transition-normal);
+    transition: background var(--transition-normal), color var(--transition-normal), box-shadow var(--transition-normal);
     box-shadow: var(--shadow-glow-primary);
     font-family: inherit;
 }
@@ -893,7 +893,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-family: inherit;
     font-size: 0.78rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: color var(--transition-fast);
     display: none;
 }
 .logout-btn.show { display: block; }
@@ -1393,7 +1393,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-weight: 600;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .confirm-btn-cancel {
@@ -1523,7 +1523,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     padding-top: 12vh;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
 }
 .search-overlay.active {
     opacity: 1;
@@ -1681,7 +1681,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     color: var(--text-muted);
     font-size: 0.78rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
     font-family: inherit;
 }
 .sidebar-search-btn:hover {
@@ -1925,7 +1925,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 0.88rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-family: inherit;
     display: flex;
     align-items: center;
@@ -1964,7 +1964,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-family: inherit;
     font-size: 0.82rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
 .filter-btn.active {
@@ -2009,7 +2009,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 0.82rem;
     font-weight: 500;
     color: var(--text-secondary);
-    transition: all 0.2s;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .st-tab.active {
@@ -2233,7 +2233,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     padding: 6px 4px;
     border-bottom: 1px solid var(--border);
     cursor: default;
-    transition: all 0.15s;
+    transition: background 0.15s;
     min-width: 52px;
 }
 
@@ -2375,7 +2375,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     border-radius: var(--border-radius-sm);
     padding: 14px;
     cursor: grab;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .task-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .task-card.dragging { opacity: 0.5; }
@@ -2412,7 +2412,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 0.78rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
     font-family: inherit;
 }
 .filter-chip:hover {
@@ -2482,7 +2482,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
     font-family: inherit;
     border-right: 1px solid var(--border);
 }
@@ -2892,7 +2892,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 9pt;
     cursor: pointer;
     outline: none;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     text-align: center;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -3068,7 +3068,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-radius: 8px;
     padding: 0;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     font-size: 0.78rem;
     overflow: hidden;
 }
@@ -3217,7 +3217,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: var(--text-muted);
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     font-family: inherit;
 }
 .surgery-add-btn:hover {
@@ -3327,7 +3327,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: var(--bg-primary);
     cursor: pointer;
     color: var(--text-secondary);
-    transition: all 0.2s;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3361,7 +3361,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     font-family: inherit;
 }
 .sstats-period-btn:hover {
@@ -3988,7 +3988,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: var(--bg-secondary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     font-family: inherit;
 }
 
@@ -4384,7 +4384,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     padding: 6px;
     border-radius: 8px;
     color: var(--text-secondary);
-    transition: all 0.2s;
+    transition: background 0.2s, color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4445,7 +4445,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     overflow: hidden;
     opacity: 0;
     transform: translateY(-8px) scale(0.97);
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .notif-panel.show {
     opacity: 1;
@@ -4737,7 +4737,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: var(--bg-secondary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
     font-family: inherit;
 }
 .export-btn:hover {
@@ -4777,7 +4777,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-radius: 8px;
     box-shadow: 0 0 0 9999px rgba(15,23,42,0.6);
     z-index: 10002;
-    transition: all 0.3s ease;
+    transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease, box-shadow 0.3s ease;
     pointer-events: none;
 }
 .onboarding-tooltip {
@@ -4849,7 +4849,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     cursor: pointer;
     border: none;
     font-family: inherit;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 .onb-btn-skip {
     background: transparent;
@@ -5019,7 +5019,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         display: flex;
         align-items: center;
         gap: 3px;
-        transition: all 0.2s;
+        transition: background 0.2s, color 0.2s;
     }
     .mobile-logout-btn:hover, .mobile-logout-btn:active {
         background: rgba(239,68,68,0.1);

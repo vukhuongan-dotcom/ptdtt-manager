@@ -11,7 +11,7 @@
     padding-top: 12vh;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
 }
 .search-overlay.active {
     opacity: 1;
@@ -169,7 +169,7 @@
     color: var(--text-muted);
     font-size: 0.78rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast);
     font-family: inherit;
 }
 .sidebar-search-btn:hover {
