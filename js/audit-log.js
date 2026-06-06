@@ -228,7 +228,10 @@ const AuditLog = {
         try {
             const token = Auth.getToken();
             const resp = await fetch(`/api/audit?days=${days}&_t=${Date.now()}`, {
-                headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                headers: token ? {
+                    'Authorization': 'Bearer ' + token,
+                    'X-Client-Build': String(typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : Store?.CLIENT_BUILD || 2606062130)
+                } : {}
             });
             if (resp.status === 401 || resp.status === 403) {
                 throw new Error('Bạn không có quyền xem audit log');

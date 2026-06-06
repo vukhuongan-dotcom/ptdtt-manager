@@ -249,7 +249,8 @@ const ConferencesPage = {
         const totalPres   = all.reduce((s, c) => s + c.presentations.length, 0);
         const totalPresenterSet = new Set(all.flatMap(c => c.presentations.map(p => p.presenter)));
         const totalPresenterCount = totalPresenterSet.size;
-        const upcoming    = all.filter(c => { const s = this._getStatus(c); return s === 'soon' || s === 'now' || s === 'upcoming'; }).length;
+        // Fix #1: 'now' (đang diễn ra) không tính vào 'sắp tới'
+        const upcoming    = all.filter(c => { const s = this._getStatus(c); return s === 'soon' || s === 'upcoming'; }).length;
 
         // Year tab pills
         const yearTabs = [

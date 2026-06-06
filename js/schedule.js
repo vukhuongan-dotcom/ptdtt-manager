@@ -197,7 +197,7 @@ const SchedulePage = {
             <h3 style="font-size:0.95rem;margin-bottom:8px;color:var(--primary-light)">📝 Ghi chú</h3>
             ${isAdmin
                 ? `<textarea class="form-textarea" id="schedule-notes" placeholder="Ghi chú tuần này..." style="min-height:60px">${schedule?.notes || ''}</textarea>`
-                : `<p style="color:var(--text-muted);font-size:0.85rem">${schedule?.notes || 'Không có ghi chú'}</p>`
+                : `<p style="color:var(--text-muted);font-size:0.85rem;white-space:pre-wrap;line-height:1.6">${schedule?.notes ? schedule.notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Không có ghi chú'}</p>`
             }
         </div>
         `;
@@ -349,7 +349,7 @@ const SchedulePage = {
                 <thead>
                     <tr>
                         <th style="width:160px">Ngày mổ</th>
-                        <th style="width:80px">Ca</th>
+                        ${isAdmin ? '<th style="width:80px">Ca</th>' : ''}
                         <th>BS phụ 1</th>
                         <th>BS phụ 2</th>
                         <th>BS phụ 3</th>
@@ -391,11 +391,11 @@ const SchedulePage = {
                 const dayMonth = dayDate.getMonth() + 1;
                 return `<tr>
                                 <td>${dayLabel}, ${dayNum}/${dayMonth}</td>
-                                <td>Ca ${entry.session}</td>
+                                ${isAdmin ? `<td>Ca ${entry.session}</td>` : ''}
                                 ${[0, 1, 2].map(slot => `<td>${entry.doctors?.[slot] ? this.getShortName(entry.doctors[slot]) : '—'}</td>`).join('')}
                             </tr>`;
             }
-        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center;color:var(--text-muted);padding:20px">Chưa có lịch mổ Robot tuần này</td></tr>`}
+        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 4}" style="text-align:center;color:var(--text-muted);padding:20px">Chưa có lịch mổ Robot tuần này</td></tr>`}
                 </tbody>
             </table>
         </div>`;
