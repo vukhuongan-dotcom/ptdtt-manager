@@ -34,10 +34,10 @@ const DashboardPage = {
                 <h1 class="page-title">Tổng quan</h1>
                 <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
             </div>
-            <div class="flex items-center gap-12" style="text-align:right">
+            <div class="flex items-center gap-12 dash-header-right">
                 <div>
-                    <div style="color:var(--text-primary); font-size:16px; font-weight:600">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})}</div>
-                    <div id="live-clock" style="font-size:22px; font-weight:700; color:var(--primary); font-variant-numeric:tabular-nums; letter-spacing:1px; margin-top:2px"></div>
+                    <div class="dash-date-label">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})}</div>
+                    <div id="live-clock" class="dash-clock"></div>
                 </div>
             </div>
         </div>
@@ -68,7 +68,7 @@ const DashboardPage = {
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         </div>
                     </div>
-                    <div class="stat-value">${present}<span style="font-size:1rem;font-weight:400;color:var(--text-muted)">/${allStaff.length}</span></div>
+                    <div class="stat-value">${present}<span class="stat-value-suffix">/${allStaff.length}</span></div>
                     <div class="stat-change">${absentList.length ? absentList.join(' · ') : '✅ Đủ nhân sự'}</div>
                 </div>`;
             })()}
@@ -106,7 +106,7 @@ const DashboardPage = {
                         return `<div class="stat-value">${patientCount}</div>
                             <div class="stat-change">📋 ${sourceLabel}</div>`;
                     }
-                    return `<div class="stat-value" style="font-size:1.2rem;color:var(--text-muted)">—</div>
+                    return `<div class="stat-value stat-value-empty">—</div>
                             <div class="stat-change">Chưa có báo cáo hôm nay</div>`;
                 })()}
             </div>
@@ -136,38 +136,38 @@ const DashboardPage = {
                 <div class="chart-header">
                     <h3 class="chart-title">Số lượng phẫu thuật</h3>
                 </div>
-                <div class="surgery-stats-row" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 20px 16px">
+                <div class="surgery-stats-row">
                     <div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                            <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Trong tuần (T2 → CN)</span>
-                            <span style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">${weeklyS.total} ca</span>
+                        <div class="surgery-stats-period-header">
+                            <span class="surgery-stats-period-label">Trong tuần (T2 → CN)</span>
+                            <span class="surgery-stats-total">${weeklyS.total} ca</span>
                         </div>
                         ${Object.entries(SURGERY_TYPES).map(([k,t]) => {
                             const val = weeklyS[k]||0;
                             const pct = weeklyS.total > 0 ? (val / weeklyS.total * 100) : 0;
-                            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-                                <span style="flex:0 0 90px;font-size:0.8rem;color:var(--text-secondary);font-weight:500">${t.label}</span>
-                                <div style="flex:1;height:22px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden">
-                                    <div style="width:${Math.max(pct, val > 0 ? 8 : 0)}%;height:100%;background:${t.color};border-radius:6px;transition:width 0.3s ease"></div>
+                            return `<div class="surgery-bar-row">
+                                <span class="surgery-bar-label">${t.label}</span>
+                                <div class="surgery-bar-track">
+                                    <div class="surgery-bar-fill" style="width:${Math.max(pct, val > 0 ? 8 : 0)}%;background:${t.color}"></div>
                                 </div>
-                                <span style="flex:0 0 28px;text-align:right;font-size:0.88rem;font-weight:700;color:var(--text-primary)">${val}</span>
+                                <span class="surgery-bar-count">${val}</span>
                             </div>`;
                         }).join('')}
                     </div>
-                    <div class="surgery-month-col" style="border-left:1px solid var(--border);padding-left:20px">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                            <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Tháng ${currentMonth}</span>
-                            <span style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">${monthlyS.total} ca</span>
+                    <div class="surgery-month-col">
+                        <div class="surgery-stats-period-header">
+                            <span class="surgery-stats-period-label">Tháng ${currentMonth}</span>
+                            <span class="surgery-stats-total">${monthlyS.total} ca</span>
                         </div>
                         ${Object.entries(SURGERY_TYPES).map(([k,t]) => {
                             const val = monthlyS[k]||0;
                             const pct = monthlyS.total > 0 ? (val / monthlyS.total * 100) : 0;
-                            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-                                <span style="flex:0 0 90px;font-size:0.8rem;color:var(--text-secondary);font-weight:500">${t.label}</span>
-                                <div style="flex:1;height:22px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden">
-                                    <div style="width:${Math.max(pct, val > 0 ? 8 : 0)}%;height:100%;background:${t.color};border-radius:6px;transition:width 0.3s ease"></div>
+                            return `<div class="surgery-bar-row">
+                                <span class="surgery-bar-label">${t.label}</span>
+                                <div class="surgery-bar-track">
+                                    <div class="surgery-bar-fill" style="width:${Math.max(pct, val > 0 ? 8 : 0)}%;background:${t.color}"></div>
                                 </div>
-                                <span style="flex:0 0 28px;text-align:right;font-size:0.88rem;font-weight:700;color:var(--text-primary)">${val}</span>
+                                <span class="surgery-bar-count">${val}</span>
                             </div>`;
                         }).join('')}
                 </div>
@@ -213,7 +213,7 @@ const DashboardPage = {
                         </div>
                         <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                     </div>`;
-                    }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
+                    }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
                 </div>
 
                 <div class="widget-card slide-up" style="animation-delay:0.3s">
@@ -230,7 +230,7 @@ const DashboardPage = {
                         </div>
                         <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                     </div>`;
-                    }).join(''); })() : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa phân công</p>'}
+                    }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
                 </div>
 
                 <div class="widget-card slide-up" style="animation-delay:0.35s">
@@ -243,7 +243,7 @@ const DashboardPage = {
                             <div class="timeline-time">${Utils.formatDateShort(p.date)} · ${p.time}</div>
                         </div>
                     </div>
-                    `).join('') : '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px 0">Chưa có hoạt động nào sắp tới</p>'}
+                    `).join('') : '<p class="widget-empty-msg">Chưa có hoạt động nào sắp tới</p>'}
                 </div>
             </div>
         `;
@@ -387,7 +387,7 @@ const DashboardPage = {
                 const m = data[closest];
                 tooltip.innerHTML = `<div class="trend-tooltip-title">${m.label}</div>` +
                     types.map(t => `<div class="trend-tooltip-row"><span class="trend-tooltip-label"><span class="trend-legend-dot" style="background:${SURGERY_TYPES[t].color};width:7px;height:7px"></span> ${SURGERY_TYPES[t].label}</span><strong>${m.byType[t]}</strong></div>`).join('') +
-                    `<div class="trend-tooltip-row" style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px"><strong>Tổng</strong><strong>${m.total}</strong></div>`;
+                    `<div class="trend-tooltip-row trend-tooltip-total-row"><strong>Tổng</strong><strong>${m.total}</strong></div>`;
                 tooltip.classList.add('visible');
                 tooltip.style.left = (xOf(closest) > w/2 ? xOf(closest)-150 : xOf(closest)+15) + 'px';
                 tooltip.style.top = '10px';

@@ -52,7 +52,7 @@ const TasksPage = {
                 <h1 class="page-title">Công việc</h1>
                 <p class="page-subtitle">Quản lý công việc theo bảng Kanban</p>
             </div>
-            <div style="display:flex;gap:8px">
+            <div class="task-header-actions">
                 ${trashCount > 0 ? `<button class="btn btn-secondary" onclick="TasksPage.toggleTrash()">
                     🗑️ Thùng rác (${trashCount})
                 </button>` : ''}
@@ -116,16 +116,16 @@ const TasksPage = {
         return `
         <div class="task-card ${canClick ? 'task-card-clickable' : ''}" draggable="${isAdmin ? 'true' : 'false'}" ondragstart="TasksPage.dragStart(event,${t.id})" ondragend="TasksPage.dragEnd(event)" ${canClick ? `onclick="TasksPage.viewTask(${t.id})"` : ''}>
             <div class="priority-bar priority-${t.priority}"></div>
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div class="task-card-header">
                 <div class="task-card-title">${t.title}</div>
                 <span class="task-cat-badge" style="background:${cat.color}15;color:${cat.color};border:1px solid ${cat.color}30">${cat.icon} ${cat.label}</span>
             </div>
-            <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">${t.desc || ''}</p>
-            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
+            <p class="task-card-desc">${t.desc || ''}</p>
+            <div class="task-card-meta-row">
                 <span class="badge ${Utils.priorityBadge(t.priority)}">${Utils.priorityLabel(t.priority)}</span>
-                ${t.startDate ? `<span style="font-size:0.7rem;color:var(--text-muted)">📅 ${Utils.formatDateShort(t.startDate)}</span>` : ''}
-                ${assignerName ? `<span style="font-size:0.7rem;color:var(--text-muted)">👤 ${assignerName}</span>` : ''}
-                ${t.completedAt ? `<span style="font-size:0.7rem;color:var(--success)">✅ ${Utils.formatDateShort(t.completedAt)}</span>` : ''}
+                ${t.startDate ? `<span class="task-meta-date">📅 ${Utils.formatDateShort(t.startDate)}</span>` : ''}
+                ${assignerName ? `<span class="task-meta-assigner">👤 ${assignerName}</span>` : ''}
+                ${t.completedAt ? `<span class="task-meta-completed">✅ ${Utils.formatDateShort(t.completedAt)}</span>` : ''}
             </div>
             <div class="task-card-meta">
                 <div class="task-card-assignee">
@@ -157,12 +157,12 @@ const TasksPage = {
                 <h1 class="page-title">🗑️ Thùng rác</h1>
                 <p class="page-subtitle">${trash.length} công việc đã xoá</p>
             </div>
-            <div style="display:flex;gap:8px">
+            <div class="task-header-actions">
                 ${canDelete && trash.length > 0 ? `<button class="btn btn-danger" onclick="TasksPage.confirmEmptyTrash()">Xoá tất cả vĩnh viễn</button>` : ''}
                 <button class="btn btn-secondary" onclick="TasksPage.toggleTrash()">← Quay lại</button>
             </div>
         </div>
-        <div class="card" style="padding:0;overflow:hidden">
+        <div class="card card-no-padding">
             <table>
                 <thead>
                     <tr>
@@ -170,19 +170,19 @@ const TasksPage = {
                         <th>Phân loại</th>
                         <th>Người phụ trách</th>
                         <th>Ngày xoá</th>
-                        <th style="width:140px">Thao tác</th>
+                        <th class="trash-action-col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${trash.length ? trash.map(t => {
                         const cat = TASK_CATEGORIES[t.category] || TASK_CATEGORIES.other;
                         return `<tr>
-                            <td><strong>${t.title}</strong><br><span style="font-size:0.78rem;color:var(--text-muted)">${t.desc || ''}</span></td>
+                            <td><strong>${t.title}</strong><br><span class="trash-td-desc">${t.desc || ''}</span></td>
                             <td><span class="task-cat-badge" style="background:${cat.color}15;color:${cat.color};border:1px solid ${cat.color}30">${cat.icon} ${cat.label}</span></td>
                             <td>${Utils.getStaffName(t.assignee)}</td>
-                            <td style="color:var(--text-muted);font-size:0.82rem">${t.deletedAt || '—'}</td>
+                            <td class="trash-td-muted">${t.deletedAt || '—'}</td>
                             <td>
-                                <div style="display:flex;gap:4px">
+                                <div class="trash-td-actions">
                                     <button class="btn btn-sm btn-secondary" onclick="TasksPage.restore(${t.id})">Khôi phục</button>
                                     ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="TasksPage.confirmPermanentDelete(${t.id})">Xoá</button>` : ''}
                                 </div>
@@ -219,7 +219,7 @@ const TasksPage = {
 
     confirmPermanentDelete(id) {
         Modal.open('⚠️ Xác nhận xoá', `
-            <div style="padding:8px 0">
+            <div class="modal-confirm-body">
                 <p style="margin-bottom:16px">Xoá vĩnh viễn công việc này? <strong>Không thể khôi phục!</strong></p>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
@@ -237,7 +237,7 @@ const TasksPage = {
 
     confirmEmptyTrash() {
         Modal.open('⚠️ Xác nhận xoá tất cả', `
-            <div style="padding:8px 0">
+            <div class="modal-confirm-body">
                 <p style="margin-bottom:16px">Xoá tất cả công việc trong thùng rác? <strong>Không thể khôi phục!</strong></p>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
@@ -408,11 +408,11 @@ const TasksPage = {
             const deadline = new Date(t.deadline);
             const diffDays = Math.round((deadline - completed) / (1000 * 60 * 60 * 24));
             if (diffDays > 0) {
-                deadlineDiffHtml = `<div style="margin-top:8px;padding:8px 12px;background:rgba(16,185,129,0.1);border-radius:6px;color:var(--success);font-size:0.85rem;font-weight:600">🎯 Trước hạn ${diffDays} ngày</div>`;
+                deadlineDiffHtml = `<div class="task-deadline-diff success">🎯 Trước hạn ${diffDays} ngày</div>`;
             } else if (diffDays === 0) {
-                deadlineDiffHtml = `<div style="margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.1);border-radius:6px;color:var(--primary);font-size:0.85rem;font-weight:600">🎯 Đúng hạn</div>`;
+                deadlineDiffHtml = `<div class="task-deadline-diff primary">🎯 Đúng hạn</div>`;
             } else {
-                deadlineDiffHtml = `<div style="margin-top:8px;padding:8px 12px;background:rgba(239,68,68,0.1);border-radius:6px;color:var(--danger);font-size:0.85rem;font-weight:600">⚠️ Trễ hạn ${-diffDays} ngày</div>`;
+                deadlineDiffHtml = `<div class="task-deadline-diff danger">⚠️ Trễ hạn ${-diffDays} ngày</div>`;
             }
         }
 
@@ -432,7 +432,7 @@ const TasksPage = {
                     <div><strong>Người thực hiện:</strong> ${assigneeName}</div>
                     <div><strong>Ngày giao:</strong> ${t.startDate ? Utils.formatDateShort(t.startDate) : '—'}</div>
                     <div><strong>Deadline:</strong> ${deadlineText}</div>
-                    ${t.completedAt ? `<div><strong>Ngày hoàn thành:</strong> <span style="color:var(--success)">✅ ${Utils.formatDateShort(t.completedAt)}</span></div>` : ''}
+                    ${t.completedAt ? `<div><strong>Ngày hoàn thành:</strong> <span class="task-completed-label">✅ ${Utils.formatDateShort(t.completedAt)}</span></div>` : ''}
                 </div>
                 ${deadlineDiffHtml}
                 <div class="modal-footer">

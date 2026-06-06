@@ -174,7 +174,7 @@ const SurgeryStatsPage = {
                 <h1 class="page-title">Thống kê phẫu thuật</h1>
                 <p class="page-subtitle">Thống kê ca phẫu thuật theo BS mổ chính — ${this.getPeriodLabel()}</p>
             </div>
-            <div style="display:flex;gap:8px">
+            <div class="sstats-header-actions">
                 ${(() => { const s = Auth.getSession(); return (s && s.isAdmin); })() ? `<button class="export-btn" onclick="SurgeryStatsPage.exportExcel()" title="Xuất file Excel">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     Xuất Excel
@@ -226,8 +226,8 @@ const SurgeryStatsPage = {
         </div>
 
         ${totalAll === 0 ? `
-            <div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">
-                <div style="font-size:2rem;margin-bottom:12px">📋</div>
+            <div class="card sstats-empty-state-card">
+                <div class="sstats-empty-icon">📋</div>
                 <p>Chưa có ca phẫu thuật nào trong ${this.getPeriodLabel()}</p>
             </div>
         ` : `
@@ -251,8 +251,7 @@ const SurgeryStatsPage = {
                             const isExpanded = this.expandedDoctor == docStat.doctor.id;
                             return `
                         <tr class="sstats-summary-row ${isExpanded ? 'sstats-row-active' : ''}" 
-                            onclick="SurgeryStatsPage.toggleDoctor(${docStat.doctor.id})" 
-                            style="cursor:pointer">
+                            onclick="SurgeryStatsPage.toggleDoctor(${docStat.doctor.id})">
                             <td class="sstats-td-stt">${idx + 1}</td>
                             <td>
                                 <div class="sstats-td-name">
@@ -278,8 +277,8 @@ const SurgeryStatsPage = {
                     <tfoot>
                         <tr class="sstats-footer-row">
                             <td colspan="2" class="sstats-td-footer-label">TỔNG CỘNG</td>
-                            ${types.map(t => `<td class="sstats-td-num" style="font-weight:700">${grandByType[t]}</td>`).join('')}
-                            <td class="sstats-td-num sstats-td-total" style="font-weight:800;font-size:1rem">${totalAll}</td>
+                            ${types.map(t => `<td class="sstats-td-num sstats-td-num-bold">${grandByType[t]}</td>`).join('')}
+                            <td class="sstats-td-num sstats-td-total sstats-td-total-grand">${totalAll}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -303,11 +302,11 @@ const SurgeryStatsPage = {
             <table class="sstats-detail-table">
                 <thead>
                     <tr>
-                        <th style="width:40px;text-align:center">STT</th>
-                        <th style="min-width:140px">Họ tên BN</th>
+                        <th class="sstats-detail-th-stt">STT</th>
+                        <th class="sstats-detail-th-name">Họ tên BN</th>
                         <th>Năm sinh</th>
-                        <th style="min-width:160px">Chẩn đoán trước mổ</th>
-                        <th style="min-width:180px">PP phẫu thuật</th>
+                        <th class="sstats-detail-th-diagnosis">Chẩn đoán trước mổ</th>
+                        <th class="sstats-detail-th-method">PP phẫu thuật</th>
                         <th>Ngày mổ</th>
                         <th>Loại PT</th>
                     </tr>
@@ -319,12 +318,12 @@ const SurgeryStatsPage = {
                         const dateObj = new Date(s.date);
                         const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
                         return `
-                    <tr onclick="SurgeryPage.viewDetail(${s.id})" style="cursor:pointer" title="Xem chi tiết">
-                        <td style="text-align:center;color:var(--text-muted);font-weight:600">${idx + 1}</td>
+                    <tr onclick="SurgeryPage.viewDetail(${s.id})" class="sstats-detail-tr-clickable" title="Xem chi tiết">
+                        <td class="sstats-detail-td-stt">${idx + 1}</td>
                         <td><strong>${s.patientName}</strong></td>
                         <td>${s.birthYear || '—'}</td>
-                        <td style="font-size:0.78rem;color:var(--text-secondary)">${s.diagnosis || '—'}</td>
-                        <td style="font-size:0.78rem;color:var(--text-secondary)">${s.method || '—'}</td>
+                        <td class="sstats-detail-td-text">${s.diagnosis || '—'}</td>
+                        <td class="sstats-detail-td-text">${s.method || '—'}</td>
                         <td>${dateStr}</td>
                         <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
                     </tr>`;

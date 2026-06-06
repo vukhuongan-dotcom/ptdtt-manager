@@ -115,3 +115,95 @@
 
 @media (max-width: 1024px) { .kanban-board { grid-template-columns: 1fr; } }
 
+/* U5: Task page header button group */
+.task-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* U5: Task card header row */
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+}
+
+/* U5: Task card description */
+.task-card-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+/* U5: Task card meta info row */
+.task-card-meta-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* U5: Small meta info chips (date, assigner) */
+.task-meta-date,
+.task-meta-assigner {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.task-meta-completed {
+    font-size: 0.7rem;
+    color: var(--success);
+}
+
+/* U5: Trash table cells */
+.trash-td-muted {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+.trash-td-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.trash-td-actions {
+    display: flex;
+    gap: 4px;
+}
+.trash-action-col { width: 140px; }
+
+/* U5: Modal confirm padding */
+.modal-confirm-body { padding: 8px 0; }
+
+/* U5: Deadline diff banners */
+.task-deadline-diff {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.task-deadline-diff.success {
+    background: rgba(16,185,129,0.1);
+    color: var(--success);
+}
+.task-deadline-diff.primary {
+    background: rgba(59,130,246,0.1);
+    color: var(--primary);
+}
+.task-deadline-diff.danger {
+    background: rgba(239,68,68,0.1);
+    color: var(--danger);
+}
+
+/* U5: Completed date label in task detail */
+.task-completed-label {
+    color: var(--success);
+}
+
+/* U5: Trash card with no padding */
+.card-no-padding {
+    padding: 0;
+    overflow: hidden;
+}
+
+

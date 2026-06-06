@@ -97,6 +97,104 @@
     transition: box-shadow var(--transition-normal);
 }
 .chart-card:hover { box-shadow: var(--shadow-md); }
+
+/* U5: Dashboard date/clock header */
+.dash-header-right { text-align: right; }
+.dash-date-label {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+.dash-clock {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+/* U5: Stat value variants */
+.stat-value-suffix {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+.stat-value-empty {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+/* U5: Surgery stats mini-chart */
+.surgery-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 0 20px 16px;
+}
+.surgery-stats-period-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.surgery-stats-period-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.surgery-stats-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.surgery-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.surgery-bar-label {
+    flex: 0 0 90px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.surgery-bar-track {
+    flex: 1;
+    height: 22px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.surgery-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+.surgery-bar-count {
+    flex: 0 0 28px;
+    text-align: right;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* U5: Widget empty message */
+.widget-empty-msg {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 12px 0;
+}
+
+/* U5: Trend tooltip total row */
+.trend-tooltip-total-row {
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+    margin-top: 4px;
+}
 .chart-header {
     display: flex;
     justify-content: space-between;
@@ -197,4 +295,10 @@
     .chart-card .surgery-stats-row { grid-template-columns: 1fr !important; }
     .surgery-month-col { border-left: none !important; padding-left: 0 !important; border-top: 1px solid var(--border); padding-top: 20px; }
     .duty-name { white-space: normal; }
+}
+
+/* U5: Default styles for .surgery-month-col (desktop) */
+.surgery-month-col {
+    border-left: 1px solid var(--border);
+    padding-left: 20px;
 }

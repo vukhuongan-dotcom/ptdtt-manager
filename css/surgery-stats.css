@@ -336,3 +336,57 @@
     .sstats-summary-card { flex: 1 1 calc(50% - 6px); }
     .sstats-detail-panel { padding: 12px; }
 }
+
+/* U5: Header button group */
+.sstats-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* U5: Empty state */
+.sstats-empty-state-card {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+}
+.sstats-empty-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+/* U5: Summary row cursor */
+.sstats-summary-row { cursor: pointer; }
+
+/* U5: Detail table th widths */
+.sstats-detail-th-stt  { width: 40px; text-align: center; }
+.sstats-detail-th-name { min-width: 140px; }
+.sstats-detail-th-diagnosis { min-width: 160px; }
+.sstats-detail-th-method    { min-width: 180px; }
+
+/* U5: Detail table td styles */
+.sstats-detail-td-stt {
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+.sstats-detail-td-text {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* U5: Footer total cells */
+.sstats-td-num-bold {
+    font-weight: 700;
+}
+.sstats-td-total-grand {
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+/* U5: Clickable detail rows */
+.sstats-detail-tr-clickable { cursor: pointer; }
+.sstats-detail-tr-clickable:hover { background: rgba(8,145,178,0.04); }
+
+/* U5: Summary row cursor (supplement to existing transition rule) */
+.sstats-summary-row { cursor: pointer; }
+
