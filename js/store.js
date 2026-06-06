@@ -14,6 +14,7 @@ const Store = {
     _initialSyncPromise: null,
     _collectionSaveWaiters: [],
     _pollBound: false,
+    _lastEtag: null,         // P2.4: ETag từ lần GET /api/data gần nhất
 
     // Save to localStorage only (no server push) — used during init
     _saveLocal() {
@@ -135,6 +136,7 @@ const Store = {
         this._dirtyCollections.clear();
         this._deletedIds.clear();
         this._pendingSaveAfterSync = false;
+        this._lastEtag = null;           // P2.4: Reset ETag on logout
     },
 
     save() {
@@ -306,7 +308,11 @@ const Store = {
             const session = (typeof Auth !== 'undefined') ? Auth.getSession() : null;
             opts.headers['X-User'] = session ? session.username : 'anonymous';
         }
-        return fetch(url + sep + '_t=' + Date.now(), opts).then(async response => {
+        // P2.4: Không cache-bust /api/data — để ETag/304 hoạt động
+        // Các route khác vẫn giữ ?_t= để tránh stale cache
+        const isDataEndpoint = url === '/api/data' || url.endsWith('/api/data');
+        const fetchUrl = isDataEndpoint ? url : (url + sep + '_t=' + Date.now());
+        return fetch(fetchUrl, opts).then(async response => {
             // Handle 401 Unauthorized — token expired or invalid
             if (response.status === 401 && typeof Auth !== 'undefined') {
                 console.warn('[Store] 401 Unauthorized — logging out');
@@ -461,7 +467,23 @@ const Store = {
     _syncFromServer(quiet) {
         if (this._syncing) return this._initialSyncPromise || Promise.resolve();
         this._syncing = true;
-        const syncPromise = this._api('/api/data').then(r => r.json()).then(serverData => {
+        const syncPromise = this._api('/api/data', {
+            headers: this._lastEtag ? { 'If-None-Match': this._lastEtag } : {}
+        }).then(async r => {
+            // P2.4: 304 Not Modified — data không đổi, dùng lại _data hiện tại
+            if (r.status === 304) {
+                if (!quiet) console.log('[Store] 304 Not Modified — server data unchanged ✅');
+                this._serverAvailable = true;
+                this._hasLoadedServerOnce = true;
+                this._syncing = false;
+                return;
+            }
+            // Lưu ETag để gửi lần sau
+            const etag = r.headers.get('ETag');
+            if (etag) this._lastEtag = etag;
+            return r.json();
+        }).then(serverData => {
+            if (serverData === undefined) return; // 304 đã xử lý ở trên
             if (serverData && typeof serverData === 'object' && !Array.isArray(serverData)) {
                 if (serverData._version == null && this._data?._version != null) {
                     serverData._version = this._data._version;
