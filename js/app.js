@@ -132,6 +132,26 @@ const App = {
         if (Onboarding.shouldShow()) {
             setTimeout(() => Onboarding.start(), 800);
         }
+
+        // P3.3b: Keyboard shortcuts
+        this._initKeyboardShortcuts();
+    },
+
+    // P3.3b: Global keyboard shortcuts
+    _initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Skip if user is typing in an input, textarea, or contenteditable
+            const tag = document.activeElement?.tagName;
+            const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+                || document.activeElement?.isContentEditable;
+
+            // '/' or Cmd/Ctrl+K — open global search
+            if (!isEditing && (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k'))) {
+                e.preventDefault();
+                if (typeof GlobalSearch !== 'undefined') GlobalSearch.open();
+                return;
+            }
+        });
     },
 
     // Hide nav items based on role
@@ -371,34 +391,51 @@ const App = {
 
         const mainContent = document.getElementById('main-content');
 
-        // Show loading briefly for visual feedback
-        mainContent.style.opacity = '0';
-        mainContent.style.transform = 'translateY(8px)';
+        // P3.3c: Show skeleton placeholder for instant visual feedback
+        mainContent.innerHTML = `
+            <div class="skeleton-card" style="margin:0 0 12px"></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+                <div class="skeleton-card" style="height:80px"></div>
+                <div class="skeleton-card" style="height:80px"></div>
+                <div class="skeleton-card" style="height:80px"></div>
+            </div>
+            <div class="skeleton-card" style="height:200px"></div>
+        `;
+        mainContent.style.opacity = '1';
+        mainContent.style.transform = 'none';
 
         requestAnimationFrame(() => {
-            mainContent.innerHTML = pageModule.render();
+            const html = pageModule.render();
 
-            // Add data freshness timestamp
-            const timestamp = document.createElement('div');
-            timestamp.className = 'data-timestamp';
-            timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
-            timestamp.style.cssText = 'text-align:right;padding:12px 0 4px;font-size:0.75rem;color:var(--text-muted);opacity:0.6;';
-            mainContent.appendChild(timestamp);
+            // Fade out skeleton, fade in content
+            mainContent.style.transition = 'opacity 0.15s ease';
+            mainContent.style.opacity = '0';
 
-            // Animate in
             requestAnimationFrame(() => {
-                mainContent.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-                mainContent.style.opacity = '1';
-                mainContent.style.transform = 'translateY(0)';
+                mainContent.innerHTML = html;
+
+                // Add data freshness timestamp
+                const timestamp = document.createElement('div');
+                timestamp.className = 'data-timestamp';
+                timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
+                timestamp.style.cssText = 'text-align:right;padding:12px 0 4px;font-size:0.75rem;color:var(--text-muted);opacity:0.6;';
+                mainContent.appendChild(timestamp);
+
+                // Animate in
+                requestAnimationFrame(() => {
+                    mainContent.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                    mainContent.style.opacity = '1';
+                    mainContent.style.transform = 'translateY(0)';
+                });
+
+                // Run post-render hooks
+                if (pageModule.afterRender) {
+                    requestAnimationFrame(() => pageModule.afterRender());
+                }
+
+                // Update notification bell badge
+                Notifications.updateBell();
             });
-
-            // Run post-render hooks
-            if (pageModule.afterRender) {
-                requestAnimationFrame(() => pageModule.afterRender());
-            }
-
-            // Update notification bell badge
-            Notifications.updateBell();
         });
     },
 

@@ -448,6 +448,7 @@ const FormAutoSave = {
 // ===== MODAL =====
 const Modal = {
     _currentFormKey: null,
+    _escHandler: null,
 
     open(title, bodyHTML) {
         const overlay = document.getElementById('modal-overlay');
@@ -455,6 +456,17 @@ const Modal = {
         document.getElementById('modal-body').innerHTML = bodyHTML;
         overlay.classList.add('active');
         overlay.setAttribute('aria-hidden', 'false');
+
+        // P3.3: Esc key — close modal
+        if (this._escHandler) document.removeEventListener('keydown', this._escHandler);
+        this._escHandler = (e) => {
+            if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                e.preventDefault();
+                this.close();
+            }
+        };
+        document.addEventListener('keydown', this._escHandler);
+
         // Move focus to close button for keyboard accessibility
         setTimeout(() => {
             const closeBtn = document.getElementById('modal-close');
@@ -476,6 +488,11 @@ const Modal = {
         if (this._currentFormKey) {
             FormAutoSave.stop(this._currentFormKey);
             this._currentFormKey = null;
+        }
+        // Remove Esc handler
+        if (this._escHandler) {
+            document.removeEventListener('keydown', this._escHandler);
+            this._escHandler = null;
         }
     },
 

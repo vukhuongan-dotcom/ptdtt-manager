@@ -58,6 +58,42 @@
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
     --shadow-glow-primary: 0 0 20px rgba(8, 145, 178, 0.2);
     --shadow-glow-accent: 0 0 20px rgba(124, 58, 237, 0.2);
+
+    /* P3.1 — Typography scale */
+    --text-xs:   0.72rem;   /* 11.5px */
+    --text-sm:   0.8125rem; /* 13px   */
+    --text-base: 0.9375rem; /* 15px   */
+    --text-lg:   1.0625rem; /* 17px   */
+    --text-xl:   1.25rem;   /* 20px   */
+    --text-2xl:  1.5rem;    /* 24px   */
+    --text-3xl:  1.875rem;  /* 30px   */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semi:   600;
+    --font-weight-bold:   700;
+    --font-weight-black:  800;
+    --line-height-tight:  1.25;
+    --line-height-normal: 1.5;
+    --line-height-loose:  1.75;
+
+    /* P3.1 — Spacing scale (4px base) */
+    --space-1:  4px;
+    --space-2:  8px;
+    --space-3:  12px;
+    --space-4:  16px;
+    --space-5:  20px;
+    --space-6:  24px;
+    --space-8:  32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* P3.1 — Z-index scale */
+    --z-dropdown: 100;
+    --z-sidebar:  200;
+    --z-overlay:  300;
+    --z-modal:    400;
+    --z-toast:    500;
 }
 *, *::before, *::after {
     margin: 0;
