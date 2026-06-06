@@ -13,7 +13,9 @@
     padding: 22px;
     position: relative;
     overflow: hidden;
-    transition: all var(--transition-normal);
+    transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+    /* U3: border-top gradient accent */
+    border-top: 3px solid transparent;
 }
 .stat-card::after {
     content: '';
@@ -24,12 +26,18 @@
     opacity: 0.08;
     transform: translate(20px, -20px);
 }
+/* U3: Mỗi card màu border-top khác nhau */
+.stat-card:nth-child(1) { border-top-color: var(--primary); }
+.stat-card:nth-child(2) { border-top-color: var(--accent); }
+.stat-card:nth-child(3) { border-top-color: var(--success); }
+.stat-card:nth-child(4) { border-top-color: var(--warning); }
 .stat-card:nth-child(1)::after { background: var(--primary); }
 .stat-card:nth-child(2)::after { background: var(--accent); }
 .stat-card:nth-child(3)::after { background: var(--success); }
 .stat-card:nth-child(4)::after { background: var(--warning); }
 
-.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+/* U3: Hover dùng shadow-lg thay vì translateY */
+.stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 
 .stat-header {
     display: flex;
@@ -84,7 +92,11 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--border-radius);
     padding: 24px;
+    /* U3: elevation sm + hover lg */
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-normal);
 }
+.chart-card:hover { box-shadow: var(--shadow-md); }
 .chart-header {
     display: flex;
     justify-content: space-between;
@@ -102,7 +114,11 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--border-radius);
     padding: 24px;
+    /* U3: elevation sm + hover md */
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-normal);
 }
+.widget-card:hover { box-shadow: var(--shadow-md); }
 .widget-title {
     font-size: 1rem;
     font-weight: 600;

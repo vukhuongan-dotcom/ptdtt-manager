@@ -449,11 +449,17 @@ const FormAutoSave = {
 const Modal = {
     _currentFormKey: null,
     _escHandler: null,
+    _trapHandler: null,      // U3: focus trap handler
+    _triggerElement: null,   // U3: element đã focus trước khi mở modal
 
     open(title, bodyHTML) {
         const overlay = document.getElementById('modal-overlay');
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-body').innerHTML = bodyHTML;
+
+        // U3: Lưu element hiện tại để restore focus khi đóng
+        this._triggerElement = document.activeElement;
+
         overlay.classList.add('active');
         overlay.setAttribute('aria-hidden', 'false');
 
@@ -467,7 +473,30 @@ const Modal = {
         };
         document.addEventListener('keydown', this._escHandler);
 
-        // Move focus to close button for keyboard accessibility
+        // U3: Focus trap — Tab/Shift+Tab vòng trong modal
+        if (this._trapHandler) document.removeEventListener('keydown', this._trapHandler);
+        this._trapHandler = (e) => {
+            if (e.key !== 'Tab' || !overlay.classList.contains('active')) return;
+            const modal = document.getElementById('modal');
+            const focusable = Array.from(
+                modal.querySelectorAll(
+                    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )
+            ).filter(el => el.offsetParent !== null); // chỉ lấy visible elements
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last  = focusable[focusable.length - 1];
+            if (e.shiftKey) {
+                // Shift+Tab: nếu đang ở first thì wrap về last
+                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+            } else {
+                // Tab: nếu đang ở last thì wrap về first
+                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
+        };
+        document.addEventListener('keydown', this._trapHandler);
+
+        // Move focus vào modal sau khi render xong
         setTimeout(() => {
             const closeBtn = document.getElementById('modal-close');
             if (closeBtn) closeBtn.focus();
@@ -493,6 +522,16 @@ const Modal = {
         if (this._escHandler) {
             document.removeEventListener('keydown', this._escHandler);
             this._escHandler = null;
+        }
+        // U3: Remove focus trap handler
+        if (this._trapHandler) {
+            document.removeEventListener('keydown', this._trapHandler);
+            this._trapHandler = null;
+        }
+        // U3: Restore focus về element trước khi mở modal
+        if (this._triggerElement && typeof this._triggerElement.focus === 'function') {
+            this._triggerElement.focus();
+            this._triggerElement = null;
         }
     },
 

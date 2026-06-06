@@ -1,0 +1,227 @@
+/* ===== COMPONENTS.CSS — Unified Component Library =====
+ * U3: Thư viện component tập trung. Thêm vào build-css.sh sau modal.css.
+ * Sử dụng CSS variables từ variables.css — tự hỗ trợ dark mode.
+ * ======================================================= */
+
+/* ── Badge ── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: var(--text-xxs, 0.6667rem);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+.badge-primary { background: rgba(8,145,178,0.12);    color: var(--primary); }
+.badge-accent  { background: rgba(124,58,237,0.12);   color: var(--accent); }
+.badge-success { background: rgba(5,150,105,0.12);    color: var(--success); }
+.badge-warning { background: rgba(217,119,6,0.12);    color: var(--warning); }
+.badge-danger  { background: rgba(220,38,38,0.12);    color: var(--danger); }
+.badge-neutral { background: var(--bg-tertiary);       color: var(--text-muted); }
+/* Solid variants */
+.badge-solid-primary { background: var(--primary); color: #fff; }
+.badge-solid-success { background: var(--success); color: #fff; }
+.badge-solid-danger  { background: var(--danger);  color: #fff; }
+
+/* ── Avatar ── */
+.avatar {
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: var(--gradient-accent);
+    font-size: var(--text-xs, 0.7333rem);
+    overflow: hidden;
+}
+.avatar-sm  { width: 28px; height: 28px; font-size: var(--text-xxs, 0.6667rem); }
+.avatar-md  { width: 36px; height: 36px; }
+.avatar-lg  { width: 48px; height: 48px; font-size: var(--text-sm, 0.8667rem); }
+.avatar-xl  { width: 64px; height: 64px; font-size: var(--text-base, 0.9333rem); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+/* ── Data Table ── */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm, 0.8667rem);
+}
+.data-table thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: var(--text-xxs, 0.6667rem);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 2px solid var(--border);
+    background: var(--surface-variant, var(--bg-hover));
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.data-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+.data-table tbody tr { transition: background var(--transition-fast); }
+.data-table tbody tr:hover { background: var(--bg-hover); }
+/* Zebra stripe (opt-in) */
+.data-table.striped tbody tr:nth-child(even) { background: var(--surface-variant, var(--bg-hover)); }
+
+/* ── Chip (filter) ── */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    background: var(--surface-variant, var(--bg-tertiary));
+    color: var(--text-secondary);
+    font-size: var(--text-xs, 0.7333rem);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    white-space: nowrap;
+    user-select: none;
+}
+.chip:hover { border-color: var(--primary); color: var(--primary); }
+.chip.active {
+    background: rgba(8,145,178,0.12);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+}
+.chip-remove {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    color: #fff;
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    line-height: 1;
+}
+
+/* ── Progress Bar ── */
+.progress {
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 50px;
+    overflow: hidden;
+}
+.progress-bar {
+    height: 100%;
+    border-radius: 50px;
+    background: var(--gradient-primary);
+    transition: width var(--transition-expressive, 0.3s ease);
+}
+.progress-bar.success { background: var(--success); }
+.progress-bar.warning { background: var(--warning); }
+.progress-bar.danger  { background: var(--danger); }
+/* Labeled progress */
+.progress-labeled {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.progress-labeled .progress { flex: 1; }
+.progress-label {
+    font-size: var(--text-xs, 0.7333rem);
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 36px;
+    text-align: right;
+}
+
+/* ── Stat Widget (dùng trong dashboard sidebar) ── */
+.stat-widget {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface-variant, var(--bg-hover));
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border);
+}
+.stat-widget-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--border-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.stat-widget-body { flex: 1; min-width: 0; }
+.stat-widget-value {
+    font-size: var(--text-lg, 1.0667rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+.stat-widget-label {
+    font-size: var(--text-xxs, 0.6667rem);
+    color: var(--text-muted);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ── Divider ── */
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+}
+.divider-vertical {
+    display: inline-block;
+    width: 1px;
+    height: 1em;
+    background: var(--border);
+    margin: 0 8px;
+    vertical-align: middle;
+}
+
+/* ── Empty State ── */
+.empty-state-icon {
+    width: 56px; height: 56px;
+    border-radius: var(--border-radius);
+    background: var(--surface-variant, var(--bg-tertiary));
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+.empty-state-title {
+    font-size: var(--text-base, 0.9333rem);
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.empty-state-desc {
+    font-size: var(--text-sm, 0.8667rem);
+    color: var(--text-muted);
+}
+
+/* ── Export-safe light theme (dùng khi html2canvas render ảnh) ── */
+.export-light {
+    --bg-primary:    #f8fafc !important;
+    --bg-secondary:  #ffffff !important;
+    --bg-tertiary:   #e2e8f0 !important;
+    --text-primary:  #0f172a !important;
+    --text-secondary:#475569 !important;
+    --text-muted:    #64748b !important;
+    --border:        rgba(0,0,0,0.08) !important;
+    color-scheme: light !important;
+}

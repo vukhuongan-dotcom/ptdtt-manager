@@ -17,6 +17,7 @@ cat \
   css/sidebar.css \
   css/login.css \
   css/modal.css \
+  css/components.css \
   css/toast.css \
   css/search.css \
   css/dashboard.css \

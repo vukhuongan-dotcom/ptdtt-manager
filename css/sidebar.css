@@ -90,14 +90,17 @@
 
 .nav-item:hover {
     color: var(--text-primary);
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--bg-hover);
 }
 
+/* U3: Active pill — thay left-border bằng pill background nhất quán hơn */
 .nav-item.active {
-    color: var(--primary-light);
-    background: rgba(8, 145, 178, 0.08);
+    color: var(--primary);
+    background: rgba(8, 145, 178, 0.12);
+    font-weight: 600;
 }
-.nav-item.active::before { opacity: 1; }
+/* Giữ ::before cho transition nhưng ẩn đi — chỉ dùng pill */
+.nav-item.active::before { opacity: 0; }
 .nav-item.active svg { color: var(--primary); }
 
 .sidebar-footer {
