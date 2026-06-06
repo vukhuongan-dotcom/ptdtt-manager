@@ -306,6 +306,18 @@ const App = {
 
         const footer = document.getElementById('sidebar-footer');
         footer.innerHTML = `
+            <!-- U2: Dark mode toggle — nằm trước user info -->
+            <button
+                id="theme-toggle-btn"
+                class="theme-toggle-btn"
+                onclick="App.toggleTheme()"
+                aria-pressed="false"
+                aria-label="Giao diện tối"
+                title="Giao diện tối">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
             <div class="sidebar-bell-area">
                 ${Notifications.renderBellButton('desktop')}
                 <span class="notif-bell-label">Thông báo</span>
@@ -318,16 +330,19 @@ const App = {
                 </div>
             </div>
             ${session.isAdmin ? `<div style="display:flex;gap:6px;margin:6px 0">
-                <button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openChangePassword()">🔑 Đổi MK</button>
-                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openManagePasswords()">👥 Quản lý TK</button>` : ''}
+                <button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openChangePassword()">&#128273; Đổi MK</button>
+                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openManagePasswords()">&#128101; Quản lý TK</button>` : ''}
             </div>
-            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:2px 0" onclick="AuditLog.open()">📋 Lịch sử hoạt động</button>` : ''}` : ''}
-            <button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:4px 0" onclick="Onboarding.start()">❓ Hướng dẫn sử dụng</button>
+            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:2px 0" onclick="AuditLog.open()">&#128203; Lịch sử hoạt động</button>` : ''}` : ''}
+            <button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:4px 0" onclick="Onboarding.start()">&#10067; Hướng dẫn sử dụng</button>
             <button class="logout-btn" id="logout-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Đăng xuất
             </button>
         `;
+
+        // Sync theme toggle UI ngay sau khi render
+        this._updateThemeToggleUI();
 
         // Bind events with proper propagation handling
         document.getElementById('user-info-toggle').addEventListener('click', (e) => {
