@@ -287,7 +287,15 @@ const SchedulePage = {
 
     async saveSchedule() {
         if (!this.canEditSchedule()) return;
-        if (!confirm('Xác nhận LƯU lịch phân công tuần này?\nDữ liệu hiện tại trên bảng sẽ được ghi nhận.')) return;
+        const confirmed = await Confirm.show({
+            title: 'Lưu lịch phân công',
+            message: 'Xác nhận lưu lịch phân công tuần này?<br>Dữ liệu hiện tại trên bảng sẽ được ghi nhận.',
+            icon: '💾',
+            type: 'info',
+            confirmText: 'Lưu lịch',
+            cancelText: 'Huỷ'
+        });
+        if (!confirmed) return;
 
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -315,7 +323,15 @@ const SchedulePage = {
 
     async clearSchedule() {
         if (!this.canEditSchedule()) return;
-        if (!confirm('⚠️ XOÁ TOÀN BỘ lịch phân công tuần này?\nTất cả các ô sẽ trở về trống. Hành động này không thể hoàn tác.')) return;
+        const confirmed = await Confirm.show({
+            title: 'Xoà toàn bộ lịch tuần',
+            message: 'Xoà toàn bộ lịch phân công tuần này?<br>Tất cả các ô sẽ trở về trống. Hành động này <strong>không thể hoàn tác</strong>.',
+            icon: '⚠️',
+            type: 'danger',
+            confirmText: 'Xoà toàn bộ',
+            cancelText: 'Giữ lại'
+        });
+        if (!confirmed) return;
 
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -475,7 +491,15 @@ const SchedulePage = {
             return;
         }
 
-        if (!confirm('Sao chép lịch tuần trước vào tuần này?\nDữ liệu hiện tại của tuần này sẽ bị GHI ĐÈ.')) return;
+        const confirmed = await Confirm.show({
+            title: 'Sao chép lịch tuần trước',
+            message: 'Sao chép lịch tuần trước vào tuần này?<br>Dữ liệu hiện tại của tuần này sẽ bị <strong>ghi đè</strong>.',
+            icon: '📋',
+            type: 'warning',
+            confirmText: 'Sao chép',
+            cancelText: 'Huỷ'
+        });
+        if (!confirmed) return;
 
         // Copy data directly in store
         const dates = this.getWeekDates(this.weekOffset);

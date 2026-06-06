@@ -500,13 +500,22 @@ const ConferencesPage = {
         Toast.success(id ? 'Đã cập nhật hội nghị' : 'Đã thêm hội nghị');
     },
 
-    deleteItem(id) {
+    async deleteItem(id) {
         if (!this._canEdit()) return;
-        if (!confirm('Xoá hội nghị này?')) return;
+        const item = Store.getById('conferences', id);
+        const confirmed = await Confirm.show({
+            title: 'Xoà hội nghị',
+            message: `Bạn có chắc chắn muốn xoà hội nghị${item?.name ? ` <strong>${item.name}</strong>` : ' này'}?<br>Hành động này không thể hoàn tác.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xoà hội nghị',
+            cancelText: 'Giữ lại'
+        });
+        if (!confirmed) return;
         Store.remove('conferences', id);
         Modal.close();
         App.renderCurrentPage();
-        Toast.success('Đã xoá hội nghị');
+        Toast.success('Đã xoà hội nghị');
     },
 
     // ── Xuất ảnh lịch báo cáo ──

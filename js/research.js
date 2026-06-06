@@ -376,9 +376,17 @@ const ResearchPage = {
         }
     },
 
-    deleteItem(id) {
+    async deleteItem(id) {
         if (!this._canEdit()) return;
-        if (!confirm('Xoá bài SHCM này?')) return;
+        const confirmed = await Confirm.show({
+            title: 'Xoà bài SHCM',
+            message: 'Bạn có chắc chắn muốn xoà bài SHCM này?<br>Hành động này không thể hoàn tác.',
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xoà bài',
+            cancelText: 'Giữ lại'
+        });
+        if (!confirmed) return;
         // Remove linked plan
         const item = Store.getById('shcmSchedule', id);
         if (item?.planId) {
@@ -468,7 +476,15 @@ const ResearchPage = {
 
     async deleteFile(filename) {
         if (!this._canEdit()) return;
-        if (!confirm(`Xoá file "${filename}"?`)) return;
+        const confirmed = await Confirm.show({
+            title: 'Xoà file',
+            message: `Bạn có chắc muốn xoà file <strong>${filename}</strong>?<br>Hành động này không thể hoàn tác.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xoà file',
+            cancelText: 'Giữ lại'
+        });
+        if (!confirmed) return;
         try {
             const token = Auth.getToken();
             const resp = await fetch('/api/shcm/delete/' + encodeURIComponent(filename), {
