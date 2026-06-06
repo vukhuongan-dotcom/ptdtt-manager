@@ -290,9 +290,16 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+/* U0 BUG-2: pulse — source of truth duy nhất (đã xóa bản trùng trong index.html) */
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
+}
+/* U0 BUG-2: shake — chuyển từ index.html inline vào đây */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
 }
 .fade-in { animation: fadeIn 0.3s ease forwards; }
 .slide-up { animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
@@ -317,4 +324,14 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     .sidebar { width: var(--sidebar-collapsed); }
     .sidebar .nav-item { justify-content: center; }
     .form-row { grid-template-columns: 1fr; }
+}
+
+/* U0 A5: prefers-reduced-motion — hỗ trợ người nhạy cảm chuyển động (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

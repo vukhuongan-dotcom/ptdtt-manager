@@ -49,10 +49,12 @@
     border-radius: var(--border-radius-sm);
     display: flex; align-items: center; justify-content: center;
 }
-.stat-icon.cyan { background: rgba(6,182,212,0.15); color: var(--primary); }
+.stat-icon.cyan   { background: rgba(6,182,212,0.15);  color: var(--primary); }
 .stat-icon.purple { background: rgba(139,92,246,0.15); color: var(--accent); }
-.stat-icon.green { background: rgba(16,185,129,0.15); color: var(--success); }
-.stat-icon.amber { background: rgba(245,158,11,0.15); color: var(--warning); }
+.stat-icon.green  { background: rgba(16,185,129,0.15); color: var(--success); }
+.stat-icon.amber  { background: rgba(245,158,11,0.15); color: var(--warning); }
+/* U0 BUG-1: Thêm red variant — dùng khi nhân sự thiếu (<80%) */
+.stat-icon.red    { background: rgba(220,38,38,0.12);  color: #dc2626; }
 
 .stat-value {
     font-size: 2rem;

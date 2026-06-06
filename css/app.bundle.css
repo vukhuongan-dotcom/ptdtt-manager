@@ -387,9 +387,16 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+/* U0 BUG-2: pulse — source of truth duy nhất (đã xóa bản trùng trong index.html) */
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
+}
+/* U0 BUG-2: shake — chuyển từ index.html inline vào đây */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
 }
 .fade-in { animation: fadeIn 0.3s ease forwards; }
 .slide-up { animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
@@ -414,6 +421,16 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     .sidebar { width: var(--sidebar-collapsed); }
     .sidebar .nav-item { justify-content: center; }
     .form-row { grid-template-columns: 1fr; }
+}
+
+/* U0 A5: prefers-reduced-motion — hỗ trợ người nhạy cảm chuyển động (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 .sidebar {
     width: var(--sidebar-width);
@@ -743,7 +760,8 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 .modal-title { font-size: 1.1rem; font-weight: 600; }
 .modal-close {
-    width: 32px; height: 32px;
+    /* U0: 32px → 44×44px (WCAG 2.5.5 touch target) */
+    width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
     border: none; background: var(--bg-tertiary);
     border-radius: 50%; color: var(--text-muted);
@@ -1322,10 +1340,12 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     border-radius: var(--border-radius-sm);
     display: flex; align-items: center; justify-content: center;
 }
-.stat-icon.cyan { background: rgba(6,182,212,0.15); color: var(--primary); }
+.stat-icon.cyan   { background: rgba(6,182,212,0.15);  color: var(--primary); }
 .stat-icon.purple { background: rgba(139,92,246,0.15); color: var(--accent); }
-.stat-icon.green { background: rgba(16,185,129,0.15); color: var(--success); }
-.stat-icon.amber { background: rgba(245,158,11,0.15); color: var(--warning); }
+.stat-icon.green  { background: rgba(16,185,129,0.15); color: var(--success); }
+.stat-icon.amber  { background: rgba(245,158,11,0.15); color: var(--warning); }
+/* U0 BUG-1: Thêm red variant — dùng khi nhân sự thiếu (<80%) */
+.stat-icon.red    { background: rgba(220,38,38,0.12);  color: #dc2626; }
 
 .stat-value {
     font-size: 2rem;
@@ -4626,7 +4646,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .nav-item svg { width: 18px; height: 18px; }
     .nav-item span {
         display: block !important;
-        font-size: 0.58rem;
+        /* U0 A2: 0.58rem = 8.1px — tăng lên 0.73rem ≈ 10.9px ≥ WCAG min */
+        font-size: 0.73rem;
         white-space: nowrap;
         max-width: 54px;
         overflow: hidden;
@@ -4692,10 +4713,9 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .form-group { margin-bottom: 10px; }
     .form-label { font-size: 0.72rem; margin-bottom: 4px; }
 
-    /* ---- Buttons ---- */
+    /* U0 A1: Xóa override btn-icon 32px — giữ 44x44px từ base.css (WCAG 2.5.5) */
     .btn { padding: 8px 12px; font-size: 0.78rem; }
     .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
-    .btn-icon { width: 32px; height: 32px; }
 
     /* ===== CALENDAR / PLANS ===== */
     .calendar-controls {
@@ -4738,7 +4758,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         font-size: 0.68rem;
     }
     .calendar-event {
-        font-size: 0.58rem;
+        /* U0 A2: 0.58rem = 8.1px — tăng lên 0.72rem */
+        font-size: 0.72rem;
         padding: 2px 3px;
         margin-bottom: 1px;
         border-radius: 3px;
@@ -4755,14 +4776,15 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     /* Week / 3‑day column view */
     .calendar-columns { border-radius: 8px; }
     .cal-col-header { padding: 8px 4px; }
-    .cal-col-day { font-size: 0.62rem; }
+    /* U0 A2: các giá trị dưới 0.73rem — tăng lên tối thiểu 0.72rem */
+    .cal-col-day { font-size: 0.72rem; }
     .cal-col-date { font-size: 0.78rem; }
     .cal-col-date.today-num { width: 24px; height: 24px; }
-    .cal-time-slot { font-size: 0.6rem; padding: 2px 4px; }
-    .cal-event { font-size: 0.62rem; padding: 2px 4px; }
-    .cal-event-time { font-size: 0.55rem; }
-    .cal-event-title { font-size: 0.62rem; }
-    .cal-event-allday { font-size: 0.62rem; padding: 2px 4px; }
+    .cal-time-slot { font-size: 0.72rem; padding: 2px 4px; }  /* 0.6rem → 0.72rem */
+    .cal-event { font-size: 0.72rem; padding: 2px 4px; }      /* 0.62rem → 0.72rem */
+    .cal-event-time { font-size: 0.72rem; }                   /* 0.55rem → 0.72rem */
+    .cal-event-title { font-size: 0.72rem; }                  /* 0.62rem → 0.72rem */
+    .cal-event-allday { font-size: 0.72rem; padding: 2px 4px; } /* 0.62rem → 0.72rem */
 
     /* ===== SURGERY SCHEDULE ===== */
     .surgery-controls {
@@ -4977,12 +4999,14 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .main-content { padding: 60px 8px 68px; }
     .nav-item { min-width: 48px; padding: 6px 3px 4px; }
     .nav-item svg { width: 16px; height: 16px; }
-    .nav-item span { font-size: 0.52rem; max-width: 46px; }
+    /* U0 A2: 0.52rem = 7.3px — tăng lên 0.72rem (min WCAG) */
+    .nav-item span { font-size: 0.72rem; max-width: 46px; }
     .page-title { font-size: 1.05rem; }
     .page-subtitle { font-size: 0.72rem; }
 
     /* Calendar even tighter */
     .calendar-day { min-height: 60px; padding: 2px; }
-    .calendar-event { font-size: 0.52rem; padding: 1px 2px; }
+    /* U0 A2: 0.52rem → 0.72rem */
+    .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
     .day-number { font-size: 0.65rem; }
 }

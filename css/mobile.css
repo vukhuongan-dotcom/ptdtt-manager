@@ -139,7 +139,8 @@
     .nav-item svg { width: 18px; height: 18px; }
     .nav-item span {
         display: block !important;
-        font-size: 0.58rem;
+        /* U0 A2: 0.58rem = 8.1px — tăng lên 0.73rem ≈ 10.9px ≥ WCAG min */
+        font-size: 0.73rem;
         white-space: nowrap;
         max-width: 54px;
         overflow: hidden;
@@ -205,10 +206,9 @@
     .form-group { margin-bottom: 10px; }
     .form-label { font-size: 0.72rem; margin-bottom: 4px; }
 
-    /* ---- Buttons ---- */
+    /* U0 A1: Xóa override btn-icon 32px — giữ 44x44px từ base.css (WCAG 2.5.5) */
     .btn { padding: 8px 12px; font-size: 0.78rem; }
     .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
-    .btn-icon { width: 32px; height: 32px; }
 
     /* ===== CALENDAR / PLANS ===== */
     .calendar-controls {
@@ -251,7 +251,8 @@
         font-size: 0.68rem;
     }
     .calendar-event {
-        font-size: 0.58rem;
+        /* U0 A2: 0.58rem = 8.1px — tăng lên 0.72rem */
+        font-size: 0.72rem;
         padding: 2px 3px;
         margin-bottom: 1px;
         border-radius: 3px;
@@ -268,14 +269,15 @@
     /* Week / 3‑day column view */
     .calendar-columns { border-radius: 8px; }
     .cal-col-header { padding: 8px 4px; }
-    .cal-col-day { font-size: 0.62rem; }
+    /* U0 A2: các giá trị dưới 0.73rem — tăng lên tối thiểu 0.72rem */
+    .cal-col-day { font-size: 0.72rem; }
     .cal-col-date { font-size: 0.78rem; }
     .cal-col-date.today-num { width: 24px; height: 24px; }
-    .cal-time-slot { font-size: 0.6rem; padding: 2px 4px; }
-    .cal-event { font-size: 0.62rem; padding: 2px 4px; }
-    .cal-event-time { font-size: 0.55rem; }
-    .cal-event-title { font-size: 0.62rem; }
-    .cal-event-allday { font-size: 0.62rem; padding: 2px 4px; }
+    .cal-time-slot { font-size: 0.72rem; padding: 2px 4px; }  /* 0.6rem → 0.72rem */
+    .cal-event { font-size: 0.72rem; padding: 2px 4px; }      /* 0.62rem → 0.72rem */
+    .cal-event-time { font-size: 0.72rem; }                   /* 0.55rem → 0.72rem */
+    .cal-event-title { font-size: 0.72rem; }                  /* 0.62rem → 0.72rem */
+    .cal-event-allday { font-size: 0.72rem; padding: 2px 4px; } /* 0.62rem → 0.72rem */
 
     /* ===== SURGERY SCHEDULE ===== */
     .surgery-controls {
@@ -490,12 +492,14 @@
     .main-content { padding: 60px 8px 68px; }
     .nav-item { min-width: 48px; padding: 6px 3px 4px; }
     .nav-item svg { width: 16px; height: 16px; }
-    .nav-item span { font-size: 0.52rem; max-width: 46px; }
+    /* U0 A2: 0.52rem = 7.3px — tăng lên 0.72rem (min WCAG) */
+    .nav-item span { font-size: 0.72rem; max-width: 46px; }
     .page-title { font-size: 1.05rem; }
     .page-subtitle { font-size: 0.72rem; }
 
     /* Calendar even tighter */
     .calendar-day { min-height: 60px; padding: 2px; }
-    .calendar-event { font-size: 0.52rem; padding: 1px 2px; }
+    /* U0 A2: 0.52rem → 0.72rem */
+    .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
     .day-number { font-size: 0.65rem; }
 }

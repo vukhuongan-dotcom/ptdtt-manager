@@ -1,6 +1,7 @@
 // ===== MAIN APP CONTROLLER =====
 const App = {
     currentPage: 'dashboard',
+    _keyboardShortcutHandler: null,
 
     pages: {
         dashboard: DashboardPage,
@@ -139,7 +140,10 @@ const App = {
 
     // P3.3b: Global keyboard shortcuts
     _initKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
+        if (this._keyboardShortcutHandler) {
+            document.removeEventListener('keydown', this._keyboardShortcutHandler);
+        }
+        this._keyboardShortcutHandler = (e) => {
             // Skip if user is typing in an input, textarea, or contenteditable
             const tag = document.activeElement?.tagName;
             const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
@@ -151,7 +155,8 @@ const App = {
                 if (typeof GlobalSearch !== 'undefined') GlobalSearch.open();
                 return;
             }
-        });
+        };
+        document.addEventListener('keydown', this._keyboardShortcutHandler);
     },
 
     // Hide nav items based on role

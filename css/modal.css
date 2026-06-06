@@ -31,7 +31,8 @@
 }
 .modal-title { font-size: 1.1rem; font-weight: 600; }
 .modal-close {
-    width: 32px; height: 32px;
+    /* U0: 32px → 44×44px (WCAG 2.5.5 touch target) */
+    width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
     border: none; background: var(--bg-tertiary);
     border-radius: 50%; color: var(--text-muted);
