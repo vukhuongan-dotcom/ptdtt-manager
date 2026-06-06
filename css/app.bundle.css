@@ -185,15 +185,27 @@
     border-radius: 2px;
 }
 
-html { font-size: 14px; }
+/* U2: 14px → 15px — cải thiện readability, WCAG 1.4.4 */
+html { font-size: 15px; }
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    line-height: 1.6;
+    /* U2: 1.6 → 1.65 — tăng khoảng cách dòng để dễ đọc hơn */
+    line-height: 1.65;
     overflow: hidden;
     height: 100vh;
+}
+
+/* U2: Selection color — brand-aware */
+::selection {
+    background: var(--primary);
+    color: #fff;
+}
+::-moz-selection {
+    background: var(--primary);
+    color: #fff;
 }
 
 #app {
@@ -282,6 +294,24 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 .btn-danger:hover { background: var(--danger-light); }
 
 .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+/* U2: Button states — loading, active press, disabled */
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled, .btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+    position: relative;
+}
+.btn.loading > *:not(.fc-spinner) { opacity: 0; }
+.btn.loading .fc-spinner {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+}
 /* A3 — Accessibility: btn-icon touch target 44×44px (WCAG 2.5.5) */
 .btn-icon {
     width: 44px; height: 44px; padding: 0;
@@ -645,6 +675,42 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 0.7rem;
     color: var(--text-muted);
     display: block;
+}
+
+/* ===== U2: Dark Mode Toggle Button ===== */
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+.theme-toggle-btn:hover {
+    background: var(--bg-hover);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+.theme-toggle-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+/* Trạng thái đang bật dark mode */
+.theme-toggle-btn[aria-pressed="true"] {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+/* Ẩn trên mobile bottom nav (không có sidebar-footer) */
+@media (max-width: 768px) {
+    .theme-toggle-btn { display: none; }
 }
 .login-page {
     min-height: 100vh;

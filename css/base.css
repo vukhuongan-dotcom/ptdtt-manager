@@ -12,15 +12,27 @@
     border-radius: 2px;
 }
 
-html { font-size: 14px; }
+/* U2: 14px → 15px — cải thiện readability, WCAG 1.4.4 */
+html { font-size: 15px; }
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    line-height: 1.6;
+    /* U2: 1.6 → 1.65 — tăng khoảng cách dòng để dễ đọc hơn */
+    line-height: 1.65;
     overflow: hidden;
     height: 100vh;
+}
+
+/* U2: Selection color — brand-aware */
+::selection {
+    background: var(--primary);
+    color: #fff;
+}
+::-moz-selection {
+    background: var(--primary);
+    color: #fff;
 }
 
 #app {
@@ -109,6 +121,24 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 .btn-danger:hover { background: var(--danger-light); }
 
 .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+/* U2: Button states — loading, active press, disabled */
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled, .btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+    position: relative;
+}
+.btn.loading > *:not(.fc-spinner) { opacity: 0; }
+.btn.loading .fc-spinner {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+}
 /* A3 — Accessibility: btn-icon touch target 44×44px (WCAG 2.5.5) */
 .btn-icon {
     width: 44px; height: 44px; padding: 0;

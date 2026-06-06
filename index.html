@@ -41,7 +41,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- P2.1: CSS bundle (24 files → 1 request). Build: bash build-css.sh -->
-    <link rel="stylesheet" href="css/app.bundle.css?v=2606061419">
+    <link rel="stylesheet" href="css/app.bundle.css?v=2606061424">
     <!-- U0 BUG-2: @keyframes shake + pulse chuyển vào base.css — xóa inline để tránh xung đột -->
     <!-- U0 Dark mode: set theme trước CSS bundle để tránh flash -->
     <script>
@@ -58,7 +58,7 @@
         <!-- Mobile-only top header -->
         <div class="mobile-header" id="mobile-header">
             <div class="mobile-header-left">
-                <img src="img/logo-khoa.jpg" alt="Logo" class="mobile-header-logo">
+                <img src="img/logo-khoa.jpg" alt="Logo Khoa Phẫu thuật Đại trực tràng" class="mobile-header-logo">
                 <span class="mobile-header-title">Quản lý Khoa</span>
             </div>
             <div class="mobile-header-right" id="mobile-user-area">
@@ -68,7 +68,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <div class="logo-icon">
-                    <img src="img/logo-khoa.jpg" alt="Logo">
+                    <img src="img/logo-khoa.jpg" alt="Logo Khoa Phẫu thuật Đại trực tràng">
                 </div>
                 <div class="logo-text">
                     <span class="logo-title">Khoa Phẫu thuật</span>
@@ -76,8 +76,9 @@
                 </div>
             </div>
             <nav class="sidebar-nav" aria-label="Menu chính">
-                <!-- Search button -->
-                <button class="sidebar-search-btn" onclick="GlobalSearch.open()" aria-label="Tìm kiếm">
+                <!-- Search button: / shortcut -->
+                <button class="sidebar-search-btn" onclick="GlobalSearch.open()"
+                    aria-label="Tìm kiếm" aria-keyshortcuts="/ Control+k Meta+k">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -207,6 +208,19 @@
                 </a>
             </nav>
             <div class="sidebar-footer" id="sidebar-footer">
+                <!-- U2: Dark mode toggle — xuất hiện cả khi chưa login để user có thể chọn theme trước -->
+                <button
+                    id="theme-toggle-btn"
+                    class="theme-toggle-btn"
+                    onclick="App.toggleTheme()"
+                    aria-pressed="false"
+                    aria-label="Giao diện tối"
+                    title="Giao diện tối">
+                    <!-- Icon được render bởi App._updateThemeToggleUI() -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
                 <!-- Dynamic user info rendered by App -->
             </div>
         </aside>
