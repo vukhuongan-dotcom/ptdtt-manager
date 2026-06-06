@@ -448,3 +448,49 @@
     .cp-pres-time { min-width: 70px; font-size: 0.68rem; }
 }
 
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* cp-lang-count: language count badges in presenter modal stats */
+.cp-lang-count {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 6px;
+}
+
+/* cp-pm-subtitle: modal presenter count subtitle */
+.cp-pm-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+}
+
+/* cp-stat-person-btn: clickable presenter stat pill */
+.cp-stat-person-btn {
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+.cp-stat-person-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+
+/* cp-footer-left / cp-footer-actions: card footer flex groups */
+.cp-footer-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.cp-footer-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* conf-time-tabs--spaced: year tabs with bottom margin */
+.conf-time-tabs--spaced {
+    margin-bottom: 20px;
+}
+
+/* form-textarea--short: short textarea (note field) */
+.form-textarea--short {
+    min-height: 50px;
+}
+
+

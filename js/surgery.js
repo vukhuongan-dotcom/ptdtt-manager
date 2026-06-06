@@ -150,7 +150,7 @@ const SurgeryPage = {
                 <h1 class="page-title">Lịch mổ tuần</h1>
                 <p class="page-subtitle">Lịch phẫu thuật khoa PT Đại trực tràng</p>
             </div>
-            <div style="display:flex;gap:8px">
+            <div class="surg-header-actions">
                 <button class="btn btn-secondary" onclick="SurgeryPage.exportTomorrowImage()">
                     📷 Xuất DS ngày mai
                 </button>
@@ -163,7 +163,7 @@ const SurgeryPage = {
             </div>
         </div>
 
-        ${locked ? `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#92400e">
+        ${locked ? `<div class="surg-locked-banner">
             🔒 <strong>Tuần này đã bị khoá</strong> — Dữ liệu lịch mổ sau 1 tuần không thể chỉnh sửa. Chỉ Super Admin mới có thể mở khoá.
         </div>` : ''}
 
@@ -234,18 +234,16 @@ const SurgeryPage = {
                                 </div>
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</div>
-                                    ${s.duration ? `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">⏱ ${s.duration} phút</div>` : ''}
+                                    ${s.duration ? `<div class="surg-card-duration">⏱ ${s.duration} phút</div>` : ''}
                                     ${s.diagnosis ? `<div class="surgery-card-diagnosis">${s.diagnosis}</div>` : ''}
                                     ${s.method ? `<div class="surgery-card-method">${s.method}</div>` : ''}
                                     <div class="surgery-card-footer">
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
-                                        ${s.duration ? `<span class="surgery-card-duration">⏱ ${s.duration}p</span>` : ''}
-                                    </div>
-                                    ${canEdit ? `<div style="margin-top:6px;display:flex;gap:4px">
-                                        <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
-                                        <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
-                                        <button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px;color:var(--danger)" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
-                                    </div>` : `<div style="margin-top:6px"><button class="btn btn-secondary btn-sm" style="font-size:0.68rem;padding:2px 8px" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
+                                    ${canEdit ? `<div class="surg-card-actions">
+                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoà</button>
+                                    </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
                                 </div>
                             </div>`;
             }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
@@ -441,7 +439,7 @@ const SurgeryPage = {
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Đường mổ <span style="color:var(--danger)">*</span></label>
+                        <label class="form-label">Đường mổ <span class="form-required">*</span></label>
                         <select class="form-select" name="approachType" id="surgery-approach" required ${(s?.surgeryType || 'chuongtrinh') === 'robot' ? 'disabled' : ''}>
                             <option value="">— Chọn —</option>
                             <option value="mo" ${s?.approachType === 'mo' ? 'selected' : ''}>Mổ mở</option>
@@ -518,22 +516,21 @@ const SurgeryPage = {
 
         const all = this.getAllSurgeries();
         const existingFirst = all.find(x => x.date === dateStr && x.isFirstCase && (!s || x.id !== s?.id));
-        const isChecked = s?.isFirstCase || false;
 
         if (existingFirst) {
             const name = existingFirst.patientName;
             group.innerHTML = `
-                <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:var(--bg-secondary);cursor:not-allowed;opacity:0.7">
-                    <input type="checkbox" name="isFirstCase" disabled ${isChecked ? 'checked' : ''}>
-                    <span style="font-size:0.82rem">⭐ Ca đầu tiên trong ngày</span>
+                <label class="first-case-label-disabled">
+                    <input type="checkbox" disabled checked>
+                    <span class="first-case-label span">⭐ Ca đầu tiên trong ngày</span>
                 </label>
-                <div style="font-size:0.75rem;color:#f59e0b;margin-top:4px">⚠️ Đã có ca đầu tiên: <strong>${name}</strong></div>
+                <div class="first-case-warning">⚠️ Đã có ca đầu tiên: <strong>${name}</strong></div>
             `;
         } else {
             group.innerHTML = `
-                <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:var(--bg-secondary);cursor:pointer">
-                    <input type="checkbox" name="isFirstCase" ${isChecked ? 'checked' : ''}>
-                    <span style="font-size:0.82rem">⭐ Ca đầu tiên trong ngày</span>
+                <label class="first-case-label">
+                    <input type="checkbox" id="is-first-case" name="isFirstCase" ${s && s.isFirstCase ? 'checked' : ''}>
+                    <span class="first-case-label span">⭐ Ca đầu tiên trong ngày</span>
                 </label>
             `;
         }
@@ -656,7 +653,7 @@ const SurgeryPage = {
     exportCustomDateImage() {
         // Show a modal with date picker
         Modal.open('Xuất lịch mổ theo ngày', `
-            <div style="padding:8px 0">
+            <div class="export-date-section">
                 <label class="form-label">Chọn ngày cần xuất:</label>
                 <input class="form-input" type="date" id="export-date-picker" value="${new Date().toISOString().split('T')[0]}" style="font-size:16px;padding:10px">
             </div>

@@ -147,7 +147,7 @@ const SchedulePage = {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     Sao chép tuần trước
                 </button>
-                <button class="btn btn-danger" onclick="SchedulePage.clearSchedule()" style="background:#ef4444">
+                <button class="btn btn-danger" onclick="SchedulePage.clearSchedule()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     Xoá lịch
                 </button>
@@ -193,11 +193,11 @@ const SchedulePage = {
 
         ${this.renderRobotSection(schedule, dates, isAdmin)}
 
-        <div class="schedule-notes card" style="margin-top:20px">
-            <h3 style="font-size:0.95rem;margin-bottom:8px;color:var(--primary-light)">📝 Ghi chú</h3>
+        <div class="schedule-notes card schedule-notes--mt">
+            <h3 class="schedule-notes-heading">📝 Ghi chú</h3>
             ${isAdmin
-                ? `<textarea class="form-textarea" id="schedule-notes" placeholder="Ghi chú tuần này..." style="min-height:60px">${schedule?.notes || ''}</textarea>`
-                : `<p style="color:var(--text-muted);font-size:0.85rem;white-space:pre-wrap;line-height:1.6">${schedule?.notes ? schedule.notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Không có ghi chú'}</p>`
+                ? `<textarea class="form-textarea schedule-notes-textarea" id="schedule-notes" placeholder="Ghi chú tuần này...">${schedule?.notes || ''}</textarea>`
+                : `<p class="schedule-notes-readonly">${schedule?.notes ? schedule.notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Không có ghi chú'}</p>`
             }
         </div>
         `;
@@ -213,7 +213,7 @@ const SchedulePage = {
 
             // Position label (only on first slot, rowspan)
             if (slot === 0) {
-                rows += `<td class="schedule-pos-label" rowspan="${pos.slots}" style="border-left:3px solid ${pos.color}">
+                rows += `<td class="schedule-pos-label schedule-pos-label--colored" rowspan="${pos.slots}" style="border-left:3px solid ${pos.color}">
                     <span class="schedule-pos-name">${pos.label}</span>
                     ${pos.slotLabels ? '' : (pos.slots > 1 ? `<span class="schedule-pos-slots">${pos.slots} vị trí</span>` : '')}
                 </td>`;
@@ -338,9 +338,9 @@ const SchedulePage = {
         const bsOptions = this.getStaffOptions('bs');
 
         return `
-        <div class="card robot-surgery-card" style="margin-top:20px">
-            <div class="flex justify-between items-center" style="margin-bottom:12px">
-                <h3 style="font-size:0.95rem;color:var(--accent-light)">🤖 Lịch phụ mổ Robot</h3>
+        <div class="card robot-surgery-card robot-surgery-card--mt">
+            <div class="flex justify-between items-center robot-card-header">
+                <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
                 ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="SchedulePage.addRobotEntry()">
                     ${Utils.plusIcon()} Thêm ca
                 </button>` : ''}
@@ -348,12 +348,12 @@ const SchedulePage = {
             <table class="schedule-table robot-table">
                 <thead>
                     <tr>
-                        <th style="width:160px">Ngày mổ</th>
-                        ${isAdmin ? '<th style="width:80px">Ca</th>' : ''}
+                        <th class="robot-th-day">Ngày mổ</th>
+                        ${isAdmin ? '<th class="robot-th-session">Ca</th>' : ''}
                         <th>BS phụ 1</th>
                         <th>BS phụ 2</th>
                         <th>BS phụ 3</th>
-                        ${isAdmin ? '<th style="width:50px"></th>' : ''}
+                        ${isAdmin ? '<th class="robot-th-action"></th>' : ''}
                     </tr>
                 </thead>
                 <tbody id="robot-tbody">
@@ -395,7 +395,7 @@ const SchedulePage = {
                                 ${[0, 1, 2].map(slot => `<td>${entry.doctors?.[slot] ? this.getShortName(entry.doctors[slot]) : '—'}</td>`).join('')}
                             </tr>`;
             }
-        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 4}" style="text-align:center;color:var(--text-muted);padding:20px">Chưa có lịch mổ Robot tuần này</td></tr>`}
+        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 4}" class="robot-empty-cell">Chưa có lịch mổ Robot tuần này</td></tr>`}
                 </tbody>
             </table>
         </div>`;

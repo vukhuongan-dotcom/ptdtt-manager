@@ -183,3 +183,53 @@ tr[data-group="trucDD"] td { background-color: rgba(249, 115, 22, 0.06); }
 /* Position label keeps its own bg */
 tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* .btn-danger trong schedule đã có màu từ btn-danger, không cần override */
+
+/* schedule-notes--mt: top margin for notes card */
+.schedule-notes--mt { margin-top: 20px; }
+
+/* schedule-notes-heading: Ghi chú section title */
+.schedule-notes-heading {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--primary-light);
+}
+
+/* schedule-notes-textarea: notes textarea min height */
+.schedule-notes-textarea { min-height: 60px; }
+
+/* schedule-notes-readonly: read-only notes paragraph */
+.schedule-notes-readonly {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* robot-surgery-card--mt: top margin for robot card */
+.robot-surgery-card--mt { margin-top: 20px; }
+
+/* robot-card-header: flex row with bottom margin */
+.robot-card-header { margin-bottom: 12px; }
+
+/* robot-card-title: robot section heading */
+.robot-card-title {
+    font-size: 0.95rem;
+    color: var(--accent-light);
+}
+
+/* robot-th-day / robot-th-session / robot-th-action: table header widths */
+.robot-th-day    { width: 160px; }
+.robot-th-session { width: 80px; }
+.robot-th-action  { width: 50px; }
+
+/* robot-empty-cell: empty state cell */
+.robot-empty-cell {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px;
+}
+
+

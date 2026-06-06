@@ -342,3 +342,75 @@
     .surgery-scroll-zone { margin: 0 -12px; padding: 0 12px 12px; }
     .surgery-summary-chips { flex-wrap: wrap; }
 }
+
+/* ===== U5: Extracted inline styles — surgery.js ===== */
+.surg-header-actions { display: flex; gap: 8px; }
+/* Locked warning banner */
+.surg-locked-banner {
+    background: rgba(254,243,199,0.9);
+    border: 1px solid var(--warning);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm, 0.8667rem);
+    color: #92400e;
+}
+[data-theme="dark"] .surg-locked-banner {
+    background: rgba(120,53,15,0.2);
+    color: var(--warning);
+}
+/* Card action buttons row */
+.surg-card-actions { margin-top: 6px; display: flex; gap: 4px; }
+.surg-card-actions-single { margin-top: 6px; }
+/* Duration text under type tag */
+.surg-card-duration {
+    font-size: var(--text-xxs, 0.6667rem);
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+/* Inline btn variants (small, padding override) */
+.btn-card-action {
+    font-size: var(--text-xxs, 0.6667rem);
+    padding: 2px 8px;
+}
+.btn-card-action-danger {
+    font-size: var(--text-xxs, 0.6667rem);
+    padding: 2px 8px;
+    color: var(--danger);
+}
+/* Required star */
+.form-required { color: var(--danger); }
+/* First-case label disabled */
+.first-case-label-disabled {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+/* First-case label active */
+.first-case-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+}
+.first-case-label span { font-size: var(--text-sm, 0.8667rem); }
+/* First-case warning */
+.first-case-warning {
+    font-size: var(--text-xs, 0.7333rem);
+    color: var(--warning);
+    margin-top: 4px;
+}
+/* Export date picker section */
+.export-date-section { padding: 8px 0; }
+.export-date-section .form-input { font-size: 16px; padding: 10px; }

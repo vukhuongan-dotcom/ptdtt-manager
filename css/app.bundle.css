@@ -3137,6 +3137,64 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .cal-event-allday.training { background: rgba(5,150,105,0.25); color: var(--success); }
 .cal-event-allday.conference { background: rgba(217,119,6,0.25); color: var(--warning); }
 .cal-event-allday.other { background: rgba(100,116,139,0.25); color: var(--text-secondary); }
+
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* plans-shcm-info-box: SHCM auto-created event info box */
+.plans-shcm-info-box {
+    padding: 10px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+/* plans-shcm-link: link to Research page inside SHCM info box */
+.plans-shcm-link {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* plans-time-row: form-row with centered alignment for time fields */
+.plans-time-row { align-items: center; }
+
+/* plans-allday-group: flex-shrink checkbox group with top padding */
+.plans-allday-group {
+    flex: 0 0 auto;
+    padding-top: 22px;
+}
+
+/* plans-allday-label: inline flex label for checkbox + text */
+.plans-allday-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* plans-allday-checkbox: sized checkbox */
+.plans-allday-checkbox {
+    width: 16px;
+    height: 16px;
+}
+
+/* plans-duration-input: readonly duration input with secondary bg */
+.plans-duration-input {
+    background: var(--bg-secondary);
+    cursor: default;
+}
+
+/* plans-modal-body: modal detail view flex column */
+.plans-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+
 .patient-stats {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
 }
@@ -3367,6 +3425,56 @@ tr[data-group="trucDD"] td { background-color: rgba(249, 115, 22, 0.06); }
 
 /* Position label keeps its own bg */
 tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
+
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* .btn-danger trong schedule đã có màu từ btn-danger, không cần override */
+
+/* schedule-notes--mt: top margin for notes card */
+.schedule-notes--mt { margin-top: 20px; }
+
+/* schedule-notes-heading: Ghi chú section title */
+.schedule-notes-heading {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--primary-light);
+}
+
+/* schedule-notes-textarea: notes textarea min height */
+.schedule-notes-textarea { min-height: 60px; }
+
+/* schedule-notes-readonly: read-only notes paragraph */
+.schedule-notes-readonly {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* robot-surgery-card--mt: top margin for robot card */
+.robot-surgery-card--mt { margin-top: 20px; }
+
+/* robot-card-header: flex row with bottom margin */
+.robot-card-header { margin-bottom: 12px; }
+
+/* robot-card-title: robot section heading */
+.robot-card-title {
+    font-size: 0.95rem;
+    color: var(--accent-light);
+}
+
+/* robot-th-day / robot-th-session / robot-th-action: table header widths */
+.robot-th-day    { width: 160px; }
+.robot-th-session { width: 80px; }
+.robot-th-action  { width: 50px; }
+
+/* robot-empty-cell: empty state cell */
+.robot-empty-cell {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px;
+}
+
 
 /* ===== SURGERY SCHEDULE ===== */
 .surgery-controls {
@@ -3712,6 +3820,78 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .surgery-scroll-zone { margin: 0 -12px; padding: 0 12px 12px; }
     .surgery-summary-chips { flex-wrap: wrap; }
 }
+
+/* ===== U5: Extracted inline styles — surgery.js ===== */
+.surg-header-actions { display: flex; gap: 8px; }
+/* Locked warning banner */
+.surg-locked-banner {
+    background: rgba(254,243,199,0.9);
+    border: 1px solid var(--warning);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm, 0.8667rem);
+    color: #92400e;
+}
+[data-theme="dark"] .surg-locked-banner {
+    background: rgba(120,53,15,0.2);
+    color: var(--warning);
+}
+/* Card action buttons row */
+.surg-card-actions { margin-top: 6px; display: flex; gap: 4px; }
+.surg-card-actions-single { margin-top: 6px; }
+/* Duration text under type tag */
+.surg-card-duration {
+    font-size: var(--text-xxs, 0.6667rem);
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+/* Inline btn variants (small, padding override) */
+.btn-card-action {
+    font-size: var(--text-xxs, 0.6667rem);
+    padding: 2px 8px;
+}
+.btn-card-action-danger {
+    font-size: var(--text-xxs, 0.6667rem);
+    padding: 2px 8px;
+    color: var(--danger);
+}
+/* Required star */
+.form-required { color: var(--danger); }
+/* First-case label disabled */
+.first-case-label-disabled {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+/* First-case label active */
+.first-case-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+}
+.first-case-label span { font-size: var(--text-sm, 0.8667rem); }
+/* First-case warning */
+.first-case-warning {
+    font-size: var(--text-xs, 0.7333rem);
+    color: var(--warning);
+    margin-top: 4px;
+}
+/* Export date picker section */
+.export-date-section { padding: 8px 0; }
+.export-date-section .form-input { font-size: 16px; padding: 10px; }
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;
@@ -4390,6 +4570,83 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .rsch-table td, .rsch-table th { padding: 8px 6px; }
     .rsch-file-name { max-width: 180px; }
 }
+
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* rsch-header-actions: page header button group */
+.rsch-header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* rsch-table-card: card with no padding and overflow hidden */
+.rsch-table-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* rsch-th-stt / rsch-th-doctor / rsch-th-status / rsch-th-date / rsch-th-actions: table header widths */
+.rsch-th-stt     { width: 44px; }
+.rsch-th-doctor  { min-width: 160px; }
+.rsch-th-status  { width: 110px; }
+.rsch-th-date    { width: 100px; }
+.rsch-th-actions { width: 70px; }
+
+/* rsch-loading-placeholder: "loading" text in files list */
+.rsch-loading-placeholder {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
+/* rsch-empty-files: empty files state */
+.rsch-empty-files {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-muted);
+}
+
+/* rsch-error-files: error state */
+.rsch-error-files {
+    text-align: center;
+    padding: 20px;
+    color: var(--danger);
+}
+
+/* form-textarea--medium: medium height textarea */
+.form-textarea--medium { min-height: 60px; }
+
+/* shcm-date-input-row: date input flex container */
+.shcm-date-input-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* shcm-date-display: flexible text date input */
+.shcm-date-display { flex: 1; }
+
+/* shcm-date-picker: compact calendar picker */
+.shcm-date-picker {
+    width: 40px;
+    padding: 6px 4px;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+/* shcm-date-conflict-warn: conflict warning box (hidden by default, shown via JS) */
+.shcm-date-conflict-warn {
+    display: none;
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    color: #c2410c;
+    font-size: 13px;
+}
+
 /* ===== CONFERENCES PAGE — Báo cáo khoa học Khoa PTĐTT ===== */
 
 /* ── Summary stats row ── */
@@ -4839,6 +5096,52 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .cp-card-head { flex-direction: column; }
     .cp-pres-time { min-width: 70px; font-size: 0.68rem; }
 }
+
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* cp-lang-count: language count badges in presenter modal stats */
+.cp-lang-count {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 6px;
+}
+
+/* cp-pm-subtitle: modal presenter count subtitle */
+.cp-pm-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+}
+
+/* cp-stat-person-btn: clickable presenter stat pill */
+.cp-stat-person-btn {
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+.cp-stat-person-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+
+/* cp-footer-left / cp-footer-actions: card footer flex groups */
+.cp-footer-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.cp-footer-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* conf-time-tabs--spaced: year tabs with bottom margin */
+.conf-time-tabs--spaced {
+    margin-bottom: 20px;
+}
+
+/* form-textarea--short: short textarea (note field) */
+.form-textarea--short {
+    min-height: 50px;
+}
+
 
 /* ===== NOTIFICATION BELL ===== */
 .notif-bell-btn {

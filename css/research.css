@@ -155,3 +155,80 @@
     .rsch-table td, .rsch-table th { padding: 8px 6px; }
     .rsch-file-name { max-width: 180px; }
 }
+
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* rsch-header-actions: page header button group */
+.rsch-header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* rsch-table-card: card with no padding and overflow hidden */
+.rsch-table-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* rsch-th-stt / rsch-th-doctor / rsch-th-status / rsch-th-date / rsch-th-actions: table header widths */
+.rsch-th-stt     { width: 44px; }
+.rsch-th-doctor  { min-width: 160px; }
+.rsch-th-status  { width: 110px; }
+.rsch-th-date    { width: 100px; }
+.rsch-th-actions { width: 70px; }
+
+/* rsch-loading-placeholder: "loading" text in files list */
+.rsch-loading-placeholder {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
+/* rsch-empty-files: empty files state */
+.rsch-empty-files {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-muted);
+}
+
+/* rsch-error-files: error state */
+.rsch-error-files {
+    text-align: center;
+    padding: 20px;
+    color: var(--danger);
+}
+
+/* form-textarea--medium: medium height textarea */
+.form-textarea--medium { min-height: 60px; }
+
+/* shcm-date-input-row: date input flex container */
+.shcm-date-input-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* shcm-date-display: flexible text date input */
+.shcm-date-display { flex: 1; }
+
+/* shcm-date-picker: compact calendar picker */
+.shcm-date-picker {
+    width: 40px;
+    padding: 6px 4px;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+/* shcm-date-conflict-warn: conflict warning box (hidden by default, shown via JS) */
+.shcm-date-conflict-warn {
+    display: none;
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    color: #c2410c;
+    font-size: 13px;
+}
+

@@ -232,14 +232,14 @@ const PlansPage = {
             const dateDisplay = dateParts ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : '—';
             const durDisplay = p.duration ? p.duration.replace('m', '') + ' phút' : '';
             Modal.open('🔬 Sinh hoạt Chuyên môn', `
-                <div style="display:flex;flex-direction:column;gap:12px">
+                <div class="plans-modal-body">
                     <div><strong>Tiêu đề:</strong> ${p.title}</div>
                     <div><strong>Ngày:</strong> ${dateDisplay}  •  <strong>Giờ:</strong> ${p.time}${durDisplay ? '  •  <strong>Thời lượng:</strong> ' + durDisplay : ''}</div>
                     <div><strong>Phụ trách:</strong> ${responsible?.name || '—'}</div>
                     <div><strong>Địa điểm:</strong> ${p.location || '—'}</div>
                     ${p.note ? `<div><strong>Ghi chú:</strong> ${p.note}</div>` : ''}
-                    <div style="padding:10px;background:var(--bg-secondary);border-radius:8px;font-size:0.82rem;color:var(--text-muted)">
-                        ℹ️ Sự kiện này được tạo tự động từ <strong>Lịch SHCM</strong>. Để chỉnh sửa, vui lòng vào trang <a href="#" onclick="Modal.close();App.navigate('research')" style="color:var(--primary);font-weight:600">Nghiên cứu</a>.
+                    <div class="plans-shcm-info-box">
+                        ℹ️ Sự kiện này được tạo tự động từ <strong>Lịch SHCM</strong>. Để chỉnh sửa, vui lòng vào trang <a href="#" onclick="Modal.close();App.navigate('research')" class="plans-shcm-link">Nghiên cứu</a>.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -258,7 +258,7 @@ const PlansPage = {
             const du = p.duration && p.duration !== 'Cả ngày' ? p.duration.replace('m','') + ' phút' : (p.allDay ? 'Cả ngày' : '');
             const ep = p.endDate && p.endDate !== p.date ? (() => { const e = p.endDate.split('-'); return ` → ${e[2]}/${e[1]}/${e[0]}`; })() : '';
             Modal.open('Chi tiết kế hoạch', `
-                <div style="display:flex;flex-direction:column;gap:12px">
+                <div class="plans-modal-body">
                     <div><strong>Tiêu đề:</strong> ${p.title}</div>
                     <div><strong>Ngày:</strong> ${dd}${ep}  •  <strong>Giờ:</strong> ${p.allDay ? 'Cả ngày' : p.time}${du ? '  •  <strong>Thời lượng:</strong> ' + du : ''}</div>
                     <div><strong>Loại:</strong> ${Utils.planTypeLabel(p.type)}</div>
@@ -298,7 +298,7 @@ const PlansPage = {
                         <input class="form-input" type="date" name="endDate" value="${defaultEndDate}">
                     </div>
                 </div>
-                <div class="form-row" style="align-items:center">
+                <div class="form-row plans-time-row">
                     <div class="form-group" id="plan-time-group" style="${isAllDay ? 'opacity:0.4;pointer-events:none' : ''}">
                         <label class="form-label">Giờ bắt đầu</label>
                         <input class="form-input" type="time" name="time" value="${p?.time||'08:00'}" onchange="PlansPage._calcDuration()">
@@ -307,9 +307,9 @@ const PlansPage = {
                         <label class="form-label">Giờ kết thúc</label>
                         <input class="form-input" type="time" name="endTime" value="${endTime}" onchange="PlansPage._calcDuration()">
                     </div>
-                    <div class="form-group" style="flex:0 0 auto;padding-top:22px">
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;font-weight:600;white-space:nowrap">
-                            <input type="checkbox" name="allDay" ${isAllDay ? 'checked' : ''} onchange="PlansPage._toggleAllDay(this.checked)" style="width:16px;height:16px">
+                    <div class="form-group plans-allday-group">
+                        <label class="plans-allday-label">
+                            <input type="checkbox" name="allDay" ${isAllDay ? 'checked' : ''} onchange="PlansPage._toggleAllDay(this.checked)" class="plans-allday-checkbox">
                             Cả ngày
                         </label>
                     </div>
@@ -317,7 +317,7 @@ const PlansPage = {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Thời lượng</label>
-                        <input class="form-input" name="duration" id="plan-duration" value="${p?.duration||''}" readonly style="background:var(--bg-secondary);cursor:default" placeholder="Tự tính từ giờ">
+                        <input class="form-input plans-duration-input" name="duration" id="plan-duration" value="${p?.duration||''}" readonly placeholder="Tự tính từ giờ">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại hoạt động</label>

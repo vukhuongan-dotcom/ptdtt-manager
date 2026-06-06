@@ -207,8 +207,8 @@ const ConferencesPage = {
                     <div class="cp-pm-name">${name}</div>
                     <div class="cp-pm-stats">
                         <span>${info.count} bài báo cáo</span>
-                        ${info.langs.en > 0 ? `<span class="cp-lang-en" style="font-size:0.65rem;padding:1px 6px;border-radius:6px">${info.langs.en} EN</span>` : ''}
-                        ${info.langs.vi > 0 ? `<span class="cp-lang-vi" style="font-size:0.65rem;padding:1px 6px;border-radius:6px">${info.langs.vi} VI</span>` : ''}
+                        ${info.langs.en > 0 ? `<span class="cp-lang-en cp-lang-count">${info.langs.en} EN</span>` : ''}
+                        ${info.langs.vi > 0 ? `<span class="cp-lang-vi cp-lang-count">${info.langs.vi} VI</span>` : ''}
                     </div>
                     <div class="cp-pm-sessions">${sessions}</div>
                 </div>
@@ -216,7 +216,7 @@ const ConferencesPage = {
         }).join('');
 
         Modal.open(`🎤 Báo cáo viên — ${item.name}`, `
-            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px">
+            <div class="cp-pm-subtitle">
                 ${sorted.length} báo cáo viên · ${pres.length} bài báo cáo
             </div>
             <div class="cp-pm-list">${rows}</div>
@@ -319,7 +319,7 @@ const ConferencesPage = {
                         <span class="cp-stat-num">${pres.length}</span>
                         <span class="cp-stat-unit">bài báo cáo</span>
                     </div>
-                    <div class="cp-stat-pill cp-stat-person" style="cursor:pointer" onclick="ConferencesPage.openPresenterModal(${item.id})" title="Xem danh sách báo cáo viên">
+                    <div class="cp-stat-pill cp-stat-person cp-stat-person-btn" onclick="ConferencesPage.openPresenterModal(${item.id})" title="Xem danh sách báo cáo viên">
                         <span class="cp-stat-num">${presenters.length}</span>
                         <span class="cp-stat-unit">báo cáo viên ↗</span>
                     </div>
@@ -336,11 +336,11 @@ const ConferencesPage = {
                 <div class="cp-pres-list">${presPreview}</div>
 
                 <div class="cp-card-footer">
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <div class="cp-footer-left">
                         ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
                         ${canExport ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>` : ''}
                     </div>
-                    ${canEdit ? `<div style="display:flex;gap:6px">
+                    ${canEdit ? `<div class="cp-footer-actions">
                         <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})">✏️ Sửa</button>
                         <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})">🗑️</button>
                     </div>` : ''}
@@ -380,7 +380,7 @@ const ConferencesPage = {
         </div>
 
         <!-- Year filter -->
-        <div class="conf-time-tabs" style="margin-bottom:20px">${yearTabs}</div>
+        <div class="conf-time-tabs conf-time-tabs--spaced">${yearTabs}</div>
 
         <!-- Conference cards -->
         ${items.length > 0
@@ -453,7 +453,7 @@ const ConferencesPage = {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
-                    <textarea class="form-textarea" name="note" style="min-height:50px">${item?.note || ''}</textarea>
+                    <textarea class="form-textarea form-textarea--short" name="note">${item?.note || ''}</textarea>
                 </div>
                 <div class="modal-footer">
                     ${item ? `<button type="button" class="btn btn-danger" onclick="ConferencesPage.deleteItem(${id});Modal.close()">Xoá</button>` : ''}

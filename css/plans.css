@@ -264,3 +264,61 @@
 .cal-event-allday.training { background: rgba(5,150,105,0.25); color: var(--success); }
 .cal-event-allday.conference { background: rgba(217,119,6,0.25); color: var(--warning); }
 .cal-event-allday.other { background: rgba(100,116,139,0.25); color: var(--text-secondary); }
+
+/* ── Refactored from inline styles (Phase U5) ── */
+
+/* plans-shcm-info-box: SHCM auto-created event info box */
+.plans-shcm-info-box {
+    padding: 10px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+/* plans-shcm-link: link to Research page inside SHCM info box */
+.plans-shcm-link {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* plans-time-row: form-row with centered alignment for time fields */
+.plans-time-row { align-items: center; }
+
+/* plans-allday-group: flex-shrink checkbox group with top padding */
+.plans-allday-group {
+    flex: 0 0 auto;
+    padding-top: 22px;
+}
+
+/* plans-allday-label: inline flex label for checkbox + text */
+.plans-allday-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* plans-allday-checkbox: sized checkbox */
+.plans-allday-checkbox {
+    width: 16px;
+    height: 16px;
+}
+
+/* plans-duration-input: readonly duration input with secondary bg */
+.plans-duration-input {
+    background: var(--bg-secondary);
+    cursor: default;
+}
+
+/* plans-modal-body: modal detail view flex column */
+.plans-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+

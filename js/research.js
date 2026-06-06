@@ -40,7 +40,7 @@ const ResearchPage = {
                 <h1 class="page-title">Sinh hoạt Chuyên môn</h1>
                 <p class="page-subtitle">Lịch SHCM & Tài liệu — Khoa PTĐTT · Bệnh viện Bình Dân</p>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="rsch-header-actions">
                 <button class="btn btn-secondary" id="shcm-export-btn" onclick="ResearchPage.exportImage()">
                     📸 Xuất hình
                 </button>
@@ -71,7 +71,7 @@ const ResearchPage = {
         </div>` : ''}
 
         <!-- SHCM Table -->
-        <div class="card" style="padding:0;overflow:hidden">
+        <div class="card rsch-table-card">
             <div class="rsch-table-header">
                 <h3>📋 Lịch Sinh hoạt Chuyên môn tại Khoa</h3>
             </div>
@@ -79,12 +79,12 @@ const ResearchPage = {
                 <table class="rsch-table">
                     <thead>
                         <tr>
-                            <th style="width:44px">STT</th>
-                            <th style="min-width:160px">Bác sĩ</th>
+                            <th class="rsch-th-stt">STT</th>
+                            <th class="rsch-th-doctor">Bác sĩ</th>
                             <th>Tên bài</th>
-                            <th style="width:110px">Tiến độ</th>
-                            <th style="width:100px">Ngày trình</th>
-                            ${canEdit ? '<th style="width:70px"></th>' : ''}
+                            <th class="rsch-th-status">Tiến độ</th>
+                            <th class="rsch-th-date">Ngày trình</th>
+                            ${canEdit ? '<th class="rsch-th-actions"></th>' : ''}
                         </tr>
                     </thead>
                     <tbody>
@@ -116,7 +116,7 @@ const ResearchPage = {
                 <div class="rsch-files-note">PDF SHCM được quản lý ngoài web, không upload trực tiếp tại đây.</div>
             </div>
             <div id="shcm-files-list" class="rsch-files-list">
-                <div style="text-align:center;padding:20px;color:var(--text-muted)">Đang tải danh sách file...</div>
+                <div class="rsch-loading-placeholder">Đang tải danh sách file...</div>
             </div>
         </div>
         `;
@@ -210,24 +210,23 @@ const ResearchPage = {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Tên bài trình bày</label>
-                    <textarea class="form-textarea" name="title" required style="min-height:60px">${item?.title || ''}</textarea>
+                    <textarea class="form-textarea form-textarea--medium" name="title" required>${item?.title || ''}</textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Ngày trình (dd/mm/yyyy)</label>
-                        <div style="display:flex;gap:6px;align-items:center">
-                            <input class="form-input" type="text" name="presentDateDisplay" 
+                        <div class="shcm-date-input-row">
+                            <input class="form-input shcm-date-display" type="text" name="presentDateDisplay" 
                                 placeholder="dd/mm/yyyy" 
                                 pattern="\\d{2}/\\d{2}/\\d{4}" 
                                 value="${item?.presentDate ? (() => { const d = new Date(item.presentDate); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); })() : ''}"
-                                style="flex:1"
                                 oninput="ResearchPage._checkDateConflict(this.form, ${id || 0})">
                             <input type="date" name="presentDate" value="${item?.presentDate || ''}" 
-                                style="width:40px;padding:6px 4px;opacity:0.6;cursor:pointer" 
+                                class="shcm-date-picker" 
                                 title="Chọn từ lịch" 
                                 onchange="const d=new Date(this.value);this.form.presentDateDisplay.value=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();ResearchPage._checkDateConflict(this.form, ${id || 0})">
                         </div>
-                        <div id="shcm-date-conflict" style="display:none;margin-top:6px;padding:8px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;color:#c2410c;font-size:13px"></div>
+                        <div id="shcm-date-conflict" class="shcm-date-conflict-warn"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tiến độ</label>
@@ -445,7 +444,7 @@ const ResearchPage = {
             const canEdit = this._canEdit();
 
             if (files.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">📂 Chưa có tài liệu nào được upload</div>';
+                container.innerHTML = '<div class="rsch-empty-files">📂 Chưa có tài liệu nào được upload</div>';
                 return;
             }
 
@@ -463,7 +462,7 @@ const ResearchPage = {
                 </div>
             `).join('');
         } catch (err) {
-            container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger)">Không thể tải danh sách file</div>';
+            container.innerHTML = '<div class="rsch-error-files">Không thể tải danh sách file</div>';
         }
     },
 
