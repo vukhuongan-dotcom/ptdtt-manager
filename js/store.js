@@ -1,7 +1,7 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
 const DATA_VERSION = 7; // Increment this when SAMPLE data changes
-const CLIENT_BUILD = 2804281805;
+const CLIENT_BUILD = 2606062130;
 
 const Store = {
     _data: null,

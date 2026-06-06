@@ -5,7 +5,7 @@
     <!-- One-time cache migration — runs BEFORE any other script -->
     <script>
         (function () {
-            var REQUIRED_VER = '2804281755';
+            var REQUIRED_VER = '2606062130';
             if (localStorage.getItem('ptdtt_cache_ver') === REQUIRED_VER) return;
             // Nuke all service workers and caches
             if ('serviceWorker' in navigator) {
@@ -40,31 +40,31 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/variables.css?v=1505261506">
-    <link rel="stylesheet" href="css/base.css?v=1505261506">
-    <link rel="stylesheet" href="css/sidebar.css?v=1505261506">
-    <link rel="stylesheet" href="css/dashboard.css?v=1505261506">
-    <link rel="stylesheet" href="css/staff.css?v=1505261506">
-    <link rel="stylesheet" href="css/tasks.css?v=1505261506">
-    <link rel="stylesheet" href="css/plans.css?v=1505261506">
-    <link rel="stylesheet" href="css/patients.css?v=1505261506">
-    <link rel="stylesheet" href="css/schedule.css?v=1505261506">
-    <link rel="stylesheet" href="css/surgery.css?v=1505261506">
-    <link rel="stylesheet" href="css/surgery-stats.css?v=1505261506">
-    <link rel="stylesheet" href="css/mobile.css?v=1505261506">
-    <link rel="stylesheet" href="css/rooms.css?v=1505261506">
-    <link rel="stylesheet" href="css/research.css?v=1505261506">
-    <link rel="stylesheet" href="css/conferences.css?v=1505261506">
+    <link rel="stylesheet" href="css/variables.css?v=2606062130">
+    <link rel="stylesheet" href="css/base.css?v=2606062130">
+    <link rel="stylesheet" href="css/sidebar.css?v=2606062130">
+    <link rel="stylesheet" href="css/dashboard.css?v=2606062130">
+    <link rel="stylesheet" href="css/staff.css?v=2606062130">
+    <link rel="stylesheet" href="css/tasks.css?v=2606062130">
+    <link rel="stylesheet" href="css/plans.css?v=2606062130">
+    <link rel="stylesheet" href="css/patients.css?v=2606062130">
+    <link rel="stylesheet" href="css/schedule.css?v=2606062130">
+    <link rel="stylesheet" href="css/surgery.css?v=2606062130">
+    <link rel="stylesheet" href="css/surgery-stats.css?v=2606062130">
+    <link rel="stylesheet" href="css/mobile.css?v=2606062130">
+    <link rel="stylesheet" href="css/rooms.css?v=2606062130">
+    <link rel="stylesheet" href="css/research.css?v=2606062130">
+    <link rel="stylesheet" href="css/conferences.css?v=2606062130">
 
-    <link rel="stylesheet" href="css/modal.css?v=1505261506">
-    <link rel="stylesheet" href="css/login.css?v=1505261506">
-    <link rel="stylesheet" href="css/notifications.css?v=1505261506">
-    <link rel="stylesheet" href="css/staff-tracking.css?v=1505261506">
-    <link rel="stylesheet" href="css/toast.css?v=1505261506">
-    <link rel="stylesheet" href="css/charts.css?v=1505261506">
-    <link rel="stylesheet" href="css/search.css?v=1505261506">
-    <link rel="stylesheet" href="css/onboarding.css?v=1505261506">
-    <link rel="stylesheet" href="css/reports.css?v=1505261506">
+    <link rel="stylesheet" href="css/modal.css?v=2606062130">
+    <link rel="stylesheet" href="css/login.css?v=2606062130">
+    <link rel="stylesheet" href="css/notifications.css?v=2606062130">
+    <link rel="stylesheet" href="css/staff-tracking.css?v=2606062130">
+    <link rel="stylesheet" href="css/toast.css?v=2606062130">
+    <link rel="stylesheet" href="css/charts.css?v=2606062130">
+    <link rel="stylesheet" href="css/search.css?v=2606062130">
+    <link rel="stylesheet" href="css/onboarding.css?v=2606062130">
+    <link rel="stylesheet" href="css/reports.css?v=2606062130">
     <style>
         @keyframes shake {
 
@@ -279,32 +279,32 @@
 
 
     <!-- Core: defer — execute in order after DOM parsed -->
-    <script defer src="js/data.js?v=1505261506"></script>
-    <script defer src="js/store.js?v=1505261506"></script>
-    <script defer src="js/auth.js?v=1505261506"></script>
-    <script defer src="js/utils.js?v=1505261506"></script>
+    <script defer src="js/data.js?v=2606062130"></script>
+    <script defer src="js/store.js?v=2606062130"></script>
+    <script defer src="js/auth.js?v=2606062130"></script>
+    <script defer src="js/utils.js?v=2606062130"></script>
 
     <!-- Page modules: defer — loaded after DOM ready, in document order -->
-    <script defer src="js/dashboard.js?v=1505261506"></script>
-    <script defer src="js/staff.js?v=1505261506"></script>
-    <script defer src="js/staff-tracking.js?v=1505261506"></script>
-    <script defer src="js/tasks.js?v=1505261506"></script>
-    <script defer src="js/plans.js?v=1505261506"></script>
-    <script defer src="js/patients.js?v=1505261506"></script>
-    <script defer src="js/schedule.js?v=1505261506"></script>
-    <script defer src="js/surgery.js?v=1505261506"></script>
-    <script defer src="js/emr.js?v=1505261506"></script>
-    <script defer src="js/surgery-stats.js?v=1505261506"></script>
-    <script defer src="js/research.js?v=1505261506"></script>
-    <script defer src="js/conferences.js?v=1505261506"></script>
-    <script defer src="js/reports.js?v=1505261506"></script>
-    <script defer src="js/rooms.js?v=1505261506"></script>
-    <script defer src="js/notifications.js?v=1505261506"></script>
-    <script defer src="js/search.js?v=1505261506"></script>
-    <script defer src="js/onboarding.js?v=1505261506"></script>
-    <script defer src="js/audit-log.js?v=1505261506"></script>
+    <script defer src="js/dashboard.js?v=2606062130"></script>
+    <script defer src="js/staff.js?v=2606062130"></script>
+    <script defer src="js/staff-tracking.js?v=2606062130"></script>
+    <script defer src="js/tasks.js?v=2606062130"></script>
+    <script defer src="js/plans.js?v=2606062130"></script>
+    <script defer src="js/patients.js?v=2606062130"></script>
+    <script defer src="js/schedule.js?v=2606062130"></script>
+    <script defer src="js/surgery.js?v=2606062130"></script>
+    <script defer src="js/emr.js?v=2606062130"></script>
+    <script defer src="js/surgery-stats.js?v=2606062130"></script>
+    <script defer src="js/research.js?v=2606062130"></script>
+    <script defer src="js/conferences.js?v=2606062130"></script>
+    <script defer src="js/reports.js?v=2606062130"></script>
+    <script defer src="js/rooms.js?v=2606062130"></script>
+    <script defer src="js/notifications.js?v=2606062130"></script>
+    <script defer src="js/search.js?v=2606062130"></script>
+    <script defer src="js/onboarding.js?v=2606062130"></script>
+    <script defer src="js/audit-log.js?v=2606062130"></script>
     <!-- app.js must be last — initializes after all page modules -->
-    <script defer src="js/app.js?v=1505261506"></script>
+    <script defer src="js/app.js?v=2606062130"></script>
 
     <!-- Offline Banner -->
     <div id="offline-banner"
