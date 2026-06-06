@@ -712,6 +712,32 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 @media (max-width: 768px) {
     .theme-toggle-btn { display: none; }
 }
+
+/* ===== U2: Sidebar theme area wrapper (icon + label) ===== */
+.sidebar-theme-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+    margin-bottom: 4px;
+}
+.theme-toggle-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition: color var(--transition-fast);
+    /* Ẩn khi sidebar collapsed (chỉ hiện icon) */
+    overflow: hidden;
+}
+/* Sidebar collapsed: ẩn label */
+@media (max-width: 1024px) {
+    .theme-toggle-label { display: none; }
+}
+/* Mobile: ẩn toàn bộ khu vực (bottom nav không có footer) */
+@media (max-width: 768px) {
+    .sidebar-theme-area { display: none; }
+}
 .login-page {
     min-height: 100vh;
     display: flex;

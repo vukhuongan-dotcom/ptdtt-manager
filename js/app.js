@@ -307,17 +307,20 @@ const App = {
         const footer = document.getElementById('sidebar-footer');
         footer.innerHTML = `
             <!-- U2: Dark mode toggle — nằm trước user info -->
-            <button
-                id="theme-toggle-btn"
-                class="theme-toggle-btn"
-                onclick="App.toggleTheme()"
-                aria-pressed="false"
-                aria-label="Giao diện tối"
-                title="Giao diện tối">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-            </button>
+            <div class="sidebar-theme-area">
+                <button
+                    id="theme-toggle-btn"
+                    class="theme-toggle-btn"
+                    onclick="App.toggleTheme()"
+                    aria-pressed="false"
+                    aria-label="Giao diện tối"
+                    title="Giao diện tối">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <span class="theme-toggle-label" id="theme-toggle-label">Giao diện tối</span>
+            </div>
             <div class="sidebar-bell-area">
                 ${Notifications.renderBellButton('desktop')}
                 <span class="notif-bell-label">Thông báo</span>
@@ -499,9 +502,13 @@ const App = {
         const btn = document.getElementById('theme-toggle-btn');
         if (!btn) return;
         const isDark = (theme || document.documentElement.getAttribute('data-theme')) === 'dark';
+        const labelText = isDark ? 'Giao diện sáng' : 'Giao diện tối';
         btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-        btn.setAttribute('aria-label', isDark ? 'Giao diện sáng' : 'Giao diện tối');
-        btn.title = isDark ? 'Giao diện sáng' : 'Giao diện tối';
+        btn.setAttribute('aria-label', labelText);
+        btn.title = labelText;
+        // Cập nhật label text hiển thị bên cạnh nút
+        const label = document.getElementById('theme-toggle-label');
+        if (label) label.textContent = labelText;
         // Swap icon sun / moon
         btn.innerHTML = isDark
             ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
