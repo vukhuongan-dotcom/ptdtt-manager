@@ -19,7 +19,7 @@ const StaffPage = {
                 <h1 class="page-title">Nhân sự</h1>
                 <p class="page-subtitle">Quản lý nhân viên khoa Phẫu thuật Đại trực tràng</p>
             </div>
-            <div style="display:flex;gap:8px">
+            <div class="staff-toolbar">
                 ${(Auth.getSession() && Auth.getSession().isAdmin) ? `<button class="export-btn" onclick="StaffPage.exportExcel()" title="Xuất danh sách nhân sự">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     Xuất Excel
@@ -83,7 +83,7 @@ const StaffPage = {
             return `<button class="filter-btn ${this.currentFilter === r.key ? 'active' : ''}" onclick="StaffPage.setFilter('${r.key}')">${r.label} (${cnt})</button>`;
         }).join('')}
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div class="staff-toolbar-mid">
                 <div class="search-box">
                     ${Utils.searchIcon()}
                     <input type="text" placeholder="Tìm nhân sự..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
@@ -103,7 +103,7 @@ const StaffPage = {
                         <th>Vai trò</th>
                         <th>Điện thoại</th>
                         <th>Email</th>
-                        <th style="width:80px">Thao tác</th>
+                        <th class="th-action">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,8 +118,8 @@ const StaffPage = {
                         </td>
                         <td>${s.title}</td>
                         <td><span class="badge badge-primary">${s.role}</span></td>
-                        <td style="color:var(--text-muted)">${s.phone || '—'}</td>
-                        <td style="color:var(--text-muted);font-size:0.82rem">${s.email || '—'}</td>
+                        <td class="td-muted">${s.phone || '—'}</td>
+                        <td class="td-muted-sm">${s.email || '—'}</td>
                         <td>
                             <div class="staff-actions">
                                 ${isAdmin ? `
@@ -153,9 +153,9 @@ const StaffPage = {
         return `
         <div class="flex justify-between items-center">
             <div class="staff-filters">
-                <span style="color:var(--text-muted);font-size:0.85rem;padding:6px 12px">Danh sách bác sĩ ngoài khoa hỗ trợ phẫu thuật</span>
+                <span class="guest-staff-note">Danh sách bác sĩ ngoài khoa hỗ trợ phẫu thuật</span>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div class="staff-toolbar-mid">
                 <div class="search-box">
                     ${Utils.searchIcon()}
                     <input type="text" placeholder="Tìm BS ngoài khoa..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
@@ -170,19 +170,19 @@ const StaffPage = {
             <table>
                 <thead>
                     <tr>
-                        <th style="width:50px">STT</th>
+                        <th class="th-stt">STT</th>
                         <th>Họ tên</th>
                         <th>Học vị</th>
                         <th>Chức vụ</th>
                         <th>Khoa / Phòng</th>
                         <th>Ghi chú</th>
-                        ${isAdmin ? '<th style="width:80px">Thao tác</th>' : ''}
+                        ${isAdmin ? '<th class="th-action">Thao tác</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
                     ${filtered.length ? filtered.map((d, idx) => `
                     <tr>
-                        <td style="text-align:center;color:var(--text-muted);font-weight:600">${idx + 1}</td>
+                        <td class="td-center-muted">${idx + 1}</td>
                         <td>
                             <div class="staff-name-cell">
                                 <div class="staff-avatar-sm" style="background:${d.color || '#6366f1'}">${Utils.getInitials(d.name)}</div>
@@ -191,8 +191,8 @@ const StaffPage = {
                         </td>
                         <td>${d.title || '—'}</td>
                         <td><span class="badge badge-primary">${d.position || '—'}</span></td>
-                        <td style="color:var(--text-secondary)">${d.department || '—'}</td>
-                        <td style="color:var(--text-muted);font-size:0.82rem">${d.note || '—'}</td>
+                        <td class="td-secondary">${d.department || '—'}</td>
+                        <td class="td-muted-sm">${d.note || '—'}</td>
                         ${isAdmin ? `<td>
                             <div class="staff-actions">
                                 <button class="btn-icon" onclick="StaffPage.openExternalForm(${d.id})" title="Sửa">${Utils.editIcon()}</button>
@@ -312,18 +312,17 @@ const StaffPage = {
         const ranges = this._groupStatusRanges(entries);
 
         const historyHtml = ranges.length ? `
-            <div style="margin-bottom:12px">
-                <label class="form-label" style="margin-bottom:6px">📋 Lịch sử trạng thái</label>
-                <div style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px">
+            <div class="status-history-container">
+                <label class="form-label">📋 Lịch sử trạng thái</label>
+                <div class="status-history-scroll">
                     ${ranges.map(r => {
-            const info = STAFF_STATUSES[r.status] || STAFF_STATUSES.active;
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:${StaffPage._statusColor(r.status)}15">
-                            <div style="font-size:0.8rem">
-                                <span>${info.icon} ${info.label}</span>
-                                <span style="color:var(--text-muted);margin-left:6px">${StaffPage.fmtDate(r.from)} → ${StaffPage.fmtDate(r.to)}</span>
-                                ${r.note ? `<span style="color:var(--text-secondary);margin-left:4px;font-style:italic">"${r.note}"</span>` : ''}
+            return `<div class="status-history-row" style="background:${StaffPage._statusColor(r.status)}15">
+                            <div class="status-history-text">
+                                <b>${StaffPage._statusLabel(r.status)}</b>
+                                <span class="status-history-dates">${StaffPage.fmtDate(r.from)} → ${StaffPage.fmtDate(r.to)}</span>
+                                ${r.note ? `<span class="status-history-note">"${r.note}"</span>` : ''}
                             </div>
-                            <button type="button" class="btn-icon" onclick="StaffPage.deleteStatusRange(${id},'${r.from}','${r.to}')" title="Xoá" style="flex-shrink:0">
+                            <button type="button" class="btn-icon" onclick="StaffPage.deleteStatusRange(${id},'${r.from}','${r.to}')" title="Xoá">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>`;
@@ -637,18 +636,18 @@ const StaffPage = {
             <table>
                 <thead>
                     <tr>
-                        <th style="width:50px">STT</th>
+                        <th class="th-stt">STT</th>
                         <th>Họ tên</th>
                         <th>Chức danh</th>
                         <th>Vai trò</th>
                         <th>Ngày rời</th>
-                        ${isAdmin ? '<th style="width:160px">Thao tác</th>' : ''}
+                        ${isAdmin ? '<th class="th-action-wide">Thao tác</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
                     ${departed.length ? departed.map((s, idx) => `
-                    <tr style="opacity:0.75">
-                        <td style="text-align:center;color:var(--text-muted)">${idx + 1}</td>
+                    <tr class="departed-row">
+                        <td class="departed-td-center">${idx + 1}</td>
                         <td>
                             <div class="staff-name-cell">
                                 <div class="staff-avatar-sm" style="background:${s.color || '#94a3b8'};filter:grayscale(50%)">${Utils.getInitials(s.name)}</div>
@@ -656,12 +655,12 @@ const StaffPage = {
                             </div>
                         </td>
                         <td>${s.title || '—'}</td>
-                        <td><span class="badge" style="background:#94a3b8;color:#fff">${s.role}</span></td>
-                        <td style="color:var(--text-muted);font-size:0.82rem">${s.departedDate || '—'}</td>
+                        <td><span class="badge badge-departed">${s.role}</span></td>
+                        <td class="td-muted-sm">${s.departedDate || '—'}</td>
                         ${isAdmin ? `<td>
                             <div class="staff-actions" style="gap:4px">
-                                <button class="btn btn-sm" style="background:#22c55e;color:#fff;border:none;font-size:0.72rem;cursor:pointer" onclick="StaffPage.restoreStaff(${idx})" title="Khôi phục">♻️ Khôi phục</button>
-                                <button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none;font-size:0.72rem;cursor:pointer" onclick="StaffPage.deletePermanent(${idx})" title="Xóa vĩnh viễn">🗑️ Xóa</button>
+                                <button class="btn btn-sm btn-restore" onclick="StaffPage.restoreStaff(${idx})" title="Khôi phục">♻️ Khôi phục</button>
+                                <button class="btn btn-sm btn-delete-perm" onclick="StaffPage.deletePermanent(${idx})" title="Xóa vĩnh viễn">🗑️ Xóa</button>
                             </div>
                         </td>` : ''}
                     </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không có nhân sự rời khoa</p></div></td></tr>`}

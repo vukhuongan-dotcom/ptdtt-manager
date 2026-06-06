@@ -74,3 +74,63 @@
 }
 .staff-fullname { font-weight: 500; }
 .staff-actions { display: flex; gap: 6px; }
+
+/* ===== U5: Extracted inline styles — staff.js ===== */
+.th-action { width: 80px; }
+.th-stt    { width: 50px; }
+.th-action-wide { width: 160px; }
+.td-muted  { color: var(--text-muted); }
+.td-muted-sm { color: var(--text-muted); font-size: var(--text-sm, 0.8667rem); }
+.td-secondary { color: var(--text-secondary); }
+.td-center-muted { text-align: center; color: var(--text-muted); font-weight: 600; }
+/* Toolbar rows */
+.staff-toolbar { display: flex; gap: 8px; }
+.staff-toolbar-mid { display: flex; gap: 8px; align-items: center; }
+/* Guest staff note */
+.guest-staff-note {
+    color: var(--text-muted);
+    font-size: var(--text-sm, 0.8667rem);
+    padding: 6px 12px;
+}
+/* Status history */
+.status-history-scroll {
+    max-height: 140px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 12px;
+}
+.status-history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    border-radius: 6px;
+    margin-bottom: 3px;
+}
+.status-history-text { font-size: var(--text-base, 0.9333rem); }
+.status-history-dates { color: var(--text-muted); margin-left: 6px; }
+.status-history-note { color: var(--text-secondary); margin-left: 4px; font-style: italic; }
+/* Status add section */
+.status-add-section { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+/* Departed row */
+.departed-row { opacity: 0.75; }
+.departed-td-center { text-align: center; color: var(--text-muted); }
+/* Departed action buttons */
+.btn-restore {
+    background: var(--success);
+    color: #fff;
+    border: none;
+    font-size: var(--text-xxs, 0.6667rem);
+    cursor: pointer;
+}
+.btn-delete-perm {
+    background: var(--danger);
+    color: #fff;
+    border: none;
+    font-size: var(--text-xxs, 0.6667rem);
+    cursor: pointer;
+}
+/* Departed badge */
+.badge-departed { background: #94a3b8; color: #fff; }

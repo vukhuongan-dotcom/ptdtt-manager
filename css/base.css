@@ -365,3 +365,75 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
         scroll-behavior: auto !important;
     }
 }
+
+/* ===== U5: Extracted inline styles — app.js ===== */
+/* Auth-checking overlay */
+#auth-checking {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: var(--text-base, 0.9333rem);
+    gap: 10px;
+}
+/* Spinner dùng trong auth-checking */
+.fc-spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border-light);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+/* Idle warning bar */
+#idle-warning-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    background: linear-gradient(135deg, var(--warning), var(--danger));
+    color: #fff;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: var(--text-sm, 0.8667rem);
+    font-weight: 600;
+    font-family: 'Inter', system-ui, sans-serif;
+    animation: slideDown 0.3s ease;
+    cursor: pointer;
+}
+/* Sidebar admin-btn row */
+.sidebar-admin-btns {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0;
+}
+.sidebar-admin-btns .btn {
+    flex: 1;
+    font-size: var(--text-xxs, 0.6667rem);
+}
+.sidebar-full-btn {
+    width: 100%;
+    font-size: var(--text-xxs, 0.6667rem);
+    margin: 2px 0;
+}
+.sidebar-full-btn-spaced {
+    width: 100%;
+    font-size: var(--text-xxs, 0.6667rem);
+    margin: 4px 0;
+}
+/* logout-btn SVG icon */
+.logout-btn-icon {
+    vertical-align: middle;
+    margin-right: 6px;
+}
+/* Skeleton layout */
+.skeleton-row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.skeleton-card-sm { height: 80px; }
+.skeleton-card-lg { height: 200px; }
+.skeleton-card-top { margin: 0 0 12px; }

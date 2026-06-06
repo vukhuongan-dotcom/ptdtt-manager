@@ -225,3 +225,86 @@
     --border:        rgba(0,0,0,0.08) !important;
     color-scheme: light !important;
 }
+
+/* ===== U5: Extracted — audit-log.js ===== */
+/* Inline log detail span colors */
+.al-text-muted-sm {
+    color: var(--text-muted);
+    font-size: var(--text-sm, 0.8667rem);
+}
+.al-text-danger {
+    color: var(--danger);
+    font-size: var(--text-sm, 0.8667rem);
+}
+.al-text-warning {
+    color: var(--warning);
+    font-size: var(--text-sm, 0.8667rem);
+}
+.al-text-accent {
+    color: var(--accent);
+    font-size: var(--text-sm, 0.8667rem);
+}
+/* Audit log table */
+.al-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm, 0.8667rem);
+}
+.al-table thead tr {
+    border-bottom: 2px solid var(--border);
+    background: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.al-table th {
+    padding: 6px 8px;
+    text-align: left;
+}
+.al-table tr {
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+.al-table tr.al-row-login { opacity: 0.65; }
+.al-td-time {
+    padding: 5px 8px;
+    font-size: var(--text-xs, 0.7333rem);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.al-td-user {
+    padding: 5px 8px;
+    font-size: var(--text-sm, 0.8667rem);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.al-td-action {
+    padding: 5px 8px;
+    font-size: var(--text-sm, 0.8667rem);
+    white-space: nowrap;
+}
+.al-td-detail {
+    padding: 5px 8px;
+    font-size: var(--text-base, 0.9333rem);
+    max-width: 320px;
+}
+/* Audit log filter row */
+.al-filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.al-scroll-area {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+/* Audit log: backup detail box */
+.al-backup-box {
+    margin-top: 5px;
+    padding: 6px 10px;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 6px;
+    font-size: var(--text-xs, 0.7333rem);
+    color: var(--text-secondary);
+}

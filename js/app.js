@@ -57,8 +57,8 @@ const App = {
 
         const div = document.createElement('div');
         div.id = 'auth-checking';
-        div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg-main,#0f172a);color:#94a3b8;font-family:Inter,system-ui,sans-serif;font-size:0.95rem;gap:10px';
-        div.innerHTML = '<div style="width:20px;height:20px;border:2px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite"></div> Đang xác thực phiên...';
+        // U5: CSS class thay inline style (base.css #auth-checking)
+        div.innerHTML = '<div class="fc-spinner"></div> Đang xác thực phiên...';
         document.body.appendChild(div);
     },
 
@@ -268,7 +268,7 @@ const App = {
 
         const bar = document.createElement('div');
         bar.id = 'idle-warning-bar';
-        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;text-align:center;padding:10px 16px;font-size:0.85rem;font-weight:600;font-family:Inter,system-ui,sans-serif;animation:slideDown 0.3s ease;cursor:pointer';
+        // U5: CSS class thay inline style (base.css #idle-warning-bar)
         bar.innerHTML = '⚠️ Bạn sẽ bị đăng xuất trong <strong>1 phút</strong> nữa do không hoạt động. Chạm vào đây để tiếp tục.';
         bar.onclick = () => {
             this._setLastActivity();
@@ -332,14 +332,14 @@ const App = {
                     <span class="user-role">${session.role}</span>
                 </div>
             </div>
-            ${session.isAdmin ? `<div style="display:flex;gap:6px;margin:6px 0">
-                <button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openChangePassword()">&#128273; Đổi MK</button>
-                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="flex:1;font-size:0.72rem" onclick="Auth.openManagePasswords()">&#128101; Quản lý TK</button>` : ''}
+            ${session.isAdmin ? `<div class="sidebar-admin-btns">
+                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openChangePassword()">&#128273; Đổi MK</button>
+                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openManagePasswords()">&#128101; Quản lý TK</button>` : ''}
             </div>
-            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:2px 0" onclick="AuditLog.open()">&#128203; Lịch sử hoạt động</button>` : ''}` : ''}
-            <button class="btn btn-secondary btn-sm" style="width:100%;font-size:0.72rem;margin:4px 0" onclick="Onboarding.start()">&#10067; Hướng dẫn sử dụng</button>
+            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-full-btn" onclick="AuditLog.open()">&#128203; Lịch sử hoạt động</button>` : ''}` : ''}
+            <button class="btn btn-secondary btn-sm sidebar-full-btn-spaced" onclick="Onboarding.start()">&#10067; Hướng dẫn sử dụng</button>
             <button class="logout-btn" id="logout-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-btn-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Đăng xuất
             </button>
         `;
@@ -419,13 +419,13 @@ const App = {
 
         // P3.3c: Show skeleton placeholder for instant visual feedback
         mainContent.innerHTML = `
-            <div class="skeleton-card" style="margin:0 0 12px"></div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
-                <div class="skeleton-card" style="height:80px"></div>
-                <div class="skeleton-card" style="height:80px"></div>
-                <div class="skeleton-card" style="height:80px"></div>
+            <div class="skeleton-card skeleton-card-top"></div>
+            <div class="skeleton-row-3">
+                <div class="skeleton-card skeleton-card-sm"></div>
+                <div class="skeleton-card skeleton-card-sm"></div>
+                <div class="skeleton-card skeleton-card-sm"></div>
             </div>
-            <div class="skeleton-card" style="height:200px"></div>
+            <div class="skeleton-card skeleton-card-lg"></div>
         `;
         mainContent.style.opacity = '1';
         mainContent.style.transform = 'none';

@@ -101,7 +101,7 @@ const AuditLog = {
     },
 
     _val(v) {
-        if (v === null || v === undefined || v === '') return '<i style="color:var(--text-muted)">trống</i>';
+        if (v === null || v === undefined || v === '') return '<i class="al-text-muted-sm">trống</i>';
         if (typeof v === 'boolean') return v ? 'Có' : 'Không';
         return String(v).substring(0, 120);
     },
@@ -118,28 +118,28 @@ const AuditLog = {
             };
             const r = reasons[d.reason] || d.reason || 'Không xác định';
             const rem = d.remaining != null ? ` (còn ${d.remaining} lần thử)` : '';
-            return `<span style="color:#ef4444;font-size:0.78rem">Lý do: ${r}${rem}</span>`;
+            return `<span class="al-text-danger">Lý do: ${r}${rem}</span>`;
         }
         if (action === 'auth.login.blocked') {
             const s = d.retryAfter ? ` — chờ ${Math.ceil(d.retryAfter/60)} phút` : '';
-            return `<span style="color:#ef4444;font-size:0.78rem">Tài khoản tạm khoá${s}</span>`;
+            return `<span class="al-text-danger">Tài khoản tạm khoá${s}</span>`;
         }
         if (action === 'auth.admin.password.reset') {
-            return `<span style="color:#f59e0b;font-size:0.78rem">Reset mật khẩu cho: <b>${d.target || '?'}</b></span>`;
+            return `<span class="al-text-warning">Reset mật khẩu cho: <b>${d.target || '?'}</b></span>`;
         }
         if (action === 'auth.admin.toggle') {
             const q = d.isAdmin ? 'Cấp quyền admin cho' : 'Thu quyền admin của';
-            return `<span style="color:#8b5cf6;font-size:0.78rem">${q}: <b>${d.target || '?'}</b></span>`;
+            return `<span class="al-text-accent">${q}: <b>${d.target || '?'}</b></span>`;
         }
         if (action === 'auth.admin.disable') {
             const q = d.disabled ? 'Khoá tài khoản' : 'Mở tài khoản';
-            return `<span style="color:#f59e0b;font-size:0.78rem">${q}: <b>${d.target || '?'}</b></span>`;
+            return `<span class="al-text-warning">${q}: <b>${d.target || '?'}</b></span>`;
         }
         if (action === 'shcm_delete') {
-            return `<span style="color:#ef4444;font-size:0.78rem">Xoá file: <b>${d.file || '?'}</b></span>`;
+            return `<span class="al-text-danger">Xoá file: <b>${d.file || '?'}</b></span>`;
         }
         if (action === 'shcm_upload_blocked') {
-            return `<span style="color:#ef4444;font-size:0.78rem">Upload bị chặn: ${d.reason || ''}</span>`;
+            return `<span class="al-text-danger">Upload bị chặn: ${d.reason || ''}</span>`;
         }
         return '';
     },
@@ -153,13 +153,13 @@ const AuditLog = {
             return this._authDetail(action, d);
         }
 
-        if (!d) return '<span style="color:var(--text-muted);font-size:0.75rem">—</span>';
+        if (!d) return '<span class="al-text-muted-sm">—</span>';
 
         // Case 2: New-format entries with full diff data
         if (d.diff) {
             const noop = !d.added && !d.removed && !d.changed;
             if (noop) {
-                return `<span style="color:var(--text-muted);font-size:0.75rem">Lưu thành công, không có nội dung thay đổi</span>`;
+                return `<span class="al-text-muted-sm">Lưu thành công, không có nội dung thay đổi</span>`;
             }
             const parts = [];
             if (d.added)   parts.push(`<span class="al-badge-add">+${d.added} thêm mới</span>`);
@@ -191,9 +191,9 @@ const AuditLog = {
             const info = collMap[action];
             const listName = info ? info[0] : 'dữ liệu';
             const unit     = info ? info[1] : 'bản ghi';
-            return `<div style="font-size:0.78rem;line-height:1.6">
+            return `<div class="al-text-muted-sm" style="line-height:1.6">
                 <div>Đã cập nhật <b>${listName}</b> — lúc đó hệ thống có <b>${d.count}</b> ${unit}</div>
-                <div style="margin-top:5px;padding:6px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:0.72rem;color:#92400e">
+                <div class="al-backup-box">
                     ⚠️ <b>Nội dung thay đổi cụ thể không được lưu lại</b><br>
                     Hệ thống chỉ ghi chi tiết thêm/sửa/xoá từ <b>15/05/2026</b> trở đi.
                     Các thao tác trước đó chỉ biết "có cập nhật", không biết cụ thể là gì.
@@ -204,11 +204,11 @@ const AuditLog = {
         // Case 4: data.put with size
         if (d.size) {
             const kb = (d.size / 1024).toFixed(1);
-            return `<span style="color:var(--text-muted);font-size:0.75rem">Lưu toàn bộ cơ sở dữ liệu (${kb} KB)</span>`;
+            return `<span class="al-text-muted-sm">Lưu toàn bộ cơ sở dữ liệu (${kb} KB)</span>`;
         }
 
         // Fallback
-        return '<span style="color:var(--text-muted);font-size:0.75rem">Đã lưu thành công</span>';
+        return '<span class="al-text-muted-sm">Đã lưu thành công</span>';
 
     },
 
@@ -249,11 +249,11 @@ const AuditLog = {
                 const label = this._actionLabels[l.action] || `⚙️ ${l.action}`;
                 const detail = this._formatDetail(l);
                 const isLogin = l.action.includes('auth.login');
-                return `<tr style="border-bottom:1px solid var(--border);vertical-align:top${isLogin ? ';opacity:0.65' : ''}">
-                    <td style="padding:5px 8px;font-size:0.77rem;color:var(--text-muted);white-space:nowrap">${formatTime(l.ts)}</td>
-                    <td style="padding:5px 8px;font-size:0.82rem;font-weight:600;white-space:nowrap">${l.user}</td>
-                    <td style="padding:5px 8px;font-size:0.82rem;white-space:nowrap">${label}</td>
-                    <td style="padding:5px 8px;font-size:0.8rem;max-width:320px">${detail}</td>
+                return `<tr class="${isLogin ? 'al-row-login' : ''}">
+                    <td class="al-td-time">${formatTime(l.ts)}</td>
+                    <td class="al-td-user">${l.user}</td>
+                    <td class="al-td-action">${label}</td>
+                    <td class="al-td-detail">${detail}</td>
                 </tr>`;
             }).join('');
 
@@ -285,20 +285,20 @@ const AuditLog = {
                 .al-change-to { color:#10b981; font-weight:600; }
                 .al-kv { margin-right:8px; }
                 </style>
-                <div style="display:flex;gap:8px;margin-bottom:10px">
-                    ${[1,3,7,30].map(d => `<button class="btn btn-sm ${d===days?'btn-primary':'btn-secondary'}" style="font-size:0.75rem" onclick="AuditLog.open(${d})">${d} ngày</button>`).join('')}
+                <div class="al-filter-row">
+                    ${[1,3,7,30].map(d => `<button class="btn btn-sm ${d===days?'btn-primary':'btn-secondary'}" onclick="AuditLog.open(${d})">${d} ngày</button>`).join('')}
                 </div>
-                <div style="max-height:60vh;overflow-y:auto">
-                    ${logs.length ? `<table style="width:100%;border-collapse:collapse;font-size:0.82rem">
-                        <thead><tr style="border-bottom:2px solid var(--border);background:var(--bg-secondary);position:sticky;top:0;z-index:1">
-                            <th style="padding:6px 8px;text-align:left">Thời gian</th>
-                            <th style="padding:6px 8px;text-align:left">User</th>
-                            <th style="padding:6px 8px;text-align:left">Hành động</th>
-                            <th style="padding:6px 8px;text-align:left">Chi tiết thay đổi</th>
+                <div class="al-scroll-area">
+                    ${logs.length ? `<table class="al-table">
+                        <thead><tr>
+                            <th>Thời gian</th>
+                            <th>User</th>
+                            <th>Hành động</th>
+                            <th>Chi tiết thay đổi</th>
                         </tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
-                    <div style="text-align:center;padding:8px;color:var(--text-muted);font-size:0.78rem">
+                    <div class="al-text-muted-sm" style="text-align:center;padding:8px">
                         Hiển thị ${Math.min(logs.length, 300)}/${data.total} bản ghi
                     </div>` : '<div class="empty-state"><p>Chưa có hoạt động nào được ghi nhận</p></div>'}
                 </div>
@@ -308,7 +308,7 @@ const AuditLog = {
             `);
         } catch (e) {
             Modal.open('📋 Lịch sử hoạt động', `
-                <div class="empty-state"><p>Không thể tải dữ liệu audit log</p><p style="font-size:0.8rem;color:var(--text-muted)">${e.message}</p></div>
+                <div class="empty-state"><p>Không thể tải dữ liệu audit log</p><p class="al-text-muted-sm">${e.message}</p></div>
                 <div class="modal-footer"><button class="btn btn-primary" onclick="Modal.close()">Đóng</button></div>
             `);
         }
