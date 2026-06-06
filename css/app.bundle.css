@@ -4998,7 +4998,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: 0.65rem;
+        font-size: 0.72rem; /* fix: 0.65rem → 0.72rem WCAG 1.4.4 */
         font-weight: 700;
         flex-shrink: 0;
     }
@@ -5013,7 +5013,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         padding: 6px 12px;
         min-height: 44px; /* A3: WCAG 2.5.5 touch target */
         border-radius: 6px;
-        font-size: 0.68rem;
+        font-size: 0.72rem; /* fix: 0.68rem → 0.72rem WCAG 1.4.4 */
         font-weight: 600;
         cursor: pointer;
         display: flex;
@@ -5065,7 +5065,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         flex-direction: column;
         gap: 2px;
         padding: 7px 4px 5px;
-        font-size: 0.6rem;
+        /* U4 fix: 0.6rem (9px) → 0.72rem (10.8px) — WCAG 1.4.4 min font-size */
+        font-size: 0.72rem;
         min-width: 56px;
         min-height: 44px; /* A3: WCAG 2.5.5 touch target */
         text-align: center;
@@ -5117,7 +5118,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .stat-card { padding: 12px; }
     .stat-card::after { width: 50px; height: 50px; }
     .stat-value { font-size: 1.4rem; }
-    .stat-label { font-size: 0.68rem; }
+    .stat-label { font-size: 0.72rem; } /* fix: 0.68rem → 0.72rem */
     .stat-icon { width: 30px; height: 30px; }
     .stat-icon svg { width: 14px; height: 14px; }
 
@@ -5133,7 +5134,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
     /* ---- Tables ---- */
     .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    thead th { padding: 8px 8px; font-size: 0.68rem; white-space: nowrap; }
+    thead th { padding: 8px 8px; font-size: 0.72rem; white-space: nowrap; } /* fix: 0.68rem → 0.72rem */
     tbody td { padding: 8px; font-size: 0.78rem; }
 
     /* ---- Search Box ---- */
@@ -5175,7 +5176,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .calendar-grid { border-radius: 8px; }
     .calendar-day-header {
         padding: 6px 2px;
-        font-size: 0.62rem;
+        /* U4 fix: 0.62rem (9.3px) → 0.72rem (10.8px) — WCAG 1.4.4 */
+        font-size: 0.72rem;
     }
     .calendar-day {
         min-height: 72px;
@@ -5187,7 +5189,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
     .calendar-day.today .day-number {
         width: 22px; height: 22px;
-        font-size: 0.68rem;
+        font-size: 0.72rem; /* fix: 0.68rem → 0.72rem */
     }
     .calendar-event {
         /* U0 A2: 0.58rem = 8.1px — tăng lên 0.72rem */
@@ -5291,7 +5293,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
     .rsch-stat-card { padding: 12px; }
     .rsch-stat-val { font-size: 1.4rem; }
-    .rsch-stat-lbl { font-size: 0.7rem; }
+    .rsch-stat-lbl { font-size: 0.72rem; } /* fix: 0.7rem → 0.72rem */
     .rsch-settings-card { padding: 10px 12px !important; }
     .rsch-settings-row {
         flex-direction: column;
@@ -5323,7 +5325,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         flex-wrap: wrap;
         gap: 5px;
     }
-    .patient-room-filters .btn { font-size: 0.7rem; padding: 4px 8px; }
+    .patient-room-filters .btn { font-size: 0.72rem; padding: 4px 8px; } /* fix: 0.7rem → 0.72rem */
 
     /* ===== ROOMS ===== */
     .room-grid {
@@ -5440,5 +5442,5 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .calendar-day { min-height: 60px; padding: 2px; }
     /* U0 A2: 0.52rem → 0.72rem */
     .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
-    .day-number { font-size: 0.65rem; }
+    .day-number { font-size: 0.72rem; } /* fix: 0.65rem → 0.72rem */
 }
