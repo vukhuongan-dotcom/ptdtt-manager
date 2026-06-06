@@ -6,6 +6,7 @@ Serves the web app + JSON data API + EMR Proxy.
 
 import os
 import json
+import hashlib
 import re
 import uuid
 import ssl
@@ -18,7 +19,7 @@ from http.cookiejar import CookieJar
 import urllib.request
 import urllib.error
 
-from flask import Flask, request, jsonify, send_from_directory, abort, Response
+from flask import Flask, request, jsonify, send_from_directory, abort, Response, make_response
 import base64
 import jwt as pyjwt
 import bcrypt
@@ -197,6 +198,11 @@ class atomic_update:
 # ────────────────────────────── Audit Logging ──────────────────────────────
 def _ensure_log_dir():
     os.makedirs(LOG_DIR, exist_ok=True)
+    # Ensure group-write so ptdtt service user can create log files
+    try:
+        os.chmod(LOG_DIR, 0o775)
+    except Exception:
+        pass
 
 def audit_log(user, action, details=None):
     """Write an audit log entry (JSON Lines format, daily files)"""
@@ -211,10 +217,16 @@ def audit_log(user, action, details=None):
         'details': details
     }
     try:
+        is_new = not os.path.exists(log_file)
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+        if is_new:
+            try:
+                os.chmod(log_file, 0o664)
+            except Exception:
+                pass
     except Exception as e:
-        print(f'[Audit] Error writing log: {e}')
+        print(f'[Audit] FAILED to write log: {e}', flush=True)
 
 
 # Fields to display per collection in diff summaries
@@ -387,7 +399,16 @@ def get_data():
     data = load_data()
     # Strip sensitive auth-related fields from response
     safe_data = {k: v for k, v in data.items() if k not in ('customPasswords', 'customAdmins', 'disabledAccounts')}
-    return jsonify(safe_data)
+    # P2.4: ETag — tránh trả về 956KB nếu data không đổi
+    data_str = json.dumps(safe_data, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    etag = '"' + hashlib.md5(data_str.encode('utf-8')).hexdigest() + '"'
+    if request.headers.get('If-None-Match') == etag:
+        return '', 304
+    resp = make_response(data_str)
+    resp.headers['Content-Type'] = 'application/json; charset=utf-8'
+    resp.headers['ETag'] = etag
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 @app.route('/api/data', methods=['PUT'])
 @require_superadmin
@@ -434,6 +455,34 @@ def download_image():
             'Content-Length': str(len(img_data))
         }
     )
+
+
+@app.route('/api/data/surgeries', methods=['GET'])
+@require_auth
+def get_surgeries_filtered():
+    """Return surgeries filtered by optional date range.
+    P2.5: GET /api/data/surgeries?from=YYYY-MM-DD&to=YYYY-MM-DD
+    Falls back to all surgeries if no params provided.
+    Backwards-compatible: existing /api/data still returns all.
+    """
+    data = load_data()
+    surgeries = data.get('surgeries', [])
+
+    from_date = request.args.get('from')
+    to_date = request.args.get('to')
+
+    if from_date or to_date:
+        filtered = []
+        for s in surgeries:
+            d = s.get('date', '')
+            if from_date and d < from_date:
+                continue
+            if to_date and d > to_date:
+                continue
+            filtered.append(s)
+        return jsonify(filtered)
+
+    return jsonify(surgeries)
 
 @app.route('/api/data/<collection>', methods=['GET'])
 @require_auth
