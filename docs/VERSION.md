@@ -50,9 +50,9 @@ grep "CLIENT_BUILD\|REQUIRED_VER" js/store.js index.html sw.js
 
 | Ngày | Version | Ghi chú |
 |---|---|---|
-| 28/04/2028? | `2804281805` | CLIENT_BUILD ban đầu (store.js) |
-| 28/04/2028? | `2804281755` | REQUIRED_VER ban đầu |
+| 28/04/2026 | `2804281805` | CLIENT_BUILD ban đầu (store.js) |
+| 28/04/2026 | `2804281755` | REQUIRED_VER ban đầu |
 | 15/05/2026 | `1505261506` | `?v=` lần cuối cập nhật |
 | 21/04/2020? | `2104201745` | MIN_CLIENT_BUILD quá cũ |
 | 06/06/2026 | `0606261630` | SW CACHE_NAME (Phase 0) |
-| **06/06/2026** | **`2606062130`** | **Đồng bộ tất cả (Phase 1.6)** ✅ |
+| **06/06/2026** | **`2606062130`** | **Đồng bộ tất cả (Phase 1.6) — cả CACHE_NAME** ✅ |
