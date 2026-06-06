@@ -23,19 +23,18 @@
     z-index: 20;
     background: var(--bg-primary);
     padding-bottom: 4px;
-    /* Extend background edge-to-edge to cover scroll content below */
-    margin: 0 -20px;
-    padding-left: 20px;
-    padding-right: 20px;
+    margin: 0 -32px;
+    padding-left: 32px;
+    padding-right: 32px;
 }
 
 /* ── Horizontal scroll zone ── */
 .surgery-scroll-zone {
     overflow-x: auto;
-    overflow-y: visible;
-    /* Negative margin trick so scrollbar sits at page edge */
-    margin: 0 -20px;
-    padding: 0 20px 12px;
+    overflow-y: hidden;
+    /* Pull out full width so 7-day grid can scroll horizontally */
+    margin: 0 -32px;
+    padding: 0 32px 12px;
     /* Custom thin scrollbar */
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
@@ -338,8 +337,8 @@
 }
 @media (max-width: 768px) {
     .surgery-day { width: 170px; }
-    .surgery-sticky-header { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
-    .surgery-scroll-zone { margin: 0 -12px; padding: 0 12px 12px; }
+    .surgery-sticky-header { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+    .surgery-scroll-zone { margin: 0 -16px; padding: 0 16px 12px; }
     .surgery-summary-chips { flex-wrap: wrap; }
 }
 

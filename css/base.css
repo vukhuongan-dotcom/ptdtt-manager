@@ -45,7 +45,6 @@ body {
     margin-left: var(--sidebar-width);
     padding: 28px 32px;
     overflow-y: auto;
-    overflow-x: clip;   /* clip (không tạo scroll context) — cho phép surgery-scroll-zone scroll ngang */
     height: 100vh;
     scroll-behavior: smooth;
 }
