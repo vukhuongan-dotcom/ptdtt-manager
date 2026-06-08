@@ -5950,7 +5950,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     gap: 6px;
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(2,132,199,0.3);
-    transition: all .2s;
+    transition: background-color .2s ease, box-shadow .2s ease;
 }
 .rpt-guide-btn:hover { background: #0369a1; }
 
