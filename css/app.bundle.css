@@ -912,6 +912,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: 1.6rem;
     font-weight: 700;
     text-align: center;
+    text-wrap: balance;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
