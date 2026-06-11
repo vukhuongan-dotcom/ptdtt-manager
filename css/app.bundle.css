@@ -2378,6 +2378,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     border-bottom: 1px solid var(--border);
     background: rgba(8,145,178,0.04);
     gap: 8px;
+    min-height: 72px;  /* đảm bảo header đều cao trong cùng hàng */
 }
 [data-theme="dark"] .team-card-header { background: rgba(8,145,178,0.07); }
 

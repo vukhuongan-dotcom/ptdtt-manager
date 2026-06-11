@@ -899,11 +899,16 @@ const StaffPage = {
         return `
         <div class="team-page-header">
             <p class="team-page-desc">Các tổ nhân sự đặc trách theo từng mảng công tác của khoa</p>
-            ${isAdmin ? `<button class="btn btn-primary" onclick="StaffPage.openTeamForm()">
-                ${Utils.plusIcon()} Thêm tổ
-            </button>` : ''}
+            <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn-secondary" onclick="StaffPage.exportTeamImage()" title="Xuất hình danh sách các tổ">
+                    📷 Xuất hình
+                </button>
+                ${isAdmin ? `<button class="btn btn-primary" onclick="StaffPage.openTeamForm()">
+                    ${Utils.plusIcon()} Thêm tổ
+                </button>` : ''}
+            </div>
         </div>
-        <div class="team-grid">${teamCards}</div>
+        <div class="team-grid" id="team-export-grid">${teamCards}</div>
         `;
     },
 
@@ -979,6 +984,70 @@ const StaffPage = {
         Modal.close();
         App.renderCurrentPage();
         Toast.success(id ? 'Đã cập nhật tổ đặc trách' : 'Đã thêm tổ đặc trách mới');
+    },
+
+    async exportTeamImage() {
+        const grid = document.getElementById('team-export-grid');
+        if (!grid) return;
+        const btn = document.querySelector('.team-export-btn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xuất...'; }
+        try {
+            await Utils.loadScript('html2canvas');
+            // Clone grid vào wrapper có padding/title
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'background:#fff;padding:24px 24px 20px;font-family:inherit;max-width:1100px';
+
+            const title = document.createElement('div');
+            title.style.cssText = 'font-size:15px;font-weight:700;color:#0e7490;margin-bottom:16px;text-align:center;letter-spacing:0.3px';
+            title.textContent = 'CÁC TỔ ĐẶC TRÁCH — KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG';
+
+            const gridClone = grid.cloneNode(true);
+            // Xóa các nút sửa/xóa khỏi clone
+            gridClone.querySelectorAll('.team-card-actions').forEach(el => el.remove());
+            gridClone.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:14px';
+            // Fix màu đen trên nền trắng
+            gridClone.querySelectorAll('.team-card-name,.team-member-name').forEach(el => {
+                el.style.color = '#0f172a';
+            });
+            gridClone.querySelectorAll('.team-member-title').forEach(el => {
+                el.style.color = '#64748b';
+            });
+            gridClone.querySelectorAll('.team-card-header').forEach(el => {
+                el.style.background = 'rgba(8,145,178,0.06)';
+            });
+
+            const footer = document.createElement('div');
+            footer.style.cssText = 'font-size:11px;color:#94a3b8;text-align:right;margin-top:14px';
+            footer.textContent = `Khoa PT Đại trực tràng — Bệnh viện Bình Dân — ${new Date().toLocaleDateString('vi-VN')}`;
+
+            wrapper.appendChild(title);
+            wrapper.appendChild(gridClone);
+            wrapper.appendChild(footer);
+            document.body.appendChild(wrapper);
+
+            const canvas = await html2canvas(wrapper, {
+                scale: 2.5,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false
+            });
+            document.body.removeChild(wrapper);
+
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `To_DacTrach_KhoaPTDTT_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.png`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+                Toast.success('Xuất hình các tổ đặc trách thành công!');
+            }, 'image/png');
+        } catch (err) {
+            Toast.error('Không xuất được hình: ' + err.message);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '📷 Xuất hình'; }
+        }
     },
 
     async deleteTeam(id) {
