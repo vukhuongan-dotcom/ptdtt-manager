@@ -56,7 +56,7 @@ WRITE_COLLECTIONS = {
     'staff', 'staffStatuses', 'schedules', 'tasks', 'tasksTrash', 'plans', 'patients',
     'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule', 'surgeries',
     'notifications', 'rooms', 'departedStaff', 'externalDoctors', 'shcmSettings',
-    'conferences'
+    'conferences', 'specialTeams'
 }
 
 # ────────────────────────────── Flask App ──────────────────────────────

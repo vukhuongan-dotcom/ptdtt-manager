@@ -2336,6 +2336,134 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 /* Departed badge */
 .badge-departed { background: #94a3b8; color: #fff; }
+
+/* ===== CÁC TỔ ĐẶC TRÁCH ===== */
+.team-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+.team-page-desc {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.team-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    padding: 0;
+    overflow: hidden;
+    transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+.team-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-light);
+}
+
+.team-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,145,178,0.04);
+    gap: 8px;
+}
+[data-theme="dark"] .team-card-header { background: rgba(8,145,178,0.07); }
+
+.team-card-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.team-card-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+.team-card-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+}
+.team-card-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.team-member-list {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 60px;
+}
+.team-member-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.team-member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.72rem;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+.team-member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.team-member-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+.team-member-title {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+}
+.team-member-empty {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-style: italic;
+}
+.team-card-note {
+    padding: 8px 16px 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-top: 1px dashed var(--border);
+    background: rgba(0,0,0,0.015);
+}
+[data-theme="dark"] .team-card-note { background: rgba(255,255,255,0.02); }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .team-grid { grid-template-columns: 1fr; }
+    .team-page-header { flex-direction: column; align-items: flex-start; }
+}
 /* ===== STAFF TRACKING PAGE ===== */
 .st-controls {
     display: flex;

@@ -10,7 +10,7 @@ const STAFF_STATUSES = {
 const StaffPage = {
     currentFilter: 'all',
     searchQuery: '',
-    activeTab: 'internal', // 'internal' | 'external' | 'departed'
+    activeTab: 'internal', // 'internal' | 'external' | 'departed' | 'teams'
 
     render() {
         return `
@@ -37,9 +37,15 @@ const StaffPage = {
             <button class="staff-subtab ${this.activeTab === 'departed' ? 'active' : ''}" onclick="StaffPage.switchTab('departed')">
                 📤 Rời khoa <span class="staff-subtab-count">${(Store.getAll('departedStaff') || []).length}</span>
             </button>
+            <button class="staff-subtab ${this.activeTab === 'teams' ? 'active' : ''}" onclick="StaffPage.switchTab('teams')">
+                🏷️ Các tổ đặc trách <span class="staff-subtab-count">${(Store.getAll('specialTeams') || []).length}</span>
+            </button>
         </div>
 
-        ${this.activeTab === 'internal' ? this.renderInternal() : this.activeTab === 'external' ? this.renderExternal() : this.renderDeparted()}
+        ${ this.activeTab === 'internal' ? this.renderInternal()
+          : this.activeTab === 'external' ? this.renderExternal()
+          : this.activeTab === 'teams'    ? this.renderTeams()
+          : this.renderDeparted() }
         `;
     },
 
@@ -847,6 +853,152 @@ const StaffPage = {
         } catch (e) {
             console.error('Export Excel error:', e);
             Toast.error('Lỗi xuất Excel: ' + e.message);
+        }
+    },
+
+    // ===== CÁC TỔ ĐẶC TRÁCH =====
+    renderTeams() {
+        const teams = (Store.getAll('specialTeams') || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+        const allStaff = Store.getAll('staff');
+        const isAdmin = Auth.getSession()?.isAdmin;
+
+        const memberHtml = (memberIds) => {
+            if (!memberIds || !memberIds.length) return '<span class="team-member-empty">Chưa có thành viên</span>';
+            return memberIds.map(sid => {
+                const s = allStaff.find(x => x.id === sid);
+                if (!s) return '';
+                return `<div class="team-member-item">
+                    <div class="team-member-avatar" style="background:${s.color || '#6366f1'}">${Utils.getInitials(s.name)}</div>
+                    <div class="team-member-info">
+                        <span class="team-member-name">${s.name}</span>
+                        <span class="team-member-title">${s.title || ''}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        const teamCards = teams.length ? teams.map(t => `
+            <div class="team-card">
+                <div class="team-card-header">
+                    <div class="team-card-title-row">
+                        <span class="team-card-icon">${t.icon || '🏷️'}</span>
+                        <h3 class="team-card-name">${t.name}</h3>
+                    </div>
+                    ${isAdmin ? `<div class="team-card-actions">
+                        <button class="btn-icon" onclick="StaffPage.openTeamForm(${t.id})" title="Sửa tổ">${Utils.editIcon()}</button>
+                        <button class="btn-icon" onclick="StaffPage.deleteTeam(${t.id})" title="Xoá tổ">${Utils.deleteIcon()}</button>
+                    </div>` : ''}
+                </div>
+                <div class="team-member-list">
+                    ${memberHtml(t.members)}
+                </div>
+                ${t.note ? `<div class="team-card-note">📝 ${t.note}</div>` : ''}
+            </div>
+        `).join('') : `<div class="empty-state"><p>Chưa có tổ đặc trách nào</p></div>`;
+
+        return `
+        <div class="team-page-header">
+            <p class="team-page-desc">Các tổ nhân sự đặc trách theo từng mảng công tác của khoa</p>
+            ${isAdmin ? `<button class="btn btn-primary" onclick="StaffPage.openTeamForm()">
+                ${Utils.plusIcon()} Thêm tổ
+            </button>` : ''}
+        </div>
+        <div class="team-grid">${teamCards}</div>
+        `;
+    },
+
+    openTeamForm(id) {
+        if (!Auth.getSession()?.isAdmin) return;
+        const teams = Store.getAll('specialTeams') || [];
+        const t = id ? teams.find(x => x.id === id) : null;
+        const allStaff = Store.getAll('staff');
+        const memberIds = t?.members || [];
+
+        const staffOptions = allStaff.map(s =>
+            `<option value="${s.id}" ${memberIds.includes(s.id) ? 'selected' : ''}>${s.title} ${s.name} — ${s.role}</option>`
+        ).join('');
+
+        const ICONS = ['🔬','📋','📅','🤝','🎨','💻','🏥','📊','🔑','⚕️','📌','🩺'];
+        const iconOptions = ICONS.map(ic =>
+            `<option value="${ic}" ${(t?.icon || '') === ic ? 'selected' : ''}>${ic}</option>`
+        ).join('');
+
+        Modal.open(t ? 'Sửa tổ đặc trách' : 'Thêm tổ đặc trách', `
+            <form onsubmit="StaffPage.saveTeam(event, ${id || 0})">
+                <div class="form-row">
+                    <div class="form-group" style="flex:0 0 80px">
+                        <label class="form-label">Icon</label>
+                        <select class="form-select" name="icon" id="team-icon-sel">${iconOptions}</select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tên tổ</label>
+                        <input class="form-input" name="name" value="${t?.name || ''}" required placeholder="VD: Nghiên cứu khoa học">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Thành viên <span style="color:var(--text-muted);font-weight:400">(giữ Ctrl/Cmd để chọn nhiều)</span></label>
+                    <select class="form-select" name="members" id="team-members-sel" multiple size="8" style="height:auto">
+                        ${staffOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ghi chú</label>
+                    <input class="form-input" name="note" value="${t?.note || ''}" placeholder="Ghi chú thêm nếu có...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Thứ tự hiển thị</label>
+                    <input class="form-input" type="number" name="order" value="${t?.order || (teams.length + 1)}" min="1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">${t ? 'Cập nhật' : 'Thêm tổ'}</button>
+                </div>
+            </form>
+        `);
+    },
+
+    saveTeam(e, id) {
+        if (!Auth.getSession()?.isAdmin) return;
+        e.preventDefault();
+        const form = new FormData(e.target);
+        const sel = document.getElementById('team-members-sel');
+        const memberIds = sel ? Array.from(sel.selectedOptions).map(o => parseInt(o.value)) : [];
+        const data = {
+            name: form.get('name'),
+            icon: form.get('icon') || '🏷️',
+            members: memberIds,
+            note: form.get('note') || '',
+            order: parseInt(form.get('order')) || 1
+        };
+        if (id) {
+            Store.update('specialTeams', id, data);
+        } else {
+            Store.add('specialTeams', data);
+        }
+        Store.saveCollections(['specialTeams']);
+        Modal.close();
+        App.renderCurrentPage();
+        Toast.success(id ? 'Đã cập nhật tổ đặc trách' : 'Đã thêm tổ đặc trách mới');
+    },
+
+    async deleteTeam(id) {
+        if (!Auth.getSession()?.isAdmin) return;
+        const teams = Store.getAll('specialTeams') || [];
+        const t = teams.find(x => x.id === id);
+        if (!t) return;
+        const confirmed = await Confirm.show({
+            title: 'Xoà tổ đặc trách',
+            message: `Xoà tổ <strong>${t.name}</strong>?<br>Hành động này không thể hoàn tác.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xoà tổ',
+            cancelText: 'Giữ lại'
+        });
+        if (confirmed) {
+            Store.remove('specialTeams', id);
+            Store.saveCollections(['specialTeams']);
+            App.renderCurrentPage();
+            Toast.success(`Đã xoà tổ ${t.name}`);
         }
     }
 };
