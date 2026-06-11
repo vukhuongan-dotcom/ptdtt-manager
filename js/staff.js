@@ -1017,7 +1017,7 @@ const StaffPage = {
             return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;break-inside:avoid">
                 <div style="background:rgba(8,145,178,0.06);border-bottom:1px solid #e2e8f0;padding:14px 16px 10px;display:flex;align-items:flex-start;gap:8px;min-height:64px">
                     <span style="font-size:20px;line-height:1.2;flex-shrink:0">${t.icon || '🏷️'}</span>
-                    <div style="font-size:13px;font-weight:700;color:#0e7490;line-height:1.4">${t.name}</div>
+                    <div style="font-size:13px;font-weight:700;color:#0e7490;line-height:1.4">${t.name.replace(' & ', '<br>& ')}</div>
                 </div>
                 <div style="padding:12px 16px">
                     ${memberRows || '<div style="font-size:12px;color:#94a3b8;font-style:italic">Chưa có thành viên</div>'}
