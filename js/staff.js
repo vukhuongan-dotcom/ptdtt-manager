@@ -882,7 +882,7 @@ const StaffPage = {
                 <div class="team-card-header">
                     <div class="team-card-title-row">
                         <span class="team-card-icon">${t.icon || '🏷️'}</span>
-                        <h3 class="team-card-name">${t.name}</h3>
+                        <h3 class="team-card-name">${t.name.replace(' & ', '<br>& ')}</h3>
                     </div>
                     ${isAdmin ? `<div class="team-card-actions">
                         <button class="btn-icon" onclick="StaffPage.openTeamForm(${t.id})" title="Sửa tổ">${Utils.editIcon()}</button>
