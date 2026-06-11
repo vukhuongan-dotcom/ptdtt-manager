@@ -987,66 +987,102 @@ const StaffPage = {
     },
 
     async exportTeamImage() {
-        const grid = document.getElementById('team-export-grid');
-        if (!grid) return;
-        const btn = document.querySelector('.team-export-btn');
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xuất...'; }
+        const teams = (Store.getAll('specialTeams') || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+        const allStaff = Store.getAll('staff');
+        const session = Auth.getSession();
+        const now = new Date();
+        const dateLabel = now.toLocaleDateString('vi-VN');
+        const timeLabel = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        const userName = session?.name || session?.username || 'Hệ thống';
+
+        // Build card HTML cho từng tổ
+        const cardHtml = teams.map(t => {
+            const memberRows = (t.members || []).map(sid => {
+                const s = allStaff.find(x => x.id === sid);
+                if (!s) return '';
+                // Initials cho avatar
+                const parts = s.name.split(' ');
+                const initials = parts.length >= 2
+                    ? parts[parts.length - 2][0] + parts[parts.length - 1][0]
+                    : s.name.substring(0, 2);
+                return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                    <div style="width:34px;height:34px;border-radius:50%;background:${s.color || '#6366f1'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0">${initials.toUpperCase()}</div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.3">${s.name}</div>
+                        <div style="font-size:11px;color:#64748b">${s.title || ''}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;break-inside:avoid">
+                <div style="background:rgba(8,145,178,0.06);border-bottom:1px solid #e2e8f0;padding:14px 16px 10px;display:flex;align-items:flex-start;gap:8px;min-height:64px">
+                    <span style="font-size:20px;line-height:1.2;flex-shrink:0">${t.icon || '🏷️'}</span>
+                    <div style="font-size:13px;font-weight:700;color:#0e7490;line-height:1.4">${t.name}</div>
+                </div>
+                <div style="padding:12px 16px">
+                    ${memberRows || '<div style="font-size:12px;color:#94a3b8;font-style:italic">Chưa có thành viên</div>'}
+                    ${t.note ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:11px;color:#64748b">📝 ${t.note}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+        container.innerHTML = `
+        <div id="team-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Inter',sans-serif;color:#0f172a;">
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                    <div style="font-size:14px;color:#cbd5e1;margin-top:3px">Bệnh viện Bình Dân</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:20px;font-weight:700;color:#ffffff">CÁC TỔ ĐẶC TRÁCH</div>
+                    <div style="font-size:14px;color:#67e8f9;font-weight:600">${teams.length} tổ · ${teams.reduce((sum, t) => sum + (t.members?.length || 0), 0)} thành viên</div>
+                </div>
+            </div>
+
+            <!-- Summary bar -->
+            <div style="padding:12px 36px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;align-items:center;gap:12px">
+                ${teams.map(t => `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#0f172a;font-weight:600">
+                    <span>${t.icon || '🏷️'}</span>${t.name.split('&')[0].trim()}
+                </span>`).join('<span style="color:#cbd5e1">·</span>')}
+            </div>
+
+            <!-- Cards grid -->
+            <div style="padding:20px 36px 24px">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+                    ${cardHtml}
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:12px 36px;border-top:2px solid #cbd5e1;display:flex;justify-content:space-between;font-size:12px;color:#333;background:#f8fafc">
+                <span>Xuất bởi: ${userName}</span>
+                <span>Xuất lúc ${timeLabel} ngày ${dateLabel}</span>
+            </div>
+        </div>`;
+
+        document.body.appendChild(container);
+        const target = container.querySelector('#team-export-target');
         try {
             await Utils.loadScript('html2canvas');
-            // Clone grid vào wrapper có padding/title
-            const wrapper = document.createElement('div');
-            wrapper.style.cssText = 'background:#fff;padding:24px 24px 20px;font-family:inherit;max-width:1100px';
-
-            const title = document.createElement('div');
-            title.style.cssText = 'font-size:15px;font-weight:700;color:#0e7490;margin-bottom:16px;text-align:center;letter-spacing:0.3px';
-            title.textContent = 'CÁC TỔ ĐẶC TRÁCH — KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG';
-
-            const gridClone = grid.cloneNode(true);
-            // Xóa các nút sửa/xóa khỏi clone
-            gridClone.querySelectorAll('.team-card-actions').forEach(el => el.remove());
-            gridClone.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:14px';
-            // Fix màu đen trên nền trắng
-            gridClone.querySelectorAll('.team-card-name,.team-member-name').forEach(el => {
-                el.style.color = '#0f172a';
-            });
-            gridClone.querySelectorAll('.team-member-title').forEach(el => {
-                el.style.color = '#64748b';
-            });
-            gridClone.querySelectorAll('.team-card-header').forEach(el => {
-                el.style.background = 'rgba(8,145,178,0.06)';
-            });
-
-            const footer = document.createElement('div');
-            footer.style.cssText = 'font-size:11px;color:#94a3b8;text-align:right;margin-top:14px';
-            footer.textContent = `Khoa PT Đại trực tràng — Bệnh viện Bình Dân — ${new Date().toLocaleDateString('vi-VN')}`;
-
-            wrapper.appendChild(title);
-            wrapper.appendChild(gridClone);
-            wrapper.appendChild(footer);
-            document.body.appendChild(wrapper);
-
-            const canvas = await html2canvas(wrapper, {
-                scale: 2.5,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false
-            });
-            document.body.removeChild(wrapper);
-
-            canvas.toBlob(blob => {
+            const canvasEl = await html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+            Utils.applyExportWatermark(canvasEl);
+            canvasEl.toBlob(blob => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `To_DacTrach_KhoaPTDTT_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.png`;
-                document.body.appendChild(a);
+                a.download = `To_DacTrach_KhoaPTDTT_${dateLabel.replace(/\//g, '-')}.jpg`;
                 a.click();
-                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-                Toast.success('Xuất hình các tổ đặc trách thành công!');
-            }, 'image/png');
+                URL.revokeObjectURL(url);
+                document.body.removeChild(container);
+                Toast.success('Đã xuất hình các tổ đặc trách!');
+            }, 'image/jpeg', 0.95);
         } catch (err) {
-            Toast.error('Không xuất được hình: ' + err.message);
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = '📷 Xuất hình'; }
+            console.error('Export team image failed:', err);
+            Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
+            document.body.removeChild(container);
         }
     },
 
