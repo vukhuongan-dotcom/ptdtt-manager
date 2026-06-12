@@ -3513,7 +3513,35 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     gap: 12px;
 }
 
+/* ===== DARK MODE OVERRIDES — Calendar Events ===== */
+/*
+  Light mode: rgba(color, 0.15–0.25) + dark text → ổn
+  Dark mode: cần opacity cao hơn + text sáng hơn để đủ tương phản
+*/
 
+/* Monthly grid events */
+[data-theme="dark"] .calendar-event.meeting     { background: rgba(8,145,178,0.4);   color: #67e8f9; }
+[data-theme="dark"] .calendar-event.consultation { background: rgba(124,58,237,0.4); color: #c4b5fd; }
+[data-theme="dark"] .calendar-event.training    { background: rgba(5,150,105,0.4);   color: #6ee7b7; }
+[data-theme="dark"] .calendar-event.conference  { background: rgba(217,119,6,0.45);  color: #fcd34d; }
+[data-theme="dark"] .calendar-event.other       { background: rgba(100,116,139,0.35); color: #cbd5e1; }
+
+/* Week/column view events */
+[data-theme="dark"] .cal-event.meeting     { background: rgba(8,145,178,0.35);   color: #67e8f9; }
+[data-theme="dark"] .cal-event.consultation { background: rgba(124,58,237,0.35); color: #c4b5fd; }
+[data-theme="dark"] .cal-event.training    { background: rgba(5,150,105,0.35);   color: #6ee7b7; }
+[data-theme="dark"] .cal-event.conference  { background: rgba(217,119,6,0.4);    color: #fcd34d; }
+[data-theme="dark"] .cal-event.other       { background: rgba(100,116,139,0.3);  color: #cbd5e1; }
+
+/* All-day events */
+[data-theme="dark"] .cal-event-allday.meeting     { background: rgba(8,145,178,0.4);   color: #67e8f9; }
+[data-theme="dark"] .cal-event-allday.consultation { background: rgba(124,58,237,0.4); color: #c4b5fd; }
+[data-theme="dark"] .cal-event-allday.training    { background: rgba(5,150,105,0.4);   color: #6ee7b7; }
+[data-theme="dark"] .cal-event-allday.conference  { background: rgba(217,119,6,0.45);  color: #fcd34d; }
+[data-theme="dark"] .cal-event-allday.other       { background: rgba(100,116,139,0.35); color: #cbd5e1; }
+
+/* Multi-day bars — cần opacity cao nhất để nhìn thấy span */
+[data-theme="dark"] .calendar-event.multi-day { opacity: 1; font-weight: 700; }
 .patient-stats {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
 }
