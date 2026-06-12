@@ -507,6 +507,9 @@ const App = {
         this._updateThemeToggleUI(next);
         this._updateMetaThemeColor(next);
         this.updateMobileHeader(); // cập nhật icon sun/moon trên mobile header
+        // Nếu đang ở trang login, re-render để icon toggle cập nhật
+        const loginContainer = document.getElementById('login-container');
+        if (loginContainer) loginContainer.innerHTML = LoginPage.render();
     },
 
     _updateThemeToggleUI(theme) {
