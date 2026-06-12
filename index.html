@@ -43,11 +43,10 @@
     <!-- P2.1: CSS bundle (24 files → 1 request). Build: bash build-css.sh -->
     <link rel="stylesheet" href="css/app.bundle.css?v=2606120924">
     <!-- U0 BUG-2: @keyframes shake + pulse chuyển vào base.css — xóa inline để tránh xung đột -->
-    <!-- U0 Dark mode: set theme trước CSS bundle để tránh flash -->
+    <!-- U0 Dark mode: set theme trước CSS bundle để tránh flash. Mặc định light; chỉ đổi khi user bấm toggle -->
     <script>
         try {
-            var _t = localStorage.getItem('ptdtt_theme');
-            if (!_t) _t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            var _t = localStorage.getItem('ptdtt_theme') || 'light';
             document.documentElement.setAttribute('data-theme', _t);
         } catch (_) {}
     </script>
