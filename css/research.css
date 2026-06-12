@@ -44,6 +44,9 @@
     border-bottom: 1px solid var(--border);
     background: linear-gradient(135deg, #eff6ff, #f0fdf4);
 }
+[data-theme="dark"] .rsch-table-header {
+    background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(34,197,94,0.08));
+}
 .rsch-table-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text); }
 .rsch-table-wrap { overflow-x: auto; }
 .rsch-table {

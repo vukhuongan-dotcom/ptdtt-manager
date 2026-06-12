@@ -154,7 +154,7 @@ const ReportsPage = {
             </div>
 
             <!-- Stats: 5 high contrast colored cards in one row -->
-            <div style="padding:16px 22px;background:#fff">
+            <div class="rpt-body-padding">
                 <div class="rpt-stat-grid">
                     <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
                         <div class="rpt-stat-label">TỔNG BN</div>
@@ -180,17 +180,17 @@ const ReportsPage = {
             </div>
 
             <!-- Detail sections -->
-            <div style="padding:0 22px 16px;background:#fff">
+            <div class="rpt-detail-padding">
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
-                <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#1d4ed8;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date))})</div>
-                    <div style="font-size:0.95rem;color:#1e3a8a;font-weight:600">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} CT, ${r.surgeryYC || '0'} YC${r.surgeryRobot ? ', ' + r.surgeryRobot + ' Robot' : ''})</span></div>
+                <div class="rpt-info-blue">
+                    <div class="rpt-info-title-blue">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date))})</div>
+                    <div class="rpt-info-val-blue">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} CT, ${r.surgeryYC || '0'} YC${r.surgeryRobot ? ', ' + r.surgeryRobot + ' Robot' : ''})</span></div>
                 </div>` : ''}
 
                 ${this._isFriday(r.date) && (r.surgery2Total > 0) ? `
-                <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#15803d;font-size:0.82rem;margin-bottom:3px">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date, 3)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date, 3))})</div>
-                    <div style="font-size:0.95rem;color:#166534;font-weight:600">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} CT, ${r.surgery2YC || '0'} YC${r.surgery2Robot ? ', ' + r.surgery2Robot + ' Robot' : ''})</span></div>
+                <div class="rpt-info-green">
+                    <div class="rpt-info-title-green">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date, 3)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date, 3))})</div>
+                    <div class="rpt-info-val-green">${r.surgery2Total || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgery2CT || '0'} CT, ${r.surgery2YC || '0'} YC${r.surgery2Robot ? ', ' + r.surgery2Robot + ' Robot' : ''})</span></div>
                 </div>` : ''}
 
                 ${r.notes ? `
@@ -201,7 +201,7 @@ const ReportsPage = {
             </div>
 
             <!-- Footer -->
-            <div style="padding:10px 22px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#475569">
+            <div class="rpt-card-footer">
                 <span>👤 BS trực khoa: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
                 <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00'}</strong></span>
             </div>
@@ -336,7 +336,7 @@ const ReportsPage = {
 
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
-            return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='#f1f5f9';c.style.color='#334155';c.style.borderColor='#cbd5e1'});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
+            return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
                 class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name === defaultReporter ? '#0f172a' : '#cbd5e1'};background:${d.name === defaultReporter ? '#0f172a' : '#f1f5f9'};color:${d.name === defaultReporter ? '#fff' : '#334155'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
         }).join('');
 
@@ -361,25 +361,25 @@ const ReportsPage = {
                             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#92400e;font-weight:600">MỔ CHƯA VỀ</div>
                         </div>
                         <input type="number" name="postOpNotReturned" value="${e.postOpNotReturned || 0}" min="0"
-                            style="width:52px;text-align:center;font-size:1.3rem;font-weight:800;border:2px solid #f59e0b44;border-radius:8px;padding:3px;color:#92400e;background:#fff">
+                            class="rpt-input-amber">
                     </div>
                 </div>
 
                 <!-- Row 2: 3 steppers inline -->
                 <div class="rpt-form-3col">
-                    <div style="background:#ecfdf5;border-radius:8px;padding:7px 4px">
+                    <div class="rpt-stepper-green">
                         ${stepper16('admissions', e.admissions || 0, '#059669', '🏥 Nhập viện')}
                     </div>
-                    <div style="background:#fef2f2;border-radius:8px;padding:7px 4px">
+                    <div class="rpt-stepper-red">
                         ${stepper16('discharges', e.discharges || 0, '#dc2626', '📤 Xuất viện')}
                     </div>
-                    <div style="background:#faf5ff;border-radius:8px;padding:7px 4px">
+                    <div class="rpt-stepper-purple">
                         ${stepper16('severePatients', e.severePatients || 0, '#7c3aed', '⚠️ BN nặng')}
                     </div>
                 </div>
 
                 <!-- Row 3: Surgery next day -->
-                <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+                <div class="rpt-stepper-blue">
                     <div style="font-size:0.72rem;font-weight:700;color:#1d4ed8;margin-bottom:5px">🔪 Bệnh mổ ${nextDayLabel}</div>
                     <div class="rpt-form-4col-surgery" oninput="${autoSumSurgery('surgery')}">
                         ${readonlyTotal('surgeryTotal', (e.surgeryCT || 0) + (e.surgeryYC || 0) + (e.surgeryRobot || 0), '#1d4ed8', 'Tổng')}
@@ -390,7 +390,7 @@ const ReportsPage = {
                 </div>
 
                 ${isFri ? `
-                <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+                <div class="rpt-stepper-green2">
                     <div style="font-size:0.72rem;font-weight:700;color:#15803d;margin-bottom:5px">🔪 Bệnh mổ ${this.getDayOfWeek(this._getNextDay(date, 3))} (${this.formatDateShort(this._getNextDay(date, 3))})</div>
                     <div class="rpt-form-4col-surgery" oninput="${autoSumSurgery('surgery2')}">
                         ${readonlyTotal('surgery2Total', (e.surgery2CT || 0) + (e.surgery2YC || 0) + (e.surgery2Robot || 0), '#15803d', 'Tổng')}
@@ -804,7 +804,7 @@ const ReportsPage = {
             </div>
 
             <!-- Stats: 2 main cards -->
-            <div style="padding:16px 22px;background:#fff">
+            <div class="rpt-body-padding">
                 <div class="rpt-stat-grid-2">
                     <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
                         <div class="rpt-stat-label">TỔNG BN</div>
@@ -818,27 +818,27 @@ const ReportsPage = {
             </div>
 
             <!-- Detail sections -->
-            <div style="padding:0 22px 16px;background:#fff">
+            <div class="rpt-detail-padding">
                 ${r.fromHSCC > 0 ? `
-                <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#dc2626;font-size:0.82rem;margin-bottom:3px">🚑 NHẬN TỪ HSCC: ${r.fromHSCC} ca</div>
+                <div class="rpt-info-red">
+                    <div class="rpt-info-title-red">🚑 NHẬN TỪ HSCC: ${r.fromHSCC} ca</div>
                     ${r.fromHSCCDetail ? `<div style="font-size:0.85rem;color:#991b1b;line-height:1.5">${r.fromHSCCDetail}</div>` : ''}
                 </div>` : ''}
 
                 ${r.fromHoiTinh > 0 ? `
-                <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                <div class="rpt-info-blue">
                     <div style="font-weight:700;color:#2563eb;font-size:0.82rem;margin-bottom:3px">🏥 NHẬN TỪ HỒI TỈNH: ${r.fromHoiTinh} ca</div>
                     ${r.fromHoiTinhDetail ? `<div style="font-size:0.85rem;color:#1e40af;line-height:1.5">${r.fromHoiTinhDetail}</div>` : ''}
                 </div>` : ''}
 
                 ${r.fromICU > 0 ? `
-                <div style="background:#faf5ff;border-left:4px solid #7c3aed;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
-                    <div style="font-weight:700;color:#7c3aed;font-size:0.82rem;margin-bottom:3px">🏨 NHẬN TỪ ICU: ${r.fromICU} ca</div>
+                <div class="rpt-info-purple">
+                    <div class="rpt-info-title-purple">🏨 NHẬN TỪ ICU: ${r.fromICU} ca</div>
                     ${r.fromICUDetail ? `<div style="font-size:0.85rem;color:#5b21b6;line-height:1.5">${r.fromICUDetail}</div>` : ''}
                 </div>` : ''}
 
                 ${r.fromGiaiAp > 0 ? `
-                <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:10px">
+                <div class="rpt-info-green">
                     <div style="font-weight:700;color:#16a34a;font-size:0.82rem;margin-bottom:3px">🔄 NHẬN GIẢI ÁP KHOA: ${r.fromGiaiAp} ca</div>
                     ${r.fromGiaiApDetail ? `<div style="font-size:0.85rem;color:#166534;line-height:1.5">${r.fromGiaiApDetail}</div>` : ''}
                 </div>` : ''}
@@ -899,7 +899,7 @@ const ReportsPage = {
 
         // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
-            return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='#f0f9ff';c.style.color='#0369a1';c.style.borderColor='#bae6fd'});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
+            return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
                 class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? '#0284c7' : '#bae6fd'};background:${n.name === defaultReporter ? '#0284c7' : '#f0f9ff'};color:${n.name === defaultReporter ? '#fff' : '#0369a1'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
         }).join('') : '';
 
@@ -918,19 +918,19 @@ const ReportsPage = {
 
                 <!-- Row 2: 4 sources inline compact -->
                 <div class="rpt-form-4col-surgery-mb">
-                    <div style="background:#fef2f2;border-radius:8px;padding:8px 4px;text-align:center">
+                    <div class="rpt-stepper-red" style="text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#dc2626;margin-bottom:4px">🚑 HSCC</div>
                         ${stepper('fromHSCC', e.fromHSCC || 0, '#dc2626')}
                     </div>
-                    <div style="background:#eff6ff;border-radius:8px;padding:8px 4px;text-align:center">
+                    <div class="rpt-stepper-blue" style="text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#2563eb;margin-bottom:4px">🏥 Hồi tỉnh</div>
                         ${stepper('fromHoiTinh', e.fromHoiTinh || 0, '#2563eb')}
                     </div>
-                    <div style="background:#faf5ff;border-radius:8px;padding:8px 4px;text-align:center">
+                    <div class="rpt-stepper-purple" style="text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#7c3aed;margin-bottom:4px">🏨 ICU</div>
                         ${stepper('fromICU', e.fromICU || 0, '#7c3aed')}
                     </div>
-                    <div style="background:#f0fdf4;border-radius:8px;padding:8px 4px;text-align:center">
+                    <div class="rpt-stepper-green2" style="text-align:center">
                         <div style="font-size:0.78rem;font-weight:700;color:#16a34a;margin-bottom:4px">🔄 Giải áp</div>
                         ${stepper('fromGiaiAp', e.fromGiaiAp || 0, '#16a34a')}
                     </div>
@@ -943,15 +943,15 @@ const ReportsPage = {
                 </div>
                 <div id="detail-fromHoiTinh" style="display:${(e.fromHoiTinh > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
-                        style="width:100%;padding:8px 10px;border:1px solid #93c5fd;border-radius:6px;font-size:0.88rem;background:#eff6ff">
+                        style="width:100%;padding:8px 10px;border:1px solid var(--primary-dark,#93c5fd);border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
                 <div id="detail-fromICU" style="display:${(e.fromICU > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromICUDetail" value="${e.fromICUDetail || ''}" placeholder="🏨 Chi tiết ICU: tên BN / phòng..."
-                        style="width:100%;padding:8px 10px;border:1px solid #c4b5fd;border-radius:6px;font-size:0.88rem;background:#faf5ff">
+                        style="width:100%;padding:8px 10px;border:1px solid #c4b5fd;border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
                 <div id="detail-fromGiaiAp" style="display:${(e.fromGiaiAp > 0) ? 'block' : 'none'};margin-bottom:6px">
                     <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
-                        style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.88rem;background:#f0fdf4">
+                        style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
 
                 <!-- Row 4: Reporter quick-select -->
@@ -1303,22 +1303,22 @@ const ReportsPage = {
             <p>Vào tab <strong>"BS trực khoa"</strong> → Nhấn <strong>"+ Tạo báo cáo 16h"</strong></p>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 1: Tổng BN & Mổ chưa về</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 <strong>TỔNG BN</strong> (nền xanh đậm): Tổng BN trong khoa · <strong>MỔ CHƯA VỀ</strong> (nền vàng): BN đã mổ chưa về khoa
             </div>
-            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#065f46;margin:6px 0">
+            <div class="rpt-guide-box-green">
                 💡 <strong>MẸO:</strong> Nếu hệ thống EMR có dữ liệu, số BN sẽ được <strong>tự động điền</strong> sẵn.
             </div>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 2: Nhập viện – Xuất viện – BN nặng</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 Gồm <strong>3 ô stepper</strong> (nút [−] [+]):<br>
                 🏥 <strong>Nhập viện</strong> · 📤 <strong>Xuất viện</strong> · ⚠️ <strong>BN nặng</strong><br>
                 <em>Nhấn [+] tăng 1, [−] giảm 1, hoặc nhập số trực tiếp.</em>
             </div>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 3: Bệnh mổ ngày mai</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 <strong>4 stepper</strong> cho ca mổ dự kiến ngày hôm sau:
                 <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:6px 0">
                     <tr style="background:#0c4a6e;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th></tr>
@@ -1328,15 +1328,15 @@ const ReportsPage = {
                     <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>Robot</strong> 🤖</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Ca mổ robot</td></tr>
                 </table>
             </div>
-            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#065f46;margin:6px 0">
+            <div class="rpt-guide-box-green">
                 💡 <strong>Tự động cộng:</strong> Khi thay đổi CT, YC hoặc Robot → ô <strong>Tổng</strong> tự cập nhật.
             </div>
-            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#1e40af;margin:6px 0">
+            <div class="rpt-guide-box-blue">
                 ℹ️ Nếu hôm nay là <strong>Thứ Sáu</strong>, form hiển thị thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau (cũng 4 stepper).
             </div>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 4: Chọn BS trực khoa</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 Danh sách BS dạng <strong>chips</strong>. Nhấn vào tên → chip chuyển <strong>màu đen</strong> (đã chọn).
             </div>
             <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#92400e;margin:6px 0">
@@ -1344,7 +1344,7 @@ const ReportsPage = {
             </div>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 5: Ghi chú & Lưu</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 • <strong>Ghi chú:</strong> Thu gọn mặc định, nhấn "📝 Ghi chú thêm" để mở.<br>
                 • <strong>Lưu:</strong> Nhấn <strong>"💾 Lưu báo cáo"</strong>. Giờ lưu = thời điểm nhấn nút.
             </div>
@@ -1353,12 +1353,12 @@ const ReportsPage = {
             <p>Vào tab <strong>"ĐD trực BV"</strong> → Nhấn <strong>"+ Tạo báo cáo 7h"</strong></p>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 1: Tổng số bệnh nhân</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 Ô lớn nền <strong>xanh dương gradient</strong> hiển thị ngày tháng. Nhập tổng BN vào ô bên phải.
             </div>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 2: Nguồn BN nhận (HSCC – Hồi tỉnh – ICU – Giải áp)</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 <strong>4 stepper</strong> nằm ngang:
                 <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:6px 0">
                     <tr style="background:#0c4a6e;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th><th style="padding:6px 8px">Màu</th></tr>
@@ -1369,19 +1369,19 @@ const ReportsPage = {
                 </table>
                 <p style="margin:6px 0 0"><strong>Tổng nhận BN đêm qua</strong> = HSCC + Hồi tỉnh + ICU + Giải áp (tự động cộng).</p>
             </div>
-            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#065f46;margin:6px 0">
+            <div class="rpt-guide-box-green">
                 💡 <strong>Auto-expand:</strong> Khi số > 0, ô chi tiết <strong>tự hiện</strong> bên dưới để nhập tên BN/phòng. Khi = 0, tự ẩn.
             </div>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 3–4: Chọn ĐD & Ghi chú</h3>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 • <strong>Chọn ĐD:</strong> Nhấn tên mình trong danh sách chips → chuyển <strong>màu xanh</strong>.<br>
                 • <strong>Ghi chú:</strong> Thu gọn mặc định, nhấn để mở nhập tình huống đêm trực.<br>
                 • Nhấn <strong>"💾 Lưu báo cáo"</strong> để hoàn tất.
             </div>
 
             <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">4. Xuất hình ảnh (JPEG)</h2>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0">
+            <div class="rpt-guide-box-white">
                 Trên thẻ báo cáo đã lưu → nhấn <strong>"📸 Xuất ảnh"</strong> → Hệ thống tạo file ảnh và <strong>tải về thiết bị</strong>.<br>
                 Ảnh bao gồm: Header khoa · Dữ liệu đầy đủ · Watermark chống giả mạo · Thời gian xuất.
             </div>
