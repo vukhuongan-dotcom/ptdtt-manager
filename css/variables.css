@@ -158,11 +158,11 @@
     --shadow-glow-primary: 0 0 20px rgba(56, 189, 248, 0.25);
     --shadow-glow-accent:  0 0 20px rgba(167, 139, 250, 0.25);
 
-    /* Gradients — điều chỉnh cho dark bg */
-    --gradient-primary: linear-gradient(135deg, #0369a1, #6d28d9);
-    --gradient-success: linear-gradient(135deg, #065f46, #0369a1);
-    --gradient-warning: linear-gradient(135deg, #92400e, #991b1b);
-    --gradient-accent:  linear-gradient(135deg, #6d28d9, #9d174d);
+    /* Gradients — dùng màu SÁNG để -webkit-text-fill-color readable trên dark bg */
+    --gradient-primary: linear-gradient(135deg, #38bdf8, #a78bfa);
+    --gradient-success: linear-gradient(135deg, #34d399, #38bdf8);
+    --gradient-warning: linear-gradient(135deg, #fbbf24, #f87171);
+    --gradient-accent:  linear-gradient(135deg, #a78bfa, #f472b6);
 
     /* Surface tokens */
     --surface:           #161b22;

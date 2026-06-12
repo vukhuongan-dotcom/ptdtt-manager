@@ -202,7 +202,7 @@ const ReportsPage = {
 
             <!-- Footer -->
             <div class="rpt-card-footer">
-                <span>👤 BS trực khoa: <strong style="color:#0f172a">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
+                <span>👤 BS trực khoa: <strong>${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
                 <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '16:00'}</strong></span>
             </div>
         </div>
@@ -336,8 +336,8 @@ const ReportsPage = {
 
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
-            return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#0f172a';this.style.color='#fff';this.style.borderColor='#0f172a'"
-                class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name === defaultReporter ? '#0f172a' : '#cbd5e1'};background:${d.name === defaultReporter ? '#0f172a' : '#f1f5f9'};color:${d.name === defaultReporter ? '#fff' : '#334155'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
+            return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='var(--primary,#0f172a)';this.style.color='#fff';this.style.borderColor='var(--primary,#0f172a)'"
+                class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name === defaultReporter ? 'var(--primary)' : 'var(--border,#cbd5e1)'};background:${d.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary,#f1f5f9)'};color:${d.name === defaultReporter ? '#fff' : 'var(--text-secondary,#334155)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
         }).join('');
 
         const nextDay = this._getNextDay(date);
@@ -900,7 +900,7 @@ const ReportsPage = {
         // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
             return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
-                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? '#0284c7' : '#bae6fd'};background:${n.name === defaultReporter ? '#0284c7' : '#f0f9ff'};color:${n.name === defaultReporter ? '#fff' : '#0369a1'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
+                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? 'var(--primary)' : 'var(--border-light,#bae6fd)'};background:${n.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary,#f0f9ff)'};color:${n.name === defaultReporter ? '#fff' : 'var(--primary-dark,#0369a1)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
