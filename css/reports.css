@@ -372,11 +372,13 @@
     padding: 16px 22px;
     background: #fff;
 }
+[data-theme="dark"] .rpt-stat-body { background: var(--bg-secondary); }
 
 .rpt-stat-detail-body {
     padding: 0 22px 16px;
     background: #fff;
 }
+[data-theme="dark"] .rpt-stat-detail-body { background: var(--bg-secondary); }
 
 /* ── Stat colored boxes (5-col grid items) ── */
 .rpt-box-stat {

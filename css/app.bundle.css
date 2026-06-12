@@ -3800,6 +3800,9 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 0.78rem;
     overflow: hidden;
 }
+[data-theme="dark"] .surgery-card {
+    background: var(--bg-secondary);   /* fix: white card → dark bg, text readable */
+}
 .surgery-card:hover {
     border-color: var(--primary);
     box-shadow: var(--shadow-sm);
@@ -6222,11 +6225,13 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     padding: 16px 22px;
     background: #fff;
 }
+[data-theme="dark"] .rpt-stat-body { background: var(--bg-secondary); }
 
 .rpt-stat-detail-body {
     padding: 0 22px 16px;
     background: #fff;
 }
+[data-theme="dark"] .rpt-stat-detail-body { background: var(--bg-secondary); }
 
 /* ── Stat colored boxes (5-col grid items) ── */
 .rpt-box-stat {
@@ -6433,6 +6438,28 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         align-items: center;
         gap: 6px;
         flex-shrink: 0;
+    }
+
+    /* Theme toggle button trong mobile header */
+    .mobile-theme-toggle {
+        width: 36px;
+        height: 36px;
+        min-height: 44px; /* WCAG 2.5.5 touch target */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: background var(--transition-fast), color var(--transition-fast);
+        flex-shrink: 0;
+        padding: 0;
+    }
+    .mobile-theme-toggle:hover {
+        background: var(--bg-hover);
+        color: var(--primary);
     }
 
     .mobile-user-avatar {
