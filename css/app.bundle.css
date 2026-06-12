@@ -2897,6 +2897,90 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 .st-filter-bar { margin-bottom: 12px; }
 .st-absent-today { background: rgba(239, 68, 68, 0.04); }
+
+/* ===== DARK MODE OVERRIDES ===== */
+[data-theme="dark"] .st-view-tabs {
+    background: var(--bg-secondary);
+}
+[data-theme="dark"] .st-staff-header {
+    background: var(--bg-tertiary);
+}
+[data-theme="dark"] .st-day-header {
+    background: var(--bg-tertiary);
+}
+[data-theme="dark"] .st-staff-cell {
+    background: var(--bg-secondary);
+}
+
+/* Status cells — dark mode dùng màu đậm hơn để readable trên nền tối */
+[data-theme="dark"] .st-cell.st-status-active .st-status-label {
+    background: rgba(52,211,153,0.2);
+    color: #34d399;
+    border-color: rgba(52,211,153,0.4);
+}
+[data-theme="dark"] .st-cell.st-status-leave {
+    background: rgba(251,191,36,0.08) !important;
+}
+[data-theme="dark"] .st-cell.st-status-leave .st-status-label {
+    background: rgba(251,191,36,0.25);
+    color: #fbbf24;
+    border-color: rgba(251,191,36,0.5);
+}
+[data-theme="dark"] .st-cell.st-status-sick {
+    background: rgba(248,113,113,0.08) !important;
+}
+[data-theme="dark"] .st-cell.st-status-sick .st-status-label {
+    background: rgba(248,113,113,0.25);
+    color: #f87171;
+    border-color: rgba(248,113,113,0.5);
+}
+[data-theme="dark"] .st-cell.st-status-business {
+    background: rgba(167,139,250,0.08) !important;
+}
+[data-theme="dark"] .st-cell.st-status-business .st-status-label {
+    background: rgba(167,139,250,0.25);
+    color: #a78bfa;
+    border-color: rgba(167,139,250,0.5);
+}
+[data-theme="dark"] .st-cell.st-status-dayoff {
+    background: rgba(96,165,250,0.08) !important;
+}
+[data-theme="dark"] .st-cell.st-status-dayoff .st-status-label {
+    background: rgba(96,165,250,0.25);
+    color: #60a5fa;
+    border-color: rgba(96,165,250,0.5);
+}
+[data-theme="dark"] .st-cell.st-today.st-status-leave { background: rgba(251,191,36,0.12) !important; }
+[data-theme="dark"] .st-cell.st-today.st-status-sick { background: rgba(248,113,113,0.12) !important; }
+[data-theme="dark"] .st-cell.st-today.st-status-business { background: rgba(167,139,250,0.12) !important; }
+[data-theme="dark"] .st-cell.st-today.st-status-dayoff { background: rgba(96,165,250,0.12) !important; }
+
+/* Legend chips — dark mode */
+[data-theme="dark"] .st-chip-active {
+    background: rgba(52,211,153,0.15);
+    color: #34d399;
+    border-color: rgba(52,211,153,0.3);
+}
+[data-theme="dark"] .st-chip-leave {
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+    border-color: rgba(251,191,36,0.3);
+}
+[data-theme="dark"] .st-chip-sick {
+    background: rgba(248,113,113,0.15);
+    color: #f87171;
+    border-color: rgba(248,113,113,0.3);
+}
+[data-theme="dark"] .st-chip-business {
+    background: rgba(167,139,250,0.15);
+    color: #a78bfa;
+    border-color: rgba(167,139,250,0.3);
+}
+[data-theme="dark"] .st-chip-dayoff {
+    background: rgba(96,165,250,0.15);
+    color: #60a5fa;
+    border-color: rgba(96,165,250,0.3);
+}
 .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
 .kanban-column {
     background: var(--bg-secondary);
@@ -4884,6 +4968,18 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 13px;
 }
 
+/* ===== DARK MODE OVERRIDES ===== */
+/* Stat value numbers — tăng tương phản */
+[data-theme="dark"] .rsch-done .rsch-stat-val    { color: #34d399; }
+[data-theme="dark"] .rsch-pending .rsch-stat-val { color: #fb923c; }
+[data-theme="dark"] .rsch-reg .rsch-stat-val     { color: #a78bfa; }
+
+/* Conflict warning — dark amber */
+[data-theme="dark"] .shcm-date-conflict-warn {
+    background: rgba(251,191,36,0.1);
+    border-color: rgba(251,191,36,0.3);
+    color: #fbbf24;
+}
 /* ===== CONFERENCES PAGE — Báo cáo khoa học Khoa PTĐTT ===== */
 
 /* ── Summary stats row ── */
@@ -5379,7 +5475,40 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     min-height: 50px;
 }
 
+/* ===== DARK MODE OVERRIDES ===== */
+/* Countdown badges */
+[data-theme="dark"] .cp-cd-past  { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+[data-theme="dark"] .cp-cd-soon  { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+[data-theme="dark"] .cp-cd-now   { background: rgba(52,211,153,0.15);  color: #34d399; }
 
+/* Language chips — dark readable */
+[data-theme="dark"] .cp-lang-en {
+    background: rgba(96,165,250,0.15);
+    color: #60a5fa;
+    border-color: rgba(96,165,250,0.35);
+}
+[data-theme="dark"] .cp-lang-vi {
+    background: rgba(52,211,153,0.15);
+    color: #34d399;
+    border-color: rgba(52,211,153,0.35);
+}
+
+/* Presenter leader chip — dark amber */
+[data-theme="dark"] .cp-presenter-chip.cp-presenter-leader {
+    background: rgba(251,191,36,0.15);
+    border-color: rgba(251,191,36,0.4);
+    color: #fbbf24;
+}
+[data-theme="dark"] .cp-chip-badge {
+    color: #fbbf24;
+    background: rgba(0,0,0,0.3);
+}
+
+/* Stat numbers */
+[data-theme="dark"] .cp-stat-person .cp-stat-num { color: #a78bfa; }
+[data-theme="dark"] .cp-stat-lang   .cp-stat-num { color: #60a5fa; }
+[data-theme="dark"] .cp-stat-lang-vi .cp-stat-num { color: #34d399; }
+[data-theme="dark"] .cp-stat-upcoming .cp-stat-big { color: #fbbf24; }
 /* ===== NOTIFICATION BELL ===== */
 .notif-bell-btn {
     position: relative;
@@ -6412,6 +6541,34 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         line-height: 1.3;
     }
 }
+
+/* ===== DARK MODE OVERRIDES ===== */
+[data-theme="dark"] .rpt-block-blue   { background: rgba(59,130,246,0.12);  }
+[data-theme="dark"] .rpt-block-green  { background: rgba(34,197,94,0.12);   }
+[data-theme="dark"] .rpt-block-slate  { background: rgba(148,163,184,0.08); }
+[data-theme="dark"] .rpt-block-red    { background: rgba(239,68,68,0.12);   }
+[data-theme="dark"] .rpt-block-indigo { background: rgba(99,102,241,0.12);  }
+[data-theme="dark"] .rpt-block-purple { background: rgba(124,58,237,0.12);  }
+
+[data-theme="dark"] .rpt-card-footer {
+    background: var(--bg-tertiary);
+    border-top-color: var(--border);
+    color: var(--text-secondary);
+}
+[data-theme="dark"] .rpt-card-footer-7h {
+    background: rgba(8,145,178,0.12);
+    border-top-color: rgba(8,145,178,0.3);
+    color: var(--primary-light);
+}
+
+/* Weekend card text — warm amber readable trên dark */
+[data-theme="dark"] .rpt-weekend-title { color: #fbbf24; }
+[data-theme="dark"] .rpt-weekend-sub   { color: #f59e0b; }
+
+/* Stat numbers — tăng tương phản trên dark */
+[data-theme="dark"] .cp-stat-person .cp-stat-num { color: #a78bfa; }
+[data-theme="dark"] .cp-stat-lang   .cp-stat-num { color: #60a5fa; }
+[data-theme="dark"] .cp-stat-lang-vi .cp-stat-num { color: #34d399; }
 /* ===== MOBILE HEADER — Hidden on desktop ===== */
 .mobile-header { display: none; }
 

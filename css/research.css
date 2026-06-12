@@ -232,3 +232,15 @@
     font-size: 13px;
 }
 
+/* ===== DARK MODE OVERRIDES ===== */
+/* Stat value numbers — tăng tương phản */
+[data-theme="dark"] .rsch-done .rsch-stat-val    { color: #34d399; }
+[data-theme="dark"] .rsch-pending .rsch-stat-val { color: #fb923c; }
+[data-theme="dark"] .rsch-reg .rsch-stat-val     { color: #a78bfa; }
+
+/* Conflict warning — dark amber */
+[data-theme="dark"] .shcm-date-conflict-warn {
+    background: rgba(251,191,36,0.1);
+    border-color: rgba(251,191,36,0.3);
+    color: #fbbf24;
+}

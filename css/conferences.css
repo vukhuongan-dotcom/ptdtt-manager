@@ -493,4 +493,37 @@
     min-height: 50px;
 }
 
+/* ===== DARK MODE OVERRIDES ===== */
+/* Countdown badges */
+[data-theme="dark"] .cp-cd-past  { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+[data-theme="dark"] .cp-cd-soon  { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+[data-theme="dark"] .cp-cd-now   { background: rgba(52,211,153,0.15);  color: #34d399; }
 
+/* Language chips — dark readable */
+[data-theme="dark"] .cp-lang-en {
+    background: rgba(96,165,250,0.15);
+    color: #60a5fa;
+    border-color: rgba(96,165,250,0.35);
+}
+[data-theme="dark"] .cp-lang-vi {
+    background: rgba(52,211,153,0.15);
+    color: #34d399;
+    border-color: rgba(52,211,153,0.35);
+}
+
+/* Presenter leader chip — dark amber */
+[data-theme="dark"] .cp-presenter-chip.cp-presenter-leader {
+    background: rgba(251,191,36,0.15);
+    border-color: rgba(251,191,36,0.4);
+    color: #fbbf24;
+}
+[data-theme="dark"] .cp-chip-badge {
+    color: #fbbf24;
+    background: rgba(0,0,0,0.3);
+}
+
+/* Stat numbers */
+[data-theme="dark"] .cp-stat-person .cp-stat-num { color: #a78bfa; }
+[data-theme="dark"] .cp-stat-lang   .cp-stat-num { color: #60a5fa; }
+[data-theme="dark"] .cp-stat-lang-vi .cp-stat-num { color: #34d399; }
+[data-theme="dark"] .cp-stat-upcoming .cp-stat-big { color: #fbbf24; }
