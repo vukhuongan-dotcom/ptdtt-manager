@@ -142,10 +142,15 @@
 .schedule-lead-slot .schedule-select.has-value,
 .schedule-lead-slot .schedule-name {
     font-weight: 700;
-    color: var(--primary-dark);
+    color: var(--primary);   /* light: #0891b2 | dark: #38bdf8 */
 }
 .schedule-lead-slot .schedule-select.has-value {
     background: rgba(8, 145, 178, 0.06);
+}
+/* Dark: dùng primary-light (#7dd3fc) — tương phản cao hơn trên nền #161b22 */
+[data-theme="dark"] .schedule-lead-slot .schedule-select.has-value,
+[data-theme="dark"] .schedule-lead-slot .schedule-name {
+    color: #7dd3fc;   /* contrast ~7.5:1 ✅ */
 }
 
 .schedule-name {
