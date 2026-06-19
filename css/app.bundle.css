@@ -5509,15 +5509,15 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .cp-card { padding: 14px 12px; }
     .cp-card-head { flex-direction: column; gap: 10px; }
 
-    /* Danh sách báo cáo — cho phép wrap xuống dòng trên mobile */
+    /* Danh sách báo cáo — wrap xuống dòng trên mobile */
     .cp-pres-row {
-        flex-wrap: wrap;          /* A: cho time+lang ở dòng 1, title ở dòng 2 */
-        gap: 4px 8px;
+        flex-wrap: wrap;          /* time+lang dòng 1, title dòng 2, presenter dòng 3 */
+        gap: 2px 8px;
         padding: 10px 12px;
         align-items: flex-start;
     }
     .cp-pres-time {
-        min-width: 80px;          /* A: 90px → 80px — tiết kiệm chỗ */
+        min-width: 80px;
         font-size: 0.75rem;
         flex-shrink: 0;
     }
@@ -5526,12 +5526,22 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         margin-top: 1px;
     }
     .cp-pres-title {
-        flex-basis: 100%;         /* xuống dòng riêng — đủ rộng để wrap */
+        flex-basis: 100%;         /* xuống dòng riêng, full width */
         font-size: 0.82rem;
         line-height: 1.5;
+        margin-top: 2px;
     }
-    .cp-pres-who  { display: none; }  /* ẩn presenter name trên mobile */
-    .cp-pres-session { display: none; }
+    /* Tên báo cáo viên: hiện ở dòng riêng bên dưới tiêu đề */
+    .cp-pres-who {
+        display: block;           /* hiện lại (thay vì display:none) */
+        flex-basis: 100%;
+        white-space: normal;      /* cho phép wrap */
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 1px;
+        padding-left: 2px;
+    }
+    .cp-pres-session { display: none; } /* vẫn ẩn session label */
 
     /* Stats bar hội nghị */
     .cp-stats-row { grid-template-columns: repeat(2, 1fr); }
