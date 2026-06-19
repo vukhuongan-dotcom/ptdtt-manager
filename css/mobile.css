@@ -370,6 +370,20 @@
         word-break: break-word;
     }
 
+    /* Staff table: bọc overflow để tên không bị squeeze dọc */
+    .staff-table-card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .staff-table-card table {
+        min-width: 540px;   /* đủ chỗ 6 cột, scroll ngang khi cần */
+    }
+    /* Ẩn cột Email trên mobile để table gọn hơn */
+    .staff-table-card th:nth-child(5),
+    .staff-table-card td:nth-child(5) {
+        display: none;
+    }
+
     /* ===== RESEARCH / SHCM ===== */
     .rsch-stats {
         grid-template-columns: repeat(2, 1fr) !important;

@@ -5504,11 +5504,58 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .cp-pres-who  { display: none; }
 }
 
+@media (max-width: 768px) {
+    /* Card hội nghị: padding thu gọn */
+    .cp-card { padding: 14px 12px; }
+    .cp-card-head { flex-direction: column; gap: 10px; }
+
+    /* Danh sách báo cáo — cho phép wrap xuống dòng trên mobile */
+    .cp-pres-row {
+        flex-wrap: wrap;          /* A: cho time+lang ở dòng 1, title ở dòng 2 */
+        gap: 4px 8px;
+        padding: 10px 12px;
+        align-items: flex-start;
+    }
+    .cp-pres-time {
+        min-width: 80px;          /* A: 90px → 80px — tiết kiệm chỗ */
+        font-size: 0.75rem;
+        flex-shrink: 0;
+    }
+    .cp-pres-lang {
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+    .cp-pres-title {
+        flex-basis: 100%;         /* xuống dòng riêng — đủ rộng để wrap */
+        font-size: 0.82rem;
+        line-height: 1.5;
+    }
+    .cp-pres-who  { display: none; }  /* ẩn presenter name trên mobile */
+    .cp-pres-session { display: none; }
+
+    /* Stats bar hội nghị */
+    .cp-stats-row { grid-template-columns: repeat(2, 1fr); }
+
+    /* Stat pills */
+    .cp-stat-pill { padding: 8px 10px; }
+    .cp-stat-num { font-size: 1.3rem; }
+
+    /* Header hội nghị (year tabs + title) */
+    .cp-year-tabs {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .cp-year-tab {
+        padding: 6px 12px;
+        font-size: 0.78rem;
+    }
+}
+
 @media (max-width: 600px) {
     .cp-stats-row { grid-template-columns: repeat(2, 1fr); }
-    .cp-card      { padding: 16px; }
+    .cp-card      { padding: 12px 10px; }
     .cp-card-head { flex-direction: column; }
-    .cp-pres-time { min-width: 70px; font-size: 0.68rem; }
+    .cp-pres-time { min-width: 72px; font-size: 0.72rem; }
 }
 
 /* ── Refactored from inline styles (Phase U5) ── */
@@ -7151,6 +7198,20 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .staff-fullname {
         white-space: normal;
         word-break: break-word;
+    }
+
+    /* Staff table: bọc overflow để tên không bị squeeze dọc */
+    .staff-table-card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .staff-table-card table {
+        min-width: 540px;   /* đủ chỗ 6 cột, scroll ngang khi cần */
+    }
+    /* Ẩn cột Email trên mobile để table gọn hơn */
+    .staff-table-card th:nth-child(5),
+    .staff-table-card td:nth-child(5) {
+        display: none;
     }
 
     /* ===== RESEARCH / SHCM ===== */
