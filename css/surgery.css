@@ -343,6 +343,18 @@
     .surgery-sticky-header { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
     .surgery-scroll-zone { margin: 0 -16px; padding: 0 16px 12px; }
     .surgery-summary-chips { flex-wrap: wrap; }
+
+    /* A C4+M5: touch targets — WCAG 2.5.5 min 44×44px */
+    .btn-card-action,
+    .btn-card-action-danger {
+        min-height: 44px;
+        font-size: 0.75rem;   /* A: 0.6667rem (10px) → 0.75rem */
+        padding: 8px 12px;
+    }
+    .surgery-add-btn {
+        min-height: 44px;     /* A: ~30px → 44px */
+        padding: 10px 8px;
+    }
 }
 
 /* ===== U5: Extracted inline styles — surgery.js ===== */

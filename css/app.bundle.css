@@ -3661,7 +3661,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     display: block;
 }
 .schedule-pos-slots {
-    font-size: 0.68rem;
+    font-size: 0.72rem;  /* A: 0.68rem → 0.72rem WCAG 1.4.4 */
     color: var(--text-muted);
     margin-top: 2px;
     display: block;
@@ -3689,7 +3689,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 
 .schedule-slot-label {
     display: block;
-    font-size: 0.6rem;
+    font-size: 0.72rem;  /* A: 0.6rem (9px) → 0.72rem WCAG 1.4.4 */
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -3705,7 +3705,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     border-radius: 4px;
     color: var(--text-muted);
     font-family: inherit;
-    font-size: 9pt;
+    font-size: 0.8rem;  /* A: 9pt (12px) → 0.8rem; mobile override →0 16px chống iOS zoom */
     cursor: pointer;
     outline: none;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -3744,7 +3744,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 
 .schedule-name {
-    font-size: 9pt;
+    font-size: 0.8rem;  /* A: 9pt (12px) → 0.8rem WCAG 1.4.4 */
     color: var(--text-secondary);
 }
 
@@ -4206,6 +4206,18 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .surgery-sticky-header { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
     .surgery-scroll-zone { margin: 0 -16px; padding: 0 16px 12px; }
     .surgery-summary-chips { flex-wrap: wrap; }
+
+    /* A C4+M5: touch targets — WCAG 2.5.5 min 44×44px */
+    .btn-card-action,
+    .btn-card-action-danger {
+        min-height: 44px;
+        font-size: 0.75rem;   /* A: 0.6667rem (10px) → 0.75rem */
+        padding: 8px 12px;
+    }
+    .surgery-add-btn {
+        min-height: 44px;     /* A: ~30px → 44px */
+        padding: 10px 8px;
+    }
 }
 
 /* ===== U5: Extracted inline styles — surgery.js ===== */
@@ -6167,10 +6179,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 /* ── Stat label inside colored boxes ── */
 .rpt-stat-label {
-    font-size: 0.62rem;
+    font-size: 0.72rem;  /* A: 0.62rem (9.3px) → 0.72rem WCAG 1.4.4 */
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.8px;  /* giảm từ 1px — dễ đọc hơn ở size nhỏ */
+    color: rgba(255,255,255,0.95);  /* A: 0.8 → 0.95 — tăng contrast trên nền màu */
     font-weight: 600;
     margin-bottom: 4px;
     min-height: 24px;
@@ -6261,6 +6273,14 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 5px;
+}
+
+/* Mobile: giảm xuống 2 cột cho màn hình nhỏ */
+@media (max-width: 768px) {
+    .rpt-stat-grid              { grid-template-columns: repeat(2, 1fr); } /* A: 5 cột → 2 cột mobile */
+    .rpt-stat-grid-2            { grid-template-columns: 1fr; }            /* A: 2 cột → 1 cột mobile */
+    .rpt-form-4col-surgery,
+    .rpt-form-4col-surgery-mb   { grid-template-columns: 1fr 1fr; }       /* A: 4 cột → 2 cột mobile */
 }
 
 /* ── Form: notes & details ── */
@@ -6818,6 +6838,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .mobile-theme-toggle {
         width: 36px;
         height: 36px;
+        min-width: 44px;  /* A M1: WCAG 2.5.5 — cả 2 chiều ≥ 44px */
         min-height: 44px; /* WCAG 2.5.5 touch target */
         display: flex;
         align-items: center;
@@ -7193,7 +7214,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         max-width: none !important;
         margin: 0;
         border-radius: 16px 16px 0 0;
-        max-height: 90vh;
+        max-height: 90dvh;  /* A M4: dvh (dynamic viewport height) — trừ bàn phím ảo Android */
         display: flex;
         flex-direction: column;
         animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -7289,4 +7310,34 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     /* U0 A2: 0.52rem → 0.72rem */
     .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
     .day-number { font-size: 0.72rem; } /* fix: 0.65rem → 0.72rem */
+}
+
+/* ===== iOS ZOOM PREVENTION — schedule-select ===== */
+/* A C1: font-size < 16px trên input/select gây iOS Safari tự zoom viewport */
+@media (max-width: 768px) {
+    .schedule-select { font-size: 16px !important; } /* iOS chống zoom khi focus */
+}
+
+/* ===== SAFE AREA INSETS — iPhone notch + home bar ===== */
+/* A M2-safe: viewport-fit=cover + env() cho iPhone X trở lên */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
+        /* Bottom nav: đẩy lên trên home bar */
+        .sidebar {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        /* Main content: đảm bảo không bị che bởi bottom nav + home bar */
+        .main-content {
+            padding-bottom: calc(68px + env(safe-area-inset-bottom));
+        }
+        /* Modal footer: không bị chạm home bar */
+        .modal-footer {
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+    }
+    @media (max-width: 480px) {
+        .main-content {
+            padding-bottom: calc(68px + env(safe-area-inset-bottom));
+        }
+    }
 }

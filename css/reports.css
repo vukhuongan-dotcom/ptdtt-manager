@@ -91,10 +91,10 @@
 
 /* ── Stat label inside colored boxes ── */
 .rpt-stat-label {
-    font-size: 0.62rem;
+    font-size: 0.72rem;  /* A: 0.62rem (9.3px) → 0.72rem WCAG 1.4.4 */
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.8px;  /* giảm từ 1px — dễ đọc hơn ở size nhỏ */
+    color: rgba(255,255,255,0.95);  /* A: 0.8 → 0.95 — tăng contrast trên nền màu */
     font-weight: 600;
     margin-bottom: 4px;
     min-height: 24px;
@@ -185,6 +185,14 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 5px;
+}
+
+/* Mobile: giảm xuống 2 cột cho màn hình nhỏ */
+@media (max-width: 768px) {
+    .rpt-stat-grid              { grid-template-columns: repeat(2, 1fr); } /* A: 5 cột → 2 cột mobile */
+    .rpt-stat-grid-2            { grid-template-columns: 1fr; }            /* A: 2 cột → 1 cột mobile */
+    .rpt-form-4col-surgery,
+    .rpt-form-4col-surgery-mb   { grid-template-columns: 1fr 1fr; }       /* A: 4 cột → 2 cột mobile */
 }
 
 /* ── Form: notes & details ── */

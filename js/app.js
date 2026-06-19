@@ -238,7 +238,7 @@ const App = {
 
         const idle = Date.now() - this._getLastActivity();
 
-        // Logout at 15 min
+        // Logout khi không hoạt động sau 5 phút (IDLE_TIMEOUT = 5 * 60 * 1000)
         if (idle >= this.IDLE_TIMEOUT) {
             if (this._idleTimer) { clearInterval(this._idleTimer); this._idleTimer = null; }
             localStorage.removeItem(this._IDLE_KEY);
@@ -298,7 +298,7 @@ const App = {
             ${Notifications.renderBellButton('mobile')}
             <div class="mobile-user-avatar" style="background:${session.color || 'var(--gradient-accent)'}">${Utils.getInitials(session.name)}</div>
             <span class="mobile-user-name">${session.name}</span>
-            <button class="mobile-logout-btn" id="mobile-logout-btn">
+            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đăng xuất">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
         `;

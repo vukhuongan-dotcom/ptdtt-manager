@@ -71,7 +71,7 @@
     display: block;
 }
 .schedule-pos-slots {
-    font-size: 0.68rem;
+    font-size: 0.72rem;  /* A: 0.68rem → 0.72rem WCAG 1.4.4 */
     color: var(--text-muted);
     margin-top: 2px;
     display: block;
@@ -99,7 +99,7 @@
 
 .schedule-slot-label {
     display: block;
-    font-size: 0.6rem;
+    font-size: 0.72rem;  /* A: 0.6rem (9px) → 0.72rem WCAG 1.4.4 */
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -115,7 +115,7 @@
     border-radius: 4px;
     color: var(--text-muted);
     font-family: inherit;
-    font-size: 9pt;
+    font-size: 0.8rem;  /* A: 9pt (12px) → 0.8rem; mobile override →0 16px chống iOS zoom */
     cursor: pointer;
     outline: none;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -154,7 +154,7 @@
 }
 
 .schedule-name {
-    font-size: 9pt;
+    font-size: 0.8rem;  /* A: 9pt (12px) → 0.8rem WCAG 1.4.4 */
     color: var(--text-secondary);
 }
 

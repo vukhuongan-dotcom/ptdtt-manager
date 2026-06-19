@@ -55,6 +55,7 @@
     .mobile-theme-toggle {
         width: 36px;
         height: 36px;
+        min-width: 44px;  /* A M1: WCAG 2.5.5 — cả 2 chiều ≥ 44px */
         min-height: 44px; /* WCAG 2.5.5 touch target */
         display: flex;
         align-items: center;
@@ -430,7 +431,7 @@
         max-width: none !important;
         margin: 0;
         border-radius: 16px 16px 0 0;
-        max-height: 90vh;
+        max-height: 90dvh;  /* A M4: dvh (dynamic viewport height) — trừ bàn phím ảo Android */
         display: flex;
         flex-direction: column;
         animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -526,4 +527,34 @@
     /* U0 A2: 0.52rem → 0.72rem */
     .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
     .day-number { font-size: 0.72rem; } /* fix: 0.65rem → 0.72rem */
+}
+
+/* ===== iOS ZOOM PREVENTION — schedule-select ===== */
+/* A C1: font-size < 16px trên input/select gây iOS Safari tự zoom viewport */
+@media (max-width: 768px) {
+    .schedule-select { font-size: 16px !important; } /* iOS chống zoom khi focus */
+}
+
+/* ===== SAFE AREA INSETS — iPhone notch + home bar ===== */
+/* A M2-safe: viewport-fit=cover + env() cho iPhone X trở lên */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
+        /* Bottom nav: đẩy lên trên home bar */
+        .sidebar {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        /* Main content: đảm bảo không bị che bởi bottom nav + home bar */
+        .main-content {
+            padding-bottom: calc(68px + env(safe-area-inset-bottom));
+        }
+        /* Modal footer: không bị chạm home bar */
+        .modal-footer {
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+    }
+    @media (max-width: 480px) {
+        .main-content {
+            padding-bottom: calc(68px + env(safe-area-inset-bottom));
+        }
+    }
 }

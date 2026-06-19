@@ -315,7 +315,7 @@ const ReportsPage = {
                 <div class="rpt-summary-value-row">
                     <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
                         style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-                    <input type="number" name="${name}" value="${val}" min="0" style="width:44px;text-align:center;font-size:1rem;font-weight:700;border:2px solid ${color}44;border-radius:6px;padding:3px 1px;color:${color}">
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" style="width:44px;text-align:center;font-size:1rem;font-weight:700;border:2px solid ${color}44;border-radius:6px;padding:3px 1px;color:${color}">
                     <button type="button" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
                         style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
                 </div>
@@ -329,7 +329,7 @@ const ReportsPage = {
             <div class="rpt-summary-cell">
                 <div class="rpt-summary-label" style="color:${color}">${label}</div>
                 <div class="rpt-summary-value-row">
-                    <input type="number" name="${name}" value="${val}" min="0" readonly
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" readonly
                         style="width:52px;text-align:center;font-size:1.1rem;font-weight:800;border:2px solid ${color}44;border-radius:6px;padding:4px 1px;color:${color};background:${color}08;cursor:default">
                 </div>
             </div>`;
@@ -353,14 +353,14 @@ const ReportsPage = {
                         <div style="flex:1;color:#fff">
                             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:600">TỔNG BN</div>
                         </div>
-                        <input type="number" name="totalPatients" value="${defaultPatients}" required min="0"
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
                             style="width:62px;text-align:center;font-size:1.5rem;font-weight:800;border:none;border-radius:8px;padding:4px;background:rgba(255,255,255,0.12);color:#fff">
                     </div>
                     <div style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fef3c7;border-radius:10px;border:1px solid #fbbf24">
                         <div class="rpt-form-half">
                             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#92400e;font-weight:600">MỔ CHƯA VỀ</div>
                         </div>
-                        <input type="number" name="postOpNotReturned" value="${e.postOpNotReturned || 0}" min="0"
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" name="postOpNotReturned" value="${e.postOpNotReturned || 0}" min="0"
                             class="rpt-input-amber">
                     </div>
                 </div>
@@ -891,7 +891,7 @@ const ReportsPage = {
             <div class="rpt-summary-value-row">
                 <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
                     style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-                <input type="number" name="${name}" value="${val}" min="0" style="width:52px;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid ${color}44;border-radius:8px;padding:4px 2px;color:${color}"
+                <input type="number" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" style="width:52px;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid ${color}44;border-radius:8px;padding:4px 2px;color:${color}"
                     oninput="ReportsPage._toggle7hDetail('${name}', this.value)">
                 <button type="button" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
                     style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
@@ -912,7 +912,7 @@ const ReportsPage = {
                         <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
                         <div style="font-size:0.85rem;color:#bae6fd;margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
                     </div>
-                    <input type="number" name="totalPatients" value="${defaultPatients}" required min="0"
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
                         style="width:72px;text-align:center;font-size:1.6rem;font-weight:800;border:none;border-radius:10px;padding:6px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(4px)">
                 </div>
 
@@ -938,19 +938,19 @@ const ReportsPage = {
 
                 <!-- Row 3: Auto-expand detail fields (hidden by default when count=0) -->
                 <div id="detail-fromHSCC" style="display:${(e.fromHSCC > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" placeholder="🚑 Chi tiết HSCC: tên BN / phòng..."
+                    <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🚑 Chi tiết HSCC: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid #fca5a5;border-radius:6px;font-size:0.88rem;background:#fff5f5">
                 </div>
                 <div id="detail-fromHoiTinh" style="display:${(e.fromHoiTinh > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
+                    <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid var(--primary-dark,#93c5fd);border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
                 <div id="detail-fromICU" style="display:${(e.fromICU > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromICUDetail" value="${e.fromICUDetail || ''}" placeholder="🏨 Chi tiết ICU: tên BN / phòng..."
+                    <input type="text" name="fromICUDetail" value="${e.fromICUDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🏨 Chi tiết ICU: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid #c4b5fd;border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
                 <div id="detail-fromGiaiAp" style="display:${(e.fromGiaiAp > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
+                    <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
                         style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
 
