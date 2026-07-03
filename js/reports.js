@@ -672,9 +672,9 @@ const ReportsPage = {
         const outCtx = outCanvas.getContext('2d');
         outCtx.drawImage(canvas, 0, 0, W * scale, finalH * scale, 0, 0, W * scale, finalH * scale);
 
-        // ===== Download as JPEG (cross-platform: desktop, iOS Safari, PWA) =====
-        const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
-        const fileName = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.jpg`;
+        // ===== Download as PNG (lossless, 2K) =====
+        const dataUrl = outCanvas.toDataURL('image/png');
+        const fileName = `BaoCao16h_${this.selectedDate.replace(/-/g, '')}.png`;
 
         // Detect iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -716,7 +716,7 @@ const ReportsPage = {
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         }
-        Toast.success('Đã tạo hình JPEG thành công!');
+        Toast.success('Đã tạo hình báo cáo 16h (2K PNG)!');
     },
 
     _roundRect(ctx, x, y, w, h, r) {
@@ -1201,8 +1201,8 @@ const ReportsPage = {
         const outCtx = outCanvas.getContext('2d');
         outCtx.drawImage(canvas, 0, 0, W * scale, finalH * scale, 0, 0, W * scale, finalH * scale);
 
-        const dataUrl = outCanvas.toDataURL('image/jpeg', 0.95);
-        const fileName = `BaoCao7h_${this.selectedDate.replace(/-/g, '')}.jpg`;
+        const dataUrl = outCanvas.toDataURL('image/png');
+        const fileName = `BaoCao7h_${this.selectedDate.replace(/-/g, '')}.png`;
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         if (isIOS) {
             const w = window.open('', '_blank');
@@ -1220,7 +1220,7 @@ const ReportsPage = {
             a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         }
-        Toast.success('Đã tạo hình báo cáo 7h!');
+        Toast.success('Đã tạo hình báo cáo 7h (2K PNG)!');
     },
 
     // ========== HELPERS ==========

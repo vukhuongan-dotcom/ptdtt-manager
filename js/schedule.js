@@ -614,11 +614,15 @@ const SchedulePage = {
 
             const captureEl = iframe.contentDocument.getElementById('capture');
             await Utils.loadScript('html2canvas');
+            const EXPORT_SCALE = Math.max(Math.ceil(2560 / 1400), 2); // ≥ 2800px (2K) cho template ~1400px
             const canvas = await html2canvas(captureEl, {
-                scale: 3,
+                scale: EXPORT_SCALE,
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 logging: false,
+                letterRendering: true,
+                allowTaint: false,
+                imageTimeout: 15000,
                 windowHeight: captureEl.scrollHeight + 100
             });
 
@@ -629,7 +633,7 @@ const SchedulePage = {
 
             // Helper: download image via server
             const downloadImage = async (canvasEl, fname) => {
-                const dataUrl = canvasEl.toDataURL('image/jpeg', 0.95);
+                const dataUrl = canvasEl.toDataURL('image/png');
                 const dlHeaders = { 'Content-Type': 'application/json' };
                 const dlToken = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
                 if (dlToken) dlHeaders['Authorization'] = 'Bearer ' + dlToken;
@@ -662,7 +666,7 @@ const SchedulePage = {
             const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth() + 1)}-${d6.getFullYear()}`;
 
             // 1) Download schedule image
-            const scheduleFilename = `Phan_cong_tuan_${startFmt}_${endFmt}.jpg`;
+            const scheduleFilename = `Phan_cong_tuan_${startFmt}_${endFmt}.png`;
             await downloadImage(canvas, scheduleFilename);
 
             // 2) Build & download robot surgery image
@@ -721,8 +725,15 @@ const SchedulePage = {
                 await new Promise(resolve => { iframe2.onload = resolve; iframe2.srcdoc = robotHtml; });
                 await new Promise(r => setTimeout(r, 500));
 
+                const ROBOT_SCALE = Math.max(Math.ceil(2560 / 800), 4); // ≥ 3200px (2K+) cho robot template 800px
                 const robotCanvas = await html2canvas(iframe2.contentDocument.getElementById('capture'), {
-                    scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false,
+                    scale: ROBOT_SCALE,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    letterRendering: true,
+                    allowTaint: false,
+                    imageTimeout: 15000,
                     windowHeight: iframe2.contentDocument.getElementById('capture').scrollHeight + 100
                 });
                 document.body.removeChild(iframe2);
@@ -730,7 +741,7 @@ const SchedulePage = {
                 // Add watermark to robot surgery canvas
                 this._addWatermark(robotCanvas);
 
-                const robotFilename = `Lich_mo_robot_${startFmt}_${endFmt}.jpg`;
+                const robotFilename = `Lich_mo_robot_${startFmt}_${endFmt}.png`;
                 await downloadImage(robotCanvas, robotFilename);
             }
 

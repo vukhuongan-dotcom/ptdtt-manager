@@ -616,11 +616,15 @@ const ResearchPage = {
 
             const captureEl = iframe.contentDocument.getElementById('capture');
             await Utils.loadScript('html2canvas');
+            const EXPORT_SCALE = Math.max(Math.ceil(2560 / 800), 4); // ≥ 3200px (2K+) cho template 800px
             const canvas = await html2canvas(captureEl, {
-                scale: 3,
+                scale: EXPORT_SCALE,
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 logging: false,
+                letterRendering: true,
+                allowTaint: false,
+                imageTimeout: 15000,
                 windowHeight: captureEl.scrollHeight + 100
             });
 
@@ -629,22 +633,22 @@ const ResearchPage = {
             // Add watermark
             this._addWatermark(canvas);
 
-            // Download via server
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            // Download via server (PNG)
+            const dataUrl = canvas.toDataURL('image/png');
             const dlHeaders = { 'Content-Type': 'application/json' };
             const dlToken = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
             if (dlToken) dlHeaders['Authorization'] = 'Bearer ' + dlToken;
             const resp = await fetch('/api/download-image', {
                 method: 'POST',
                 headers: dlHeaders,
-                body: JSON.stringify({ image: dataUrl, filename: `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.jpg` })
+                body: JSON.stringify({ image: dataUrl, filename: `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.png` })
             });
             if (resp.ok) {
                 const blob = await resp.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.jpg`;
+                a.download = `Lich_SHCM_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.png`;
                 a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();

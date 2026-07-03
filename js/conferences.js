@@ -635,7 +635,16 @@ const ConferencesPage = {
 
         const target = container.querySelector('#conf-export-target');
         await Utils.loadScript('html2canvas');
-        html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
+        const EXPORT_SCALE = Math.max(Math.ceil(2560 / 1100), 3); // ≥ 2640px (2K)
+        html2canvas(target, {
+            scale: EXPORT_SCALE,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            letterRendering: true,
+            allowTaint: false,
+            imageTimeout: 15000,
+        }).then(canvasEl => {
             Utils.applyExportWatermark(canvasEl);
             canvasEl.toBlob(blob => {
                 const url = URL.createObjectURL(blob);
@@ -646,12 +655,12 @@ const ConferencesPage = {
                     .replace(/đ/gi,'d').replace(/[^a-zA-Z0-9\s]/g,'')
                     .trim().replace(/\s+/g,'_');
                 const todaySlug = new Date().toLocaleDateString('vi-VN').replace(/\//g,'');
-                a.download = `BaoCaoKhoaHoc_${confNameSlug}_${todaySlug}.jpg`;
+                a.download = `BaoCaoKhoaHoc_${confNameSlug}_${todaySlug}.png`;
                 a.click();
                 URL.revokeObjectURL(url);
                 document.body.removeChild(container);
-                Toast.success('Đã xuất ảnh lịch báo cáo!');
-            }, 'image/jpeg', 0.95);
+                Toast.success('Đã xuất ảnh lịch báo cáo (2K PNG)!');
+            }, 'image/png');
         }).catch(err => {
             console.error('Conf export failed:', err);
             Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');

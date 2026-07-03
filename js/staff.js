@@ -1067,18 +1067,27 @@ const StaffPage = {
         const target = container.querySelector('#team-export-target');
         try {
             await Utils.loadScript('html2canvas');
-            const canvasEl = await html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+            const EXPORT_SCALE = Math.max(Math.ceil(2560 / 1100), 3); // ≥ 2640px (2K)
+            const canvasEl = await html2canvas(target, {
+                scale: EXPORT_SCALE,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                letterRendering: true,
+                allowTaint: false,
+                imageTimeout: 15000,
+            });
             Utils.applyExportWatermark(canvasEl);
             canvasEl.toBlob(blob => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `To_DacTrach_KhoaPTDTT_${dateLabel.replace(/\//g, '-')}.jpg`;
+                a.download = `To_DacTrach_KhoaPTDTT_${dateLabel.replace(/\//g, '-')}.png`;
                 a.click();
                 URL.revokeObjectURL(url);
                 document.body.removeChild(container);
-                Toast.success('Đã xuất hình các tổ đặc trách!');
-            }, 'image/jpeg', 0.95);
+                Toast.success('Đã xuất hình các tổ đặc trách (2K PNG)!');
+            }, 'image/png');
         } catch (err) {
             console.error('Export team image failed:', err);
             Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
