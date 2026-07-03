@@ -784,19 +784,35 @@ const SurgeryPage = {
 
         const target = container.querySelector('#surgery-export-target');
         await Utils.loadScript('html2canvas');
-        html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvasEl => {
+
+        // 2K export: tính scale động để output luôn ≥ 2560px wide bất kể số ca
+        const TEMPLATE_WIDTH = 1100;   // px lógic của template
+        const TARGET_2K_WIDTH = 2560;  // độ phân giải 2K (2560 × ?) 
+        const minScale = Math.ceil(TARGET_2K_WIDTH / TEMPLATE_WIDTH); // = 3 (2640px)
+        const EXPORT_SCALE = Math.max(minScale, 3); // luôn ≥ 3 → ≥ 2640px
+
+        html2canvas(target, {
+            scale: EXPORT_SCALE,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            letterRendering: true,       // render từng ký tự riêng — text sắc nét hơn
+            allowTaint: false,
+            imageTimeout: 15000,
+        }).then(canvasEl => {
             Utils.applyExportWatermark(canvasEl);
 
+            // Xuất PNG (lossless) thay JPEG — không bị artifact nén làm nhòe text
             canvasEl.toBlob(blob => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Lich_mo_${ds.replace(/-/g, '')}.jpg`;
+                a.download = `Lich_mo_${ds.replace(/-/g, '')}.png`;  // PNG thay JPG
                 a.click();
                 URL.revokeObjectURL(url);
                 document.body.removeChild(container);
-                Toast.success('Đã xuất hình lịch mổ!');
-            }, 'image/jpeg', 0.95);
+                Toast.success(`Đã xuất hình lịch mổ (${EXPORT_SCALE}x — ${canvasEl.width}×${canvasEl.height}px)!`);
+            }, 'image/png');  // PNG: lossless, không nhòe
         }).catch(err => {
             console.error('Export failed:', err);
             Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
