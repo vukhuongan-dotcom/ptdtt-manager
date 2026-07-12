@@ -1,0 +1,41 @@
+{"ts": "2026-07-12T06:05:59.103932", "user": "ptttien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T06:09:14.709243", "user": "ptttien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 99, "nextId": null}}
+{"ts": "2026-07-12T07:17:52.536834", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T07:48:58.546951", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T07:49:29.546409", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 17, "nextId": 13, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-12T07:55:24.413400", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 17, "nextId": 13, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 12, "label": "2026-07-13", "from": {"notes": ""}, "to": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 2 - 4 - 6.\nBS Hậu NT về trường chiều thứ 6"}}]}}}
+{"ts": "2026-07-12T07:57:33.962317", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 17, "nextId": 13, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-12T07:58:01.403535", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 17, "nextId": 13, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-12T07:58:01.732486", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T08:22:49.408343", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T08:30:03.142660", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T08:31:36.501192", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T09:02:03.634417", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T10:30:34.040011", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T10:39:14.840767", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:00:03.322745", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:00:27.313792", "user": "tnduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:05:58.591518", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:07:54.982672", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:08:45.110239", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:09:03.596323", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 17, "nextId": 13, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-12T11:20:54.578316", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:27:45.657723", "user": "tnduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T11:29:31.501926", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T12:49:54.897607", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T13:22:24.321235", "user": "ltnthao", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T13:39:23.394559", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T13:41:00.483798", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 17, "nextId": 13, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 12, "label": "2026-07-13", "from": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 2 - 4 - 6.\nBS Hậu NT về trường chiều thứ 6"}, "to": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 2 - 4 - 6.\nBS Hậu NT về trường chiều thứ 6\nBS.Phương đi học sáng T2\nSinh hoạt CLB stoma 18/7"}}]}}}
+{"ts": "2026-07-12T13:48:14.949305", "user": "tnduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T14:23:44.916928", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T15:14:08.085350", "user": "nguyen.vc", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "14.161.22.188", "remaining": 4}}
+{"ts": "2026-07-12T15:14:09.134655", "user": "nguyen.vc", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "14.161.22.188", "remaining": 4}}
+{"ts": "2026-07-12T15:14:36.885384", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T15:50:20.584885", "user": "lmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T16:14:07.925907", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T16:14:35.654700", "user": "nhhoang", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2118, "nextId": null, "added": 0, "removed": 1, "changed": 0, "diff": {"added": [], "removed": [{"id": 1783505560958, "label": "Nguyễn Thị Hai Thêm — 1952 — 2026-07-13", "record": {"admissionId": "26041906", "approachType": "noisoi", "assistSurgeon1": 201, "birthYear": "1952", "createdBy": {"at": "2026-07-08T10:12:40.958Z", "name": "Lê Minh Hậu", "username": "lmhau"}, "date": "2026-07-13", "diagnosis": "Bướu manh trành gây bít lòng + nốt ở gan", "duration": "240", "id": 1783505560958, "isFirstCase": true, "mainSurgeon": 1, "method": "Phẫu thuật nội soi cắt đại tràng PHẢI + đốt u gan", "notes": "Mổ phối hợp U gan", "patientName": "Nguyễn Thị Hai Thêm", "surgeryType": "chuongtrinh", "updatedBy": {"at": "2026-07-10T05:37:58.767Z", "name": "Nguyễn Huy Hoàng", "username": "nhhoang"}}}], "changed": []}}}
+{"ts": "2026-07-12T16:42:28.592137", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T16:44:56.676494", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T17:36:05.056223", "user": "tnduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T19:14:01.508262", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-12T22:19:49.406822", "user": "nthuyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
