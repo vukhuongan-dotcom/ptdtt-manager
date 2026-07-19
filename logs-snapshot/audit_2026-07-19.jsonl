@@ -1,0 +1,47 @@
+{"ts": "2026-07-19T03:12:15.512328", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T05:53:24.953389", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T05:59:23.128756", "user": "ltttrang", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 106, "nextId": null}}
+{"ts": "2026-07-19T05:59:53.155547", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T06:39:16.882054", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T07:16:25.924242", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T07:55:13.269668", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T07:58:43.516974", "user": "hmhuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T08:09:23.488868", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:17:34.606622", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:24:25.998686", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:28:31.703407", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:29:26.394598", "user": "pvphu", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 62, "nextId": 83, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:29:32.827226", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 13, "label": "2026-07-20", "from": {"notes": ""}, "to": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 2 - 4 - 6.\nBS Hậu NT về trường chiều thứ 6\nBS.Phương đi học sáng T2\nSinh hoạt CLB stoma 18/7"}}]}}}
+{"ts": "2026-07-19T09:30:06.776454", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:30:13.164547", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:31:51.358478", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 13, "label": "2026-07-20", "from": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 2 - 4 - 6.\nBS Hậu NT về trường chiều thứ 6\nBS.Phương đi học sáng T2\nSinh hoạt CLB stoma 18/7"}, "to": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 6.\n"}}]}}}
+{"ts": "2026-07-19T09:41:01.558904", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:42:24.425207", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:42:36.000639", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:45:43.378543", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 13, "label": "2026-07-20", "from": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 6.\n"}, "to": {"notes": "BS Huy, BS Hoàng, BS Trâm Anh có lịch học chiều thứ 6.\nBS An nghỉ phép thứ 4 - CN\n"}}]}}}
+{"ts": "2026-07-19T09:47:46.093374", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:49:54.920147", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:50:37.336455", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:50:52.509106", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:52:40.297302", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:52:52.314562", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:54:20.912915", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T09:54:26.266916", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:57:20.455067", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T09:57:59.262063", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 18, "nextId": 14, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T10:35:55.726412", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T11:41:20.049081", "user": "tnduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T11:42:28.148244", "user": "tnduc", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 62, "nextId": 83, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-07-19T11:48:43.176671", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T12:09:07.255715", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T13:40:08.350255", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T15:28:39.168806", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T16:02:42.374056", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T17:34:19.445687", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T17:46:19.451994", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T17:56:55.697141", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T18:13:23.279416", "user": "nhhoang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T19:13:19.338673", "user": "ntdinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T19:40:20.871580", "user": "ntdinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T20:52:09.512337", "user": "ntmngoc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-07-19T21:57:08.609621", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
