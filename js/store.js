@@ -573,6 +573,14 @@ const Store = {
     // Generic CRUD
     getAll(collection) { return this._data[collection] || []; },
 
+    // Trả về nhân sự đã bắt đầu làm việc (startDate <= hôm nay, hoặc không có startDate)
+    getActiveStaff(referenceDate) {
+        const today = referenceDate || new Date().toISOString().slice(0, 10);
+        return (this._data['staff'] || []).filter(s => !s.startDate || s.startDate <= today);
+    },
+
+
+
     getById(collection, id) {
         return this._data[collection]?.find(item => item.id === id);
     },

@@ -44,9 +44,10 @@ const DashboardPage = {
 
         <div class="stats-grid">
             ${(() => {
-                const allStaff = Store.getAll('staff');
                 const now = new Date();
                 const _today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                // Chỉ tính nhân sự đã bắt đầu làm việc (startDate <= hôm nay)
+                const allStaff = Store.getActiveStaff(_today);
                 const entries = Store.getAll('staffStatuses') || [];
                 const absentList = [];
                 allStaff.forEach(s => {

@@ -29,7 +29,7 @@ const StaffPage = {
 
         <div class="staff-subtabs">
             <button class="staff-subtab ${this.activeTab === 'internal' ? 'active' : ''}" onclick="StaffPage.switchTab('internal')">
-                👥 Nhân viên khoa <span class="staff-subtab-count">${Store.getAll('staff').length}</span>
+                👥 Nhân viên khoa <span class="staff-subtab-count">${Store.getActiveStaff().length}</span>
             </button>
             <button class="staff-subtab ${this.activeTab === 'external' ? 'active' : ''}" onclick="StaffPage.switchTab('external')">
                 🩺 BS ngoài khoa <span class="staff-subtab-count">${Store.getAll('externalDoctors').length}</span>
