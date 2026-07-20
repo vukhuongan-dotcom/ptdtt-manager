@@ -327,7 +327,21 @@ def _get_current_user():
         if not user:
             return None  # User deleted
         if user.get('disabled'):
-            return None  # User disabled by admin
+            # Auto-activate if activeFrom date has passed
+            active_from = user.get('activeFrom')
+            if active_from:
+                from datetime import date
+                try:
+                    if date.today() >= date.fromisoformat(active_from):
+                        user['disabled'] = False
+                        user.pop('activeFrom', None)
+                        _save_auth(auth_data)
+                    else:
+                        return None  # Not yet active
+                except ValueError:
+                    return None
+            else:
+                return None  # User disabled by admin
         # Enrich payload with live server data (not stale JWT claims)
         payload['name'] = user.get('name', payload.get('name', ''))
         payload['role'] = user.get('role', payload.get('role', ''))
@@ -839,8 +853,26 @@ def auth_login():
         return jsonify({'error': 'Tài khoản không tồn tại'}), 401
 
     if user.get('disabled'):
-        audit_log(username, 'auth.login.fail', {'reason': 'disabled'})
-        return jsonify({'error': 'Tài khoản đã bị vô hiệu hoá. Liên hệ quản trị viên.'}), 403
+        # Auto-activate if activeFrom date has passed
+        active_from = user.get('activeFrom')
+        if active_from:
+            from datetime import date
+            try:
+                if date.today() >= date.fromisoformat(active_from):
+                    user['disabled'] = False
+                    user.pop('activeFrom', None)
+                    _save_auth(auth_data)
+                    # Allow login to continue
+                else:
+                    activation_date = date.fromisoformat(active_from).strftime('%d/%m/%Y')
+                    audit_log(username, 'auth.login.fail', {'reason': 'not_yet_active', 'activeFrom': active_from})
+                    return jsonify({'error': f'Tài khoản chưa được kích hoạt. Có hiệu lực từ {activation_date}.'}), 403
+            except ValueError:
+                audit_log(username, 'auth.login.fail', {'reason': 'disabled'})
+                return jsonify({'error': 'Tài khoản đã bị vô hiệu hoá. Liên hệ quản trị viên.'}), 403
+        else:
+            audit_log(username, 'auth.login.fail', {'reason': 'disabled'})
+            return jsonify({'error': 'Tài khoản đã bị vô hiệu hoá. Liên hệ quản trị viên.'}), 403
 
     if not _check_password(password, user['passwordHash']):
         status = _record_login_failure(username, client_ip)
