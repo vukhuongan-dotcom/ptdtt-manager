@@ -106,13 +106,21 @@ const SAMPLE_SCHEDULES = [{
             T2_0:4, T3_0:9, T4_0:6, T5_0:7, T6_0:8,
         },
         pkB023: {
-            T2_0:5, T3_0:1, T4_0:4, T5_0:6, T6_0:2,
+            T2_0:5, T3_0:1, T4_0:4, T5_0:2, T6_0:6,
         },
         pkB020: {
             // T2: Sáng Phú, Chiều Quy
             T2_0:7, T2_1:8,
             // T3: Sáng An
             T3_0:2,
+        },
+        pkK001: {
+            // T2: Sáng An, Chiều M.Đức | T3: Quy | T4: Phú | T5: Nguyện | T6: Tuấn
+            T2_0:2, T2_1:9,
+            T3_0:8,
+            T4_0:7,
+            T5_0:6,
+            T6_0:4,
         },
         mo: {
             // T2: Hữu, Nguyện, M.Đức, Hoan, Trâm Anh, Hoàng, Huy, Ý

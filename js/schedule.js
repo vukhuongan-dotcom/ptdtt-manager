@@ -4,6 +4,7 @@ const SCHEDULE_POSITIONS = [
     { key: 'sieuAm', label: 'Siêu âm', slots: 1, staffFilter: 'bs', color: '#8b5cf6' },
     { key: 'pkB023', label: 'P. Khám B023', slots: 1, staffFilter: 'bs', color: '#f59e0b' },
     { key: 'pkB020', label: 'P. Khám B020', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#ec4899' },
+    { key: 'pkK001', label: 'P. Khám K001', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#10b981' },
     { key: 'mo', label: 'Mổ', slots: 9, staffFilter: 'bs', color: '#ef4444' },
     { key: 'trucBCN', label: 'Trực BCN khoa', slots: 1, staffFilter: 'bcn', color: '#14b8a6' },
     { key: 'trucBV', label: 'Trực BV', slots: 3, staffFilter: 'bs', color: '#3b82f6' },
