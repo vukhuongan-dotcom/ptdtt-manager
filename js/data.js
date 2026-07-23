@@ -115,12 +115,9 @@ const SAMPLE_SCHEDULES = [{
             T3_0:2,
         },
         pkK001: {
-            // T2: Sáng An, Chiều M.Đức | T3-T6: 1 BS phụ trách cả sáng chiều
+            // T2: Sáng An, Chiều M.Đức | T4: Sáng + Chiều Vĩnh Phú
             T2_0:2, T2_1:9,
-            T3_0:8, T3_1:8,
             T4_0:7, T4_1:7,
-            T5_0:6, T5_1:6,
-            T6_0:4, T6_1:4,
         },
         mo: {
             // T2: Hữu, Nguyện, M.Đức, Hoan, Trâm Anh, Hoàng, Huy, Ý

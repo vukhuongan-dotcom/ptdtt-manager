@@ -273,4 +273,59 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 [data-theme="dark"] tr[data-group="trucBV"] td  { background-color: rgba(59,130,246,0.1); }
 [data-theme="dark"] tr[data-group="trucDD"] td  { background-color: rgba(249,115,22,0.1); }
 
+/* ===== ALERT / REMINDER BANNER FOR SCHEDULE CHANGES ===== */
+.schedule-alert-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-left: 4px solid #f59e0b;
+    border-radius: var(--radius-md, 8px);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+.schedule-alert-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    margin-top: 2px;
+}
+.schedule-alert-content {
+    flex: 1;
+}
+.schedule-alert-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 6px;
+}
+.schedule-alert-list {
+    margin: 0 0 6px 0;
+    padding-left: 18px;
+    font-size: 0.83rem;
+    color: var(--text-secondary, #475569);
+    line-height: 1.5;
+}
+.schedule-alert-list li {
+    margin-bottom: 3px;
+}
+.schedule-alert-sub {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--text-muted, #64748b);
+}
+[data-theme="dark"] .schedule-alert-banner {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+[data-theme="dark"] .schedule-alert-title {
+    color: #f8fafc;
+}
+[data-theme="dark"] .schedule-alert-list {
+    color: #cbd5e1;
+}
+[data-theme="dark"] .schedule-alert-sub {
+    color: #94a3b8;
+}
+
 

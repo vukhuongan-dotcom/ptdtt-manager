@@ -55,6 +55,37 @@ const SchedulePage = {
         return all.find(s => s.weekKey === weekKey) || null;
     },
 
+    getDefaultCellVal(posKey, cellKey, weekKey) {
+        if (weekKey >= '2026-10-26') {
+            if (posKey === 'pkK001') {
+                if (cellKey === 'T2_0') return 2; // BS Khương An
+                if (cellKey === 'T2_1') return 9; // BS Minh Đức
+                if (cellKey === 'T4_0' || cellKey === 'T4_1') return 8; // BS Quy
+            }
+            if (posKey === 'pkB023') {
+                if (cellKey === 'T2_0') return 7; // BS Vĩnh Phú
+                if (cellKey === 'T3_0') return 1;
+                if (cellKey === 'T4_0') return 4;
+                if (cellKey === 'T5_0') return 2;
+                if (cellKey === 'T6_0') return 6;
+            }
+        } else {
+            if (posKey === 'pkK001') {
+                if (cellKey === 'T2_0') return 2; // BS Khương An
+                if (cellKey === 'T2_1') return 9; // BS Minh Đức
+                if (cellKey === 'T4_0' || cellKey === 'T4_1') return 7; // BS Vĩnh Phú
+            }
+            if (posKey === 'pkB023') {
+                if (cellKey === 'T2_0') return 5;
+                if (cellKey === 'T3_0') return 1;
+                if (cellKey === 'T4_0') return 4;
+                if (cellKey === 'T5_0') return 2;
+                if (cellKey === 'T6_0') return 6;
+            }
+        }
+        return '';
+    },
+
     getStaffOptions(filterType) {
         const staff = Store.getAll('staff');
         switch (filterType) {
@@ -133,6 +164,8 @@ const SchedulePage = {
         const startStr = dates[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const endStr = dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+        const showReminder = (weekKey >= '2026-10-19' && weekKey <= '2026-11-08') || (today >= '2026-10-19' && today <= '2026-11-08');
+
         return `
         <div class="page-header">
             <div>
@@ -158,6 +191,20 @@ const SchedulePage = {
                 </button>` : ''}
             </div>
         </div>
+
+        ${showReminder ? `
+        <div class="schedule-alert-banner">
+            <div class="schedule-alert-icon">🔔</div>
+            <div class="schedule-alert-content">
+                <div class="schedule-alert-title">THÔNG BÁO THAY ĐỔI LỊCH PHÒNG KHÁM (Áp dụng từ 26/10/2026):</div>
+                <ul class="schedule-alert-list">
+                    <li><strong>P. Khám K001 (Thứ 4):</strong> BSCKI Giao Hữu Trường Quy thay BSCKI Phạm Vĩnh Phú (Sáng & Chiều).</li>
+                    <li><strong>P. Khám B023 (Thứ 2):</strong> BSCKI Phạm Vĩnh Phú phụ trách nguyên ngày.</li>
+                </ul>
+                <div class="schedule-alert-sub">Vui lòng kiểm tra và cập nhật khi soạn lịch phân công tuần!</div>
+            </div>
+        </div>
+        ` : ''}
 
         <div class="schedule-nav">
             <button class="btn-icon" onclick="SchedulePage.prevWeek()">
@@ -187,7 +234,7 @@ const SchedulePage = {
                     </tr>
                 </thead>
                 <tbody>
-                    ${SCHEDULE_POSITIONS.map(pos => this.renderPositionRow(pos, dates, schedule, isAdmin)).join('')}
+                    ${SCHEDULE_POSITIONS.map(pos => this.renderPositionRow(pos, dates, schedule, isAdmin, weekKey)).join('')}
                 </tbody>
             </table>
         </div>
@@ -204,7 +251,7 @@ const SchedulePage = {
         `;
     },
 
-    renderPositionRow(pos, dates, schedule, isAdmin) {
+    renderPositionRow(pos, dates, schedule, isAdmin, weekKey) {
         const staffOptions = this.getStaffOptions(pos.staffFilter);
         const data = schedule?.positions?.[pos.key] || {};
 
@@ -224,7 +271,7 @@ const SchedulePage = {
             const isLeadSlot = slot === 0 && (pos.key === 'trucKhoa' || pos.key === 'mo');
             dates.forEach((d, dayIdx) => {
                 const cellKey = `${DAYS[dayIdx]}_${slot}`;
-                const val = data[cellKey] || '';
+                const val = (data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
                 const slotLabel = pos.slotLabels ? pos.slotLabels[slot] : '';
                 const leadClass = isLeadSlot ? ' schedule-lead-slot' : '';
 
@@ -509,6 +556,14 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
+        if (weekKey >= '2026-10-26' && prevKey < '2026-10-26') {
+            if (!copiedPositions.pkK001) copiedPositions.pkK001 = {};
+            copiedPositions.pkK001['T4_0'] = 8; // BS Quy
+            copiedPositions.pkK001['T4_1'] = 8; // BS Quy
+            if (!copiedPositions.pkB023) copiedPositions.pkB023 = {};
+            copiedPositions.pkB023['T2_0'] = 7; // BS Phú
+        }
+
         const saved = await this._upsertSchedule(weekKey, dates, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });
         if (!saved?.ok) {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa sao chép được lịch tuần.');
@@ -555,7 +610,8 @@ const SchedulePage = {
                     dates.forEach((d, dayIdx) => {
                         const dayKey = DAYS[dayIdx];
                         const cellKey = `${dayKey}_${slot}`;
-                        const staffId = schedule?.positions?.[pos.key]?.[cellKey];
+                        const posData = schedule?.positions?.[pos.key];
+                        const staffId = (posData && cellKey in posData) ? posData[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
                         let name = '';
                         if (staffId) {
                             const member = staff.find(s => s.id === parseInt(staffId));
