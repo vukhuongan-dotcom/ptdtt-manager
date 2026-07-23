@@ -109,9 +109,8 @@ const SAMPLE_SCHEDULES = [{
             T2_0:5, T3_0:1, T4_0:4, T5_0:2, T6_0:6,
         },
         pkB020: {
-            // T2: Sáng Phú, Chiều Quy
-            T2_0:7, T2_1:8,
-            // T3: Sáng An
+            // T2: Sáng + Chiều Quy | T3: Sáng An
+            T2_0:8, T2_1:8,
             T3_0:2,
         },
         pkK001: {
