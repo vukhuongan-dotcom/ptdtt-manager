@@ -66,6 +66,10 @@ const SchedulePage = {
                 if (cellKey === 'T2_0' || cellKey === 'T2_1') return 8; // BS Quy (đổi lại sau 3 tháng)
                 if (cellKey === 'T3_0') return 2; // BS Khương An
             }
+            if (posKey === 'trucKhoa') {
+                if (cellKey === 'T5_0') return 7; // BS Vĩnh Phú (đổi lại sau 3 tháng)
+                if (cellKey === 'T6_0') return 8; // BS Quy (đổi lại sau 3 tháng)
+            }
             if (posKey === 'pkB023') {
                 if (cellKey === 'T2_0') return 5;
                 if (cellKey === 'T3_0') return 1;
@@ -82,6 +86,10 @@ const SchedulePage = {
             if (posKey === 'pkB020') {
                 if (cellKey === 'T2_0' || cellKey === 'T2_1') return 7; // BS Vĩnh Phú (từ 27/07)
                 if (cellKey === 'T3_0') return 2; // BS Khương An
+            }
+            if (posKey === 'trucKhoa') {
+                if (cellKey === 'T5_0') return 8; // BS Quy (từ 27/07)
+                if (cellKey === 'T6_0') return 7; // BS Vĩnh Phú (từ 27/07)
             }
             if (posKey === 'pkB023') {
                 if (cellKey === 'T2_0') return 5;
@@ -204,10 +212,11 @@ const SchedulePage = {
         <div class="schedule-alert-banner">
             <div class="schedule-alert-icon">🔔</div>
             <div class="schedule-alert-content">
-                <div class="schedule-alert-title">THÔNG BÁO THAY ĐỔI LỊCH PHÒNG KHÁM (Áp dụng từ 26/10/2026):</div>
+                <div class="schedule-alert-title">THÔNG BÁO THAY ĐỔI LỊCH PHÒNG KHÁM & TRỰC KHOA (Áp dụng từ 26/10/2026):</div>
                 <ul class="schedule-alert-list">
                     <li><strong>P. Khám B020 (Thứ 2):</strong> BSCKI Giao Hữu Trường Quy thay BSCKI Phạm Vĩnh Phú (Sáng & Chiều).</li>
                     <li><strong>P. Khám K001 (Thứ 6):</strong> BSCKI Phạm Vĩnh Phú thay BSCKI Giao Hữu Trường Quy (Sáng & Chiều).</li>
+                    <li><strong>Trực Khoa:</strong> BSCKI Phạm Vĩnh Phú trực Thứ 5, BSCKI Giao Hữu Trường Quy trực Thứ 6.</li>
                 </ul>
                 <div class="schedule-alert-sub">Vui lòng kiểm tra và cập nhật khi soạn lịch phân công tuần!</div>
             </div>
@@ -573,6 +582,9 @@ const SchedulePage = {
             if (!copiedPositions.pkB020) copiedPositions.pkB020 = {};
             copiedPositions.pkB020['T2_0'] = 8; // BS Quy
             copiedPositions.pkB020['T2_1'] = 8; // BS Quy
+            if (!copiedPositions.trucKhoa) copiedPositions.trucKhoa = {};
+            copiedPositions.trucKhoa['T5_0'] = 7; // BS Phú
+            copiedPositions.trucKhoa['T6_0'] = 8; // BS Quy
         }
 
         const saved = await this._upsertSchedule(weekKey, dates, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });

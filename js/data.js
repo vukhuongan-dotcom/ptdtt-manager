@@ -97,10 +97,10 @@ const SAMPLE_SCHEDULES = [{
             T3_0:9, T3_1:11, T3_2:14,
             // T4: Nguyện, Minh, Trâm Anh
             T4_0:6, T4_1:12, T4_2:15,
-            // T5: Phú, N.Đức, Huy
-            T5_0:7, T5_1:10, T5_2:13,
-            // T6: Quy, Hoan, Ý
-            T6_0:8, T6_1:11, T6_2:17,
+            // T5: Quy, N.Đức, Huy
+            T5_0:8, T5_1:10, T5_2:13,
+            // T6: Phú, Hoan, Ý
+            T6_0:7, T6_1:11, T6_2:17,
         },
         sieuAm: {
             T2_0:4, T3_0:9, T4_0:6, T5_0:7, T6_0:8,
