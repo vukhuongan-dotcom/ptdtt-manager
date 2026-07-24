@@ -183,7 +183,8 @@ const SchedulePage = {
             pkB023: 'P.Khám B023',
             pkB020: 'P.Khám B020',
             pkK001: 'P.Khám K001',
-            mo: 'Lịch Mổ'
+            mo: 'Lịch Mổ',
+            trucBV: 'Trực Bệnh viện'
         };
 
         const conflicts = [];
@@ -221,6 +222,15 @@ const SchedulePage = {
                 const hasDuty = duties.some(x => x.posKey === 'trucKhoa');
                 if (hasDuty) {
                     duties = duties.filter(x => x.posKey !== 'sieuAm');
+                }
+
+                // Trực Bệnh viện cho phép Trực khoa, Phòng khám — CHỈ CẤM gán Lịch Mổ
+                const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
+                if (hasTrucBV) {
+                    const hasMo = duties.some(x => x.posKey === 'mo');
+                    if (!hasMo) {
+                        duties = duties.filter(x => x.posKey !== 'trucBV');
+                    }
                 }
 
                 if (duties.length < 2) return;
