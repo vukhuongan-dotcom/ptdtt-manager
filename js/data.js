@@ -114,9 +114,9 @@ const SAMPLE_SCHEDULES = [{
             T3_0:2,
         },
         pkK001: {
-            // T2: Sáng An, Chiều M.Đức | T4: Sáng + Chiều Vĩnh Phú
+            // T2: Sáng An, Chiều M.Đức | T6: Sáng + Chiều Vĩnh Phú
             T2_0:2, T2_1:9,
-            T4_0:7, T4_1:7,
+            T6_0:7, T6_1:7,
         },
         mo: {
             // T2: Hữu, Nguyện, M.Đức, Hoan, Trâm Anh, Hoàng, Huy, Ý

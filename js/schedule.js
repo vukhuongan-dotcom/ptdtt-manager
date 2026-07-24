@@ -60,7 +60,7 @@ const SchedulePage = {
             if (posKey === 'pkK001') {
                 if (cellKey === 'T2_0') return 2; // BS Khương An
                 if (cellKey === 'T2_1') return 9; // BS Minh Đức
-                if (cellKey === 'T4_0' || cellKey === 'T4_1') return 8; // BS Quy (đổi với BS Phú)
+                if (cellKey === 'T6_0' || cellKey === 'T6_1') return 8; // BS Quy (đổi với BS Phú)
             }
             if (posKey === 'pkB020') {
                 if (cellKey === 'T2_0' || cellKey === 'T2_1') return 7; // BS Vĩnh Phú (đổi với BS Quy)
@@ -77,7 +77,7 @@ const SchedulePage = {
             if (posKey === 'pkK001') {
                 if (cellKey === 'T2_0') return 2; // BS Khương An
                 if (cellKey === 'T2_1') return 9; // BS Minh Đức
-                if (cellKey === 'T4_0' || cellKey === 'T4_1') return 7; // BS Vĩnh Phú
+                if (cellKey === 'T6_0' || cellKey === 'T6_1') return 7; // BS Vĩnh Phú
             }
             if (posKey === 'pkB020') {
                 if (cellKey === 'T2_0' || cellKey === 'T2_1') return 8; // BS Quy (Sáng & Chiều từ 27/07)
@@ -207,7 +207,7 @@ const SchedulePage = {
                 <div class="schedule-alert-title">THÔNG BÁO THAY ĐỔI LỊCH PHÒNG KHÁM (Áp dụng từ 26/10/2026):</div>
                 <ul class="schedule-alert-list">
                     <li><strong>P. Khám B020 (Thứ 2):</strong> BSCKI Phạm Vĩnh Phú thay BSCKI Giao Hữu Trường Quy (Sáng & Chiều).</li>
-                    <li><strong>P. Khám K001 (Thứ 4):</strong> BSCKI Giao Hữu Trường Quy thay BSCKI Phạm Vĩnh Phú (Sáng & Chiều).</li>
+                    <li><strong>P. Khám K001 (Thứ 6):</strong> BSCKI Giao Hữu Trường Quy thay BSCKI Phạm Vĩnh Phú (Sáng & Chiều).</li>
                 </ul>
                 <div class="schedule-alert-sub">Vui lòng kiểm tra và cập nhật khi soạn lịch phân công tuần!</div>
             </div>
@@ -566,8 +566,10 @@ const SchedulePage = {
 
         if (weekKey >= '2026-10-26' && prevKey < '2026-10-26') {
             if (!copiedPositions.pkK001) copiedPositions.pkK001 = {};
-            copiedPositions.pkK001['T4_0'] = 8; // BS Quy
-            copiedPositions.pkK001['T4_1'] = 8; // BS Quy
+            delete copiedPositions.pkK001['T4_0'];
+            delete copiedPositions.pkK001['T4_1'];
+            copiedPositions.pkK001['T6_0'] = 8; // BS Quy
+            copiedPositions.pkK001['T6_1'] = 8; // BS Quy
             if (!copiedPositions.pkB020) copiedPositions.pkB020 = {};
             copiedPositions.pkB020['T2_0'] = 7; // BS Phú
             copiedPositions.pkB020['T2_1'] = 7; // BS Phú
