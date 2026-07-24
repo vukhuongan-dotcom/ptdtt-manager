@@ -328,4 +328,54 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #94a3b8;
 }
 
+/* ── Conflict Alert Banner & Cell Highlight ── */
+.schedule-conflict-banner {
+    display: flex;
+    gap: 12px;
+    background: #fef2f2;
+    border: 1.5px solid #fca5a5;
+    border-radius: var(--border-radius);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+.schedule-conflict-banner .schedule-alert-icon {
+    font-size: 1.5rem;
+}
+.schedule-conflict-banner .schedule-alert-title {
+    color: #b91c1c;
+}
+.schedule-conflict-banner .schedule-alert-list {
+    color: #991b1b;
+}
+.schedule-conflict-banner .schedule-alert-sub {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .schedule-conflict-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+[data-theme="dark"] .schedule-conflict-banner .schedule-alert-title {
+    color: #fca5a5;
+}
+[data-theme="dark"] .schedule-conflict-banner .schedule-alert-list {
+    color: #fecaca;
+}
+[data-theme="dark"] .schedule-conflict-banner .schedule-alert-sub {
+    color: #fca5a5;
+}
+
+.schedule-select--conflict {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    color: #b91c1c !important;
+    font-weight: 700 !important;
+}
+[data-theme="dark"] .schedule-select--conflict {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    color: #fca5a5 !important;
+}
+
 

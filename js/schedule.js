@@ -170,6 +170,82 @@ const SchedulePage = {
         return this._shortNameCache[staffId] || '';
     },
 
+    checkScheduleConflicts(positions) {
+        if (!positions) return [];
+        const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+        const dayNames = { T2: 'Thứ 2', T3: 'Thứ 3', T4: 'Thứ 4', T5: 'Thứ 5', T6: 'Thứ 6', T7: 'Thứ 7', CN: 'Chủ nhật' };
+        const posLabels = {
+            trucKhoa: 'Trực Khoa',
+            sieuAm: 'Siêu âm',
+            pkB023: 'P.Khám B023',
+            pkB020: 'P.Khám B020',
+            pkK001: 'P.Khám K001',
+            mo: 'Lịch Mổ'
+        };
+
+        const conflicts = [];
+
+        days.forEach(d => {
+            const staffDuties = {};
+
+            Object.keys(posLabels).forEach(posKey => {
+                const cells = positions[posKey] || {};
+                Object.keys(cells).forEach(cellKey => {
+                    if (cellKey.indexOf(`${d}_`) === 0) {
+                        const val = cells[cellKey];
+                        if (val && !isNaN(val)) {
+                            const sid = parseInt(val);
+                            if (sid > 0) {
+                                const slot = cellKey.split('_')[1] || '0';
+                                if (!staffDuties[sid]) staffDuties[sid] = [];
+                                staffDuties[sid].push({
+                                    posKey,
+                                    posLabel: posLabels[posKey],
+                                    slot,
+                                    cellKey
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+
+            Object.keys(staffDuties).forEach(sidStr => {
+                const sid = parseInt(sidStr);
+                const duties = staffDuties[sid];
+                if (duties.length < 2) return;
+
+                const isOnlyDutyAndUltrasound = duties.length === 2 &&
+                    duties.some(x => x.posKey === 'trucKhoa') &&
+                    duties.some(x => x.posKey === 'sieuAm');
+
+                if (isOnlyDutyAndUltrasound) return;
+
+                const categories = new Set(duties.map(x => x.posKey));
+                if (categories.size === 1 && duties.every(x => x.posKey.startsWith('pk'))) {
+                    return;
+                }
+
+                if (categories.size > 1 || duties.length > 1) {
+                    const staffName = this.getShortName(sid);
+                    conflicts.push({
+                        day: d,
+                        dayName: dayNames[d],
+                        staffId: sid,
+                        staffName,
+                        duties,
+                        details: duties.map(x => {
+                            const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.slot === '0' ? 'Sáng' : 'Chiều');
+                            return `${x.posLabel} (${slotStr})`;
+                        }).join(' & ')
+                    });
+                }
+            });
+        });
+
+        return conflicts;
+    },
+
     render() {
         const isAdmin = this.canEditSchedule();
         const dates = this.getWeekDates(this.weekOffset);
@@ -181,6 +257,21 @@ const SchedulePage = {
         const endStr = dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
         const showReminder = (weekKey >= '2026-10-19' && weekKey <= '2026-11-08') || (today >= '2026-10-19' && today <= '2026-11-08');
+
+        const effectivePositions = {};
+        SCHEDULE_POSITIONS.forEach(pos => {
+            effectivePositions[pos.key] = {};
+            const data = schedule?.positions?.[pos.key] || {};
+            for (let slot = 0; slot < pos.slots; slot++) {
+                DAYS.forEach((d, dayIdx) => {
+                    const cellKey = `${d}_${slot}`;
+                    const val = (data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
+                    if (val) effectivePositions[pos.key][cellKey] = parseInt(val);
+                });
+            }
+        });
+
+        const activeConflicts = this.checkScheduleConflicts(effectivePositions);
 
         return `
         <div class="page-header">
@@ -207,6 +298,21 @@ const SchedulePage = {
                 </button>` : ''}
             </div>
         </div>
+
+        ${activeConflicts.length > 0 ? `
+        <div class="schedule-conflict-banner">
+            <div class="schedule-alert-icon">⚠️</div>
+            <div class="schedule-alert-content">
+                <div class="schedule-alert-title">CẢNH BÁO TRÙNG LẶP LỊCH NHÂN SỰ (${activeConflicts.length} TRƯỜNG HỢP):</div>
+                <ul class="schedule-alert-list">
+                    ${activeConflicts.map(c => `
+                        <li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị gán trùng vị trí: <em>${c.details}</em></li>
+                    `).join('')}
+                </ul>
+                <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám, Siêu âm và Lịch mổ trong cùng 1 ngày!</div>
+            </div>
+        </div>
+        ` : ''}
 
         ${showReminder ? `
         <div class="schedule-alert-banner">
@@ -251,7 +357,7 @@ const SchedulePage = {
                     </tr>
                 </thead>
                 <tbody>
-                    ${SCHEDULE_POSITIONS.map(pos => this.renderPositionRow(pos, dates, schedule, isAdmin, weekKey)).join('')}
+                    ${SCHEDULE_POSITIONS.map(pos => this.renderPositionRow(pos, dates, schedule, isAdmin, weekKey, activeConflicts)).join('')}
                 </tbody>
             </table>
         </div>
@@ -268,7 +374,7 @@ const SchedulePage = {
         `;
     },
 
-    renderPositionRow(pos, dates, schedule, isAdmin, weekKey) {
+    renderPositionRow(pos, dates, schedule, isAdmin, weekKey, activeConflicts = []) {
         const staffOptions = this.getStaffOptions(pos.staffFilter);
         const data = schedule?.positions?.[pos.key] || {};
 
@@ -291,11 +397,13 @@ const SchedulePage = {
                 const val = (data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
                 const slotLabel = pos.slotLabels ? pos.slotLabels[slot] : '';
                 const leadClass = isLeadSlot ? ' schedule-lead-slot' : '';
+                const isConfCell = activeConflicts.some(c => c.duties.some(dt => dt.posKey === pos.key && dt.cellKey === cellKey));
+                const conflictCls = isConfCell ? ' schedule-select--conflict' : '';
 
                 if (isAdmin) {
                     rows += `<td class="schedule-cell ${dayIdx >= 5 ? 'weekend' : ''}${leadClass}">
                         ${slotLabel ? `<span class="schedule-slot-label">${slotLabel}</span>` : ''}
-                        <select class="schedule-select" data-pos="${pos.key}" data-cell="${cellKey}" onchange="SchedulePage.onCellChange(this)">
+                        <select class="schedule-select${conflictCls}" data-pos="${pos.key}" data-cell="${cellKey}" onchange="SchedulePage.onCellChange(this)">
                             <option value="">—</option>
                             ${staffOptions.map(s => `<option value="${s.id}" ${val == s.id ? 'selected' : ''}>${this.getShortName(s.id)}</option>`).join('')}
                         </select>
@@ -315,11 +423,59 @@ const SchedulePage = {
     },
 
     onCellChange(el) {
-        // Visual feedback
         if (el.value) {
             el.classList.add('has-value');
         } else {
             el.classList.remove('has-value');
+        }
+
+        const positions = {};
+        document.querySelectorAll('.schedule-select').forEach(sel => {
+            const pos = sel.dataset.pos;
+            const cell = sel.dataset.cell;
+            if (!positions[pos]) positions[pos] = {};
+            if (sel.value) positions[pos][cell] = parseInt(sel.value);
+        });
+
+        const conflicts = this.checkScheduleConflicts(positions);
+
+        document.querySelectorAll('.schedule-select').forEach(sel => {
+            const pos = sel.dataset.pos;
+            const cell = sel.dataset.cell;
+            const isConf = conflicts.some(c => c.duties.some(d => d.posKey === pos && d.cellKey === cell));
+            if (isConf) {
+                sel.classList.add('schedule-select--conflict');
+            } else {
+                sel.classList.remove('schedule-select--conflict');
+            }
+        });
+
+        let bannerEl = document.querySelector('.schedule-conflict-banner');
+        if (conflicts.length > 0) {
+            const html = `
+                <div class="schedule-alert-icon">⚠️</div>
+                <div class="schedule-alert-content">
+                    <div class="schedule-alert-title">CẢNH BÁO XUNG ĐỘT LỊCH PHÂN CÔNG (${conflicts.length} TRƯỜNG HỢP TRÙNG LẶP):</div>
+                    <ul class="schedule-alert-list">
+                        ${conflicts.map(c => `<li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị gán trùng vị trí: <em>${c.details}</em></li>`).join('')}
+                    </ul>
+                    <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám, Siêu âm và Lịch mổ trong cùng 1 ngày!</div>
+                </div>
+            `;
+            if (bannerEl) {
+                bannerEl.innerHTML = html;
+                bannerEl.style.display = 'flex';
+            } else {
+                const navEl = document.querySelector('.schedule-nav');
+                if (navEl) {
+                    const newBanner = document.createElement('div');
+                    newBanner.className = 'schedule-conflict-banner';
+                    newBanner.innerHTML = html;
+                    navEl.parentNode.insertBefore(newBanner, navEl);
+                }
+            }
+        } else if (bannerEl) {
+            bannerEl.style.display = 'none';
         }
     },
 
@@ -373,6 +529,13 @@ const SchedulePage = {
             if (!positions[pos]) positions[pos] = {};
             if (sel.value) positions[pos][cell] = parseInt(sel.value);
         });
+
+        // Enforce strict no-overlap policy
+        const conflicts = this.checkScheduleConflicts(positions);
+        if (conflicts.length > 0) {
+            Toast.error(`❌ QUY CHẾ KHOA: Không thể lưu lịch! Có ${conflicts.length} trường hợp trùng lặp nhân sự trong cùng 1 ngày. Vui lòng điều chỉnh các ô đỏ.`);
+            return;
+        }
 
         const notes = document.getElementById('schedule-notes')?.value || '';
         const robotSurgery = this._collectRobotData();
