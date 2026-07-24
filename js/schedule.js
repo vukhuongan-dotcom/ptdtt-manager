@@ -215,14 +215,15 @@ const SchedulePage = {
 
             Object.keys(staffDuties).forEach(sidStr => {
                 const sid = parseInt(sidStr);
-                const duties = staffDuties[sid];
+                let duties = staffDuties[sid];
+
+                // Bỏ qua Siêu âm khi bác sĩ trùng với Trực khoa (bác sĩ trực khoa phụ trách Siêu âm sáng)
+                const hasDuty = duties.some(x => x.posKey === 'trucKhoa');
+                if (hasDuty) {
+                    duties = duties.filter(x => x.posKey !== 'sieuAm');
+                }
+
                 if (duties.length < 2) return;
-
-                const isOnlyDutyAndUltrasound = duties.length === 2 &&
-                    duties.some(x => x.posKey === 'trucKhoa') &&
-                    duties.some(x => x.posKey === 'sieuAm');
-
-                if (isOnlyDutyAndUltrasound) return;
 
                 const categories = new Set(duties.map(x => x.posKey));
                 if (categories.size === 1 && duties.every(x => x.posKey.startsWith('pk'))) {
@@ -312,7 +313,7 @@ const SchedulePage = {
                         <li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị gán trùng vị trí: <em>${c.details}</em></li>
                     `).join('')}
                 </ul>
-                <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám, Siêu âm và Lịch mổ trong cùng 1 ngày!</div>
+                <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám và Lịch mổ trong cùng 1 ngày!</div>
             </div>
         </div>
         ` : ''}
@@ -484,7 +485,7 @@ const SchedulePage = {
                     <ul class="schedule-alert-list">
                         ${conflicts.map(c => `<li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị gán trùng vị trí: <em>${c.details}</em></li>`).join('')}
                     </ul>
-                    <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám, Siêu âm và Lịch mổ trong cùng 1 ngày!</div>
+                    <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám và Lịch mổ trong cùng 1 ngày!</div>
                 </div>
             `;
             if (bannerEl) {
@@ -546,7 +547,7 @@ const SchedulePage = {
                     <span>🛑 VI PHẠM QUY CHẾ PHÂN CÔNG KHOA</span>
                 </div>
                 <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
-                    Hệ thống không cho phép lưu lịch do phát hiện <strong>${conflicts.length} trường hợp bác sĩ bị gán trùng vị trí</strong> trong cùng 1 ngày giữa Trực khoa, Phòng khám, Siêu âm và Lịch mổ.
+                    Hệ thống không cho phép lưu lịch do phát hiện <strong>${conflicts.length} trường hợp bác sĩ bị gán trùng vị trí</strong> trong cùng 1 ngày giữa Trực khoa, Phòng khám và Lịch mổ.
                 </p>
                 <div style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;padding:14px 16px;max-height:260px;overflow-y:auto">
                     ${conflicts.map(c => `
