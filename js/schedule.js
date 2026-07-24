@@ -499,6 +499,14 @@ const SchedulePage = {
                     navEl.parentNode.insertBefore(newBanner, navEl);
                 }
             }
+            
+            // Show instant warning toast for current cell conflict
+            const currentCell = el.dataset.cell;
+            const currentPos = el.dataset.pos;
+            const matchedConf = conflicts.find(c => c.duties.some(d => d.posKey === currentPos && d.cellKey === currentCell));
+            if (matchedConf && el.value) {
+                Toast.warning(`⚠️ TRÙNG LỊCH: ${matchedConf.staffName} bị gán trùng ở ${matchedConf.details} (${matchedConf.dayName})`);
+            }
         } else if (bannerEl) {
             bannerEl.style.display = 'none';
         }
@@ -531,8 +539,57 @@ const SchedulePage = {
         return Store.saveCollections(['schedules']);
     },
 
+    showConflictModal(conflicts) {
+        Modal.open('⚠️ Xung đột lịch phân công nhân sự', `
+            <div style="padding:4px 0">
+                <div style="color:var(--danger);font-weight:700;font-size:0.92rem;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+                    <span>🛑 VI PHẠM QUY CHẾ PHÂN CÔNG KHOA</span>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
+                    Hệ thống không cho phép lưu lịch do phát hiện <strong>${conflicts.length} trường hợp bác sĩ bị gán trùng vị trí</strong> trong cùng 1 ngày giữa Trực khoa, Phòng khám, Siêu âm và Lịch mổ.
+                </p>
+                <div style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;padding:14px 16px;max-height:260px;overflow-y:auto">
+                    ${conflicts.map(c => `
+                        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-light)">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <span style="font-weight:700;color:var(--primary)">📅 ${c.dayName}</span>
+                                <span style="background:rgba(239,68,68,0.1);color:#dc2626;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px">Trùng lịch</span>
+                            </div>
+                            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin:4px 0 2px 0">${c.staffName}</div>
+                            <div style="font-size:0.82rem;color:var(--danger);line-height:1.4">👉 Trùng vị trí: <strong>${c.details}</strong></div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top:14px;font-size:0.78rem;color:var(--text-muted);font-style:italic">
+                    * Ghi chú: Bác sĩ được đánh dấu ô viền đỏ trên bảng phân công. Vui lòng điều chỉnh lại để hợp lệ.
+                </div>
+                <div class="modal-footer" style="margin-top:16px">
+                    <button class="btn btn-primary" onclick="Modal.close()">Đã hiểu & Điều chỉnh</button>
+                </div>
+            </div>
+        `);
+    },
+
     async saveSchedule() {
         if (!this.canEditSchedule()) return;
+
+        const positions = {};
+        document.querySelectorAll('.schedule-select').forEach(sel => {
+            const pos = sel.dataset.pos;
+            const cell = sel.dataset.cell;
+            if (!positions[pos]) positions[pos] = {};
+            if (sel.value) positions[pos][cell] = parseInt(sel.value);
+        });
+
+        // 1. Enforce strict no-overlap policy BEFORE asking confirmation!
+        const conflicts = this.checkScheduleConflicts(positions);
+        if (conflicts.length > 0) {
+            Toast.error(`❌ QUY CHẾ KHOA: Không thể lưu lịch! Có ${conflicts.length} trường hợp trùng lặp nhân sự trong cùng 1 ngày.`);
+            this.showConflictModal(conflicts);
+            return;
+        }
+
+        // 2. If no conflicts, ask confirmation
         const confirmed = await Confirm.show({
             title: 'Lưu lịch phân công',
             message: 'Xác nhận lưu lịch phân công tuần này?<br>Dữ liệu hiện tại trên bảng sẽ được ghi nhận.',
@@ -545,23 +602,6 @@ const SchedulePage = {
 
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
-        const positions = {};
-
-        // Collect all select values
-        document.querySelectorAll('.schedule-select').forEach(sel => {
-            const pos = sel.dataset.pos;
-            const cell = sel.dataset.cell;
-            if (!positions[pos]) positions[pos] = {};
-            if (sel.value) positions[pos][cell] = parseInt(sel.value);
-        });
-
-        // Enforce strict no-overlap policy
-        const conflicts = this.checkScheduleConflicts(positions);
-        if (conflicts.length > 0) {
-            Toast.error(`❌ QUY CHẾ KHOA: Không thể lưu lịch! Có ${conflicts.length} trường hợp trùng lặp nhân sự trong cùng 1 ngày. Vui lòng điều chỉnh các ô đỏ.`);
-            return;
-        }
-
         const notes = document.getElementById('schedule-notes')?.value || '';
         const robotSurgery = this._collectRobotData();
 
@@ -570,7 +610,6 @@ const SchedulePage = {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch phân công. Vui lòng thử lại.');
         }
 
-        // Show saved feedback
         Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
     },
 
