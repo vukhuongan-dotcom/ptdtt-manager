@@ -234,9 +234,8 @@ const ConferencesPage = {
         const canEdit   = this._canEdit();
         const canExport = this._canExport();
 
-        // Only show conferences WITH presentations
+        // Show all conferences (newly added conferences start with 0 presentations)
         const all = Store.getAll('conferences')
-            .filter(c => c.presentations && c.presentations.length > 0)
             .sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')); // newest first
 
         // Year filter
@@ -246,8 +245,8 @@ const ConferencesPage = {
 
         // Global stats — tính theo thời gian thực
         const pastConf    = all.filter(c => this._getStatus(c) === 'past').length;
-        const totalPres   = all.reduce((s, c) => s + c.presentations.length, 0);
-        const totalPresenterSet = new Set(all.flatMap(c => c.presentations.map(p => p.presenter)));
+        const totalPres   = all.reduce((s, c) => s + (c.presentations?.length || 0), 0);
+        const totalPresenterSet = new Set(all.flatMap(c => (c.presentations || []).map(p => p.presenter)));
         const totalPresenterCount = totalPresenterSet.size;
         // Fix #1: 'now' (đang diễn ra) không tính vào 'sắp tới'
         const upcoming    = all.filter(c => { const s = this._getStatus(c); return s === 'soon' || s === 'upcoming'; }).length;
@@ -276,22 +275,29 @@ const ConferencesPage = {
             });
 
             const dateKeys = Object.keys(byDate).sort();
-            const presPreview = dateKeys.map(d => {
+            const presPreview = pres.length > 0 ? dateKeys.map(d => {
                 const dt = new Date(d);
                 const days = ['CN','T2','T3','T4','T5','T6','T7'];
                 const label = `${days[dt.getDay()]} ${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}`;
-                const rows = byDate[d].sort((a,b) => (a.time||'').localeCompare(b.time||'')).map(p => `
+                const rows = byDate[d].sort((a,b) => (a.time||'').localeCompare(b.time||'')).map(p => {
+                    const actualIdx = pres.findIndex(orig => orig === p);
+                    return `
                     <div class="cp-pres-row">
-                        <span class="cp-pres-time">${p.time}</span>
-                        <span class="cp-pres-lang ${p.language === 'en' ? 'cp-lang-en' : 'cp-lang-vi'}">${p.language.toUpperCase()}</span>
+                        <span class="cp-pres-time">${p.time || '—'}</span>
+                        <span class="cp-pres-lang ${p.language === 'en' ? 'cp-lang-en' : 'cp-lang-vi'}">${(p.language || 'vi').toUpperCase()}</span>
                         <span class="cp-pres-title">${p.title}</span>
                         <span class="cp-pres-who">— ${p.presenter}</span>
-                    </div>`).join('');
+                        ${canEdit ? `<div class="cp-pres-actions">
+                            <button class="btn-icon-sm" onclick="ConferencesPage.openPresentationForm(${item.id}, ${actualIdx})" title="Sửa bài báo cáo">✏️</button>
+                            <button class="btn-icon-sm" onclick="ConferencesPage.deletePresentation(${item.id}, ${actualIdx})" title="Xoá bài báo cáo">🗑️</button>
+                        </div>` : ''}
+                    </div>`;
+                }).join('');
                 return `<div class="cp-day-block">
                     <div class="cp-day-label">📅 ${label}</div>
                     ${rows}
                 </div>`;
-            }).join('');
+            }).join('') : `<div class="cp-pres-empty">Chưa có bài báo cáo nào. ${canEdit ? `<a href="javascript:void(0)" onclick="ConferencesPage.openPresentationForm(${item.id})" style="color:var(--primary);font-weight:700;margin-left:4px">+ Thêm bài báo cáo</a>` : ''}</div>`;
 
             const statusCls = status === 'past' ? 'cp-card-past' : status === 'now' ? 'cp-card-now' : status === 'soon' ? 'cp-card-soon' : '';
 
@@ -338,9 +344,10 @@ const ConferencesPage = {
                 <div class="cp-card-footer">
                     <div class="cp-footer-left">
                         ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
-                        ${canExport ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>` : ''}
+                        ${canExport && pres.length > 0 ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>` : ''}
                     </div>
                     ${canEdit ? `<div class="cp-footer-actions">
+                        <button class="btn btn-primary btn-sm" onclick="ConferencesPage.openPresentationForm(${item.id})">➕ Bài báo cáo</button>
                         <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})">✏️ Sửa</button>
                         <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})">🗑️</button>
                     </div>` : ''}
@@ -537,6 +544,123 @@ const ConferencesPage = {
         Modal.close();
         App.renderCurrentPage();
         Toast.success('Đã xoà hội nghị');
+    },
+
+    // ===== PRESENTATION MANAGEMENT (BÀI BÁO CÁO) =====
+    openPresentationForm(confId, presIndex = null) {
+        if (!this._canEdit()) return;
+        const item = Store.getById('conferences', confId);
+        if (!item) return;
+
+        const pres = (presIndex !== null && item.presentations) ? item.presentations[presIndex] : null;
+
+        const staffList = Store.getAll('staff');
+        const doctors = staffList
+            .filter(s => s.role?.includes('Bác sĩ') || s.role?.includes('Trưởng khoa') || s.role?.includes('Phó trưởng khoa'))
+            .map(s => `${s.title || ''} ${s.name}`.trim());
+
+        Modal.open(pres ? 'Sửa bài báo cáo' : 'Thêm bài báo cáo', `
+            <form onsubmit="ConferencesPage.savePresentation(event, ${confId}, ${presIndex !== null ? presIndex : 'null'})">
+                <div class="form-group">
+                    <label class="form-label">Tên hội nghị</label>
+                    <input class="form-input" disabled value="${item.name.replace(/"/g, '&quot;')}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tên bài báo cáo *</label>
+                    <input class="form-input" name="title" required value="${(pres?.title || '').replace(/"/g, '&quot;')}" placeholder="VD: Phẫu thuật robot cắt trực tràng...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Báo cáo viên *</label>
+                        <input class="form-input" name="presenter" id="pres-presenter-input" required value="${(pres?.presenter || '').replace(/"/g, '&quot;')}" placeholder="Chọn hoặc nhập tên bác sĩ..." list="doctors-list">
+                        <datalist id="doctors-list">
+                            ${doctors.map(d => `<option value="${d.replace(/"/g, '&quot;')}">`).join('')}
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ngôn ngữ *</label>
+                        <select class="form-select" name="language" required>
+                            <option value="vi" ${pres?.language==='vi'?'selected':''}>🇻🇳 Tiếng Việt (VI)</option>
+                            <option value="en" ${pres?.language==='en'?'selected':''}>🇬🇧 Tiếng Anh (EN)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Ngày báo cáo *</label>
+                        <input class="form-input" type="date" name="date" required value="${pres?.date || item?.startDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Giờ báo cáo (VD: 08:30 - 09:00)</label>
+                        <input class="form-input" name="time" value="${pres?.time || ''}" placeholder="08:30 - 09:00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phiên báo cáo (Tuỳ chọn)</label>
+                    <input class="form-input" name="session" value="${(pres?.session || '').replace(/"/g, '&quot;')}" placeholder="VD: Phiên Đại trực tràng 1">
+                </div>
+                <div class="modal-footer">
+                    ${presIndex !== null ? `<button type="button" class="btn btn-danger" onclick="ConferencesPage.deletePresentation(${confId}, ${presIndex});Modal.close()">Xoá bài này</button>` : ''}
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">${presIndex !== null ? 'Cập nhật' : 'Thêm bài báo cáo'}</button>
+                </div>
+            </form>
+        `);
+    },
+
+    savePresentation(e, confId, presIndex = null) {
+        if (!this._canEdit()) return;
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const item = Store.getById('conferences', confId);
+        if (!item) return;
+
+        const presData = {
+            title:     f.get('title'),
+            presenter: f.get('presenter'),
+            language:  f.get('language') || 'vi',
+            date:      f.get('date'),
+            time:      f.get('time') || '—',
+            session:   f.get('session') || ''
+        };
+
+        const presentations = [...(item.presentations || [])];
+
+        if (presIndex !== null && presIndex >= 0) {
+            presentations[presIndex] = presData;
+        } else {
+            presentations.push(presData);
+        }
+
+        Store.update('conferences', confId, { presentations });
+        Modal.close();
+        App.renderCurrentPage();
+        Toast.success(presIndex !== null ? 'Đã cập nhật bài báo cáo' : 'Đã thêm bài báo cáo');
+    },
+
+    async deletePresentation(confId, presIndex) {
+        if (!this._canEdit()) return;
+        const item = Store.getById('conferences', confId);
+        if (!item || !item.presentations || !item.presentations[presIndex]) return;
+
+        const pres = item.presentations[presIndex];
+        const confirmed = await Confirm.show({
+            title: 'Xoà bài báo cáo',
+            message: `Bạn có chắc muốn xoà bài báo cáo <strong>${pres.title}</strong> của bác sĩ <strong>${pres.presenter}</strong>?`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xoà bài báo cáo',
+            cancelText: 'Giữ lại'
+        });
+        if (!confirmed) return;
+
+        const presentations = [...item.presentations];
+        presentations.splice(presIndex, 1);
+        Store.update('conferences', confId, { presentations });
+
+        Modal.close();
+        App.renderCurrentPage();
+        Toast.success('Đã xoà bài báo cáo');
     },
 
     // ── Xuất ảnh lịch báo cáo ──

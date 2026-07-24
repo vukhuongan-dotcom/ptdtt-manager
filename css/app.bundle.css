@@ -5426,6 +5426,42 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     text-overflow: ellipsis;
 }
 
+.cp-pres-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: 8px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+.cp-pres-row:hover .cp-pres-actions {
+    opacity: 1;
+}
+.btn-icon-sm {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+.btn-icon-sm:hover {
+    background: rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .btn-icon-sm:hover {
+    background: rgba(255,255,255,0.1);
+}
+.cp-pres-empty {
+    padding: 14px 18px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.83rem;
+    font-style: italic;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
 /* Card footer */
 .cp-card-footer {
     display: flex;
