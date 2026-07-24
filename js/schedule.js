@@ -56,6 +56,9 @@ const SchedulePage = {
     },
 
     getDefaultCellVal(posKey, cellKey, weekKey) {
+        if (posKey === 'sieuAm') {
+            return this.getDefaultCellVal('trucKhoa', cellKey, weekKey);
+        }
         if (weekKey >= '2026-10-26') {
             if (posKey === 'pkK001') {
                 if (cellKey === 'T2_0') return 2; // BS Khương An
@@ -423,6 +426,28 @@ const SchedulePage = {
     },
 
     onCellChange(el) {
+        const pos = el.dataset.pos;
+        const cell = el.dataset.cell;
+
+        // Auto-sync between trucKhoa (slot 0) and sieuAm
+        if (cell && cell.endsWith('_0')) {
+            const dayCode = cell.split('_')[0];
+            const targetCell = `${dayCode}_0`;
+            let partnerPos = null;
+
+            if (pos === 'trucKhoa') partnerPos = 'sieuAm';
+            else if (pos === 'sieuAm') partnerPos = 'trucKhoa';
+
+            if (partnerPos) {
+                const partnerSelect = document.querySelector(`.schedule-select[data-pos="${partnerPos}"][data-cell="${targetCell}"]`);
+                if (partnerSelect && partnerSelect.value !== el.value) {
+                    partnerSelect.value = el.value;
+                    if (el.value) partnerSelect.classList.add('has-value');
+                    else partnerSelect.classList.remove('has-value');
+                }
+            }
+        }
+
         if (el.value) {
             el.classList.add('has-value');
         } else {
