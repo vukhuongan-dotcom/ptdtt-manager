@@ -397,6 +397,33 @@ const ConferencesPage = {
         App.renderCurrentPage();
     },
 
+    computeDateDisplay(startStr, endStr) {
+        if (!startStr || !endStr) return '';
+        const [sY, sM, sD] = startStr.split('-').map(Number);
+        const [eY, eM, eD] = endStr.split('-').map(Number);
+        if (!sY || !sM || !sD || !eY || !eM || !eD) return '';
+
+        const pad = n => String(n).padStart(2, '0');
+        if (sY === eY) {
+            if (sM === eM) {
+                if (sD === eD) return `${pad(sD)}/${pad(sM)}/${sY}`;
+                return `${pad(sD)}–${pad(eD)}/${pad(sM)}/${sY}`;
+            }
+            return `${pad(sD)}/${pad(sM)}–${pad(eD)}/${pad(eM)}/${sY}`;
+        }
+        return `${pad(sD)}/${pad(sM)}/${sY}–${pad(eD)}/${pad(eM)}/${eY}`;
+    },
+
+    updateDatePreview() {
+        const start = document.querySelector('form input[name="startDate"]')?.value;
+        const end = document.querySelector('form input[name="endDate"]')?.value;
+        const previewEl = document.getElementById('conf-date-preview');
+        if (previewEl) {
+            const str = this.computeDateDisplay(start, end);
+            previewEl.innerHTML = str ? `📅 Ngày hiển thị (tự tính): <strong>${str}</strong>` : '';
+        }
+    },
+
     // ===== CRUD =====
     openForm(id) {
         if (!this._canEdit()) return;
@@ -408,23 +435,20 @@ const ConferencesPage = {
                     <label class="form-label">Tên hội nghị *</label>
                     <input class="form-input" name="name" required value="${item?.name || ''}">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Tên đầy đủ / tiếng Việt</label>
-                    <input class="form-input" name="nameVi" value="${item?.nameVi || ''}">
-                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Ngày bắt đầu *</label>
-                        <input class="form-input" type="date" name="startDate" required value="${item?.startDate || ''}">
+                        <input class="form-input" type="date" name="startDate" required value="${item?.startDate || ''}" onchange="ConferencesPage.updateDatePreview()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Ngày kết thúc *</label>
-                        <input class="form-input" type="date" name="endDate" required value="${item?.endDate || ''}">
+                        <input class="form-input" type="date" name="endDate" required value="${item?.endDate || ''}" onchange="ConferencesPage.updateDatePreview()">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Ngày hiển thị (VD: 05–06/06/2026)</label>
-                    <input class="form-input" name="dates" value="${item?.dates || ''}">
+                <div class="form-group" style="margin-top:-6px;margin-bottom:12px">
+                    <span class="text-sm text-secondary" id="conf-date-preview">
+                        ${item?.startDate && item?.endDate ? `📅 Ngày hiển thị (tự tính): <strong>${this.computeDateDisplay(item.startDate, item.endDate)}</strong>` : ''}
+                    </span>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -469,12 +493,17 @@ const ConferencesPage = {
         e.preventDefault();
         const f = new FormData(e.target);
         const existing = id ? Store.getById('conferences', id) : null;
+        
+        const startDate = f.get('startDate');
+        const endDate = f.get('endDate');
+        const dates = this.computeDateDisplay(startDate, endDate);
+
         const data = {
             name:       f.get('name'),
-            nameVi:     f.get('nameVi') || '',
-            startDate:  f.get('startDate'),
-            endDate:    f.get('endDate'),
-            dates:      f.get('dates') || '',
+            nameVi:     '',
+            startDate:  startDate,
+            endDate:    endDate,
+            dates:      dates,
             location:   f.get('location'),
             venue:      f.get('venue') || '',
             region:     f.get('region'),
@@ -483,14 +512,6 @@ const ConferencesPage = {
             note:       f.get('note') || '',
             presentations: existing?.presentations || []
         };
-
-        if (!data.dates && data.startDate && data.endDate) {
-            const s = new Date(data.startDate), e2 = new Date(data.endDate);
-            const pad = n => String(n).padStart(2,'0');
-            data.dates = s.getMonth()===e2.getMonth()
-                ? `${pad(s.getDate())}–${pad(e2.getDate())}/${pad(s.getMonth()+1)}/${s.getFullYear()}`
-                : `${pad(s.getDate())}/${pad(s.getMonth()+1)}–${pad(e2.getDate())}/${pad(e2.getMonth()+1)}/${s.getFullYear()}`;
-        }
 
         if (id) Store.update('conferences', id, data);
         else     Store.add('conferences', data);
