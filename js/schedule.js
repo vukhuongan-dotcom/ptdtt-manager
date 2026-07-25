@@ -224,11 +224,11 @@ const SchedulePage = {
                     duties = duties.filter(x => x.posKey !== 'sieuAm');
                 }
 
-                // Trực Bệnh viện cho phép Trực khoa, Phòng khám — CHỈ CẤM gán Lịch Mổ
+                // Trực Bệnh viện cho phép Trực khoa, Phòng khám, và Mổ CHÍNH (slot 0) — CHỈ CẤM gán Mổ PHỤ (slot > 0)
                 const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
                 if (hasTrucBV) {
-                    const hasMo = duties.some(x => x.posKey === 'mo');
-                    if (!hasMo) {
+                    const hasSubMo = duties.some(x => x.posKey === 'mo' && x.slot !== '0');
+                    if (!hasSubMo) {
                         duties = duties.filter(x => x.posKey !== 'trucBV');
                     }
                 }
