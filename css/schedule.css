@@ -16,13 +16,15 @@
 .schedule-table-wrap {
     overflow-x: auto;
     border-radius: var(--border-radius);
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
+    border: 1px solid var(--border-default);
+    background: var(--surface-1);
+    position: relative;
 }
 
 .schedule-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     min-width: 900px;
 }
 
@@ -33,9 +35,12 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
     color: var(--text-muted);
-    border-bottom: 2px solid var(--border);
     text-align: center;
-    background: rgba(0,0,0,0.03);
+    background: var(--surface-2);
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    box-shadow: inset 0 -2px 0 var(--border-default);
 }
 
 .schedule-pos-header {
@@ -43,26 +48,36 @@
     min-width: 130px;
     text-align: left !important;
     padding-left: 16px !important;
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 10 !important;
+    background: var(--surface-1) !important;
+    box-shadow: inset -2px 0 0 var(--border-default), inset 0 -2px 0 var(--border-default);
 }
 
 .schedule-day-header {
     min-width: 100px;
 }
 .schedule-day-header.today {
-    color: var(--primary) !important;
-    background: rgba(8, 145, 178, 0.06) !important;
+    color: var(--text-link) !important;
+    background: rgba(8, 145, 178, 0.08) !important;
 }
 .schedule-day-header.weekend {
-    color: var(--danger) !important;
+    color: var(--state-danger) !important;
 }
-.schedule-day-name { display: block; font-size: 0.8rem; }
-.schedule-day-date { display: block; font-size: 0.7rem; opacity: 0.75; margin-top: 2px; }
+.schedule-day-name { display: block; font-size: 0.8rem; font-family: 'Be Vietnam Pro', sans-serif; }
+.schedule-day-date { display: block; font-size: 0.7rem; opacity: 0.85; margin-top: 2px; }
 
-/* Position label */
+/* Position label (sticky left column) */
 .schedule-pos-label {
     padding: 8px 12px !important;
     vertical-align: middle;
-    background: rgba(0,0,0,0.02);
+    background: var(--surface-1) !important;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    box-shadow: inset -2px 0 0 var(--border-default);
 }
 .schedule-pos-name {
     font-weight: 600;

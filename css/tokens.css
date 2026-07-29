@@ -1,0 +1,103 @@
+/* ===== PTDTT MANAGER — DESIGN SYSTEM TOKENS (Phase 1) ===== */
+
+/* 1. LỚP THÔ (Raw Palette - Không dùng trực tiếp trong Components) */
+:root {
+  /* Brand Teal Palette */
+  --teal-50: #F0FDFA;
+  --teal-100: #CCFBF1;
+  --teal-200: #99F6E4;
+  --teal-300: #5EEAD4;
+  --teal-400: #2DDCDE;
+  --teal-500: #0891B2;
+  --teal-600: #0284C7;
+  --teal-700: #0E7490;
+  --teal-800: #155E75;
+  --teal-900: #134E4A;
+  --teal-950: #042F2C;
+
+  /* State Colors (Dành riêng cho trạng thái hệ thống) */
+  --state-success-raw: #047857;
+  --state-warning-raw: #B45309;
+  --state-danger-raw: #B91C1C;
+  --state-info-raw: #0284C7;
+
+  /* Neutral Scale */
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E293B;
+  --gray-900: #0F172A;
+}
+
+/* 2. LỚP NGỮ NGHĨA - LIGHT MODE (Semantic Tokens) */
+:root, [data-theme="light"] {
+  --surface-1: #FFFFFF;
+  --surface-2: var(--teal-50);
+  --surface-3: #E6FFFA;
+  --surface-card: #FFFFFF;
+
+  --text-primary: var(--teal-900);    /* ~12:1 - WCAG AAA */
+  --text-secondary: var(--teal-800);  /* ~7:1 - WCAG AAA */
+  --text-muted: var(--gray-600);      /* ~4.8:1 - WCAG AA */
+  --text-link: var(--teal-700);       /* ~5.4:1 - WCAG AA */
+
+  --brand-fill: var(--teal-500);      /* Fill & Viền trang trí, KHÔNG làm màu chữ */
+  --brand-hover: var(--teal-700);
+
+  --border-default: var(--teal-100);
+  --border-subtle: var(--gray-200);
+  --border-strong: var(--teal-700);   /* ≥ 3:1 - Viền mang ý nghĩa trạng thái */
+
+  --state-success: var(--state-success-raw);
+  --state-warning: var(--state-warning-raw);
+  --state-danger: var(--state-danger-raw);
+  --state-info: var(--state-info-raw);
+
+  /* Thang màu phân loại kỹ thuật mổ (Flat, chữ trắng đạt WCAG AA/AAA) */
+  --surgery-robot: #6D28D9;      /* Tím - AAA (~7:1 với chữ trắng) */
+  --surgery-noisoi: #047857;     /* Xanh lá - AA (~4.6:1 với chữ trắng) */
+  --surgery-mo: #0E7490;         /* Xanh dương - AA (~5.4:1 với chữ trắng) */
+  --surgery-nsth: #B45309;       /* Cam Hổ phách - AA (~4.8:1 với chữ trắng) */
+
+  --shadow-sm: 0 1px 2px 0 rgba(19, 78, 74, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(19, 78, 74, 0.08), 0 2px 4px -2px rgba(19, 78, 74, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(19, 78, 74, 0.1), 0 4px 6px -4px rgba(19, 78, 74, 0.05);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* 3. LỚP NGỮ NGHĨA - DARK MODE REMAP (Semantic Tokens Remap) */
+[data-theme="dark"] {
+  --surface-1: #0F172A;
+  --surface-2: #1E293B;
+  --surface-3: #042F2C;
+  --surface-card: #1E293B;
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-link: #38BDF8;
+
+  --brand-fill: var(--teal-500);
+  --brand-hover: var(--teal-300);
+
+  --border-default: #334155;
+  --border-subtle: #1E293B;
+  --border-strong: #38BDF8;
+
+  --state-success: #10B981;
+  --state-warning: #F59E0B;
+  --state-danger: #EF4444;
+  --state-info: #38BDF8;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+}

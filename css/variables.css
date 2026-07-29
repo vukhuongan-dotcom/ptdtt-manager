@@ -1,35 +1,36 @@
+@import "tokens.css";
+
 :root {
-    /* Background - Light Theme */
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e2e8f0;
-    --bg-hover: #f1f5f9;
+    /* Background - Light Theme (mapped to tokens.css) */
+    --bg-primary: var(--surface-2);
+    --bg-secondary: var(--surface-1);
+    --bg-tertiary: var(--surface-3);
+    --bg-hover: var(--teal-100);
 
-    /* Colors */
-    --primary: #0891b2;
-    --primary-light: #06b6d4;
-    --primary-dark: #0e7490;
-    --accent: #7c3aed;
-    --accent-light: #8b5cf6;
-    --success: #059669;
-    --success-light: #10b981;
-    --warning: #d97706;
-    --warning-light: #f59e0b;
-    --danger: #dc2626;
-    --danger-light: #ef4444;
-    --info: #2563eb;
+    /* Colors mapped to tokens.css */
+    --primary: var(--brand-fill);
+    --primary-light: var(--teal-600);
+    --primary-dark: var(--teal-800);
+    --accent: var(--teal-700);
+    --accent-light: var(--teal-500);
+    --success: var(--state-success);
+    --success-light: var(--surgery-noisoi);
+    --warning: var(--state-warning);
+    --warning-light: var(--surgery-nsth);
+    --danger: var(--state-danger);
+    --danger-light: #EF4444;
+    --info: var(--state-info);
 
-    /* Text */
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --text-dark: #94a3b8;
-    /* U1: alias mới — --text-subtle thay thế --text-dark (semantic đúng hơn) */
-    --text-subtle: #94a3b8;
+    /* Text mapped to tokens.css */
+    --text-primary: var(--text-primary);
+    --text-secondary: var(--text-secondary);
+    --text-muted: var(--text-muted);
+    --text-dark: var(--text-muted);
+    --text-subtle: var(--text-muted);
 
     /* Border */
-    --border: rgba(0, 0, 0, 0.08);
-    --border-light: rgba(0, 0, 0, 0.12);
+    --border: var(--border-default);
+    --border-light: var(--border-subtle);
 
     /* Glass - Light */
     --glass-bg: rgba(255, 255, 255, 0.85);

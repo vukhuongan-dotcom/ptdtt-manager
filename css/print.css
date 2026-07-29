@@ -1,0 +1,80 @@
+/* ===== PTDTT MANAGER — PRINT STYLESHEET (Phase 4) ===== */
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Hide non-printable elements */
+    .sidebar,
+    .mobile-header,
+    .page-header button,
+    .schedule-nav,
+    .schedule-alert-banner,
+    .schedule-conflict-banner,
+    .btn,
+    .btn-icon,
+    .no-print {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .schedule-table-wrap {
+        border: 1px solid #000000 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    .schedule-table {
+        min-width: 100% !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        border: 1px solid #000000 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        padding: 6px 4px !important;
+        font-size: 9pt !important;
+        box-shadow: none !important;
+        position: static !important;
+    }
+
+    .schedule-table thead th {
+        font-weight: 700 !important;
+        background: #f1f5f9 !important;
+    }
+
+    .schedule-pos-name {
+        font-weight: 700 !important;
+        color: #000000 !important;
+    }
+
+    /* Grayscale-safe print badges */
+    .print-tag {
+        display: inline-block !important;
+        font-weight: 700 !important;
+        font-size: 8pt !important;
+        border: 1px solid #000000 !important;
+        padding: 1px 4px !important;
+        margin-right: 2px !important;
+        border-radius: 2px !important;
+    }
+}

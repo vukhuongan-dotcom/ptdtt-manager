@@ -1,35 +1,139 @@
+/* ===== PTDTT MANAGER — DESIGN SYSTEM TOKENS (Phase 1) ===== */
+
+/* 1. LỚP THÔ (Raw Palette - Không dùng trực tiếp trong Components) */
 :root {
-    /* Background - Light Theme */
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e2e8f0;
-    --bg-hover: #f1f5f9;
+  /* Brand Teal Palette */
+  --teal-50: #F0FDFA;
+  --teal-100: #CCFBF1;
+  --teal-200: #99F6E4;
+  --teal-300: #5EEAD4;
+  --teal-400: #2DDCDE;
+  --teal-500: #0891B2;
+  --teal-600: #0284C7;
+  --teal-700: #0E7490;
+  --teal-800: #155E75;
+  --teal-900: #134E4A;
+  --teal-950: #042F2C;
 
-    /* Colors */
-    --primary: #0891b2;
-    --primary-light: #06b6d4;
-    --primary-dark: #0e7490;
-    --accent: #7c3aed;
-    --accent-light: #8b5cf6;
-    --success: #059669;
-    --success-light: #10b981;
-    --warning: #d97706;
-    --warning-light: #f59e0b;
-    --danger: #dc2626;
-    --danger-light: #ef4444;
-    --info: #2563eb;
+  /* State Colors (Dành riêng cho trạng thái hệ thống) */
+  --state-success-raw: #047857;
+  --state-warning-raw: #B45309;
+  --state-danger-raw: #B91C1C;
+  --state-info-raw: #0284C7;
 
-    /* Text */
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --text-dark: #94a3b8;
-    /* U1: alias mới — --text-subtle thay thế --text-dark (semantic đúng hơn) */
-    --text-subtle: #94a3b8;
+  /* Neutral Scale */
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E293B;
+  --gray-900: #0F172A;
+}
+
+/* 2. LỚP NGỮ NGHĨA - LIGHT MODE (Semantic Tokens) */
+:root, [data-theme="light"] {
+  --surface-1: #FFFFFF;
+  --surface-2: var(--teal-50);
+  --surface-3: #E6FFFA;
+  --surface-card: #FFFFFF;
+
+  --text-primary: var(--teal-900);    /* ~12:1 - WCAG AAA */
+  --text-secondary: var(--teal-800);  /* ~7:1 - WCAG AAA */
+  --text-muted: var(--gray-600);      /* ~4.8:1 - WCAG AA */
+  --text-link: var(--teal-700);       /* ~5.4:1 - WCAG AA */
+
+  --brand-fill: var(--teal-500);      /* Fill & Viền trang trí, KHÔNG làm màu chữ */
+  --brand-hover: var(--teal-700);
+
+  --border-default: var(--teal-100);
+  --border-subtle: var(--gray-200);
+  --border-strong: var(--teal-700);   /* ≥ 3:1 - Viền mang ý nghĩa trạng thái */
+
+  --state-success: var(--state-success-raw);
+  --state-warning: var(--state-warning-raw);
+  --state-danger: var(--state-danger-raw);
+  --state-info: var(--state-info-raw);
+
+  /* Thang màu phân loại kỹ thuật mổ (Flat, chữ trắng đạt WCAG AA/AAA) */
+  --surgery-robot: #6D28D9;      /* Tím - AAA (~7:1 với chữ trắng) */
+  --surgery-noisoi: #047857;     /* Xanh lá - AA (~4.6:1 với chữ trắng) */
+  --surgery-mo: #0E7490;         /* Xanh dương - AA (~5.4:1 với chữ trắng) */
+  --surgery-nsth: #B45309;       /* Cam Hổ phách - AA (~4.8:1 với chữ trắng) */
+
+  --shadow-sm: 0 1px 2px 0 rgba(19, 78, 74, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(19, 78, 74, 0.08), 0 2px 4px -2px rgba(19, 78, 74, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(19, 78, 74, 0.1), 0 4px 6px -4px rgba(19, 78, 74, 0.05);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* 3. LỚP NGỮ NGHĨA - DARK MODE REMAP (Semantic Tokens Remap) */
+[data-theme="dark"] {
+  --surface-1: #0F172A;
+  --surface-2: #1E293B;
+  --surface-3: #042F2C;
+  --surface-card: #1E293B;
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-link: #38BDF8;
+
+  --brand-fill: var(--teal-500);
+  --brand-hover: var(--teal-300);
+
+  --border-default: #334155;
+  --border-subtle: #1E293B;
+  --border-strong: #38BDF8;
+
+  --state-success: #10B981;
+  --state-warning: #F59E0B;
+  --state-danger: #EF4444;
+  --state-info: #38BDF8;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+}
+@import "tokens.css";
+
+:root {
+    /* Background - Light Theme (mapped to tokens.css) */
+    --bg-primary: var(--surface-2);
+    --bg-secondary: var(--surface-1);
+    --bg-tertiary: var(--surface-3);
+    --bg-hover: var(--teal-100);
+
+    /* Colors mapped to tokens.css */
+    --primary: var(--brand-fill);
+    --primary-light: var(--teal-600);
+    --primary-dark: var(--teal-800);
+    --accent: var(--teal-700);
+    --accent-light: var(--teal-500);
+    --success: var(--state-success);
+    --success-light: var(--surgery-noisoi);
+    --warning: var(--state-warning);
+    --warning-light: var(--surgery-nsth);
+    --danger: var(--state-danger);
+    --danger-light: #EF4444;
+    --info: var(--state-info);
+
+    /* Text mapped to tokens.css */
+    --text-primary: var(--text-primary);
+    --text-secondary: var(--text-secondary);
+    --text-muted: var(--text-muted);
+    --text-dark: var(--text-muted);
+    --text-subtle: var(--text-muted);
 
     /* Border */
-    --border: rgba(0, 0, 0, 0.08);
-    --border-light: rgba(0, 0, 0, 0.12);
+    --border: var(--border-default);
+    --border-light: var(--border-subtle);
 
     /* Glass - Light */
     --glass-bg: rgba(255, 255, 255, 0.85);
@@ -189,13 +293,20 @@
 html { font-size: 15px; }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    /* U2: 1.6 → 1.65 — tăng khoảng cách dòng để dễ đọc hơn */
-    line-height: 1.65;
+    line-height: 1.6;
     overflow: hidden;
     height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .page-title, .brand-name, .btn, .nav-item, th {
+    font-family: 'Be Vietnam Pro', 'Noto Sans', sans-serif;
+}
+
+table, .stat-value, .kpi-value, .schedule-table, .surgery-table, .badge, .number, td, th {
+    font-variant-numeric: tabular-nums;
 }
 
 /* U2: Selection color — brand-aware */
@@ -645,6 +756,16 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .auth-loading { text-align: center; padding: 40px; }
 .auth-loading-text { margin-top: 12px; color: var(--text-secondary); }
 .auth-empty { text-align: center; padding: 40px; color: var(--text-secondary); }
+
+/* ===== PHASE 3 & 6: Reduced Motion & Focus Ring ===== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 .sidebar {
     width: var(--sidebar-width);
     height: 100vh;
@@ -3606,13 +3727,15 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .schedule-table-wrap {
     overflow-x: auto;
     border-radius: var(--border-radius);
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
+    border: 1px solid var(--border-default);
+    background: var(--surface-1);
+    position: relative;
 }
 
 .schedule-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     min-width: 900px;
 }
 
@@ -3623,9 +3746,12 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     text-transform: uppercase;
     letter-spacing: 0.3px;
     color: var(--text-muted);
-    border-bottom: 2px solid var(--border);
     text-align: center;
-    background: rgba(0,0,0,0.03);
+    background: var(--surface-2);
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    box-shadow: inset 0 -2px 0 var(--border-default);
 }
 
 .schedule-pos-header {
@@ -3633,26 +3759,36 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     min-width: 130px;
     text-align: left !important;
     padding-left: 16px !important;
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 10 !important;
+    background: var(--surface-1) !important;
+    box-shadow: inset -2px 0 0 var(--border-default), inset 0 -2px 0 var(--border-default);
 }
 
 .schedule-day-header {
     min-width: 100px;
 }
 .schedule-day-header.today {
-    color: var(--primary) !important;
-    background: rgba(8, 145, 178, 0.06) !important;
+    color: var(--text-link) !important;
+    background: rgba(8, 145, 178, 0.08) !important;
 }
 .schedule-day-header.weekend {
-    color: var(--danger) !important;
+    color: var(--state-danger) !important;
 }
-.schedule-day-name { display: block; font-size: 0.8rem; }
-.schedule-day-date { display: block; font-size: 0.7rem; opacity: 0.75; margin-top: 2px; }
+.schedule-day-name { display: block; font-size: 0.8rem; font-family: 'Be Vietnam Pro', sans-serif; }
+.schedule-day-date { display: block; font-size: 0.7rem; opacity: 0.85; margin-top: 2px; }
 
-/* Position label */
+/* Position label (sticky left column) */
 .schedule-pos-label {
     padding: 8px 12px !important;
     vertical-align: middle;
-    background: rgba(0,0,0,0.02);
+    background: var(--surface-1) !important;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    box-shadow: inset -2px 0 0 var(--border-default);
 }
 .schedule-pos-name {
     font-weight: 600;
@@ -4349,6 +4485,53 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 /* Card action buttons row */
 .surg-card-actions { margin-top: 6px; display: flex; gap: 4px; }
+
+/* ===== PHASE 5: Flat Surgery Badges & KPI Bullet Chart ===== */
+.badge-robot {
+    background: var(--surgery-robot) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+.badge-noisoi {
+    background: var(--surgery-noisoi) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+.badge-mo {
+    background: var(--surgery-mo) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+.badge-nsth {
+    background: var(--surgery-nsth) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+/* Bullet Progress Bar */
+.kpi-bullet-wrap {
+    width: 100%;
+    background: var(--gray-200);
+    height: 12px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    margin: 6px 0;
+}
+.kpi-bullet-bar {
+    height: 100%;
+    background: var(--brand-fill);
+    border-radius: 6px;
+    transition: width 0.25s ease;
+}
+.kpi-bullet-target {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--gray-900);
+    z-index: 2;
+}
 .surg-card-actions-single { margin-top: 6px; }
 /* Duration text under type tag */
 .surg-card-duration {
@@ -7554,5 +7737,85 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         .main-content {
             padding-bottom: calc(68px + env(safe-area-inset-bottom));
         }
+    }
+}
+/* ===== PTDTT MANAGER — PRINT STYLESHEET (Phase 4) ===== */
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Hide non-printable elements */
+    .sidebar,
+    .mobile-header,
+    .page-header button,
+    .schedule-nav,
+    .schedule-alert-banner,
+    .schedule-conflict-banner,
+    .btn,
+    .btn-icon,
+    .no-print {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .schedule-table-wrap {
+        border: 1px solid #000000 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    .schedule-table {
+        min-width: 100% !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        border: 1px solid #000000 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        padding: 6px 4px !important;
+        font-size: 9pt !important;
+        box-shadow: none !important;
+        position: static !important;
+    }
+
+    .schedule-table thead th {
+        font-weight: 700 !important;
+        background: #f1f5f9 !important;
+    }
+
+    .schedule-pos-name {
+        font-weight: 700 !important;
+        color: #000000 !important;
+    }
+
+    /* Grayscale-safe print badges */
+    .print-tag {
+        display: inline-block !important;
+        font-weight: 700 !important;
+        font-size: 8pt !important;
+        border: 1px solid #000000 !important;
+        padding: 1px 4px !important;
+        margin-right: 2px !important;
+        border-radius: 2px !important;
     }
 }

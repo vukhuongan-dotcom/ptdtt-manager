@@ -12,6 +12,7 @@ echo "=== Building CSS bundle (version: $VER) ==="
 
 # Thứ tự cứng: variables PHẢI đầu tiên (các file khác dùng CSS vars)
 cat \
+  css/tokens.css \
   css/variables.css \
   css/base.css \
   css/sidebar.css \
@@ -37,6 +38,7 @@ cat \
   css/onboarding.css \
   css/reports.css \
   css/mobile.css \
+  css/print.css \
   > "$OUT"
 
 SIZE=$(wc -c < "$OUT")

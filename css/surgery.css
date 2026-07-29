@@ -378,6 +378,53 @@
 }
 /* Card action buttons row */
 .surg-card-actions { margin-top: 6px; display: flex; gap: 4px; }
+
+/* ===== PHASE 5: Flat Surgery Badges & KPI Bullet Chart ===== */
+.badge-robot {
+    background: var(--surgery-robot) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+.badge-noisoi {
+    background: var(--surgery-noisoi) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+.badge-mo {
+    background: var(--surgery-mo) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+.badge-nsth {
+    background: var(--surgery-nsth) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+/* Bullet Progress Bar */
+.kpi-bullet-wrap {
+    width: 100%;
+    background: var(--gray-200);
+    height: 12px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    margin: 6px 0;
+}
+.kpi-bullet-bar {
+    height: 100%;
+    background: var(--brand-fill);
+    border-radius: 6px;
+    transition: width 0.25s ease;
+}
+.kpi-bullet-target {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--gray-900);
+    z-index: 2;
+}
 .surg-card-actions-single { margin-top: 6px; }
 /* Duration text under type tag */
 .surg-card-duration {

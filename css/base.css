@@ -16,13 +16,20 @@
 html { font-size: 15px; }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    /* U2: 1.6 → 1.65 — tăng khoảng cách dòng để dễ đọc hơn */
-    line-height: 1.65;
+    line-height: 1.6;
     overflow: hidden;
     height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .page-title, .brand-name, .btn, .nav-item, th {
+    font-family: 'Be Vietnam Pro', 'Noto Sans', sans-serif;
+}
+
+table, .stat-value, .kpi-value, .schedule-table, .surgery-table, .badge, .number, td, th {
+    font-variant-numeric: tabular-nums;
 }
 
 /* U2: Selection color — brand-aware */
@@ -472,3 +479,13 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .auth-loading { text-align: center; padding: 40px; }
 .auth-loading-text { margin-top: 12px; color: var(--text-secondary); }
 .auth-empty { text-align: center; padding: 40px; color: var(--text-secondary); }
+
+/* ===== PHASE 3 & 6: Reduced Motion & Focus Ring ===== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
