@@ -40,10 +40,10 @@ const SAMPLE_STAFF = [
     { id: 38, name: 'Lê Thị Thúy An', role: 'Hộ lý', title: 'HL', phone: '0907052388', email: 'nguenanh2701@gmail.com', status: 'active', color: '#8b5cf6', cơHữu: true },
     { id: 39, name: 'Huỳnh Văn Hiếu', role: 'Hộ lý', title: 'HL', phone: '0907473372', email: 'hieuhuynh311281@gmail.com', status: 'active', color: '#ec4899', cơHữu: true },
     { id: 40, name: 'Nguyễn Thị Hoa', role: 'Thư ký', title: 'TK', phone: '0909324233', email: 'nguyenthihoa3121983@gmail.com', status: 'active', color: '#f59e0b', cơHữu: true },
-    { id: 43, name: 'Nguyễn Đức Thiên Phú', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0917365115', email: '', status: 'active', color: '#a855f7', cơHữu: true, startDate: '2026-08-01' },
-    { id: 44, name: 'Phùng Bùi Tuấn Kiệt', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0903006976', email: '', status: 'active', color: '#f59e0b', cơHữu: true, startDate: '2026-08-01' },
-    { id: 45, name: 'Nguyễn Đức Luân', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0346814876', email: '', status: 'active', color: '#f59e0b', cơHữu: true, startDate: '2026-08-01' },
-    { id: 46, name: 'Nguyễn Ngọc Minh Khôi', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0848635567', email: '', status: 'active', color: '#3b82f6', cơHữu: true, startDate: '2026-08-01' },
+    { id: 43, name: 'Nguyễn Đức Thiên Phú', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0917365115', email: '', status: 'active', color: '#a855f7', cơHữu: true, startDate: '2026-07-30' },
+    { id: 44, name: 'Phùng Bùi Tuấn Kiệt', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0903006976', email: '', status: 'active', color: '#f59e0b', cơHữu: true, startDate: '2026-07-30' },
+    { id: 45, name: 'Nguyễn Đức Luân', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0346814876', email: '', status: 'active', color: '#f59e0b', cơHữu: true, startDate: '2026-07-30' },
+    { id: 46, name: 'Nguyễn Ngọc Minh Khôi', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0848635567', email: '', status: 'active', color: '#3b82f6', cơHữu: true, startDate: '2026-07-30' },
 ];
 
 // ===== EXTERNAL DOCTORS (BS ngoài khoa hỗ trợ) =====
