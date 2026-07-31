@@ -1,17 +1,49 @@
 // ===== ROOM MAP PAGE =====
-// Cập nhật phân công nhân sự: 24/05/2026
+// Cập nhật phân công 3 POD: POD1 (Đỏ), POD2 (Vàng), POD3 (Xanh lá) — 31/07/2026
+const POD_CONFIG = [
+    {
+        id: 1,
+        title: 'POD 1',
+        desc: 'Phòng bệnh 718, 707',
+        color: '#ef4444',
+        classSuffix: 'pod1',
+        rooms: ['718', '707']
+    },
+    {
+        id: 2,
+        title: 'POD 2',
+        desc: 'Phòng bệnh 705, 706, 711, 712, 712A, 719',
+        color: '#f59e0b',
+        classSuffix: 'pod2',
+        rooms: ['705', '706', '711', '712', '712A', '719']
+    },
+    {
+        id: 3,
+        title: 'POD 3',
+        desc: 'Phòng bệnh 708, 709, 710',
+        color: '#10b981',
+        classSuffix: 'pod3',
+        rooms: ['708', '709', '710']
+    }
+];
+
 const ROOM_DATA = [
-    { room: '705',  doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },  // BS Quy + BS LM.Hậu
-    { room: '706',  doctors: [{ id: 8,  role: 'chính' }, { id: 22, role: 'NT' }] },  // BS Quy + BS Định
-    { room: '707',  doctors: [{ id: 9,  role: 'chính' }, { id: 13, role: 'NT' }] },  // giữ nguyên
-    { room: '708',  doctors: [{ id: 4,  role: 'chính' }, { id: 14, role: 'NT' }] },  // BS Tuấn + BS Hoàng
-    { room: '709',  doctors: [{ id: 11, role: 'chính' }, { id: 17, role: 'NT' }] },  // giữ nguyên
-    { room: '710',  doctors: [{ id: 7,  role: 'chính' }, { id: 15, role: 'NT' }] },  // BS Phú + BS Trâm Anh
-    { room: '711',  doctors: [{ id: 10, role: 'chính' }] },                           // BS Như Đức
-    { room: '712',  doctors: [{ id: 6,  role: 'chính' }, { id: 10, role: 'NT' }] },  // BS Nguyện + BS Như Đức
-    { room: '712A', doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },  // BS Nguyện + BS Phương
-    { room: '719',  doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },  // BS Nguyện + BS Phương
-    { room: '718',  doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }] }, // giữ nguyên
+    // POD 1 (Màu Đỏ)
+    { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }] },
+    { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 13, role: 'NT' }] },
+
+    // POD 2 (Màu Vàng)
+    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },
+    { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 22, role: 'NT' }] },
+    { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
+    { room: '712',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 10, role: 'NT' }] },
+    { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
+    { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
+
+    // POD 3 (Màu Xanh lá)
+    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 14, role: 'NT' }] },
+    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 17, role: 'NT' }] },
+    { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 15, role: 'NT' }] },
 ];
 
 const RoomsPage = {
@@ -24,7 +56,7 @@ const RoomsPage = {
         return `
         <div class="page-header">
             <div>
-                <h1 class="page-title">Sơ đồ phòng bệnh</h1>
+                <h1 class="page-title">Sơ đồ phòng bệnh (Mô hình 3 POD)</h1>
                 <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Tầng 7, Tòa B</p>
             </div>
             ${totalPatients !== null ? `<div style="display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--border-radius);padding:10px 18px">
@@ -34,40 +66,61 @@ const RoomsPage = {
             </div>` : ''}
         </div>
 
-        <div class="rooms-grid">
-            ${ROOM_DATA.map(r => {
-                const patientCount = this._getPatientCount(r.room, emrData);
-                const hasPatients = patientCount !== null && patientCount > 0;
-                return `
-                <div class="room-card">
-                    <div class="room-card-header">
-                        <span class="room-number">B${r.room}</span>
-                        <span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>
+        ${POD_CONFIG.map(pod => {
+            const podRooms = ROOM_DATA.filter(r => r.pod === pod.id);
+            return `
+            <div class="pod-section">
+                <div class="pod-section-header ${pod.classSuffix}">
+                    <div class="pod-section-title" style="color:${pod.color}">
+                        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${pod.color}"></span>
+                        <span>${pod.title}</span>
+                        <span style="font-size:0.8rem;font-weight:500;color:var(--text-secondary)">(${pod.desc})</span>
                     </div>
-                    <div class="room-card-body">
-                        ${r.doctors.map(d => {
-                            const staff = Store.getById('staff', d.id);
-                            if (!staff) return '';
-                            const fullName = staff.title + ' ' + staff.name;
-                            const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
-                            const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
-                            return `
-                            <div class="room-doctor">
-                                <div class="room-doc-avatar" style="background:${staff.color}">${staff.name.split(' ').pop().charAt(0)}</div>
-                                <div class="room-doc-info">
-                                    <div class="room-doc-name">${fullName}</div>
-                                    <div class="room-doc-role ${roleBadge}">${roleLabel}</div>
+                </div>
+                <div class="rooms-grid">
+                    ${podRooms.map(r => {
+                        const patientCount = this._getPatientCount(r.room, emrData);
+                        const hasPatients = patientCount !== null && patientCount > 0;
+                        return `
+                        <div class="room-card room-card-${pod.classSuffix}">
+                            <div class="room-card-header">
+                                <div style="display:flex;align-items:center">
+                                    <span class="pod-badge">${pod.title}</span>
+                                    <span class="room-number">B${r.room}</span>
                                 </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>`;
-            }).join('')}
-        </div>
+                                <span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>
+                            </div>
+                            <div class="room-card-body">
+                                ${r.doctors.map(d => {
+                                    const staff = Store.getById('staff', d.id);
+                                    if (!staff) return '';
+                                    const fullName = staff.title + ' ' + staff.name;
+                                    const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
+                                    const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
+                                    return `
+                                    <div class="room-doctor">
+                                        <div class="room-doc-avatar" style="background:${staff.color}">${staff.name.split(' ').pop().charAt(0)}</div>
+                                        <div class="room-doc-info">
+                                            <div class="room-doc-name">${fullName}</div>
+                                            <div class="room-doc-role ${roleBadge}">${roleLabel}</div>
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }).join('')}
 
         <div class="card rooms-legend" style="margin-top:20px">
-            <h3 style="font-size:0.9rem;margin-bottom:10px;color:var(--text-primary)">📋 Chú thích</h3>
+            <h3 style="font-size:0.9rem;margin-bottom:10px;color:var(--text-primary)">📋 Chú thích & Mô hình POD</h3>
             <div class="rooms-legend-items">
+                <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#ef4444"></span> 🔴 <strong>POD 1 (Đỏ):</strong> P718, P707</span>
+                <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#f59e0b"></span> 🟡 <strong>POD 2 (Vàng):</strong> P705, P706, P711, P712, P712A, P719</span>
+                <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#10b981"></span> 🟢 <strong>POD 3 (Xanh lá):</strong> P708, P709, P710</span>
+            </div>
+            <div class="rooms-legend-items" style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
                 <span class="rooms-legend-item"><span class="room-legend-dot room-role-bs"></span> BS điều trị (chính)</span>
                 <span class="rooms-legend-item"><span class="room-legend-dot room-role-nt"></span> BS nội trú (phụ)</span>
                 <span class="rooms-legend-item"><span class="room-legend-dot room-role-ch"></span> BS cử nhân</span>

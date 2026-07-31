@@ -5096,6 +5096,72 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .room-legend-dot.room-role-nt { background: #f59e0b; }
 .room-legend-dot.room-role-ch { background: #8b5cf6; }
 
+/* POD Color Styles */
+.room-card-pod1 {
+    border-top: 4px solid #ef4444;
+}
+.room-card-pod1 .room-card-header {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.room-card-pod2 {
+    border-top: 4px solid #f59e0b;
+}
+.room-card-pod2 .room-card-header {
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+}
+
+.room-card-pod3 {
+    border-top: 4px solid #10b981;
+}
+.room-card-pod3 .room-card-header {
+    background: linear-gradient(135deg, #10b981, #047857);
+}
+
+.pod-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    margin-right: 6px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+}
+
+.pod-section {
+    margin-bottom: 24px;
+}
+.pod-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-radius: var(--border-radius);
+    margin-bottom: 14px;
+}
+.pod-section-header.pod1 {
+    background: rgba(239, 68, 68, 0.08);
+    border-left: 4px solid #ef4444;
+}
+.pod-section-header.pod2 {
+    background: rgba(245, 158, 11, 0.08);
+    border-left: 4px solid #f59e0b;
+}
+.pod-section-header.pod3 {
+    background: rgba(16, 185, 129, 0.08);
+    border-left: 4px solid #10b981;
+}
+
+.pod-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .rooms-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
