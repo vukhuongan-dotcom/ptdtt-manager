@@ -561,11 +561,12 @@ const ResearchPage = {
             const dateStr = now.toLocaleDateString('vi-VN');
 
             const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
-            <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
+            <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+            <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:'Be Vietnam Pro','Noto Sans',-apple-system,sans-serif}</style>
             </head><body>
             <div id="capture" style="padding:28px;width:900px;background:#fff">
                 <div style="text-align:center;margin-bottom:20px">
-                    <h2 style="font-size:20px;color:#000;font-weight:800;letter-spacing:0.5px">LỊCH SINH HOẠT CHUYÊN MÔN</h2>
+                    <h2 style="font-size:20px;color:#000;font-weight:800;letter-spacing:normal">LỊCH SINH HOẠT CHUYÊN MÔN</h2>
                     <p style="margin:6px 0 0;font-size:14px;color:#334155;font-weight:600">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
                     <p style="margin:4px 0 0;font-size:13px;color:#64748b">Giờ SHCM: ${settings.defaultTime} · Thời lượng: ${parseInt(settings.defaultDuration) || 30} phút · Địa điểm: Phòng 7.14</p>
                 </div>

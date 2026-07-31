@@ -738,15 +738,16 @@ const ConferencesPage = {
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `
-        <div id="conf-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Inter',Arial,sans-serif;color:#0f172a;">
+        <div id="conf-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Be Vietnam Pro','Noto Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:#0f172a;">
+            <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
                 <div>
-                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:normal">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
                     <div style="font-size:13px;color:#cbd5e1;margin-top:2px">Bệnh viện Bình Dân · TP. Hồ Chí Minh</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.5px">BÁO CÁO KHOA HỌC</div>
+                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:normal">BÁO CÁO KHOA HỌC</div>
                     <div style="font-size:13px;color:#cbd5e1;margin-top:2px">&nbsp;</div>
                 </div>
             </div>

@@ -202,7 +202,7 @@ const RoomsPage = {
                         font-weight: 700;
                         color: #334155;
                         text-transform: uppercase;
-                        letter-spacing: 0.3px;
+                        letter-spacing: normal;
                     }
                     .dept-name {
                         font-size: 15px;
@@ -239,7 +239,7 @@ const RoomsPage = {
                         font-weight: 800;
                         color: #0891b2;
                         text-transform: uppercase;
-                        letter-spacing: 0.5px;
+                        letter-spacing: normal;
                     }
                     .export-sub-title {
                         font-size: 13px;

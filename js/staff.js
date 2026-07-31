@@ -1029,15 +1029,16 @@ const StaffPage = {
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `
-        <div id="team-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Inter',sans-serif;color:#0f172a;">
+        <div id="team-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Be Vietnam Pro','Noto Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:#0f172a;">
+            <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
                 <div>
-                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.5px">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:normal">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
                     <div style="font-size:14px;color:#cbd5e1;margin-top:3px">Bệnh viện Bình Dân</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-size:20px;font-weight:700;color:#ffffff">CÁC TỔ ĐẶC TRÁCH</div>
+                    <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:normal">CÁC TỔ ĐẶC TRÁCH</div>
                     <div style="font-size:14px;color:#67e8f9;font-weight:600">${teams.length} tổ · ${teams.reduce((sum, t) => sum + (t.members?.length || 0), 0)} thành viên</div>
                 </div>
             </div>
