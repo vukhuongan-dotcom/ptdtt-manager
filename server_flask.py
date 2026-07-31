@@ -850,7 +850,19 @@ def auth_login():
             'ip': client_ip,
             'remaining': status['remaining']
         })
-        return jsonify({'error': 'Tài khoản không tồn tại'}), 401
+    # Check activeUntil expiry
+    active_until = user.get('activeUntil')
+    if active_until:
+        from datetime import datetime
+        try:
+            if datetime.now() >= datetime.fromisoformat(active_until):
+                user['disabled'] = True
+                user.pop('activeUntil', None)
+                _save_auth(auth)
+                audit_log(username, 'auth.login.fail', {'reason': 'account_expired', 'activeUntil': active_until})
+                return jsonify({'error': 'Tài khoản đã hết hạn sử dụng vào 08:00 03/08/2026.'}), 403
+        except ValueError:
+            pass
 
     if user.get('disabled'):
         # Auto-activate if activeFrom date has passed
