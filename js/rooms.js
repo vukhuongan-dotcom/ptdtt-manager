@@ -36,7 +36,7 @@ const ROOM_DATA = [
     { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },
     { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 22, role: 'NT' }] },
     { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
-    { room: '712',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 10, role: 'NT' }] },
+    { room: '712',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
     { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
     { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
 
