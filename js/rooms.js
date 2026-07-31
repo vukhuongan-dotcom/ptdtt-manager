@@ -136,7 +136,6 @@ const RoomsPage = {
                     <span class="rooms-legend-item"><span class="room-legend-dot room-role-bs"></span> BS điều trị (chính)</span>
                     <span class="rooms-legend-item"><span class="room-legend-dot room-role-nt"></span> BS nội trú (phụ)</span>
                     <span class="rooms-legend-item"><span class="room-legend-dot room-role-hv" style="background:#f97316"></span> BS học viên (phụ)</span>
-                    <span class="rooms-legend-item"><span class="room-legend-dot room-role-ch"></span> BS cử nhân</span>
                 </div>
             </div>
         </div>
@@ -486,7 +485,6 @@ const RoomsPage = {
                             <div class="legend-item"><span class="legend-dot" style="background:#0369a1"></span> BS điều trị (chính)</div>
                             <div class="legend-item"><span class="legend-dot" style="background:#b45309"></span> BS nội trú (phụ)</div>
                             <div class="legend-item"><span class="legend-dot" style="background:#f97316"></span> BS học viên (phụ)</div>
-                            <div class="legend-item"><span class="legend-dot" style="background:#6b21a8"></span> BS cử nhân</div>
                         </div>
                     </div>
 
