@@ -29,21 +29,21 @@ const POD_CONFIG = [
 
 const ROOM_DATA = [
     // POD 1 (Màu Đỏ)
-    { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }] },
-    { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 13, role: 'NT' }] },
+    { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }, { id: 48, role: 'NT' }] },
+    { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 44, role: 'NT' }] },
 
     // POD 2 (Màu Vàng)
-    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 23, role: 'NT' }] },
-    { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 22, role: 'NT' }] },
+    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 43, role: 'NT' }] },
+    { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 47, role: 'NT' }] },
     { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
     { room: '712',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
     { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
     { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
 
     // POD 3 (Màu Xanh lá)
-    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 14, role: 'NT' }] },
-    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 17, role: 'NT' }] },
-    { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 15, role: 'NT' }] },
+    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 44, role: 'NT' }] },
+    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }] },
+    { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 45, role: 'NT' }] },
 ];
 
 // Cấu hình tạm ẩn số lượng bệnh nhân (chuyển sang true để bật lại sau này)
