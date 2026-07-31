@@ -415,24 +415,16 @@ const RoomsPage = {
             </head>
             <body>
                 <div id="capture">
-                    <!-- 1. Header Bệnh viện -->
-                    <table class="export-header-table">
-                        <tr>
-                            <td class="header-left">
-                                <div class="org-name">BỆNH VIỆN BÌNH DÂN</div>
-                                <div class="dept-name">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
-                            </td>
-                            <td class="header-right">
-                                <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                                <div class="national-motto">Độc lập - Tự do - Hạnh phúc</div>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <!-- 2. Banner Tiêu đề -->
-                    <div class="export-title-card">
-                        <div class="export-main-title">SƠ ĐỒ PHÂN CÔNG PHÒNG BỆNH NỘI TRÚ</div>
-                        <div class="export-sub-title">Khoa Phẫu thuật Đại trực tràng — Tầng 7, Tòa B | Ngày xuất: ${dateFmt} lúc ${timeFmt}</div>
+                    <!-- Header banner with dark navy gradient -->
+                    <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center;border-radius:10px;margin-bottom:24px">
+                        <div>
+                            <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:normal">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                            <div style="font-size:14px;color:#cbd5e1;margin-top:3px">Bệnh viện Bình Dân</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:normal">SƠ ĐỒ PHÒNG BỆNH (3 POD)</div>
+                            <div style="font-size:14px;color:#67e8f9;font-weight:600">Tầng 7, Tòa B · Ngày ${dateFmt}</div>
+                        </div>
                     </div>
 
                     <!-- 3. Danh sách 3 POD -->
