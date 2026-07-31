@@ -42,7 +42,7 @@ const ROOM_DATA = [
 
     // POD 3 (Màu Xanh lá)
     { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 46, role: 'NT' }] },
-    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }] },
+    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 50, role: 'NT' }] },
     { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 45, role: 'NT' }] },
 ];
 
