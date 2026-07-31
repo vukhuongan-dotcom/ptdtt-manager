@@ -46,6 +46,9 @@ const ROOM_DATA = [
     { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 15, role: 'NT' }] },
 ];
 
+// Cấu hình tạm ẩn số lượng bệnh nhân (chuyển sang true để bật lại sau này)
+const SHOW_PATIENT_COUNT = false;
+
 const RoomsPage = {
     render() {
         const emrData = (typeof EMR !== 'undefined') ? EMR.getData() : null;
@@ -59,7 +62,7 @@ const RoomsPage = {
                 <h1 class="page-title">Sơ đồ phòng bệnh (Mô hình 3 POD)</h1>
                 <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Tầng 7, Tòa B</p>
             </div>
-            ${totalPatients !== null ? `<div style="display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--border-radius);padding:10px 18px">
+            ${(SHOW_PATIENT_COUNT && totalPatients !== null) ? `<div style="display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--border-radius);padding:10px 18px">
                 <span style="font-size:1.3rem;font-weight:700;color:var(--primary)">${totalPatients}</span>
                 <span style="font-size:0.85rem;color:var(--text-secondary)">bệnh nhân</span>
                 <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">· ${lastUpdate}</span>
@@ -88,7 +91,7 @@ const RoomsPage = {
                                     <span class="pod-badge">${pod.title}</span>
                                     <span class="room-number">B${r.room}</span>
                                 </div>
-                                <span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>
+                                ${SHOW_PATIENT_COUNT ? `<span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>` : ''}
                             </div>
                             <div class="room-card-body">
                                 ${r.doctors.map(d => {
@@ -132,13 +135,8 @@ const RoomsPage = {
     _getPatientCount(room, emrData) {
         if (!emrData || !emrData.byRoom) return null;
         let count = 0;
-        // ROOM_DATA room: "705","706",...,"712A","718","719"
-        // EMR byRoom keys: "B.7.05","B.7.06",...,"B.7.12A","B.7.18","B.7.19"
-        // Strategy: extract suffix after "B.7." → "05","06",...,"12A"
-        //           our room "705" → strip leading "7" → "05"
-        const roomSuffix = room.startsWith('7') ? room.slice(1) : room; // "705" → "05", "712A" → "12A"
+        const roomSuffix = room.startsWith('7') ? room.slice(1) : room;
         Object.keys(emrData.byRoom).forEach(k => {
-            // EMR key "B.7.05" → extract after last dot for suffix
             const parts = k.split('.');
             const emrSuffix = parts.length >= 3 ? parts.slice(2).join('.') : k;
             if (emrSuffix.toUpperCase() === roomSuffix.toUpperCase()) {
@@ -149,7 +147,6 @@ const RoomsPage = {
     },
 
     afterRender() {
-        // Re-render rooms when EMR data updates
         if (!this._emrListener) {
             this._emrListener = () => {
                 if (App.currentPage === 'rooms') App.renderCurrentPage();
