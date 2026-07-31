@@ -37,12 +37,12 @@ const ROOM_DATA = [
     { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 47, role: 'NT' }] },
     { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
     { room: '712',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
-    { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
-    { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'NT' }] },
+    { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'HV' }] },
+    { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'HV' }] },
 
     // POD 3 (Màu Xanh lá)
     { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 46, role: 'NT' }] },
-    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 50, role: 'NT' }] },
+    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 50, role: 'HV' }] },
     { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 45, role: 'NT' }] },
 ];
 
@@ -107,8 +107,8 @@ const RoomsPage = {
                                         const staff = Store.getById('staff', d.id);
                                         if (!staff) return '';
                                         const fullName = staff.title + ' ' + staff.name;
-                                        const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
-                                        const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
+                                        const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'HV' ? 'Học viên' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
+                                        const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'HV' ? 'room-role-hv' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
                                         return `
                                         <div class="room-doctor">
                                             <div class="room-doc-avatar" style="background:${staff.color}">${staff.name.split(' ').pop().charAt(0)}</div>
@@ -135,6 +135,7 @@ const RoomsPage = {
                 <div class="rooms-legend-items" style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
                     <span class="rooms-legend-item"><span class="room-legend-dot room-role-bs"></span> BS điều trị (chính)</span>
                     <span class="rooms-legend-item"><span class="room-legend-dot room-role-nt"></span> BS nội trú (phụ)</span>
+                    <span class="rooms-legend-item"><span class="room-legend-dot room-role-hv" style="background:#f97316"></span> BS học viên (phụ)</span>
                     <span class="rooms-legend-item"><span class="room-legend-dot room-role-ch"></span> BS cử nhân</span>
                 </div>
             </div>
@@ -364,6 +365,7 @@ const RoomsPage = {
                     }
                     .room-role-bs { background: #e0f2fe; color: #0369a1; }
                     .room-role-nt { background: #fef3c7; color: #b45309; }
+                    .room-role-hv { background: #ffedd5; color: #c2410c; }
                     .room-role-ch { background: #f3e8ff; color: #6b21a8; }
 
                     /* 4. Legend Box */
@@ -454,8 +456,8 @@ const RoomsPage = {
                                                 const staff = Store.getById('staff', d.id);
                                                 if (!staff) return '';
                                                 const fullName = staff.title + ' ' + staff.name;
-                                                const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
-                                                const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
+                                                const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'HV' ? 'Học viên' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
+                                                const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'HV' ? 'room-role-hv' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
                                                 return `
                                                 <div class="room-doctor">
                                                     <div class="room-doc-avatar" style="background:${staff.color}">${staff.name.split(' ').pop().charAt(0)}</div>
@@ -483,6 +485,7 @@ const RoomsPage = {
                         <div class="legend-items" style="margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:10px">
                             <div class="legend-item"><span class="legend-dot" style="background:#0369a1"></span> BS điều trị (chính)</div>
                             <div class="legend-item"><span class="legend-dot" style="background:#b45309"></span> BS nội trú (phụ)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background:#f97316"></span> BS học viên (phụ)</div>
                             <div class="legend-item"><span class="legend-dot" style="background:#6b21a8"></span> BS cử nhân</div>
                         </div>
                     </div>

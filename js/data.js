@@ -15,7 +15,7 @@ const SAMPLE_STAFF = [
     { id: 13, name: 'Hồ Minh Huy', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0355511263', email: 'dr.hmhuy@gmail.com', status: 'active', color: '#f59e0b', cơHữu: true },
     { id: 14, name: 'Nguyễn Huy Hoàng', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0704725070', email: 'nguyenhuyhoang82914@gmail.com', status: 'active', color: '#3b82f6', cơHữu: true },
     { id: 15, name: 'Nguyễn Hà Trâm Anh', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0943923539', email: 'nguyenhatramanh.131@gmail.com', status: 'active', color: '#14b8a6', cơHữu: true },
-    { id: 16, name: 'Nguyễn Minh Nguyên Phương', role: 'Bác sĩ học viên', title: 'Học viên', phone: '0977347794', email: 'nmnp252@gmail.com', status: 'active', color: '#f97316', cơHữu: false },
+    { id: 16, name: 'Nguyễn Minh Nguyên Phương', role: 'Bác sĩ học viên', title: 'BS. Học viên', phone: '0977347794', email: 'nmnp252@gmail.com', status: 'active', color: '#f97316', cơHữu: false },
     { id: 17, name: 'Nguyễn Thanh Ý', role: 'Bác sĩ học viên', title: 'BSNT', phone: '', email: '', status: 'active', color: '#a855f7', cơHữu: true },
     { id: 18, name: 'Nguyễn Hải Linh', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0908504532', email: 'ntng2507.hv@uhsvnu.edu.vn', status: 'active', color: '#10b981', cơHữu: false },
     { id: 19, name: 'Trương Minh Trọng', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0971946970', email: 'minhtrong10c1@gmail.com', status: 'active', color: '#06b6d4', cơHữu: false },
@@ -47,7 +47,7 @@ const SAMPLE_STAFF = [
     { id: 47, name: 'Hoàng Bá Sang', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0335846050', email: '', status: 'active', color: '#10b981', cơHữu: false, startDate: '2026-07-31', mshv: 'NTNG2503' },
     { id: 48, name: 'Lê Minh Thành', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0965663267', email: '', status: 'active', color: '#f59e0b', cơHữu: false, startDate: '2026-07-31', mshv: 'NTNG2505' },
     { id: 49, name: 'Ừng Phương Minh Oanh', role: 'Điều dưỡng', title: 'CNĐD', phone: '0931042403', email: 'oanhu642003@gamil.com', status: 'active', color: '#10b981', cơHữu: true, startDate: '2026-07-31' },
-    { id: 50, name: 'Đặng Cẩm Tú', role: 'Bác sĩ học viên', title: 'Học viên', phone: '0836629554', email: 'dctu@ptdtt.info.vn', status: 'active', color: '#f97316', cơHữu: false, startDate: '2026-07-31' },
+    { id: 50, name: 'Đặng Cẩm Tú', role: 'Bác sĩ học viên', title: 'BS. Học viên', phone: '0836629554', email: 'dctu@ptdtt.info.vn', status: 'active', color: '#f97316', cơHữu: false, startDate: '2026-07-31' },
 ];
 
 // ===== EXTERNAL DOCTORS (BS ngoài khoa hỗ trợ) =====

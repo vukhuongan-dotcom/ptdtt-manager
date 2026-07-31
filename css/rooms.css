@@ -93,6 +93,10 @@
     background: rgba(139,92,246,0.1);
     color: #8b5cf6;
 }
+.room-role-hv {
+    background: rgba(249,115,22,0.15);
+    color: #ea580c;
+}
 
 /* Legend */
 .rooms-legend {
@@ -118,6 +122,7 @@
 }
 .room-legend-dot.room-role-bs { background: var(--primary); }
 .room-legend-dot.room-role-nt { background: #f59e0b; }
+.room-legend-dot.room-role-hv { background: #f97316; }
 .room-legend-dot.room-role-ch { background: #8b5cf6; }
 
 /* POD Color Styles */
