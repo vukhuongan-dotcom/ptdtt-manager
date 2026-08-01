@@ -340,7 +340,7 @@ const SurgeryPage = {
     // View detail / edit
     viewDetail(id) {
         const all = this.getAllSurgeries();
-        const s = all.find(x => x.id === id);
+        const s = all.find(x => String(x.id) === String(id));
         if (!s) return;
         const canEdit = canEditSurgery(s.date ? s.date.substring(0,10) : this.getWeekKey());
         const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
@@ -404,9 +404,10 @@ const SurgeryPage = {
 
     // Form
     openForm(id, date) {
-        if (!canEditSurgery(this.getWeekKey())) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         const all = this.getAllSurgeries();
-        const s = id ? all.find(x => x.id === id) : null;
+        const s = id ? all.find(x => String(x.id) === String(id)) : null;
+        const targetWeekKey = s?.date ? s.date.substring(0, 10) : this.getWeekKey();
+        if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
         const staff = Store.getAll('staff').filter(st => st.role.includes('Bác sĩ') || st.role.includes('Trưởng khoa') || st.role.includes('Phó trưởng khoa'));
         const extDocs = Store.getAll('externalDoctors') || [];
@@ -516,7 +517,7 @@ const SurgeryPage = {
         if (!group) return;
 
         const all = this.getAllSurgeries();
-        const existingFirst = all.find(x => x.date === dateStr && x.isFirstCase && (!s || x.id !== s?.id));
+        const existingFirst = all.find(x => x.date === dateStr && x.isFirstCase && (!s || String(x.id) !== String(s?.id)));
 
         if (existingFirst) {
             const name = existingFirst.patientName;
@@ -546,9 +547,12 @@ const SurgeryPage = {
     },
 
     save(e, id) {
-        if (!canEditSurgery(this.getWeekKey())) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         e.preventDefault();
         const f = new FormData(e.target);
+        const surgeryDate = f.get('date') || new Date().toISOString().split('T')[0];
+        const targetWeekKey = surgeryDate ? surgeryDate.substring(0, 10) : this.getWeekKey();
+        if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
+
         // approachType: if surgeryType is robot, force 'robot' (select may be disabled)
         const surgeryType = f.get('surgeryType');
         const approachType = surgeryType === 'robot' ? 'robot' : f.get('approachType');
@@ -565,31 +569,38 @@ const SurgeryPage = {
             at: new Date().toISOString()
         } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
 
+        const rawDuration = f.get('duration');
+        const durationVal = rawDuration ? (parseInt(rawDuration, 10) || null) : null;
+
         const data = {
             patientName: Utils.toProperCase(f.get('patientName')),
-            birthYear: f.get('birthYear'),
-            admissionId: f.get('admissionId'),
+            birthYear: f.get('birthYear') ? parseInt(f.get('birthYear'), 10) : '',
+            admissionId: f.get('admissionId') || '',
             surgeryType: surgeryType,
             approachType: approachType,
-            date: f.get('date'),
-            duration: f.get('duration'),
-            mainSurgeon: f.get('mainSurgeon') ? parseInt(f.get('mainSurgeon')) : null,
-            assistSurgeon1: f.get('assistSurgeon1') ? parseInt(f.get('assistSurgeon1')) : null,
-            diagnosis: f.get('diagnosis'),
-            method: f.get('method'),
-            notes: f.get('notes'),
+            date: surgeryDate,
+            duration: durationVal,
+            mainSurgeon: f.get('mainSurgeon') ? parseInt(f.get('mainSurgeon'), 10) : null,
+            assistSurgeon1: f.get('assistSurgeon1') ? parseInt(f.get('assistSurgeon1'), 10) : null,
+            diagnosis: f.get('diagnosis') || '',
+            method: f.get('method') || '',
+            notes: f.get('notes') || '',
             isFirstCase: !!f.get('isFirstCase')
         };
 
         const all = this.getAllSurgeries();
         if (id) {
-            const idx = all.findIndex(x => x.id === id);
+            const idx = all.findIndex(x => String(x.id) === String(id));
             if (idx !== -1) {
                 all[idx] = {
                     ...all[idx],
                     ...data,
                     updatedBy: actorMeta   // audit trail: who last edited
                 };
+            } else {
+                data.id = id;
+                data.createdBy = actorMeta;
+                all.push(data);
             }
         } else {
             data.id = Date.now();
@@ -606,10 +617,12 @@ const SurgeryPage = {
     },
 
     async deleteSurgery(id) {
-        if (!canEditSurgery(this.getWeekKey())) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         const all = this.getAllSurgeries();
-        const s = all.find(x => x.id === id);
+        const s = all.find(x => String(x.id) === String(id));
         if (!s) return;
+        const targetWeekKey = s.date ? s.date.substring(0, 10) : this.getWeekKey();
+        if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
+
         const confirmed = await Confirm.show({
             title: 'Xóa ca mổ',
             message: `Bạn có chắc chắn muốn xóa ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong>?<br>Hành động này không thể hoàn tác.`,
@@ -621,7 +634,7 @@ const SurgeryPage = {
         });
         if (!confirmed) return;
         Store._deletedIds.add(id);
-        this.saveSurgeries(all.filter(x => x.id !== id));
+        this.saveSurgeries(all.filter(x => String(x.id) !== String(id)));
         if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
         Toast.success(`Đã xóa ca mổ của BN ${Utils.toProperCase(s.patientName)}`);
