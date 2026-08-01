@@ -437,6 +437,10 @@ const FormAutoSave = {
                     }
                 });
                 if (restored) Toast.show('📋 Đã khôi phục bản nháp chưa lưu', 'info');
+                const modal = document.getElementById('modal');
+                const modalBody = document.getElementById('modal-body');
+                if (modal) modal.scrollTop = 0;
+                if (modalBody) modalBody.scrollTop = 0;
             }, 100);
         } catch(e) {}
     },
@@ -454,8 +458,15 @@ const Modal = {
 
     open(title, bodyHTML) {
         const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
         document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-body').innerHTML = bodyHTML;
+        modalBody.innerHTML = bodyHTML;
+
+        // Reset scroll position to top (dòng đầu tiên)
+        if (modal) modal.scrollTop = 0;
+        if (modalBody) modalBody.scrollTop = 0;
 
         // U3: Lưu element hiện tại để restore focus khi đóng
         this._triggerElement = document.activeElement;
@@ -477,9 +488,9 @@ const Modal = {
         if (this._trapHandler) document.removeEventListener('keydown', this._trapHandler);
         this._trapHandler = (e) => {
             if (e.key !== 'Tab' || !overlay.classList.contains('active')) return;
-            const modal = document.getElementById('modal');
+            const m = document.getElementById('modal');
             const focusable = Array.from(
-                modal.querySelectorAll(
+                m.querySelectorAll(
                     'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
                 )
             ).filter(el => el.offsetParent !== null); // chỉ lấy visible elements
@@ -496,16 +507,30 @@ const Modal = {
         };
         document.addEventListener('keydown', this._trapHandler);
 
-        // Move focus vào modal sau khi render xong
+        // Move focus & reset scroll về đầu trang sau khi render xong
         setTimeout(() => {
-            const closeBtn = document.getElementById('modal-close');
-            if (closeBtn) closeBtn.focus();
+            if (modal) modal.scrollTop = 0;
+            if (modalBody) modalBody.scrollTop = 0;
+
+            const isMobile = window.innerWidth <= 768;
+            const form = modalBody.querySelector('form');
+            const firstInput = form ? form.querySelector('input:not([type="hidden"]), select, textarea') : null;
+
             // Auto-save: start if form has data-autosave-key
-            const form = document.querySelector('#modal-body form[data-autosave-key]');
-            if (form) {
+            if (form && form.dataset.autosaveKey) {
                 this._currentFormKey = form.dataset.autosaveKey;
                 FormAutoSave.start(this._currentFormKey);
             }
+
+            if (!isMobile && firstInput) {
+                try { firstInput.focus({ preventScroll: true }); } catch(e) {}
+            } else {
+                const closeBtn = document.getElementById('modal-close');
+                if (closeBtn) try { closeBtn.focus({ preventScroll: true }); } catch(e) {}
+            }
+
+            if (modal) modal.scrollTop = 0;
+            if (modalBody) modalBody.scrollTop = 0;
         }, 50);
     },
 

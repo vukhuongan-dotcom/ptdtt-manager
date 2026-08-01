@@ -448,12 +448,12 @@
         max-height: 90dvh;  /* A M4: dvh (dynamic viewport height) — trừ bàn phím ảo Android */
         display: flex;
         flex-direction: column;
+        overflow: hidden;
         animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .modal-header {
         padding: 14px 16px;
-        position: sticky;
-        top: 0;
+        flex-shrink: 0;
         background: var(--bg-secondary);
         z-index: 2;
         border-radius: 16px 16px 0 0;
@@ -465,8 +465,7 @@
         padding: 12px 14px;
     }
     .modal-footer {
-        position: sticky;
-        bottom: 0;
+        flex-shrink: 0;
         background: var(--bg-secondary);
         z-index: 2;
         padding: 10px 14px;
