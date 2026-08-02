@@ -1,0 +1,32 @@
+{"ts": "2026-08-02T06:04:15.220540", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T06:19:42.130950", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T06:27:09.133619", "user": "ttdanh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 119, "nextId": null}}
+{"ts": "2026-08-02T06:44:52.873661", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T06:44:54.136416", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T07:28:47.586763", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T07:58:45.057070", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T08:25:26.702046", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T08:28:28.588140", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 20, "nextId": 15, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 14, "label": "2026-08-03", "from": {"notes": "TS Hữu nghỉ phép thứ 6\nBS Tuấn nghỉ phép thứ 5, thứ 6\nBS Minh lên KHTH cả tuần\nLịch thi: CKII chiều thứ 2, ThS chiều thứ 2 - sáng thứ 5 - chiều thứ 6 - cả ngày thứ 7"}, "to": {"notes": "TS Hữu nghỉ phép thứ 6\nBS Tuấn nghỉ phép thứ 5, thứ 6\nBS Minh lên KHTH cả tuần\nBS Phú phụ mổ T5 đến 15h\nLịch thi: CKII chiều thứ 2, ThS chiều thứ 2 - sáng thứ 5 - chiều thứ 6 - cả ngày thứ 7"}}]}}}
+{"ts": "2026-08-02T08:30:16.078751", "user": "pvphu", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 20, "nextId": 15, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 14, "label": "2026-08-03", "from": {"notes": "TS Hữu nghỉ phép thứ 6\nBS Tuấn nghỉ phép thứ 5, thứ 6\nBS Minh lên KHTH cả tuần\nBS Phú phụ mổ T5 đến 15h\nLịch thi: CKII chiều thứ 2, ThS chiều thứ 2 - sáng thứ 5 - chiều thứ 6 - cả ngày thứ 7"}, "to": {"notes": "TS Hữu nghỉ phép thứ 6\nBS Tuấn nghỉ phép thứ 5, thứ 6\nBS Minh lên KHTH cả tuần\nBS Quy phụ mổ T3 đến 15h\nBS Phú phụ mổ T5 đến 15h\nLịch thi: CKII chiều thứ 2, ThS chiều thứ 2 - sáng thứ 5 - chiều thứ 6 - cả ngày thứ 7"}}]}}}
+{"ts": "2026-08-02T08:30:17.016168", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T10:25:20.587051", "user": "upmoanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T15:55:45.522127", "user": "hoangbasang", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "159.89.126.154", "remaining": 4}}
+{"ts": "2026-08-02T15:55:51.661747", "user": "hoangbasang", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "159.89.126.154", "remaining": 4}}
+{"ts": "2026-08-02T15:56:01.906101", "user": "hoangbasang", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "159.89.126.154", "remaining": 3}}
+{"ts": "2026-08-02T15:56:15.396511", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T15:56:38.286122", "user": "tmtrong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T16:06:42.977458", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T16:19:30.493797", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T16:19:55.035151", "user": "hbsang", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "159.89.126.154", "remaining": 4}}
+{"ts": "2026-08-02T16:20:06.421327", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T16:23:19.148332", "user": "upmoanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T18:08:10.532225", "user": "hbsang", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-08-02T18:08:15.948484", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T18:21:20.761293", "user": "upmoanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T18:29:03.286727", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T18:48:26.181288", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T19:08:29.419410", "user": "upmoanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T19:15:01.235201", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T19:20:28.145183", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T21:26:03.969535", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-02T21:34:39.710104", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
