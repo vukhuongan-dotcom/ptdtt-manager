@@ -1,6 +1,6 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
-const DATA_VERSION = 9; // Increment this when SAMPLE data changes (v9: title BS. Học viên & role HV cho BS. Phương, BS. Tú)
+const DATA_VERSION = 10; // Increment this when SAMPLE data changes (v10: fix departedStaff sync & restore missing departed staff)
 const CLIENT_BUILD = 2606062130;
 
 const Store = {

@@ -561,9 +561,17 @@ const StaffPage = {
             const departed = { ...s, departedDate: this._dateStr(new Date()) };
             if (!Store._data.departedStaff) Store._data.departedStaff = [];
             if (!Store._data.nextIds.departedStaff) Store._data.nextIds.departedStaff = 1;
-            Store._data.departedStaff.push(departed);
+            if (!Store._data.departedStaff.some(item => String(item.id) === String(s.id))) {
+                Store._data.departedStaff.push(departed);
+            }
+
             // Remove from active staff
-            Store.remove('staff', id);
+            Store._data.staff = (Store._data.staff || []).filter(item => String(item.id) !== String(id));
+            Store._deletedIds.add(id);
+
+            // Save BOTH staff & departedStaff so server sync persists departedStaff
+            Store.saveCollections(['staff', 'departedStaff']);
+
             // Disable account
             Auth.disableAccount(id);
             Modal.close();
