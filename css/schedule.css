@@ -394,6 +394,18 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: rgba(245, 158, 11, 0.5) !important;
 }
 
+.schedule-select--conflict-block {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    color: #b91c1c !important;
+    font-weight: 700 !important;
+}
+[data-theme="dark"] .schedule-select--conflict-block {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    color: #fca5a5 !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
 .schedule-name--conflict {
     color: #b45309 !important;
     font-weight: 700 !important;
@@ -407,6 +419,21 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #fbbf24 !important;
     background-color: rgba(245, 158, 11, 0.2) !important;
     border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+.schedule-name--conflict-block {
+    color: #b91c1c !important;
+    font-weight: 700 !important;
+    background-color: #fef2f2 !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px dashed #ef4444 !important;
+    display: inline-block;
+}
+[data-theme="dark"] .schedule-name--conflict-block {
+    color: #fca5a5 !important;
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
 }
 
 

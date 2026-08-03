@@ -267,18 +267,9 @@ const SchedulePage = {
                 let duties = staffDuties[sid];
 
                 // Bỏ qua Siêu âm khi bác sĩ trùng với Trực khoa (bác sĩ trực khoa phụ trách Siêu âm sáng)
-                const hasDuty = duties.some(x => x.posKey === 'trucKhoa');
-                if (hasDuty) {
+                const hasTrucKhoa = duties.some(x => x.posKey === 'trucKhoa');
+                if (hasTrucKhoa) {
                     duties = duties.filter(x => x.posKey !== 'sieuAm');
-                }
-
-                // Trực Bệnh viện cho phép Trực khoa, Phòng khám
-                const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
-                if (hasTrucBV) {
-                    const hasSubMo = duties.some(x => (x.posKey === 'mo' && x.slot !== '0') || x.posKey === 'mo_actual');
-                    if (!hasSubMo) {
-                        duties = duties.filter(x => x.posKey !== 'trucBV');
-                    }
                 }
 
                 if (duties.length < 2) return;
@@ -290,12 +281,20 @@ const SchedulePage = {
 
                 if (categories.size > 1 || duties.length > 1) {
                     const staffName = this.getShortName(sid);
+                    const hasMo = duties.some(x => x.posKey === 'mo' || x.posKey === 'mo_actual');
+                    const hasPK = duties.some(x => x.posKey.startsWith('pk'));
+
+                    // HARD BLOCK: Trực khoa trùng Lịch mổ / Phòng khám -> CẤM LƯU LỊCH (isHardBlock = true)
+                    // SOFT WARNING: Trực BV trùng Lịch mổ -> CẢNH BÁO * NHƯNG CHO PHÉP LƯU LỊCH (isHardBlock = false)
+                    const isHardBlock = (hasTrucKhoa && (hasMo || hasPK)) || (hasTrucKhoa && duties.length >= 2);
+
                     conflicts.push({
                         day: d,
                         dayName: dayNames[d],
                         staffId: sid,
                         staffName,
                         duties,
+                        isHardBlock,
                         details: duties.map(x => {
                             if (x.posKey === 'mo_actual') return x.posLabel;
                             const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.slot === '0' ? 'Sáng' : 'Chiều');
@@ -425,8 +424,6 @@ const SchedulePage = {
             </table>
         </div>
 
-        ${this.renderRobotSection(schedule, dates, isAdmin)}
-
         <div class="schedule-notes card schedule-notes--mt">
             <h3 class="schedule-notes-heading">📝 Ghi chú</h3>
             ${isAdmin
@@ -460,8 +457,11 @@ const SchedulePage = {
                 const val = (data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
                 const slotLabel = pos.slotLabels ? pos.slotLabels[slot] : '';
                 const leadClass = isLeadSlot ? ' schedule-lead-slot' : '';
-                const isConfCell = activeConflicts.some(c => c.duties.some(dt => dt.posKey === pos.key && dt.cellKey === cellKey));
-                const conflictCls = isConfCell ? ' schedule-select--conflict' : '';
+
+                const cellConf = activeConflicts.find(c => c.duties.some(dt => dt.posKey === pos.key && dt.cellKey === cellKey));
+                const isHardCell = cellConf?.isHardBlock;
+                const isSoftCell = cellConf && !cellConf.isHardBlock;
+                const conflictCls = isHardCell ? ' schedule-select--conflict-block' : (isSoftCell ? ' schedule-select--conflict' : '');
 
                 if (isAdmin) {
                     rows += `<td class="schedule-cell ${dayIdx >= 5 ? 'weekend' : ''}${leadClass}">
@@ -469,17 +469,20 @@ const SchedulePage = {
                         <select class="schedule-select${conflictCls}" data-pos="${pos.key}" data-cell="${cellKey}" onchange="SchedulePage.onCellChange(this)">
                             <option value="">—</option>
                             ${staffOptions.map(s => {
-                                const isStaffConf = activeConflicts.some(c => c.day === DAYS[dayIdx] && c.staffId === s.id && c.duties.some(dt => dt.cellKey === cellKey));
-                                const star = isStaffConf ? '*' : '';
-                                return `<option value="${s.id}" ${val == s.id ? 'selected' : ''}>${this.getShortName(s.id)}${star}</option>`;
+                                const stConf = activeConflicts.find(c => c.day === DAYS[dayIdx] && c.staffId === s.id && c.duties.some(dt => dt.cellKey === cellKey));
+                                const symbol = stConf ? (stConf.isHardBlock ? ' 🛑' : '*') : '';
+                                return `<option value="${s.id}" ${val == s.id ? 'selected' : ''}>${this.getShortName(s.id)}${symbol}</option>`;
                             }).join('')}
                         </select>
                     </td>`;
                 } else {
-                    const isConf = isConfCell;
                     const baseName = val ? this.getShortName(parseInt(val)) : '—';
-                    const name = val ? `${baseName}${isConf ? '*' : ''}` : '—';
-                    const confClass = isConf ? ' schedule-name--conflict' : '';
+                    let name = baseName;
+                    let confClass = '';
+                    if (val && cellConf) {
+                        confClass = isHardCell ? ' schedule-name--conflict-block' : ' schedule-name--conflict';
+                        name = `${baseName}${isHardCell ? ' 🛑' : '*'}`;
+                    }
                     rows += `<td class="schedule-cell ${dayIdx >= 5 ? 'weekend' : ''} readonly${leadClass}">
                         ${slotLabel ? `<span class="schedule-slot-label">${slotLabel}</span>` : ''}
                         <span class="schedule-name${confClass}">${name}</span>
@@ -536,33 +539,35 @@ const SchedulePage = {
             const pos = sel.dataset.pos;
             const cell = sel.dataset.cell;
             const dayCode = cell.split('_')[0];
-            const isConf = conflicts.some(c => c.duties.some(d => d.posKey === pos && d.cellKey === cell));
-            if (isConf) {
-                sel.classList.add('schedule-select--conflict');
-            } else {
-                sel.classList.remove('schedule-select--conflict');
+            const cellConf = conflicts.find(c => c.duties.some(d => d.posKey === pos && d.cellKey === cell));
+
+            sel.classList.remove('schedule-select--conflict', 'schedule-select--conflict-block');
+            if (cellConf) {
+                sel.classList.add(cellConf.isHardBlock ? 'schedule-select--conflict-block' : 'schedule-select--conflict');
             }
 
-            // Dynamic update of option text with *
+            // Dynamic update of option text with 🛑 or *
             Array.from(sel.options).forEach(opt => {
                 if (!opt.value) return;
                 const sid = parseInt(opt.value);
                 const baseName = SchedulePage.getShortName(sid);
-                const isConfForStaff = conflicts.some(c => c.day === dayCode && c.staffId === sid && c.duties.some(d => d.cellKey === cell));
-                opt.textContent = baseName + (isConfForStaff ? '*' : '');
+                const stConf = conflicts.find(c => c.day === dayCode && c.staffId === sid && c.duties.some(d => d.cellKey === cell));
+                const symbol = stConf ? (stConf.isHardBlock ? ' 🛑' : '*') : '';
+                opt.textContent = baseName + symbol;
             });
         });
 
         let bannerEl = document.querySelector('.schedule-conflict-banner');
         if (conflicts.length > 0) {
+            const hardCount = conflicts.filter(c => c.isHardBlock).length;
             const html = `
-                <div class="schedule-alert-icon">⚠️</div>
+                <div class="schedule-alert-icon">${hardCount > 0 ? '🛑' : '⚠️'}</div>
                 <div class="schedule-alert-content">
-                    <div class="schedule-alert-title">CẢNH BÁO TRÙNG LẶP LỊCH MỔ & LỊCH TRỰC (${conflicts.length} TRƯỜNG HỢP *):</div>
+                    <div class="schedule-alert-title">CẢNH BÁO XUNG ĐỘT LỊCH PHÂN CÔNG (${conflicts.length} TRƯỜNG HỢP):</div>
                     <ul class="schedule-alert-list">
-                        ${conflicts.map(c => `<li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị trùng: <em>${c.details}</em></li>`).join('')}
+                        ${conflicts.map(c => `<li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị trùng: <em>${c.details}</em> ${c.isHardBlock ? '<strong style="color:#b91c1c">[CẤM LƯU 🛑]</strong>' : '<span style="color:#b45309">[CẢNH BÁO *]</span>'}</li>`).join('')}
                     </ul>
-                    <div class="schedule-alert-sub">⚠️ Các bác sĩ bị trùng mổ & trực được tô màu sắc cảnh báo kèm dấu (*). Lịch vẫn cho phép lưu bình thường.</div>
+                    <div class="schedule-alert-sub">${hardCount > 0 ? '🛑 TRỰC KHOA không được trùng với Lịch mổ. Vui lòng điều chỉnh lại trước khi lưu!' : '⚠️ Trực BV trùng với Lịch mổ: Đã đánh dấu (*) cảnh báo nhưng vẫn cho phép lưu lịch.'}</div>
                 </div>
             `;
             if (bannerEl) {
@@ -578,12 +583,15 @@ const SchedulePage = {
                 }
             }
             
-            // Show instant warning toast for current cell conflict
             const currentCell = el.dataset.cell;
             const currentPos = el.dataset.pos;
             const matchedConf = conflicts.find(c => c.duties.some(d => d.posKey === currentPos && d.cellKey === currentCell));
             if (matchedConf && el.value) {
-                Toast.warning(`⚠️ TRÙNG LỊCH (*): ${matchedConf.staffName} bị gán trùng ở ${matchedConf.details} (${matchedConf.dayName}). Lịch vẫn cho phép lưu.`);
+                if (matchedConf.isHardBlock) {
+                    Toast.error(`🛑 TRỰC KHOA TRÙNG LỊCH MỔ: ${matchedConf.staffName} (${matchedConf.dayName}). Vui lòng sửa lại vì không thể lưu!`);
+                } else {
+                    Toast.warning(`⚠️ TRỰC BV TRÙNG LỊCH MỔ (*): ${matchedConf.staffName} (${matchedConf.dayName}). Cảnh báo dấu (*) nhưng vẫn cho phép lưu.`);
+                }
             }
         } else if (bannerEl) {
             bannerEl.style.display = 'none';
@@ -617,32 +625,32 @@ const SchedulePage = {
         return Store.saveCollections(['schedules']);
     },
 
-    showConflictModal(conflicts) {
-        Modal.open('⚠️ Cảnh báo trùng lặp lịch mổ & lịch trực', `
+    showConflictModal(conflicts, isBlock = false) {
+        Modal.open(isBlock ? '🛑 Vi phạm Quy chế: Trực Khoa trùng Lịch Mổ' : '⚠️ Cảnh báo trùng lặp Trực BV & Lịch Mổ', `
             <div style="padding:4px 0">
-                <div style="color:var(--warning-dark,#b45309);font-weight:700;font-size:0.92rem;margin-bottom:12px;display:flex;align-items:center;gap:6px">
-                    <span>⚠️ PHÁT HIỆN TRÙNG LỊCH MỔ & LỊCH TRỰC (*)</span>
+                <div style="color:${isBlock ? 'var(--danger,#dc2626)' : 'var(--warning-dark,#b45309)'};font-weight:700;font-size:0.92rem;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+                    <span>${isBlock ? '🛑 KHÔNG THỂ LƯU LỊCH PHÂN CÔNG' : '⚠️ PHÁT HIỆN TRÙNG LỊCH MỔ & TRỰC BV (*)'}</span>
                 </div>
                 <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
-                    Hệ thống ghi nhận <strong>${conflicts.length} trường hợp bác sĩ bị trùng mổ & trực trong cùng 1 ngày</strong>. Các vị trí trùng được đánh dấu dấu (*) và tô màu cảnh báo. Lịch vẫn cho phép lưu bình thường.
+                    ${isBlock
+                        ? `Phát hiện <strong>${conflicts.length} trường hợp TRỰC KHOA bị trùng với Lịch mổ/Khám</strong>. Theo quy chế Khoa, bác sĩ Trực khoa không được thực hiện mổ. Vui lòng điều chỉnh lại.`
+                        : `Hệ thống ghi nhận <strong>${conflicts.length} trường hợp Trực BV trùng với Lịch mổ</strong>. Các vị trí được đánh dấu (*). Lịch vẫn cho phép lưu bình thường.`
+                    }
                 </p>
                 <div style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;padding:14px 16px;max-height:260px;overflow-y:auto">
                     ${conflicts.map(c => `
                         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-light)">
                             <div style="display:flex;justify-content:space-between;align-items:center">
                                 <span style="font-weight:700;color:var(--primary)">📅 ${c.dayName}</span>
-                                <span style="background:rgba(245,158,11,0.15);color:#b45309;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px">Trùng mổ/trực *</span>
+                                <span style="background:${c.isHardBlock ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)'};color:${c.isHardBlock ? '#dc2626' : '#b45309'};font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px">${c.isHardBlock ? '🛑 Cấm lưu' : 'Trùng mổ/trực *'}</span>
                             </div>
-                            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin:4px 0 2px 0">${c.staffName}*</div>
-                            <div style="font-size:0.82rem;color:#b45309;line-height:1.4">👉 Trùng vị trí: <strong>${c.details}</strong></div>
+                            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin:4px 0 2px 0">${c.staffName}${c.isHardBlock ? ' 🛑' : '*'}</div>
+                            <div style="font-size:0.82rem;color:${c.isHardBlock ? '#dc2626' : '#b45309'};line-height:1.4">👉 Trùng vị trí: <strong>${c.details}</strong></div>
                         </div>
                     `).join('')}
                 </div>
-                <div style="margin-top:14px;font-size:0.78rem;color:var(--text-muted);font-style:italic">
-                    * Ghi chú: Các bác sĩ được đánh dấu (*) trên bảng phân công.
-                </div>
                 <div class="modal-footer" style="margin-top:16px">
-                    <button class="btn btn-primary" onclick="Modal.close()">Đã hiểu</button>
+                    <button class="btn btn-primary" onclick="Modal.close()">${isBlock ? 'Đã hiểu & Sửa lại' : 'Đã hiểu'}</button>
                 </div>
             </div>
         `);
@@ -662,20 +670,50 @@ const SchedulePage = {
         const dates = this.getWeekDates(this.weekOffset);
         const conflicts = this.checkScheduleConflicts(positions, dates);
 
+        const hardBlocks = conflicts.filter(c => c.isHardBlock);
+        const softWarnings = conflicts.filter(c => !c.isHardBlock);
+
+        // 1. HARD BLOCKS: Stop saving immediately if Trực Khoa overlaps with Lịch Mổ!
+        if (hardBlocks.length > 0) {
+            Toast.error(`❌ QUY CHẾ KHOA: Không thể lưu lịch! Bác sĩ Trực Khoa không được trùng lịch mổ.`);
+            this.showConflictModal(hardBlocks, true);
+            return;
+        }
+
+        // 2. SOFT WARNINGS: Trực BV trùng Lịch Mổ -> Ask confirmation with warning (*), BUT ALLOW SAVING!
         let confirmMsg = 'Xác nhận lưu lịch phân công tuần này?<br>Dữ liệu hiện tại trên bảng sẽ được ghi nhận.';
-        if (conflicts.length > 0) {
-            confirmMsg = `⚠️ <strong>Phát hiện ${conflicts.length} trường hợp trùng lịch mổ & lịch trực (đánh dấu *):</strong><br>` +
+        if (softWarnings.length > 0) {
+            confirmMsg = `⚠️ <strong>Phát hiện ${softWarnings.length} trường hợp Trực BV trùng Lịch mổ (đánh dấu *):</strong><br>` +
                 `<ul style="text-align:left;font-size:0.82rem;margin:8px 0;padding-left:20px;color:var(--warning-dark,#b45309)">` +
-                conflicts.map(c => `<li><strong>${c.dayName}:</strong> ${c.staffName} (${c.details})</li>`).join('') +
-                `</ul>Hệ thống vẫn cho phép lưu. Bạn có chắc chắn muốn lưu lịch không?`;
+                softWarnings.map(c => `<li><strong>${c.dayName}:</strong> ${c.staffName} (${c.details})</li>`).join('') +
+                `</ul>Hệ thống cảnh báo dấu (*) nhưng vẫn cho phép lưu. Bạn có chắc chắn muốn lưu lịch không?`;
         }
 
         const confirmed = await Confirm.show({
-            title: conflicts.length > 0 ? '⚠️ Lưu lịch (có trùng lặp *)' : 'Lưu lịch phân công',
+            title: softWarnings.length > 0 ? '⚠️ Lưu lịch (Trực BV trùng Lịch mổ *)' : 'Lưu lịch phân công',
             message: confirmMsg,
-            icon: conflicts.length > 0 ? '⚠️' : '💾',
-            type: conflicts.length > 0 ? 'warning' : 'info',
+            icon: softWarnings.length > 0 ? '⚠️' : '💾',
+            type: softWarnings.length > 0 ? 'warning' : 'info',
             confirmText: 'Lưu lịch ngay',
+            cancelText: 'Huỷ'
+        });
+        if (!confirmed) return;
+
+        const weekKey = this.getWeekKey(dates);
+        const notes = document.getElementById('schedule-notes')?.value || '';
+        const robotSurgery = this._collectRobotData();
+
+        const saved = await this._upsertSchedule(weekKey, dates, { positions, notes, robotSurgery });
+        if (!saved?.ok) {
+            return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch phân công. Vui lòng thử lại.');
+        }
+
+        if (softWarnings.length > 0) {
+            Toast.warning(`⚠️ Đã lưu lịch phân công (ghi nhận ${softWarnings.length} trường hợp Trực BV trùng mổ có dấu *).`);
+        } else {
+            Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
+        }
+    },,
             cancelText: 'Huỷ'
         });
         if (!confirmed) return;
