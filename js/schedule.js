@@ -713,25 +713,6 @@ const SchedulePage = {
         } else {
             Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
         }
-    },,
-            cancelText: 'Huỷ'
-        });
-        if (!confirmed) return;
-
-        const weekKey = this.getWeekKey(dates);
-        const notes = document.getElementById('schedule-notes')?.value || '';
-        const robotSurgery = this._collectRobotData();
-
-        const saved = await this._upsertSchedule(weekKey, dates, { positions, notes, robotSurgery });
-        if (!saved?.ok) {
-            return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch phân công. Vui lòng thử lại.');
-        }
-
-        if (conflicts.length > 0) {
-            Toast.warning(`⚠️ Đã lưu lịch phân công (ghi nhận ${conflicts.length} trường hợp trùng mổ/trực có dấu *).`);
-        } else {
-            Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
-        }
     },
 
     async clearSchedule() {
