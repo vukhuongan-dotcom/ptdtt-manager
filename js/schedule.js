@@ -173,7 +173,7 @@ const SchedulePage = {
         return this._shortNameCache[staffId] || '';
     },
 
-    checkScheduleConflicts(positions) {
+    checkScheduleConflicts(positions, weekDates) {
         if (!positions) return [];
         const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
         const dayNames = { T2: 'Thứ 2', T3: 'Thứ 3', T4: 'Thứ 4', T5: 'Thứ 5', T6: 'Thứ 6', T7: 'Thứ 7', CN: 'Chủ nhật' };
@@ -184,14 +184,29 @@ const SchedulePage = {
             pkB020: 'P.Khám B020',
             pkK001: 'P.Khám K001',
             mo: 'Lịch Mổ',
-            trucBV: 'Trực Bệnh viện'
+            trucBCN: 'Trực BCN khoa',
+            trucBV: 'Trực Bệnh viện',
+            trucDD: 'Trực Đ.D',
+            trucHL: 'Trực Hộ lý'
         };
 
         const conflicts = [];
 
-        days.forEach(d => {
+        // Collect actual surgeries from Store for weekDates if provided
+        const surgeriesByDay = {};
+        if (weekDates && Array.isArray(weekDates)) {
+            const allSurgeries = Store.getAll('surgeries') || [];
+            weekDates.forEach((dObj, idx) => {
+                const dayCode = days[idx];
+                const dateStr = this._localDateStr(dObj);
+                surgeriesByDay[dayCode] = allSurgeries.filter(s => s.date === dateStr);
+            });
+        }
+
+        days.forEach((d, dayIdx) => {
             const staffDuties = {};
 
+            // 1. Collect from positions table on schedule board
             Object.keys(posLabels).forEach(posKey => {
                 const cells = positions[posKey] || {};
                 Object.keys(cells).forEach(cellKey => {
@@ -214,6 +229,39 @@ const SchedulePage = {
                 });
             });
 
+            // 2. Collect from actual surgeries (mainSurgeon for BS chính & assistSurgeon1 for BSNT / BS phụ)
+            const daySurgeries = surgeriesByDay[d] || [];
+            daySurgeries.forEach(s => {
+                if (s.mainSurgeon) {
+                    const sid = parseInt(s.mainSurgeon);
+                    if (sid > 0) {
+                        if (!staffDuties[sid]) staffDuties[sid] = [];
+                        if (!staffDuties[sid].some(x => x.posKey === 'mo_actual')) {
+                            staffDuties[sid].push({
+                                posKey: 'mo_actual',
+                                posLabel: 'Ca mổ (BS chính)',
+                                slot: '0',
+                                cellKey: `${d}_mo_actual`
+                            });
+                        }
+                    }
+                }
+                if (s.assistSurgeon1) {
+                    const sid = parseInt(s.assistSurgeon1);
+                    if (sid > 0) {
+                        if (!staffDuties[sid]) staffDuties[sid] = [];
+                        if (!staffDuties[sid].some(x => x.posKey === 'mo_actual')) {
+                            staffDuties[sid].push({
+                                posKey: 'mo_actual',
+                                posLabel: 'Ca mổ (BSNT/Phụ 1)',
+                                slot: '1',
+                                cellKey: `${d}_mo_actual`
+                            });
+                        }
+                    }
+                }
+            });
+
             Object.keys(staffDuties).forEach(sidStr => {
                 const sid = parseInt(sidStr);
                 let duties = staffDuties[sid];
@@ -224,10 +272,10 @@ const SchedulePage = {
                     duties = duties.filter(x => x.posKey !== 'sieuAm');
                 }
 
-                // Trực Bệnh viện cho phép Trực khoa, Phòng khám, và Mổ CHÍNH (slot 0) — CHỈ CẤM gán Mổ PHỤ (slot > 0)
+                // Trực Bệnh viện cho phép Trực khoa, Phòng khám
                 const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
                 if (hasTrucBV) {
-                    const hasSubMo = duties.some(x => x.posKey === 'mo' && x.slot !== '0');
+                    const hasSubMo = duties.some(x => (x.posKey === 'mo' && x.slot !== '0') || x.posKey === 'mo_actual');
                     if (!hasSubMo) {
                         duties = duties.filter(x => x.posKey !== 'trucBV');
                     }
@@ -249,6 +297,7 @@ const SchedulePage = {
                         staffName,
                         duties,
                         details: duties.map(x => {
+                            if (x.posKey === 'mo_actual') return x.posLabel;
                             const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.slot === '0' ? 'Sáng' : 'Chiều');
                             return `${x.posLabel} (${slotStr})`;
                         }).join(' & ')
@@ -285,7 +334,7 @@ const SchedulePage = {
             }
         });
 
-        const activeConflicts = this.checkScheduleConflicts(effectivePositions);
+        const activeConflicts = this.checkScheduleConflicts(effectivePositions, dates);
 
         return `
         <div class="page-header">
@@ -317,13 +366,13 @@ const SchedulePage = {
         <div class="schedule-conflict-banner">
             <div class="schedule-alert-icon">⚠️</div>
             <div class="schedule-alert-content">
-                <div class="schedule-alert-title">CẢNH BÁO TRÙNG LẶP LỊCH NHÂN SỰ (${activeConflicts.length} TRƯỜNG HỢP):</div>
+                <div class="schedule-alert-title">CẢNH BÁO TRÙNG LẶP LỊCH MỔ & LỊCH TRỰC (${activeConflicts.length} TRƯỜNG HỢP *):</div>
                 <ul class="schedule-alert-list">
                     ${activeConflicts.map(c => `
-                        <li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị gán trùng vị trí: <em>${c.details}</em></li>
+                        <li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị trùng: <em>${c.details}</em></li>
                     `).join('')}
                 </ul>
-                <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám và Lịch mổ trong cùng 1 ngày!</div>
+                <div class="schedule-alert-sub">⚠️ Các bác sĩ bị trùng lịch mổ & trực được tô màu cảnh báo kèm dấu (*). Lịch vẫn cho phép lưu bình thường.</div>
             </div>
         </div>
         ` : ''}
@@ -419,14 +468,21 @@ const SchedulePage = {
                         ${slotLabel ? `<span class="schedule-slot-label">${slotLabel}</span>` : ''}
                         <select class="schedule-select${conflictCls}" data-pos="${pos.key}" data-cell="${cellKey}" onchange="SchedulePage.onCellChange(this)">
                             <option value="">—</option>
-                            ${staffOptions.map(s => `<option value="${s.id}" ${val == s.id ? 'selected' : ''}>${this.getShortName(s.id)}</option>`).join('')}
+                            ${staffOptions.map(s => {
+                                const isStaffConf = activeConflicts.some(c => c.day === DAYS[dayIdx] && c.staffId === s.id && c.duties.some(dt => dt.cellKey === cellKey));
+                                const star = isStaffConf ? '*' : '';
+                                return `<option value="${s.id}" ${val == s.id ? 'selected' : ''}>${this.getShortName(s.id)}${star}</option>`;
+                            }).join('')}
                         </select>
                     </td>`;
                 } else {
-                    const name = val ? this.getShortName(parseInt(val)) : '—';
+                    const isConf = isConfCell;
+                    const baseName = val ? this.getShortName(parseInt(val)) : '—';
+                    const name = val ? `${baseName}${isConf ? '*' : ''}` : '—';
+                    const confClass = isConf ? ' schedule-name--conflict' : '';
                     rows += `<td class="schedule-cell ${dayIdx >= 5 ? 'weekend' : ''} readonly${leadClass}">
                         ${slotLabel ? `<span class="schedule-slot-label">${slotLabel}</span>` : ''}
-                        <span class="schedule-name">${name}</span>
+                        <span class="schedule-name${confClass}">${name}</span>
                     </td>`;
                 }
             });
@@ -473,17 +529,28 @@ const SchedulePage = {
             if (sel.value) positions[pos][cell] = parseInt(sel.value);
         });
 
-        const conflicts = this.checkScheduleConflicts(positions);
+        const dates = this.getWeekDates(this.weekOffset);
+        const conflicts = this.checkScheduleConflicts(positions, dates);
 
         document.querySelectorAll('.schedule-select').forEach(sel => {
             const pos = sel.dataset.pos;
             const cell = sel.dataset.cell;
+            const dayCode = cell.split('_')[0];
             const isConf = conflicts.some(c => c.duties.some(d => d.posKey === pos && d.cellKey === cell));
             if (isConf) {
                 sel.classList.add('schedule-select--conflict');
             } else {
                 sel.classList.remove('schedule-select--conflict');
             }
+
+            // Dynamic update of option text with *
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return;
+                const sid = parseInt(opt.value);
+                const baseName = SchedulePage.getShortName(sid);
+                const isConfForStaff = conflicts.some(c => c.day === dayCode && c.staffId === sid && c.duties.some(d => d.cellKey === cell));
+                opt.textContent = baseName + (isConfForStaff ? '*' : '');
+            });
         });
 
         let bannerEl = document.querySelector('.schedule-conflict-banner');
@@ -491,11 +558,11 @@ const SchedulePage = {
             const html = `
                 <div class="schedule-alert-icon">⚠️</div>
                 <div class="schedule-alert-content">
-                    <div class="schedule-alert-title">CẢNH BÁO XUNG ĐỘT LỊCH PHÂN CÔNG (${conflicts.length} TRƯỜNG HỢP TRÙNG LẶP):</div>
+                    <div class="schedule-alert-title">CẢNH BÁO TRÙNG LẶP LỊCH MỔ & LỊCH TRỰC (${conflicts.length} TRƯỜNG HỢP *):</div>
                     <ul class="schedule-alert-list">
-                        ${conflicts.map(c => `<li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị gán trùng vị trí: <em>${c.details}</em></li>`).join('')}
+                        ${conflicts.map(c => `<li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị trùng: <em>${c.details}</em></li>`).join('')}
                     </ul>
-                    <div class="schedule-alert-sub">⚠️ Quy chế Khoa: Không cho phép trùng lắp nhân sự giữa các vị trí Trực khoa, Phòng khám và Lịch mổ trong cùng 1 ngày!</div>
+                    <div class="schedule-alert-sub">⚠️ Các bác sĩ bị trùng mổ & trực được tô màu sắc cảnh báo kèm dấu (*). Lịch vẫn cho phép lưu bình thường.</div>
                 </div>
             `;
             if (bannerEl) {
@@ -516,7 +583,7 @@ const SchedulePage = {
             const currentPos = el.dataset.pos;
             const matchedConf = conflicts.find(c => c.duties.some(d => d.posKey === currentPos && d.cellKey === currentCell));
             if (matchedConf && el.value) {
-                Toast.warning(`⚠️ TRÙNG LỊCH: ${matchedConf.staffName} bị gán trùng ở ${matchedConf.details} (${matchedConf.dayName})`);
+                Toast.warning(`⚠️ TRÙNG LỊCH (*): ${matchedConf.staffName} bị gán trùng ở ${matchedConf.details} (${matchedConf.dayName}). Lịch vẫn cho phép lưu.`);
             }
         } else if (bannerEl) {
             bannerEl.style.display = 'none';
@@ -551,31 +618,31 @@ const SchedulePage = {
     },
 
     showConflictModal(conflicts) {
-        Modal.open('⚠️ Xung đột lịch phân công nhân sự', `
+        Modal.open('⚠️ Cảnh báo trùng lặp lịch mổ & lịch trực', `
             <div style="padding:4px 0">
-                <div style="color:var(--danger);font-weight:700;font-size:0.92rem;margin-bottom:12px;display:flex;align-items:center;gap:6px">
-                    <span>🛑 VI PHẠM QUY CHẾ PHÂN CÔNG KHOA</span>
+                <div style="color:var(--warning-dark,#b45309);font-weight:700;font-size:0.92rem;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+                    <span>⚠️ PHÁT HIỆN TRÙNG LỊCH MỔ & LỊCH TRỰC (*)</span>
                 </div>
                 <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
-                    Hệ thống không cho phép lưu lịch do phát hiện <strong>${conflicts.length} trường hợp bác sĩ bị gán trùng vị trí</strong> trong cùng 1 ngày giữa Trực khoa, Phòng khám và Lịch mổ.
+                    Hệ thống ghi nhận <strong>${conflicts.length} trường hợp bác sĩ bị trùng mổ & trực trong cùng 1 ngày</strong>. Các vị trí trùng được đánh dấu dấu (*) và tô màu cảnh báo. Lịch vẫn cho phép lưu bình thường.
                 </p>
                 <div style="background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;padding:14px 16px;max-height:260px;overflow-y:auto">
                     ${conflicts.map(c => `
                         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-light)">
                             <div style="display:flex;justify-content:space-between;align-items:center">
                                 <span style="font-weight:700;color:var(--primary)">📅 ${c.dayName}</span>
-                                <span style="background:rgba(239,68,68,0.1);color:#dc2626;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px">Trùng lịch</span>
+                                <span style="background:rgba(245,158,11,0.15);color:#b45309;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:12px">Trùng mổ/trực *</span>
                             </div>
-                            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin:4px 0 2px 0">${c.staffName}</div>
-                            <div style="font-size:0.82rem;color:var(--danger);line-height:1.4">👉 Trùng vị trí: <strong>${c.details}</strong></div>
+                            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin:4px 0 2px 0">${c.staffName}*</div>
+                            <div style="font-size:0.82rem;color:#b45309;line-height:1.4">👉 Trùng vị trí: <strong>${c.details}</strong></div>
                         </div>
                     `).join('')}
                 </div>
                 <div style="margin-top:14px;font-size:0.78rem;color:var(--text-muted);font-style:italic">
-                    * Ghi chú: Bác sĩ được đánh dấu ô viền đỏ trên bảng phân công. Vui lòng điều chỉnh lại để hợp lệ.
+                    * Ghi chú: Các bác sĩ được đánh dấu (*) trên bảng phân công.
                 </div>
                 <div class="modal-footer" style="margin-top:16px">
-                    <button class="btn btn-primary" onclick="Modal.close()">Đã hiểu & Điều chỉnh</button>
+                    <button class="btn btn-primary" onclick="Modal.close()">Đã hiểu</button>
                 </div>
             </div>
         `);
@@ -592,26 +659,27 @@ const SchedulePage = {
             if (sel.value) positions[pos][cell] = parseInt(sel.value);
         });
 
-        // 1. Enforce strict no-overlap policy BEFORE asking confirmation!
-        const conflicts = this.checkScheduleConflicts(positions);
+        const dates = this.getWeekDates(this.weekOffset);
+        const conflicts = this.checkScheduleConflicts(positions, dates);
+
+        let confirmMsg = 'Xác nhận lưu lịch phân công tuần này?<br>Dữ liệu hiện tại trên bảng sẽ được ghi nhận.';
         if (conflicts.length > 0) {
-            Toast.error(`❌ QUY CHẾ KHOA: Không thể lưu lịch! Có ${conflicts.length} trường hợp trùng lặp nhân sự trong cùng 1 ngày.`);
-            this.showConflictModal(conflicts);
-            return;
+            confirmMsg = `⚠️ <strong>Phát hiện ${conflicts.length} trường hợp trùng lịch mổ & lịch trực (đánh dấu *):</strong><br>` +
+                `<ul style="text-align:left;font-size:0.82rem;margin:8px 0;padding-left:20px;color:var(--warning-dark,#b45309)">` +
+                conflicts.map(c => `<li><strong>${c.dayName}:</strong> ${c.staffName} (${c.details})</li>`).join('') +
+                `</ul>Hệ thống vẫn cho phép lưu. Bạn có chắc chắn muốn lưu lịch không?`;
         }
 
-        // 2. If no conflicts, ask confirmation
         const confirmed = await Confirm.show({
-            title: 'Lưu lịch phân công',
-            message: 'Xác nhận lưu lịch phân công tuần này?<br>Dữ liệu hiện tại trên bảng sẽ được ghi nhận.',
-            icon: '💾',
-            type: 'info',
-            confirmText: 'Lưu lịch',
+            title: conflicts.length > 0 ? '⚠️ Lưu lịch (có trùng lặp *)' : 'Lưu lịch phân công',
+            message: confirmMsg,
+            icon: conflicts.length > 0 ? '⚠️' : '💾',
+            type: conflicts.length > 0 ? 'warning' : 'info',
+            confirmText: 'Lưu lịch ngay',
             cancelText: 'Huỷ'
         });
         if (!confirmed) return;
 
-        const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
         const notes = document.getElementById('schedule-notes')?.value || '';
         const robotSurgery = this._collectRobotData();
@@ -621,7 +689,11 @@ const SchedulePage = {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch phân công. Vui lòng thử lại.');
         }
 
-        Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
+        if (conflicts.length > 0) {
+            Toast.warning(`⚠️ Đã lưu lịch phân công (ghi nhận ${conflicts.length} trường hợp trùng mổ/trực có dấu *).`);
+        } else {
+            Toast.success('Đã lưu lịch phân công tuần thành công!', 'Lưu lịch');
+        }
     },
 
     async clearSchedule() {

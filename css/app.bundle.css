@@ -4097,14 +4097,30 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .schedule-select--conflict {
-    border-color: #ef4444 !important;
-    background-color: #fef2f2 !important;
-    color: #b91c1c !important;
+    border-color: #f59e0b !important;
+    background-color: #fffbeb !important;
+    color: #b45309 !important;
     font-weight: 700 !important;
 }
 [data-theme="dark"] .schedule-select--conflict {
-    background-color: rgba(239, 68, 68, 0.25) !important;
-    color: #fca5a5 !important;
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+.schedule-name--conflict {
+    color: #b45309 !important;
+    font-weight: 700 !important;
+    background-color: #fffbeb !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px dashed #f59e0b !important;
+    display: inline-block;
+}
+[data-theme="dark"] .schedule-name--conflict {
+    color: #fbbf24 !important;
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    border-color: rgba(245, 158, 11, 0.5) !important;
 }
 
 
