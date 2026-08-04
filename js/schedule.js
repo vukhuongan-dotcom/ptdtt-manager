@@ -173,7 +173,7 @@ const SchedulePage = {
         return this._shortNameCache[staffId] || '';
     },
 
-    checkScheduleConflicts(positions, weekDates) {
+    checkScheduleConflicts(positions) {
         if (!positions) return [];
         const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
         const dayNames = { T2: 'Thứ 2', T3: 'Thứ 3', T4: 'Thứ 4', T5: 'Thứ 5', T6: 'Thứ 6', T7: 'Thứ 7', CN: 'Chủ nhật' };
@@ -192,21 +192,10 @@ const SchedulePage = {
 
         const conflicts = [];
 
-        // Collect actual surgeries from Store for weekDates if provided
-        const surgeriesByDay = {};
-        if (weekDates && Array.isArray(weekDates)) {
-            const allSurgeries = Store.getAll('surgeries') || [];
-            weekDates.forEach((dObj, idx) => {
-                const dayCode = days[idx];
-                const dateStr = this._localDateStr(dObj);
-                surgeriesByDay[dayCode] = allSurgeries.filter(s => s.date === dateStr);
-            });
-        }
-
-        days.forEach((d, dayIdx) => {
+        days.forEach((d) => {
             const staffDuties = {};
 
-            // 1. Collect from positions table on schedule board
+            // 1. Chỉ thu thập các vị trí phân công trên Bảng Phân Công Tuần
             Object.keys(posLabels).forEach(posKey => {
                 const cells = positions[posKey] || {};
                 Object.keys(cells).forEach(cellKey => {
@@ -229,63 +218,30 @@ const SchedulePage = {
                 });
             });
 
-            // 2. Collect from actual surgeries (mainSurgeon for BS chính & assistSurgeon1 for BSNT / BS phụ)
-            const daySurgeries = surgeriesByDay[d] || [];
-            daySurgeries.forEach(s => {
-                if (s.mainSurgeon) {
-                    const sid = parseInt(s.mainSurgeon);
-                    if (sid > 0) {
-                        if (!staffDuties[sid]) staffDuties[sid] = [];
-                        if (!staffDuties[sid].some(x => x.posKey === 'mo_actual')) {
-                            staffDuties[sid].push({
-                                posKey: 'mo_actual',
-                                posLabel: 'Ca mổ (BS chính)',
-                                slot: '0',
-                                cellKey: `${d}_mo_actual`
-                            });
-                        }
-                    }
-                }
-                if (s.assistSurgeon1) {
-                    const sid = parseInt(s.assistSurgeon1);
-                    if (sid > 0) {
-                        if (!staffDuties[sid]) staffDuties[sid] = [];
-                        if (!staffDuties[sid].some(x => x.posKey === 'mo_actual')) {
-                            staffDuties[sid].push({
-                                posKey: 'mo_actual',
-                                posLabel: 'Ca mổ (BSNT/Phụ 1)',
-                                slot: '1',
-                                cellKey: `${d}_mo_actual`
-                            });
-                        }
-                    }
-                }
-            });
-
             Object.keys(staffDuties).forEach(sidStr => {
                 const sid = parseInt(sidStr);
                 const duties = staffDuties[sid];
 
-                // ÁP DỤNG CHO TOÀN BỘ CÁC VỊ TRÍ TRỰC KHOA (Slots 0, 1, 2, 3)
+                // CHỈ kiểm tra xung đột giữa các ô vị trí trên Bảng Phân Công Tuần
                 const hasTrucKhoa = duties.some(x => x.posKey === 'trucKhoa');
                 const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
-                const hasMo = duties.some(x => x.posKey === 'mo' || x.posKey === 'mo_actual');
+                const hasMo = duties.some(x => x.posKey === 'mo');
 
                 let isHardBlock = false;
                 let isRelevantConflict = false;
                 let targetDuties = duties;
 
-                // QUY TẮC PHÂN ĐỊNH 2 CẶP VỊ TRÍ:
+                // QUY TẮC PHÂN ĐỊNH 2 CẶP VỊ TRÍ TRÊN BẢNG PHÂN CÔNG:
                 // 1. Trực Khoa (TOÀN BỘ VỊ TRÍ) - Lịch Mổ: Không cho phép trùng, không được lưu (isHardBlock = true)
                 // 2. Trực BV - Lịch Mổ: Cho phép trùng, hiện cảnh báo (*), cho phép lưu (isHardBlock = false)
                 if (hasTrucKhoa && hasMo) {
                     isRelevantConflict = true;
                     isHardBlock = true;
-                    targetDuties = duties.filter(x => x.posKey === 'trucKhoa' || x.posKey === 'mo' || x.posKey === 'mo_actual');
+                    targetDuties = duties.filter(x => x.posKey === 'trucKhoa' || x.posKey === 'mo');
                 } else if (hasTrucBV && hasMo) {
                     isRelevantConflict = true;
                     isHardBlock = false;
-                    targetDuties = duties.filter(x => x.posKey === 'trucBV' || x.posKey === 'mo' || x.posKey === 'mo_actual');
+                    targetDuties = duties.filter(x => x.posKey === 'trucBV' || x.posKey === 'mo');
                 }
 
                 if (!isRelevantConflict) return;
@@ -299,7 +255,6 @@ const SchedulePage = {
                     duties: targetDuties,
                     isHardBlock,
                     details: targetDuties.map(x => {
-                        if (x.posKey === 'mo_actual') return x.posLabel;
                         const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.posKey === 'trucKhoa' ? `Trực khoa Vị trí #${parseInt(x.slot) + 1}` : 'Trực BV');
                         return `${x.posLabel} (${slotStr})`;
                     }).join(' & ')
@@ -335,7 +290,7 @@ const SchedulePage = {
             }
         });
 
-        const activeConflicts = this.checkScheduleConflicts(effectivePositions, dates);
+        const activeConflicts = this.checkScheduleConflicts(effectivePositions);
 
         return `
         <div class="page-header">
@@ -534,8 +489,7 @@ const SchedulePage = {
             if (sel.value) positions[pos][cell] = parseInt(sel.value);
         });
 
-        const dates = this.getWeekDates(this.weekOffset);
-        const conflicts = this.checkScheduleConflicts(positions, dates);
+        const conflicts = this.checkScheduleConflicts(positions);
 
         document.querySelectorAll('.schedule-select').forEach(sel => {
             const pos = sel.dataset.pos;
@@ -669,8 +623,7 @@ const SchedulePage = {
             if (sel.value) positions[pos][cell] = parseInt(sel.value);
         });
 
-        const dates = this.getWeekDates(this.weekOffset);
-        const conflicts = this.checkScheduleConflicts(positions, dates);
+        const conflicts = this.checkScheduleConflicts(positions);
 
         const hardBlocks = conflicts.filter(c => c.isHardBlock);
         const softWarnings = conflicts.filter(c => !c.isHardBlock);
