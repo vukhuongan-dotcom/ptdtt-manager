@@ -266,7 +266,8 @@ const SchedulePage = {
                 const sid = parseInt(sidStr);
                 const duties = staffDuties[sid];
 
-                const hasTrucKhoa = duties.some(x => x.posKey === 'trucKhoa');
+                // CHỈ Slot 0 của Trực khoa mới là "BS Trực chính khoa" cấm trùng lịch mổ
+                const hasTrucKhoaMain = duties.some(x => x.posKey === 'trucKhoa' && String(x.slot) === '0');
                 const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
                 const hasMo = duties.some(x => x.posKey === 'mo' || x.posKey === 'mo_actual');
 
@@ -274,13 +275,13 @@ const SchedulePage = {
                 let isRelevantConflict = false;
                 let targetDuties = duties;
 
-                // QUY TẮC CHỈ ÁP DỤNG CHO DÚNG 2 VỊ TRÍ NÀY:
-                // 1. Trực Khoa - Lịch Mổ: Không cho phép trùng, không được lưu (isHardBlock = true)
+                // QUY TẮC CHỈ ÁP DỤNG CHO DÚNG 2 TRƯỜNG HỢP:
+                // 1. BS Trực chính khoa (Slot 0 Trực khoa) - Lịch Mổ: Không cho phép trùng, không được lưu (isHardBlock = true)
                 // 2. Trực BV - Lịch Mổ: Cho phép trùng, hiện cảnh báo (*), cho phép lưu (isHardBlock = false)
-                if (hasTrucKhoa && hasMo) {
+                if (hasTrucKhoaMain && hasMo) {
                     isRelevantConflict = true;
                     isHardBlock = true;
-                    targetDuties = duties.filter(x => x.posKey === 'trucKhoa' || x.posKey === 'mo' || x.posKey === 'mo_actual');
+                    targetDuties = duties.filter(x => (x.posKey === 'trucKhoa' && String(x.slot) === '0') || x.posKey === 'mo' || x.posKey === 'mo_actual');
                 } else if (hasTrucBV && hasMo) {
                     isRelevantConflict = true;
                     isHardBlock = false;
@@ -299,7 +300,7 @@ const SchedulePage = {
                     isHardBlock,
                     details: targetDuties.map(x => {
                         if (x.posKey === 'mo_actual') return x.posLabel;
-                        const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.slot === '0' ? 'Sáng' : 'Chiều');
+                        const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.posKey === 'trucKhoa' ? 'Trực chính khoa' : 'Trực BV');
                         return `${x.posLabel} (${slotStr})`;
                     }).join(' & ')
                 });
