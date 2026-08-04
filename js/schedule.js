@@ -264,44 +264,45 @@ const SchedulePage = {
 
             Object.keys(staffDuties).forEach(sidStr => {
                 const sid = parseInt(sidStr);
-                let duties = staffDuties[sid];
+                const duties = staffDuties[sid];
 
-                // Bỏ qua Siêu âm khi bác sĩ trùng với Trực khoa (bác sĩ trực khoa phụ trách Siêu âm sáng)
                 const hasTrucKhoa = duties.some(x => x.posKey === 'trucKhoa');
-                if (hasTrucKhoa) {
-                    duties = duties.filter(x => x.posKey !== 'sieuAm');
+                const hasTrucBV = duties.some(x => x.posKey === 'trucBV');
+                const hasMo = duties.some(x => x.posKey === 'mo' || x.posKey === 'mo_actual');
+
+                let isHardBlock = false;
+                let isRelevantConflict = false;
+                let targetDuties = duties;
+
+                // QUY TẮC CHỈ ÁP DỤNG CHO DÚNG 2 VỊ TRÍ NÀY:
+                // 1. Trực Khoa - Lịch Mổ: Không cho phép trùng, không được lưu (isHardBlock = true)
+                // 2. Trực BV - Lịch Mổ: Cho phép trùng, hiện cảnh báo (*), cho phép lưu (isHardBlock = false)
+                if (hasTrucKhoa && hasMo) {
+                    isRelevantConflict = true;
+                    isHardBlock = true;
+                    targetDuties = duties.filter(x => x.posKey === 'trucKhoa' || x.posKey === 'mo' || x.posKey === 'mo_actual');
+                } else if (hasTrucBV && hasMo) {
+                    isRelevantConflict = true;
+                    isHardBlock = false;
+                    targetDuties = duties.filter(x => x.posKey === 'trucBV' || x.posKey === 'mo' || x.posKey === 'mo_actual');
                 }
 
-                if (duties.length < 2) return;
+                if (!isRelevantConflict) return;
 
-                const categories = new Set(duties.map(x => x.posKey));
-                if (categories.size === 1 && duties.every(x => x.posKey.startsWith('pk'))) {
-                    return;
-                }
-
-                if (categories.size > 1 || duties.length > 1) {
-                    const staffName = this.getShortName(sid);
-                    const hasMo = duties.some(x => x.posKey === 'mo' || x.posKey === 'mo_actual');
-                    const hasPK = duties.some(x => x.posKey.startsWith('pk'));
-
-                    // HARD BLOCK: Trực khoa trùng Lịch mổ / Phòng khám -> CẤM LƯU LỊCH (isHardBlock = true)
-                    // SOFT WARNING: Trực BV trùng Lịch mổ -> CẢNH BÁO * NHƯNG CHO PHÉP LƯU LỊCH (isHardBlock = false)
-                    const isHardBlock = (hasTrucKhoa && (hasMo || hasPK)) || (hasTrucKhoa && duties.length >= 2);
-
-                    conflicts.push({
-                        day: d,
-                        dayName: dayNames[d],
-                        staffId: sid,
-                        staffName,
-                        duties,
-                        isHardBlock,
-                        details: duties.map(x => {
-                            if (x.posKey === 'mo_actual') return x.posLabel;
-                            const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.slot === '0' ? 'Sáng' : 'Chiều');
-                            return `${x.posLabel} (${slotStr})`;
-                        }).join(' & ')
-                    });
-                }
+                const staffName = this.getShortName(sid);
+                conflicts.push({
+                    day: d,
+                    dayName: dayNames[d],
+                    staffId: sid,
+                    staffName,
+                    duties: targetDuties,
+                    isHardBlock,
+                    details: targetDuties.map(x => {
+                        if (x.posKey === 'mo_actual') return x.posLabel;
+                        const slotStr = x.posKey === 'mo' ? `Kíp #${parseInt(x.slot) + 1}` : (x.slot === '0' ? 'Sáng' : 'Chiều');
+                        return `${x.posLabel} (${slotStr})`;
+                    }).join(' & ')
+                });
             });
         });
 
