@@ -178,6 +178,9 @@ const SurgeryPage = {
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.thisWeek()">Tuần này</button>
             </div>
             <div class="surgery-stats">
+                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Lưu 7 ngày)">
+                    🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
+                </button>
                 <span class="surgery-stat-chip">📅 ${todayCases} ca hôm nay</span>
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả">
                     <span id="surgery-toggle-icon">📂</span> <span id="surgery-toggle-text">Mở rộng</span>
@@ -652,7 +655,7 @@ const SurgeryPage = {
 
         if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
-        Toast.success(`Đã chuyển ca mổ của BN ${Utils.toProperCase(s.patientName)} vào Thùng rác (Có thể hoàn tác trong 7 ngày)`);
+        Toast.success(`Đã chuyển ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong> vào Thùng rác <button class="btn btn-sm btn-secondary" style="margin-left:8px;padding:2px 8px;font-size:0.75rem;" onclick="SurgeryPage.restoreSurgery('${s.id}')">↺ Hoàn tác ngay</button>`);
     },
 
     openTrashModal() {

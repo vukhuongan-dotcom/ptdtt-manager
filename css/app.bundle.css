@@ -7849,9 +7849,25 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
             padding-bottom: calc(10px + env(safe-area-inset-bottom));
         }
     }
-    @media (max-width: 480px) {
-        .main-content {
-            padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    @media (max-width: 768px) {
+        .surgery-sticky-header {
+            margin: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            position: static !important;
+        }
+        .surg-header-actions {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .surg-header-actions button {
+            flex: 1 1 auto;
+            min-height: 40px;
+            font-size: 0.8rem;
+            padding: 6px 10px;
         }
     }
 }

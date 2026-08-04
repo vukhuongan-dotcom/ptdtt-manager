@@ -606,6 +606,12 @@ const Store = {
         return valid;
     },
 
+    getStaffName(id) {
+        if (!id) return '';
+        const s = this.getById('staff', id);
+        return s ? s.name : '';
+    },
+
     getById(collection, id) {
         return this._data[collection]?.find(item => String(item.id) === String(id));
     },
