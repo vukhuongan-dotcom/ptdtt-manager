@@ -54,7 +54,7 @@ EMR_PASS = os.environ.get('EMR_PASS', '')
 # Allowlisted collections that admin can write via PUT /api/data/<collection>
 WRITE_COLLECTIONS = {
     'staff', 'staffStatuses', 'schedules', 'tasks', 'tasksTrash', 'plans', 'patients',
-    'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule', 'surgeries',
+    'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule', 'surgeries', 'surgeriesTrash',
     'notifications', 'rooms', 'departedStaff', 'externalDoctors', 'shcmSettings',
     'conferences', 'specialTeams'
 }

@@ -69,6 +69,8 @@ const Store = {
             if (!this._data.nextIds.notifications) this._data.nextIds.notifications = 1;
             if (!this._data.tasksTrash) this._data.tasksTrash = [];
             if (!this._data.nextIds.tasksTrash) this._data.nextIds.tasksTrash = 1;
+            if (!this._data.surgeriesTrash) this._data.surgeriesTrash = [];
+            if (!this._data.nextIds.surgeriesTrash) this._data.nextIds.surgeriesTrash = 1;
             if (!this._data.staffStatuses) this._data.staffStatuses = [];
             if (!this._data.departedStaff) this._data.departedStaff = [];
             if (this._data.disabledAccounts) delete this._data.disabledAccounts;
@@ -581,6 +583,28 @@ const Store = {
     },
 
 
+
+    cleanSurgeriesTrash(maxDays = 7) {
+        if (!this._data || !Array.isArray(this._data.surgeriesTrash)) return [];
+        const now = Date.now();
+        const maxMs = maxDays * 24 * 60 * 60 * 1000;
+        const valid = [];
+        let expiredCount = 0;
+        this._data.surgeriesTrash.forEach(item => {
+            const delTime = item.deletedAt ? new Date(item.deletedAt).getTime() : 0;
+            if (delTime > 0 && (now - delTime) > maxMs) {
+                expiredCount++;
+                if (item.id) this._deletedIds.add(item.id);
+            } else {
+                valid.push(item);
+            }
+        });
+        if (expiredCount > 0) {
+            this._data.surgeriesTrash = valid;
+            this.saveCollections(['surgeriesTrash']);
+        }
+        return valid;
+    },
 
     getById(collection, id) {
         return this._data[collection]?.find(item => String(item.id) === String(id));

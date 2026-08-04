@@ -151,6 +151,9 @@ const SurgeryPage = {
                 <p class="page-subtitle">Lịch phẫu thuật khoa PT Đại trực tràng</p>
             </div>
             <div class="surg-header-actions">
+                <button class="btn btn-secondary" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Tự động xóa vĩnh viễn sau 7 ngày)">
+                    🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
+                </button>
                 <button class="btn btn-secondary" onclick="SurgeryPage.exportTomorrowImage()">
                     📷 Xuất DS ngày mai
                 </button>
@@ -624,20 +627,159 @@ const SurgeryPage = {
         if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
 
         const confirmed = await Confirm.show({
-            title: 'Xóa ca mổ',
-            message: `Bạn có chắc chắn muốn xóa ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong>?<br>Hành động này không thể hoàn tác.`,
-
+            title: 'Hủy / Xóa ca mổ',
+            message: `Bạn có chắc chắn muốn hủy ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong>?<br>Ca mổ sẽ được chuyển vào <strong>Thùng rác</strong> và tự động xóa vĩnh viễn sau 7 ngày (có thể hoàn tác khôi phục).`,
             icon: '🗑️',
             type: 'danger',
-            confirmText: 'Xóa ca mổ',
+            confirmText: 'Chuyển vào thùng rác',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;
+
+        const session = Auth.getSession();
+        const trashItem = {
+            ...s,
+            deletedAt: new Date().toISOString(),
+            deletedBy: session ? { username: session.username, name: session.name } : { username: 'unknown', name: 'NĐT' }
+        };
+
+        if (!Store._data.surgeriesTrash) Store._data.surgeriesTrash = [];
+        Store._data.surgeriesTrash.push(trashItem);
         Store._deletedIds.add(id);
+
         this.saveSurgeries(all.filter(x => String(x.id) !== String(id)));
+        Store.saveCollections(['surgeriesTrash', 'surgeries']);
+
         if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
         App.renderCurrentPage();
-        Toast.success(`Đã xóa ca mổ của BN ${Utils.toProperCase(s.patientName)}`);
+        Toast.success(`Đã chuyển ca mổ của BN ${Utils.toProperCase(s.patientName)} vào Thùng rác (Có thể hoàn tác trong 7 ngày)`);
+    },
+
+    openTrashModal() {
+        const trash = Store.cleanSurgeriesTrash(7);
+        if (trash.length === 0) {
+            Modal.open('🗑️ Thùng rác ca mổ đã hủy', `
+                <div class="empty-state" style="padding:40px;text-align:center;">
+                    <div style="font-size:3rem;margin-bottom:12px;">🗑️</div>
+                    <h3 style="margin-bottom:8px;">Thùng rác trống</h3>
+                    <p class="text-secondary" style="font-size:0.9rem;">Không có ca mổ nào bị hủy trong vòng 7 ngày qua.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
+                </div>
+            `);
+            return;
+        }
+
+        const rowsHtml = trash.map(s => {
+            const dateFmt = s.date ? new Date(s.date + 'T00:00:00').toLocaleDateString('vi-VN') : '—';
+            const delDateFmt = s.deletedAt ? new Date(s.deletedAt).toLocaleString('vi-VN') : '—';
+            const mainSurgeonName = s.mainSurgeon ? Store.getStaffName(s.mainSurgeon) : '—';
+            const assistSurgeonName = s.assistSurgeon1 ? Store.getStaffName(s.assistSurgeon1) : '';
+            const staffInfo = [mainSurgeonName, assistSurgeonName].filter(x => x && x !== '—').join(' & ');
+            const delUser = s.deletedBy?.name || 'NĐT';
+
+            return `
+                <tr>
+                    <td><strong>${dateFmt}</strong></td>
+                    <td>
+                        <div style="font-weight:600;">${Utils.toProperCase(s.patientName || 'Chưa tên')}</div>
+                        <div class="text-secondary" style="font-size:0.75rem;">${s.birthYear || ''} ${s.admissionId ? `• ${s.admissionId}` : ''}</div>
+                    </td>
+                    <td>
+                        <div style="font-size:0.85rem;">${s.diagnosis || '—'}</div>
+                        <div class="text-secondary" style="font-size:0.75rem;">${s.method || '—'}</div>
+                    </td>
+                    <td style="font-size:0.85rem;">${staffInfo || '—'}</td>
+                    <td>
+                        <div style="font-size:0.78rem;">${delDateFmt}</div>
+                        <div class="text-secondary" style="font-size:0.72rem;">Bởi: ${delUser}</div>
+                    </td>
+                    <td style="text-align:right;white-space:nowrap;">
+                        <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.restoreSurgery('${s.id}')" title="Hoàn tác khôi phục ca mổ">
+                            ↺ Hoàn tác
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="SurgeryPage.permanentlyDeleteSurgery('${s.id}')" title="Xóa vĩnh viễn" style="margin-left:4px;">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        Modal.open('🗑️ Thùng rác ca mổ đã hủy (Lưu giữ 7 ngày)', `
+            <div style="margin-bottom:12px;font-size:0.85rem;" class="text-secondary">
+                💡 Các ca mổ bị hủy được lưu tại đây trong <strong>7 ngày</strong>. Bạn có thể bấm <strong>Hoàn tác</strong> để đưa ca mổ trở lại Lịch mổ. Sau 7 ngày hệ thống sẽ tự động xóa vĩnh viễn.
+            </div>
+            <div style="max-height:420px;overflow-y:auto;">
+                <table class="table" style="width:100%;font-size:0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Ngày mổ</th>
+                            <th>Bệnh nhân</th>
+                            <th>Chẩn đoán & PT</th>
+                            <th>Kíp mổ</th>
+                            <th>Thời gian hủy</th>
+                            <th style="text-align:right;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer" style="margin-top:16px;">
+                <button class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
+            </div>
+        `);
+    },
+
+    restoreSurgery(id) {
+        const trash = Store.cleanSurgeriesTrash(7);
+        const item = trash.find(x => String(x.id) === String(id));
+        if (!item) return;
+
+        // Remove from trash
+        const newTrash = trash.filter(x => String(x.id) !== String(id));
+        Store._data.surgeriesTrash = newTrash;
+
+        // Clean trash metadata before restoring
+        const restoredItem = { ...item };
+        delete restoredItem.deletedAt;
+        delete restoredItem.deletedBy;
+
+        // Add back to surgeries
+        const allSurgeries = this.getAllSurgeries();
+        allSurgeries.push(restoredItem);
+
+        this.saveSurgeries(allSurgeries);
+        Store.saveCollections(['surgeriesTrash', 'surgeries']);
+
+        Toast.success(`Đã hoàn tác khôi phục ca mổ của BN <strong>${Utils.toProperCase(restoredItem.patientName)}</strong>`);
+        Modal.close();
+        App.renderCurrentPage();
+    },
+
+    async permanentlyDeleteSurgery(id) {
+        const trash = Store.cleanSurgeriesTrash(7);
+        const item = trash.find(x => String(x.id) === String(id));
+        if (!item) return;
+
+        const confirmed = await Confirm.show({
+            title: 'Xóa vĩnh viễn ca mổ',
+            message: `Bạn có chắc chắn muốn XÓA VĨNH VIỄN ca mổ của BN <strong>${Utils.toProperCase(item.patientName)}</strong>?<br>Hành động này <strong>không thể hoàn tác</strong>.`,
+            icon: '🗑️',
+            type: 'danger',
+            confirmText: 'Xóa vĩnh viễn',
+            cancelText: 'Giữ lại trong thùng rác'
+        });
+        if (!confirmed) return;
+
+        Store._data.surgeriesTrash = trash.filter(x => String(x.id) !== String(id));
+        Store.saveCollections(['surgeriesTrash']);
+        Toast.success('Đã xóa vĩnh viễn ca mổ khỏi thùng rác');
+        this.openTrashModal();
+        App.renderCurrentPage();
     },
 
     // Auto-select approach when surgery type changes
