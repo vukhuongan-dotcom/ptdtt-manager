@@ -48,7 +48,7 @@ const SAMPLE_STAFF = [
     { id: 48, name: 'Lê Minh Thành', role: 'Bác sĩ học viên', title: 'BSNT', phone: '0965663267', email: '', status: 'active', color: '#f59e0b', cơHữu: false, startDate: '2026-07-31', mshv: 'NTNG2505' },
     { id: 49, name: 'Ừng Phương Minh Oanh', role: 'Điều dưỡng', title: 'CNĐD', phone: '0931042403', email: 'oanhu642003@gamil.com', status: 'active', color: '#10b981', cơHữu: true, startDate: '2026-07-31' },
     { id: 50, name: 'Đặng Cẩm Tú', role: 'Bác sĩ học viên', title: 'BS. Học viên', phone: '0836629554', email: 'dctu@ptdtt.info.vn', status: 'active', color: '#f97316', cơHữu: false, startDate: '2026-07-31' },
-    { id: 51, name: 'Đỗ Thị Bích Châu', role: 'Điều dưỡng', title: 'ĐD', phone: '', email: '', status: 'active', color: '#ec4899', cơHữu: true },
+    { id: 51, name: 'Đỗ Thị Bích Châu', role: 'Điều dưỡng', title: 'CNĐD', phone: '0978888240', email: 'bichchaudo1989@gmail.com', status: 'active', color: '#3b82f6', cơHữu: true },
 ];
 
 // ===== EXTERNAL DOCTORS (BS ngoài khoa hỗ trợ) =====
