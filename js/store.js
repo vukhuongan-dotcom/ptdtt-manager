@@ -1,6 +1,6 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
-const DATA_VERSION = 10; // Increment this when SAMPLE data changes (v10: fix departedStaff sync & restore missing departed staff)
+const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
 const CLIENT_BUILD = 2606062130;
 
 const Store = {
@@ -36,6 +36,7 @@ const Store = {
 
         // Auto-reset if data version changed (new staff list, etc.)
         if (!parsed || parsed._version !== DATA_VERSION) {
+            const maxStaffId = Math.max(0, ...SAMPLE_STAFF.map(s => s.id || 0));
             this._data = {
                 _version: DATA_VERSION,
                 staff: [...SAMPLE_STAFF],
@@ -46,12 +47,12 @@ const Store = {
                 schedules: [...SAMPLE_SCHEDULES],
                 conferences: [],
                 nextIds: {
-                    staff: SAMPLE_STAFF.length + 1,
+                    staff: maxStaffId + 1,
                     externalDoctors: 200,
-                    tasks: SAMPLE_TASKS.length + 1,
-                    plans: SAMPLE_PLANS.length + 1,
-                    patients: SAMPLE_PATIENTS.length + 1,
-                    schedules: SAMPLE_SCHEDULES.length + 1,
+                    tasks: Math.max(0, ...SAMPLE_TASKS.map(t => t.id || 0)) + 1,
+                    plans: Math.max(0, ...SAMPLE_PLANS.map(p => p.id || 0)) + 1,
+                    patients: Math.max(0, ...SAMPLE_PATIENTS.map(p => p.id || 0)) + 1,
+                    schedules: Math.max(0, ...SAMPLE_SCHEDULES.map(s => s.id || 0)) + 1,
                     conferences: 1,
                     reports16h: 1,
                     reports7h: 1
@@ -582,7 +583,7 @@ const Store = {
 
 
     getById(collection, id) {
-        return this._data[collection]?.find(item => item.id === id);
+        return this._data[collection]?.find(item => String(item.id) === String(id));
     },
 
     replaceCollection(collection, items) {
@@ -640,6 +641,15 @@ const Store = {
     },
 
     add(collection, item) {
+        if (!this._data.nextIds) this._data.nextIds = {};
+        const maxExisting = Math.max(
+            0,
+            ...(this._data[collection] || []).map(i => parseInt(i?.id) || 0),
+            ...(collection === 'staff' ? (this._data.departedStaff || []).map(i => parseInt(i?.id) || 0) : [])
+        );
+        if (!this._data.nextIds[collection] || this._data.nextIds[collection] <= maxExisting) {
+            this._data.nextIds[collection] = maxExisting + 1;
+        }
         item.id = this._data.nextIds[collection]++;
         this._data[collection].push(item);
         this.saveCollections([collection]);
