@@ -62,6 +62,13 @@ const SchedulePage = {
         // Quy tắc phân công Học viên cố định (bắt đầu từ tuần 2026-08-03)
         if (weekKey >= '2026-08-03') {
             if (posKey === 'trucKhoa') {
+                // Vị trí BS thứ 1 (Slot 0 - Trưởng kíp trực khoa): Tuấn - M.Đức - Nguyện - Quy - V. Phú (T2 -> T6)
+                if (cellKey === 'T2_0') return 4; // BS Tuấn
+                if (cellKey === 'T3_0') return 9; // BS M.Đức
+                if (cellKey === 'T4_0') return 6; // BS Nguyện
+                if (cellKey === 'T5_0') return 8; // BS Quy
+                if (cellKey === 'T6_0') return 7; // BS V. Phú
+
                 // Vị trí BS thứ 3 (Slot 2): Khôi - Kiệt - Phương - Luân - Phú (T2 -> T6)
                 if (cellKey === 'T2_2') return 46; // Khôi
                 if (cellKey === 'T3_2') return 44; // Kiệt
