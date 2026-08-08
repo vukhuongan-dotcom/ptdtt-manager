@@ -66,7 +66,13 @@ const DashboardPage = {
                     <div class="stat-header">
                         <span class="stat-label">Nhân sự</span>
                         <div class="stat-icon ${isLow ? 'red' : 'cyan'}">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="7.5" cy="6" r="3.5" fill="currentColor"/>
+                                <path d="M 1.5 18 C 1.5 13 4 11.5 7.5 11.5 C 11 11.5 13.5 13 13.5 18 Z" fill="currentColor"/>
+                                <path d="M 5 12.5 C 5 15.5 10 15.5 10 12.5" stroke="var(--surface-card)" stroke-width="1.3" fill="none"/>
+                                <circle cx="17" cy="7" r="5" fill="currentColor" stroke="none"/>
+                                <path d="M 17 4.5 V 9.5 M 14.5 7 H 19.5" stroke="var(--surface-card)" stroke-width="1.6"/>
+                            </svg>
                         </div>
                     </div>
                     <div class="stat-value">${present}<span class="stat-value-suffix">/${allStaff.length}</span></div>
@@ -115,7 +121,11 @@ const DashboardPage = {
                 <div class="stat-header">
                     <span class="stat-label">PT hôm nay</span>
                     <div class="stat-icon green">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22L16 8"/><path d="M3.47 12.53L5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94z"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M 19 3.5 L 12 10.5" stroke-width="2.8" stroke-linecap="square"/>
+                            <path d="M 12 10.5 L 5 17.5 C 4 19 6.5 19.5 8 18 L 13.5 12.5 Z" fill="currentColor" fill-opacity="0.2"/>
+                            <line x1="4" y1="21" x2="20" y2="21" stroke-dasharray="3.5 2.5" stroke-width="1.6"/>
+                        </svg>
                     </div>
                 </div>
                 <div class="stat-value">${dailyS.total}</div>
