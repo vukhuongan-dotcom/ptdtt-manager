@@ -1043,10 +1043,10 @@ const SchedulePage = {
 
         const confirmed = await Confirm.show({
             title: 'Sao chép lịch tuần trước',
-            message: 'Sao chép lịch tuần trước vào tuần này?<br>Dữ liệu hiện tại của tuần này sẽ bị <strong>ghi đè</strong>.',
+            message: 'Sao chép các vị trí linh hoạt từ tuần trước vào tuần này?<br>Các <strong>vị trí trực khoa cố định và lịch mổ Thứ 7</strong> sẽ được giữ nguyên không bị ghi đè.',
             icon: '📋',
             type: 'warning',
-            confirmText: 'Sao chép',
+            confirmText: 'Sao chép lịch',
             cancelText: 'Huỷ'
         });
         if (!confirmed) return;
@@ -1058,7 +1058,7 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
-        // Bảo vệ các vị trí Trực khoa cố định & Lịch mổ T7 từ tuần 2026-08-03 không bị ghi đè
+        // Bảo vệ các vị trí Trực khoa cố định, Siêu âm sáng & Lịch mổ T7 từ tuần 2026-08-03 không bị ghi đè
         if (weekKey >= '2026-08-03') {
             if (!copiedPositions.trucKhoa) copiedPositions.trucKhoa = {};
             // Trưởng kíp Trực khoa (Slot 0): Tuấn - M.Đức - Nguyện - Quy - V.Phú
@@ -1079,6 +1079,14 @@ const SchedulePage = {
             copiedPositions.trucKhoa['T2_3'] = 48; // Thành
             copiedPositions.trucKhoa['T3_3'] = 50; // Tú
             copiedPositions.trucKhoa['T4_3'] = 47; // Sang
+
+            // Siêu âm sáng (đồng bộ với Trưởng kíp)
+            if (!copiedPositions.sieuAm) copiedPositions.sieuAm = {};
+            copiedPositions.sieuAm['T2_0'] = 4;
+            copiedPositions.sieuAm['T3_0'] = 9;
+            copiedPositions.sieuAm['T4_0'] = 6;
+            copiedPositions.sieuAm['T5_0'] = 8;
+            copiedPositions.sieuAm['T6_0'] = 7;
 
             // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
             if (!copiedPositions.mo) copiedPositions.mo = {};
