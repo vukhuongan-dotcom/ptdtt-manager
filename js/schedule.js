@@ -872,6 +872,10 @@ const SchedulePage = {
                 T2_0: 4, T3_0: 9, T4_0: 6, T5_0: 8, T6_0: 7
             };
 
+            clearedPositions.pkB023 = { T2_0: 5, T3_0: 1, T4_0: 4, T5_0: 2, T6_0: 6 };
+            clearedPositions.pkB020 = { T2_0: 7, T2_1: 7, T3_0: 2 };
+            clearedPositions.pkK001 = { T2_0: 2, T2_1: 9, T6_0: 8, T6_1: 8 };
+
             const monday = new Date((weekKey || '2026-08-03') + 'T00:00:00');
             const baseMonday = new Date('2026-08-03T00:00:00');
             const diffWeeks = Math.round((monday - baseMonday) / (7 * 24 * 3600 * 1000));
@@ -1087,6 +1091,27 @@ const SchedulePage = {
             copiedPositions.sieuAm['T4_0'] = 6;
             copiedPositions.sieuAm['T5_0'] = 8;
             copiedPositions.sieuAm['T6_0'] = 7;
+
+            // Phòng khám B023 cố định
+            if (!copiedPositions.pkB023) copiedPositions.pkB023 = {};
+            copiedPositions.pkB023['T2_0'] = 5; // BS Hậu
+            copiedPositions.pkB023['T3_0'] = 1; // BS Hữu
+            copiedPositions.pkB023['T4_0'] = 4; // BS Tuấn
+            copiedPositions.pkB023['T5_0'] = 2; // BS Khương An
+            copiedPositions.pkB023['T6_0'] = 6; // BS Nguyện
+
+            // Phòng khám B020 cố định
+            if (!copiedPositions.pkB020) copiedPositions.pkB020 = {};
+            copiedPositions.pkB020['T2_0'] = 7; // BS Vĩnh Phú
+            copiedPositions.pkB020['T2_1'] = 7;
+            copiedPositions.pkB020['T3_0'] = 2; // BS Khương An
+
+            // Phòng khám K001 cố định
+            if (!copiedPositions.pkK001) copiedPositions.pkK001 = {};
+            copiedPositions.pkK001['T2_0'] = 2; // BS Khương An
+            copiedPositions.pkK001['T2_1'] = 9; // BS Minh Đức
+            copiedPositions.pkK001['T6_0'] = 8; // BS Quy
+            copiedPositions.pkK001['T6_1'] = 8;
 
             // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
             if (!copiedPositions.mo) copiedPositions.mo = {};
