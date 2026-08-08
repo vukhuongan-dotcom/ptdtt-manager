@@ -59,6 +59,44 @@ const SchedulePage = {
         if (posKey === 'sieuAm') {
             return this.getDefaultCellVal('trucKhoa', cellKey, weekKey);
         }
+        // Quy tắc phân công Học viên cố định (bắt đầu từ tuần 2026-08-03)
+        if (weekKey >= '2026-08-03') {
+            if (posKey === 'trucKhoa') {
+                // Vị trí BS thứ 3 (Slot 2): Khôi - Kiệt - Phương - Luân - Phú (T2 -> T6)
+                if (cellKey === 'T2_2') return 46; // Khôi
+                if (cellKey === 'T3_2') return 44; // Kiệt
+                if (cellKey === 'T4_2') return 16; // Phương
+                if (cellKey === 'T5_2') return 45; // Luân
+                if (cellKey === 'T6_2') return 43; // Phú
+
+                // Vị trí BS thứ 4 (Slot 3): Thành - Tú - Sang (T2 -> T4)
+                if (cellKey === 'T2_3') return 48; // Thành
+                if (cellKey === 'T3_3') return 50; // Tú
+                if (cellKey === 'T4_3') return 47; // Sang
+            }
+
+            if (posKey === 'mo' && cellKey.startsWith('T7_')) {
+                // Phân công mổ thứ 7: chừa trống vị trí đầu tiên dành cho BS chính, luân phiên 1 kíp mỗi tuần
+                const monday = new Date((weekKey || '2026-08-03') + 'T00:00:00');
+                const baseMonday = new Date('2026-08-03T00:00:00');
+                const diffWeeks = Math.round((monday - baseMonday) / (7 * 24 * 3600 * 1000));
+                const isKip1 = (Math.abs(diffWeeks) % 2 === 0);
+
+                if (cellKey === 'T7_0') return ''; // Vị trí đầu tiên chừa trống cho bác sĩ chính
+                if (isKip1) {
+                    // Kíp 1: Khôi (46), Luân (45), Thành (48)
+                    if (cellKey === 'T7_1') return 46;
+                    if (cellKey === 'T7_2') return 45;
+                    if (cellKey === 'T7_3') return 48;
+                } else {
+                    // Kíp 2: Kiệt (44), Phú (43), Sang (47)
+                    if (cellKey === 'T7_1') return 44;
+                    if (cellKey === 'T7_2') return 43;
+                    if (cellKey === 'T7_3') return 47;
+                }
+            }
+        }
+
         if (weekKey >= '2026-10-26') {
             if (posKey === 'pkK001') {
                 if (cellKey === 'T2_0') return 2; // BS Khương An
