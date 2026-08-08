@@ -2,7 +2,7 @@
 const SCHEDULE_POSITIONS = [
     { key: 'trucKhoa', label: 'Trực khoa', slots: 4, staffFilter: 'bs', color: '#06b6d4' },
     { key: 'sieuAm', label: 'Siêu âm', slots: 1, staffFilter: 'bs', color: '#8b5cf6' },
-    { key: 'pkB023', label: 'P. Khám B023', slots: 1, staffFilter: 'bs', color: '#f59e0b' },
+    { key: 'pkB023', label: 'P. Khám B023', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#f59e0b' },
     { key: 'pkB020', label: 'P. Khám B020', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#ec4899' },
     { key: 'pkK001', label: 'P. Khám K001', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#10b981' },
     { key: 'mo', label: 'Mổ', slots: 9, staffFilter: 'bs', color: '#ef4444' },
@@ -148,11 +148,11 @@ const SchedulePage = {
                 if (cellKey === 'T6_0') return 8; // BS Quy (đổi lại sau 3 tháng)
             }
             if (posKey === 'pkB023') {
-                if (cellKey === 'T2_0') return 5;
-                if (cellKey === 'T3_0') return 1;
-                if (cellKey === 'T4_0') return 4;
-                if (cellKey === 'T5_0') return 2;
-                if (cellKey === 'T6_0') return 6;
+                if (cellKey === 'T2_0' || cellKey === 'T2_1') return 5; // BS Hậu
+                if (cellKey === 'T3_0' || cellKey === 'T3_1') return 1; // BS Hữu
+                if (cellKey === 'T4_0' || cellKey === 'T4_1') return 4; // BS Tuấn
+                if (cellKey === 'T5_0' || cellKey === 'T5_1') return 2; // BS Khương An
+                if (cellKey === 'T6_0' || cellKey === 'T6_1') return 6; // BS Nguyện
             }
         } else {
             if (posKey === 'pkK001') {
@@ -169,11 +169,11 @@ const SchedulePage = {
                 if (cellKey === 'T6_0') return 7; // BS Vĩnh Phú (từ 27/07)
             }
             if (posKey === 'pkB023') {
-                if (cellKey === 'T2_0') return 5;
-                if (cellKey === 'T3_0') return 1;
-                if (cellKey === 'T4_0') return 4;
-                if (cellKey === 'T5_0') return 2;
-                if (cellKey === 'T6_0') return 6;
+                if (cellKey === 'T2_0' || cellKey === 'T2_1') return 5; // BS Hậu
+                if (cellKey === 'T3_0' || cellKey === 'T3_1') return 1; // BS Hữu
+                if (cellKey === 'T4_0' || cellKey === 'T4_1') return 4; // BS Tuấn
+                if (cellKey === 'T5_0' || cellKey === 'T5_1') return 2; // BS Khương An
+                if (cellKey === 'T6_0' || cellKey === 'T6_1') return 6; // BS Nguyện
             }
         }
         return '';
@@ -872,7 +872,13 @@ const SchedulePage = {
                 T2_0: 4, T3_0: 9, T4_0: 6, T5_0: 8, T6_0: 7
             };
 
-            clearedPositions.pkB023 = { T2_0: 5, T3_0: 1, T4_0: 4, T5_0: 2, T6_0: 6 };
+            clearedPositions.pkB023 = {
+                T2_0: 5, T2_1: 5,
+                T3_0: 1, T3_1: 1,
+                T4_0: 4, T4_1: 4,
+                T5_0: 2, T5_1: 2,
+                T6_0: 6, T6_1: 6
+            };
             clearedPositions.pkB020 = { T2_0: 7, T2_1: 7, T3_0: 2 };
             clearedPositions.pkK001 = { T2_0: 2, T2_1: 9, T6_0: 8, T6_1: 8 };
 
@@ -1092,13 +1098,13 @@ const SchedulePage = {
             copiedPositions.sieuAm['T5_0'] = 8;
             copiedPositions.sieuAm['T6_0'] = 7;
 
-            // Phòng khám B023 cố định
+            // Phòng khám B023 cố định (khám cả 2 buổi Sáng - Chiều)
             if (!copiedPositions.pkB023) copiedPositions.pkB023 = {};
-            copiedPositions.pkB023['T2_0'] = 5; // BS Hậu
-            copiedPositions.pkB023['T3_0'] = 1; // BS Hữu
-            copiedPositions.pkB023['T4_0'] = 4; // BS Tuấn
-            copiedPositions.pkB023['T5_0'] = 2; // BS Khương An
-            copiedPositions.pkB023['T6_0'] = 6; // BS Nguyện
+            copiedPositions.pkB023['T2_0'] = 5; copiedPositions.pkB023['T2_1'] = 5; // BS Hậu
+            copiedPositions.pkB023['T3_0'] = 1; copiedPositions.pkB023['T3_1'] = 1; // BS Hữu
+            copiedPositions.pkB023['T4_0'] = 4; copiedPositions.pkB023['T4_1'] = 4; // BS Tuấn
+            copiedPositions.pkB023['T5_0'] = 2; copiedPositions.pkB023['T5_1'] = 2; // BS Khương An
+            copiedPositions.pkB023['T6_0'] = 6; copiedPositions.pkB023['T6_1'] = 6; // BS Nguyện
 
             // Phòng khám B020 cố định
             if (!copiedPositions.pkB020) copiedPositions.pkB020 = {};
