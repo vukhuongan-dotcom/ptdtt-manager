@@ -21,10 +21,39 @@ const SchedulePage = {
     // Staff with schedule editing permission (in addition to admins)
     _scheduleEditors: [7], // staffId 7 = Phạm Vĩnh Phú
 
-    canEditSchedule() {
+    canEditSchedule(targetWeekKey) {
         const session = Auth.getSession();
         if (!session) return false;
-        return session.isAdmin || this._scheduleEditors.includes(session.staffId);
+        const hasEditPermission = session.isAdmin || this._scheduleEditors.includes(session.staffId);
+        if (!hasEditPermission) return false;
+
+        // Super Admin (vkan) có quyền chỉnh sửa tất cả các tuần
+        if (session.isSuperAdmin) return true;
+
+        // Tự động tính weekKey nếu chưa truyền vào
+        let weekKey = targetWeekKey;
+        if (!weekKey) {
+            const dates = this.getWeekDates(this.weekOffset);
+            weekKey = this.getWeekKey(dates);
+        }
+
+        const currentWeekKey = this.getWeekKey(this.getWeekDates(0));
+        // Khóa không cho sửa các tuần đã kết thúc và tuần hiện tại (weekKey <= currentWeekKey) ngoại trừ Super Admin
+        if (weekKey <= currentWeekKey) {
+            return false;
+        }
+
+        return true;
+    },
+
+    isWeekLocked(targetWeekKey) {
+        let weekKey = targetWeekKey;
+        if (!weekKey) {
+            const dates = this.getWeekDates(this.weekOffset);
+            weekKey = this.getWeekKey(dates);
+        }
+        const currentWeekKey = this.getWeekKey(this.getWeekDates(0));
+        return weekKey <= currentWeekKey;
     },
 
     // Timezone-safe YYYY-MM-DD formatter (avoids UTC shift from toISOString)
@@ -311,9 +340,13 @@ const SchedulePage = {
     },
 
     render() {
-        const isAdmin = this.canEditSchedule();
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
+        const isAdmin = this.canEditSchedule(weekKey);
+        const isLocked = this.isWeekLocked(weekKey);
+        const session = Auth.getSession();
+        const isSuperAdmin = session?.isSuperAdmin || false;
+
         const schedule = this.getScheduleData(weekKey);
         const today = this._localDateStr(new Date());
 
@@ -341,7 +374,10 @@ const SchedulePage = {
         <div class="page-header">
             <div>
                 <h1 class="page-title">Lịch phân công tuần</h1>
-                <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — ${startStr} – ${endStr}</p>
+                <p class="page-subtitle">
+                    Khoa Phẫu thuật Đại trực tràng — ${startStr} – ${endStr}
+                    ${isLocked ? `<span class="schedule-locked-badge" style="margin-left:8px;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;background:${isSuperAdmin ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.12)'};color:${isSuperAdmin ? '#d97706' : '#dc2626'};border:1px solid ${isSuperAdmin ? 'rgba(234,179,8,0.3)' : 'rgba(239,68,68,0.3)'}">🔒 Lịch tuần đã khóa ${isSuperAdmin ? '(Super Admin đang mở quyền)' : '(Chỉ Super Admin mới được sửa)'}</span>` : ''}
+                </p>
             </div>
             <div class="flex items-center gap-8">
                 <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn">
@@ -744,7 +780,12 @@ const SchedulePage = {
     },
 
     async saveSchedule() {
-        if (!this.canEditSchedule()) return;
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        if (!this.canEditSchedule(weekKey)) {
+            Toast.warning('🔒 Lịch tuần này đã kết thúc & khóa. Chỉ Super Admin mới được phép chỉnh sửa.');
+            return;
+        }
 
         const positions = {};
         document.querySelectorAll('.schedule-select').forEach(sel => {
@@ -785,7 +826,6 @@ const SchedulePage = {
         });
         if (!confirmed) return;
 
-        const weekKey = this.getWeekKey(dates);
         const notes = document.getElementById('schedule-notes')?.value || '';
         const robotSurgery = this._collectRobotData();
 
@@ -802,7 +842,12 @@ const SchedulePage = {
     },
 
     async clearSchedule() {
-        if (!this.canEditSchedule()) return;
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        if (!this.canEditSchedule(weekKey)) {
+            Toast.warning('🔒 Lịch tuần này đã kết thúc & khóa. Chỉ Super Admin mới được phép chỉnh sửa.');
+            return;
+        }
         const confirmed = await Confirm.show({
             title: 'Xoà lịch phân công tuần',
             message: 'Xoà các vị trí linh hoạt trên lịch tuần này?<br>Các <strong>vị trí trực khoa cố định và lịch mổ Thứ 7</strong> sẽ được giữ nguyên.',
@@ -814,9 +859,6 @@ const SchedulePage = {
         if (!confirmed) return;
 
         this.pushUndoState();
-
-        const dates = this.getWeekDates(this.weekOffset);
-        const weekKey = this.getWeekKey(dates);
 
         const clearedPositions = {};
         if (weekKey >= '2026-08-03') {
@@ -980,8 +1022,10 @@ const SchedulePage = {
     },
 
     async copyFromPrevWeek() {
-        if (!this.canEditSchedule()) {
-            Toast.warning('Bạn không có quyền chỉnh sửa lịch phân công.');
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        if (!this.canEditSchedule(weekKey)) {
+            Toast.warning('🔒 Lịch tuần này đã kết thúc & khóa. Chỉ Super Admin mới được phép chỉnh sửa.');
             return;
         }
 
@@ -1010,8 +1054,6 @@ const SchedulePage = {
         this.pushUndoState();
 
         // Copy data directly in store
-        const dates = this.getWeekDates(this.weekOffset);
-        const weekKey = this.getWeekKey(dates);
         const copiedPositions = JSON.parse(JSON.stringify(prevSchedule.positions));
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
