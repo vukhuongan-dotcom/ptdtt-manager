@@ -804,11 +804,11 @@ const SchedulePage = {
     async clearSchedule() {
         if (!this.canEditSchedule()) return;
         const confirmed = await Confirm.show({
-            title: 'Xoà toàn bộ lịch tuần',
-            message: 'Xoà toàn bộ lịch phân công tuần này?<br>Tất cả các ô sẽ trở về trống. Hành động này <strong>không thể hoàn tác</strong>.',
+            title: 'Xoà lịch phân công tuần',
+            message: 'Xoà các vị trí linh hoạt trên lịch tuần này?<br>Các <strong>vị trí trực khoa cố định và lịch mổ Thứ 7</strong> sẽ được giữ nguyên.',
             icon: '⚠️',
-            type: 'danger',
-            confirmText: 'Xoà toàn bộ',
+            type: 'warning',
+            confirmText: 'Xoà các vị trí linh hoạt',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;
@@ -818,12 +818,36 @@ const SchedulePage = {
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
 
-        const saved = await this._upsertSchedule(weekKey, dates, { positions: {}, notes: '', robotSurgery: [] });
+        const clearedPositions = {};
+        if (weekKey >= '2026-08-03') {
+            clearedPositions.trucKhoa = {
+                T2_0: 4, T3_0: 9, T4_0: 6, T5_0: 8, T6_0: 7,
+                T2_2: 46, T3_2: 44, T4_2: 16, T5_2: 45, T6_2: 43,
+                T2_3: 48, T3_3: 50, T4_3: 47
+            };
+
+            clearedPositions.sieuAm = {
+                T2_0: 4, T3_0: 9, T4_0: 6, T5_0: 8, T6_0: 7
+            };
+
+            const monday = new Date((weekKey || '2026-08-03') + 'T00:00:00');
+            const baseMonday = new Date('2026-08-03T00:00:00');
+            const diffWeeks = Math.round((monday - baseMonday) / (7 * 24 * 3600 * 1000));
+            const isKip1 = (Math.abs(diffWeeks) % 2 === 0);
+
+            clearedPositions.mo = isKip1 ? {
+                T7_1: 46, T7_2: 45, T7_3: 48
+            } : {
+                T7_1: 44, T7_2: 43, T7_3: 47
+            };
+        }
+
+        const saved = await this._upsertSchedule(weekKey, dates, { positions: clearedPositions, notes: '', robotSurgery: [] });
         if (!saved?.ok) {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa xoá được lịch phân công. Vui lòng thử lại.');
         }
         App.renderCurrentPage();
-        Toast.success('Đã xoá toàn bộ lịch phân công tuần.', 'Xoá lịch');
+        Toast.success('Đã xoá các vị trí linh hoạt (giữ nguyên vị trí cố định).', 'Xoá lịch');
     },
 
     prevWeek() { this.weekOffset--; App.renderCurrentPage(); },
