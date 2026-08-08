@@ -101,13 +101,13 @@ const SchedulePage = {
                 if (cellKey === 'CN_0') return 2; // BS Khương An
             }
 
-            // Mổ chính ca đầu tiên mỗi ngày (Slot 0 T2-T6)
+            // Mổ chính ca đầu tiên mỗi ngày (Slot 0 T2-T6): Hữu (T2, T5), Tuấn (T3), An (T4), Hậu (T6)
             if (posKey === 'mo' && !cellKey.startsWith('T7_') && cellKey.endsWith('_0')) {
                 if (cellKey === 'T2_0') return 1; // BS Hữu
-                if (cellKey === 'T3_0') return 1; // BS Hữu
-                if (cellKey === 'T4_0') return 4; // BS Tuấn
-                if (cellKey === 'T5_0') return 2; // BS Khương An
-                if (cellKey === 'T6_0') return 6; // BS Nguyện
+                if (cellKey === 'T3_0') return 4; // BS Tuấn
+                if (cellKey === 'T4_0') return 2; // BS Khương An
+                if (cellKey === 'T5_0') return 1; // BS Hữu
+                if (cellKey === 'T6_0') return 5; // BS Hậu
             }
 
             if (posKey === 'trucKhoa') {
@@ -912,7 +912,7 @@ const SchedulePage = {
             const isKip1 = (Math.abs(diffWeeks) % 2 === 0);
 
             clearedPositions.mo = {
-                T2_0: 1, T3_0: 1, T4_0: 4, T5_0: 2, T6_0: 6,
+                T2_0: 1, T3_0: 4, T4_0: 2, T5_0: 1, T6_0: 5,
                 ...(isKip1 ? { T7_1: 46, T7_2: 45, T7_3: 48 } : { T7_1: 44, T7_2: 43, T7_3: 47 })
             };
         }
@@ -1140,13 +1140,13 @@ const SchedulePage = {
                 'T6_0': 8, 'T6_1': 8  // BS Quy
             };
 
-            // Mổ chính ca đầu tiên mỗi ngày (Slot 0 T2-T6)
+            // Mổ chính ca đầu tiên mỗi ngày (Slot 0 T2-T6): Hữu (T2, T5), Tuấn (T3), An (T4), Hậu (T6)
             if (!copiedPositions.mo) copiedPositions.mo = {};
             copiedPositions.mo['T2_0'] = 1; // Hữu
-            copiedPositions.mo['T3_0'] = 1; // Hữu
-            copiedPositions.mo['T4_0'] = 4; // Tuấn
-            copiedPositions.mo['T5_0'] = 2; // An
-            copiedPositions.mo['T6_0'] = 6; // Nguyện
+            copiedPositions.mo['T3_0'] = 4; // Tuấn
+            copiedPositions.mo['T4_0'] = 2; // An
+            copiedPositions.mo['T5_0'] = 1; // Hữu
+            copiedPositions.mo['T6_0'] = 5; // Hậu
 
             // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
             const monday = new Date((weekKey || '2026-08-03') + 'T00:00:00');
