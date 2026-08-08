@@ -363,7 +363,7 @@ const SurgeryPage = {
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Ngày mổ</div>
-                    <div class="surgery-detail-value">${s.date}</div>
+                    <div class="surgery-detail-value">${Utils.formatDate(s.date)}</div>
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Thời gian cuộc mổ</div>
@@ -675,7 +675,7 @@ const SurgeryPage = {
         }
 
         const rowsHtml = trash.map(s => {
-            const dateFmt = s.date ? new Date(s.date + 'T00:00:00').toLocaleDateString('vi-VN') : '—';
+            const dateFmt = Utils.formatDate(s.date);
             const delDateFmt = s.deletedAt ? new Date(s.deletedAt).toLocaleString('vi-VN') : '—';
             const mainSurgeonName = s.mainSurgeon ? Store.getStaffName(s.mainSurgeon) : '—';
             const assistSurgeonName = s.assistSurgeon1 ? Store.getStaffName(s.assistSurgeon1) : '';

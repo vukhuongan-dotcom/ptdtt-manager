@@ -39,15 +39,30 @@ const Utils = {
     },
 
     formatDate(dateStr) {
-        if (!dateStr) return '';
+        if (!dateStr) return '—';
+        const parts = String(dateStr).split('T')[0].split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
         const d = new Date(dateStr);
-        return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
     },
 
     formatDateShort(dateStr) {
-        if (!dateStr) return '';
+        if (!dateStr) return '—';
+        const parts = String(dateStr).split('T')[0].split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return `${parts[2]}.${parts[1]}`;
+        }
         const d = new Date(dateStr);
-        return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${day}.${month}`;
     },
 
     daysFromNow(dateStr) {

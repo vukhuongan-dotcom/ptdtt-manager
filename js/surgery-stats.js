@@ -315,8 +315,7 @@ const SurgeryStatsPage = {
                     ${docStat.cases.map((s, idx) => {
                         const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                         const room = this.getPatientRoom(s.patientName);
-                        const dateObj = new Date(s.date);
-                        const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
+                        const dateStr = Utils.formatDate(s.date);
                         return `
                     <tr onclick="SurgeryPage.viewDetail(${s.id})" class="sstats-detail-tr-clickable" title="Xem chi tiết">
                         <td class="sstats-detail-td-stt">${idx + 1}</td>
@@ -405,8 +404,7 @@ const SurgeryStatsPage = {
             surgeries.sort((a,b) => a.date.localeCompare(b.date)).forEach((s, i) => {
                 const doc = allDocs.find(d => d.id === s.mainSurgeon);
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || { label: s.surgeryType };
-                const dateObj = new Date(s.date);
-                const dateStr = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
+                const dateStr = Utils.formatDate(s.date);
                 detailData.push([i+1, dateStr, s.patientName, s.birthYear||'', s.diagnosis||'', s.method||'', typeInfo.label, approachMap[s.approachType]||'', doc ? doc.name : '']);
             });
             const ws2 = XLSX.utils.aoa_to_sheet(detailData);
