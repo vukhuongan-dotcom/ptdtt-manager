@@ -348,7 +348,11 @@ const SchedulePage = {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
                     Xuất ảnh
                 </button>
-                ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()">
+                ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.undo()" id="undo-schedule-btn" ${(this._undoStack && this._undoStack.length > 0) ? '' : 'disabled style="opacity:0.5;cursor:not-allowed"'}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                    Hoàn tác ${(this._undoStack && this._undoStack.length > 0) ? `(${this._undoStack.length})` : ''}
+                </button>
+                <button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     Sao chép tuần trước
                 </button>
@@ -497,7 +501,89 @@ const SchedulePage = {
         return rows;
     },
 
+    _undoStack: [],
+
+    pushUndoState() {
+        if (!this._undoStack) this._undoStack = [];
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        const schedule = this.getScheduleData(weekKey);
+        
+        const positions = {};
+        const selects = document.querySelectorAll('.schedule-select');
+        if (selects.length > 0) {
+            selects.forEach(sel => {
+                const pos = sel.dataset.pos;
+                const cell = sel.dataset.cell;
+                if (!positions[pos]) positions[pos] = {};
+                if (sel.value) positions[pos][cell] = parseInt(sel.value);
+            });
+        } else if (schedule?.positions) {
+            Object.assign(positions, JSON.parse(JSON.stringify(schedule.positions)));
+        }
+
+        const notesEl = document.getElementById('schedule-notes');
+        const notes = notesEl ? notesEl.value : (schedule?.notes || '');
+        const robotSurgery = schedule?.robotSurgery ? JSON.parse(JSON.stringify(schedule.robotSurgery)) : [];
+
+        const lastState = this._undoStack[this._undoStack.length - 1];
+        if (lastState && JSON.stringify(lastState.positions) === JSON.stringify(positions) && lastState.notes === notes) {
+            return;
+        }
+
+        this._undoStack.push({
+            weekKey,
+            positions,
+            notes,
+            robotSurgery
+        });
+        if (this._undoStack.length > 30) this._undoStack.shift();
+        this._updateUndoButton();
+    },
+
+    _updateUndoButton() {
+        const btn = document.getElementById('undo-schedule-btn');
+        if (!btn) return;
+        const count = (this._undoStack || []).length;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Hoàn tác ${count > 0 ? `(${count})` : ''}`;
+        if (count > 0) {
+            btn.removeAttribute('disabled');
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        } else {
+            btn.setAttribute('disabled', 'true');
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        }
+    },
+
+    async undo() {
+        if (!this._undoStack || this._undoStack.length === 0) {
+            Toast.info('Không có thao tác nào để hoàn tác.');
+            return;
+        }
+
+        const state = this._undoStack.pop();
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+
+        const saved = await this._upsertSchedule(weekKey, dates, {
+            positions: state.positions,
+            notes: state.notes,
+            robotSurgery: state.robotSurgery
+        });
+
+        if (!saved?.ok) {
+            Toast.error('Lỗi khi hoàn tác lịch phân công.');
+            return;
+        }
+
+        App.renderCurrentPage();
+        Toast.info('Đã hoàn tác thao tác vừa rồi!', 'Hoàn tác');
+    },
+
     onCellChange(el) {
+        this.pushUndoState();
         const pos = el.dataset.pos;
         const cell = el.dataset.cell;
 
@@ -727,6 +813,8 @@ const SchedulePage = {
         });
         if (!confirmed) return;
 
+        this.pushUndoState();
+
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
 
@@ -895,6 +983,8 @@ const SchedulePage = {
         });
         if (!confirmed) return;
 
+        this.pushUndoState();
+
         // Copy data directly in store
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -902,18 +992,49 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
-        if (weekKey >= '2026-10-26' && prevKey < '2026-10-26') {
-            if (!copiedPositions.pkK001) copiedPositions.pkK001 = {};
-            delete copiedPositions.pkK001['T4_0'];
-            delete copiedPositions.pkK001['T4_1'];
-            copiedPositions.pkK001['T6_0'] = 7; // BS Phú
-            copiedPositions.pkK001['T6_1'] = 7; // BS Phú
-            if (!copiedPositions.pkB020) copiedPositions.pkB020 = {};
-            copiedPositions.pkB020['T2_0'] = 8; // BS Quy
-            copiedPositions.pkB020['T2_1'] = 8; // BS Quy
+        // Bảo vệ các vị trí Trực khoa cố định & Lịch mổ T7 từ tuần 2026-08-03 không bị ghi đè
+        if (weekKey >= '2026-08-03') {
             if (!copiedPositions.trucKhoa) copiedPositions.trucKhoa = {};
-            copiedPositions.trucKhoa['T5_0'] = 7; // BS Phú
-            copiedPositions.trucKhoa['T6_0'] = 8; // BS Quy
+            // Trưởng kíp Trực khoa (Slot 0): Tuấn - M.Đức - Nguyện - Quy - V.Phú
+            copiedPositions.trucKhoa['T2_0'] = 4; // Tuấn
+            copiedPositions.trucKhoa['T3_0'] = 9; // M.Đức
+            copiedPositions.trucKhoa['T4_0'] = 6; // Nguyện
+            copiedPositions.trucKhoa['T5_0'] = 8; // Quy
+            copiedPositions.trucKhoa['T6_0'] = 7; // V.Phú
+
+            // Vị trí BS thứ 3 (Slot 2): Khôi - Kiệt - Phương - Luân - Phú
+            copiedPositions.trucKhoa['T2_2'] = 46; // Khôi
+            copiedPositions.trucKhoa['T3_2'] = 44; // Kiệt
+            copiedPositions.trucKhoa['T4_2'] = 16; // Phương
+            copiedPositions.trucKhoa['T5_2'] = 45; // Luân
+            copiedPositions.trucKhoa['T6_2'] = 43; // Phú
+
+            // Vị trí BS thứ 4 (Slot 3): Thành - Tú - Sang
+            copiedPositions.trucKhoa['T2_3'] = 48; // Thành
+            copiedPositions.trucKhoa['T3_3'] = 50; // Tú
+            copiedPositions.trucKhoa['T4_3'] = 47; // Sang
+
+            // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
+            if (!copiedPositions.mo) copiedPositions.mo = {};
+            const monday = new Date((weekKey || '2026-08-03') + 'T00:00:00');
+            const baseMonday = new Date('2026-08-03T00:00:00');
+            const diffWeeks = Math.round((monday - baseMonday) / (7 * 24 * 3600 * 1000));
+            const isKip1 = (Math.abs(diffWeeks) % 2 === 0);
+
+            // Clear previous T7 slots
+            Object.keys(copiedPositions.mo).forEach(k => {
+                if (k.startsWith('T7_')) delete copiedPositions.mo[k];
+            });
+
+            if (isKip1) {
+                copiedPositions.mo['T7_1'] = 46; // Khôi
+                copiedPositions.mo['T7_2'] = 45; // Luân
+                copiedPositions.mo['T7_3'] = 48; // Thành
+            } else {
+                copiedPositions.mo['T7_1'] = 44; // Kiệt
+                copiedPositions.mo['T7_2'] = 43; // Phú
+                copiedPositions.mo['T7_3'] = 47; // Sang
+            }
         }
 
         const saved = await this._upsertSchedule(weekKey, dates, { positions: copiedPositions, notes: copiedNotes, robotSurgery: copiedRobot });

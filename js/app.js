@@ -380,6 +380,19 @@ const App = {
                 this.navigate(page);
             });
         });
+
+        // Global shortcut Ctrl+Z / Cmd+Z for schedule undo
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                if (App.currentPage === 'schedule') {
+                    const tag = (document.activeElement?.tagName || '').toLowerCase();
+                    if (tag !== 'input' && tag !== 'textarea') {
+                        e.preventDefault();
+                        SchedulePage.undo();
+                    }
+                }
+            }
+        });
     },
 
     bindModal() {
