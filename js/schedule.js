@@ -90,6 +90,26 @@ const SchedulePage = {
         }
         // Quy tắc phân công Học viên cố định (bắt đầu từ tuần 2026-08-03)
         if (weekKey >= '2026-08-03') {
+            // Trực BCN Khoa cố định: An (T2, T5, CN), Hữu (T3, T4, T6, T7)
+            if (posKey === 'trucBCN') {
+                if (cellKey === 'T2_0') return 2; // BS Khương An
+                if (cellKey === 'T3_0') return 1; // BS Hữu
+                if (cellKey === 'T4_0') return 1; // BS Hữu
+                if (cellKey === 'T5_0') return 2; // BS Khương An
+                if (cellKey === 'T6_0') return 1; // BS Hữu
+                if (cellKey === 'T7_0') return 1; // BS Hữu
+                if (cellKey === 'CN_0') return 2; // BS Khương An
+            }
+
+            // Mổ chính ca đầu tiên mỗi ngày (Slot 0 T2-T6)
+            if (posKey === 'mo' && !cellKey.startsWith('T7_') && cellKey.endsWith('_0')) {
+                if (cellKey === 'T2_0') return 1; // BS Hữu
+                if (cellKey === 'T3_0') return 1; // BS Hữu
+                if (cellKey === 'T4_0') return 4; // BS Tuấn
+                if (cellKey === 'T5_0') return 2; // BS Khương An
+                if (cellKey === 'T6_0') return 6; // BS Nguyện
+            }
+
             if (posKey === 'trucKhoa') {
                 // Vị trí BS thứ 1 (Slot 0 - Trưởng kíp trực khoa): Tuấn - M.Đức - Nguyện - Quy - V. Phú (T2 -> T6)
                 if (cellKey === 'T2_0') return 4; // BS Tuấn
@@ -862,6 +882,10 @@ const SchedulePage = {
 
         const clearedPositions = {};
         if (weekKey >= '2026-08-03') {
+            clearedPositions.trucBCN = {
+                T2_0: 2, T3_0: 1, T4_0: 1, T5_0: 2, T6_0: 1, T7_0: 1, CN_0: 2
+            };
+
             clearedPositions.trucKhoa = {
                 T2_0: 4, T3_0: 9, T4_0: 6, T5_0: 8, T6_0: 7,
                 T2_2: 46, T3_2: 44, T4_2: 16, T5_2: 45, T6_2: 43,
@@ -887,10 +911,9 @@ const SchedulePage = {
             const diffWeeks = Math.round((monday - baseMonday) / (7 * 24 * 3600 * 1000));
             const isKip1 = (Math.abs(diffWeeks) % 2 === 0);
 
-            clearedPositions.mo = isKip1 ? {
-                T7_1: 46, T7_2: 45, T7_3: 48
-            } : {
-                T7_1: 44, T7_2: 43, T7_3: 47
+            clearedPositions.mo = {
+                T2_0: 1, T3_0: 1, T4_0: 4, T5_0: 2, T6_0: 6,
+                ...(isKip1 ? { T7_1: 46, T7_2: 45, T7_3: 48 } : { T7_1: 44, T7_2: 43, T7_3: 47 })
             };
         }
 
@@ -1068,8 +1091,13 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
-        // Bảo vệ các vị trí Trực khoa cố định, Siêu âm sáng & Lịch mổ T7 từ tuần 2026-08-03 không bị ghi đè
+        // Bảo vệ các vị trí cố định từ tuần 2026-08-03 không bị ghi đè
         if (weekKey >= '2026-08-03') {
+            // Trực BCN Khoa cố định: An (T2, T5, CN), Hữu (T3, T4, T6, T7)
+            copiedPositions.trucBCN = {
+                'T2_0': 2, 'T3_0': 1, 'T4_0': 1, 'T5_0': 2, 'T6_0': 1, 'T7_0': 1, 'CN_0': 2
+            };
+
             if (!copiedPositions.trucKhoa) copiedPositions.trucKhoa = {};
             // Trưởng kíp Trực khoa (Slot 0): Tuấn - M.Đức - Nguyện - Quy - V.Phú
             copiedPositions.trucKhoa['T2_0'] = 4; // Tuấn
@@ -1091,12 +1119,9 @@ const SchedulePage = {
             copiedPositions.trucKhoa['T4_3'] = 47; // Sang
 
             // Siêu âm sáng (đồng bộ với Trưởng kíp)
-            if (!copiedPositions.sieuAm) copiedPositions.sieuAm = {};
-            copiedPositions.sieuAm['T2_0'] = 4;
-            copiedPositions.sieuAm['T3_0'] = 9;
-            copiedPositions.sieuAm['T4_0'] = 6;
-            copiedPositions.sieuAm['T5_0'] = 8;
-            copiedPositions.sieuAm['T6_0'] = 7;
+            copiedPositions.sieuAm = {
+                'T2_0': 4, 'T3_0': 9, 'T4_0': 6, 'T5_0': 8, 'T6_0': 7
+            };
 
             // Lịch phòng khám cố định (xóa hoàn toàn dữ liệu phòng khám từ tuần cũ để không bị ghi đè)
             copiedPositions.pkB023 = {
@@ -1115,8 +1140,15 @@ const SchedulePage = {
                 'T6_0': 8, 'T6_1': 8  // BS Quy
             };
 
-            // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
+            // Mổ chính ca đầu tiên mỗi ngày (Slot 0 T2-T6)
             if (!copiedPositions.mo) copiedPositions.mo = {};
+            copiedPositions.mo['T2_0'] = 1; // Hữu
+            copiedPositions.mo['T3_0'] = 1; // Hữu
+            copiedPositions.mo['T4_0'] = 4; // Tuấn
+            copiedPositions.mo['T5_0'] = 2; // An
+            copiedPositions.mo['T6_0'] = 6; // Nguyện
+
+            // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
             const monday = new Date((weekKey || '2026-08-03') + 'T00:00:00');
             const baseMonday = new Date('2026-08-03T00:00:00');
             const diffWeeks = Math.round((monday - baseMonday) / (7 * 24 * 3600 * 1000));
