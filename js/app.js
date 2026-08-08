@@ -492,9 +492,12 @@ const App = {
 
     // ===== U2: Dark Mode Toggle =====
     _initTheme() {
-        // Theme đã được set bởi anti-flash script trong <head>.
-        // Hàm này chỉ đồng bộ lại UI toggle và meta theme-color.
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const saved = localStorage.getItem('ptdtt_theme');
+        let current = saved;
+        if (!current) {
+            current = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', current);
+        }
         this._updateThemeToggleUI(current);
         this._updateMetaThemeColor(current);
     },
