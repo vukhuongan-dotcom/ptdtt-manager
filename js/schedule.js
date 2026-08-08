@@ -1098,26 +1098,22 @@ const SchedulePage = {
             copiedPositions.sieuAm['T5_0'] = 8;
             copiedPositions.sieuAm['T6_0'] = 7;
 
-            // Phòng khám B023 cố định (khám cả 2 buổi Sáng - Chiều)
-            if (!copiedPositions.pkB023) copiedPositions.pkB023 = {};
-            copiedPositions.pkB023['T2_0'] = 5; copiedPositions.pkB023['T2_1'] = 5; // BS Hậu
-            copiedPositions.pkB023['T3_0'] = 1; copiedPositions.pkB023['T3_1'] = 1; // BS Hữu
-            copiedPositions.pkB023['T4_0'] = 4; copiedPositions.pkB023['T4_1'] = 4; // BS Tuấn
-            copiedPositions.pkB023['T5_0'] = 2; copiedPositions.pkB023['T5_1'] = 2; // BS Khương An
-            copiedPositions.pkB023['T6_0'] = 6; copiedPositions.pkB023['T6_1'] = 6; // BS Nguyện
-
-            // Phòng khám B020 cố định
-            if (!copiedPositions.pkB020) copiedPositions.pkB020 = {};
-            copiedPositions.pkB020['T2_0'] = 7; // BS Vĩnh Phú
-            copiedPositions.pkB020['T2_1'] = 7;
-            copiedPositions.pkB020['T3_0'] = 2; // BS Khương An
-
-            // Phòng khám K001 cố định
-            if (!copiedPositions.pkK001) copiedPositions.pkK001 = {};
-            copiedPositions.pkK001['T2_0'] = 2; // BS Khương An
-            copiedPositions.pkK001['T2_1'] = 9; // BS Minh Đức
-            copiedPositions.pkK001['T6_0'] = 8; // BS Quy
-            copiedPositions.pkK001['T6_1'] = 8;
+            // Lịch phòng khám cố định (xóa hoàn toàn dữ liệu phòng khám từ tuần cũ để không bị ghi đè)
+            copiedPositions.pkB023 = {
+                'T2_0': 5, 'T2_1': 5, // BS Hậu
+                'T3_0': 1, 'T3_1': 1, // BS Hữu
+                'T4_0': 4, 'T4_1': 4, // BS Tuấn
+                'T5_0': 2, 'T5_1': 2, // BS Khương An
+                'T6_0': 6, 'T6_1': 6  // BS Nguyện
+            };
+            copiedPositions.pkB020 = {
+                'T2_0': 7, 'T2_1': 7, // BS Vĩnh Phú
+                'T3_0': 2            // BS Khương An
+            };
+            copiedPositions.pkK001 = {
+                'T2_0': 2, 'T2_1': 9, // BS Khương An & BS Minh Đức
+                'T6_0': 8, 'T6_1': 8  // BS Quy
+            };
 
             // Lịch mổ Thứ 7 (T7): chừa trống vị trí đầu tiên, luân phiên Kíp 1 & Kíp 2
             if (!copiedPositions.mo) copiedPositions.mo = {};
