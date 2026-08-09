@@ -400,9 +400,13 @@ const SchedulePage = {
                 </p>
             </div>
             <div class="flex items-center gap-8">
+                <button class="btn btn-secondary" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                    Xuất lịch mổ robot
+                </button>
                 <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                    Xuất ảnh
+                    Xuất lịch tuần
                 </button>
                 ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.undo()" id="undo-schedule-btn" ${(this._undoStack && this._undoStack.length > 0) ? '' : 'disabled style="opacity:0.5;cursor:not-allowed"'}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
@@ -940,15 +944,9 @@ const SchedulePage = {
         <div class="card robot-surgery-card robot-surgery-card--mt">
             <div class="flex justify-between items-center robot-card-header">
                 <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
-                <div class="flex items-center gap-8">
-                    <button class="btn btn-secondary btn-sm" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                        Xuất ảnh Robot
-                    </button>
-                    ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="SchedulePage.addRobotEntry()">
-                        ${Utils.plusIcon()} Thêm ca
-                    </button>` : ''}
-                </div>
+                ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="SchedulePage.addRobotEntry()">
+                    ${Utils.plusIcon()} Thêm ca
+                </button>` : ''}
             </div>
             <table class="schedule-table robot-table">
                 <thead>
@@ -1423,7 +1421,7 @@ const SchedulePage = {
         } finally {
             window.confirm = origConfirm;
             window.alert = origAlert;
-            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh`; }
+            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất lịch tuần`; }
         }
     },
 
@@ -1555,7 +1553,7 @@ const SchedulePage = {
         } finally {
             window.confirm = origConfirm;
             window.alert = origAlert;
-            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh Robot`; }
+            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất lịch mổ robot`; }
         }
     },
 
