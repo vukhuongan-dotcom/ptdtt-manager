@@ -940,9 +940,15 @@ const SchedulePage = {
         <div class="card robot-surgery-card robot-surgery-card--mt">
             <div class="flex justify-between items-center robot-card-header">
                 <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
-                ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="SchedulePage.addRobotEntry()">
-                    ${Utils.plusIcon()} Thêm ca
-                </button>` : ''}
+                <div class="flex items-center gap-8">
+                    <button class="btn btn-secondary btn-sm" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                        Xuất ảnh Robot
+                    </button>
+                    ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="SchedulePage.addRobotEntry()">
+                        ${Utils.plusIcon()} Thêm ca
+                    </button>` : ''}
+                </div>
             </div>
             <table class="schedule-table robot-table">
                 <thead>
@@ -1418,6 +1424,138 @@ const SchedulePage = {
             window.confirm = origConfirm;
             window.alert = origAlert;
             if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh`; }
+        }
+    },
+
+    async exportRobotImage() {
+        const btn = document.getElementById('export-robot-btn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xuất...'; }
+
+        const origConfirm = window.confirm;
+        const origAlert = window.alert;
+        window.confirm = () => false;
+
+        try {
+            const dates = this.getWeekDates(this.weekOffset);
+            const weekKey = this.getWeekKey(dates);
+            const schedule = this.getScheduleData(weekKey);
+            const staff = Store.getAll('staff');
+            const robotEntries = schedule?.robotSurgery || [];
+
+            if (robotEntries.length === 0) {
+                Toast.warning('Chưa có lịch mổ Robot tuần này để xuất.');
+                return;
+            }
+
+            const dateRange = `${dates[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} – ${dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+
+            const robotRows = robotEntries.map(entry => {
+                const dayDate = new Date(entry.day);
+                const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
+                const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
+                const dayNum = dayDate.getDate();
+                const dayMonth = dayDate.getMonth() + 1;
+                const docs = [0, 1, 2].map(slot => {
+                    if (entry.doctors?.[slot]) {
+                        const member = staff.find(s => s.id === parseInt(entry.doctors[slot]));
+                        return member ? (this.getShortName(member.id) || member.name.split(' ').pop()) : '—';
+                    }
+                    return '—';
+                });
+                return `<tr>
+                    <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155">${dayLabel}, ${dayNum}/${dayMonth}</td>
+                    <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">Ca ${entry.session}</td>
+                    <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[0]}</td>
+                    <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[1]}</td>
+                    <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[2]}</td>
+                </tr>`;
+            }).join('');
+
+            const robotHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
+            <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
+            </head><body>
+            <div id="capture" style="padding:28px;width:800px;background:#fff">
+                <div style="text-align:center;margin-bottom:18px">
+                    <h2 style="font-size:20px;color:#1e293b">🤖 LỊCH PHỤ MỔ ROBOT</h2>
+                    <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
+                    <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    <thead><tr>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 12px;text-align:left">Ngày mổ</th>
+                        <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:center;width:70px">Ca</th>
+                        <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 1</th>
+                        <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 2</th>
+                        <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 3</th>
+                    </tr></thead>
+                    <tbody>${robotRows}</tbody>
+                </table>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:10px;color:#94a3b8">
+                    <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
+                    <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}</span>
+                </div>
+            </div></body></html>`;
+
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:900px;height:1500px;border:none;opacity:0;pointer-events:none';
+            document.body.appendChild(iframe);
+            await new Promise(resolve => { iframe.onload = resolve; iframe.srcdoc = robotHtml; });
+            await new Promise(r => setTimeout(r, 500));
+
+            await Utils.loadScript('html2canvas');
+            const ROBOT_SCALE = Math.max(Math.ceil(2560 / 800), 4);
+            const robotCanvas = await html2canvas(iframe.contentDocument.getElementById('capture'), {
+                scale: ROBOT_SCALE,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                letterRendering: true,
+                allowTaint: false,
+                imageTimeout: 15000,
+                windowHeight: iframe.contentDocument.getElementById('capture').scrollHeight + 100
+            });
+            document.body.removeChild(iframe);
+
+            this._addWatermark(robotCanvas);
+
+            const pad = n => String(n).padStart(2, '0');
+            const d0 = dates[0], d6 = dates[6];
+            const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth() + 1)}`;
+            const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth() + 1)}-${d6.getFullYear()}`;
+            const robotFilename = `Lich_mo_robot_${startFmt}_${endFmt}.png`;
+
+            const dataUrl = robotCanvas.toDataURL('image/png');
+            const dlHeaders = { 'Content-Type': 'application/json' };
+            const dlToken = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+            if (dlToken) dlHeaders['Authorization'] = 'Bearer ' + dlToken;
+            const resp = await fetch('/api/download-image', {
+                method: 'POST',
+                headers: dlHeaders,
+                body: JSON.stringify({ image: dataUrl, filename: robotFilename })
+            });
+            if (resp.ok) {
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = robotFilename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                await new Promise(r => setTimeout(r, 500));
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                Toast.success('Đã xuất ảnh lịch mổ Robot thành công!');
+            } else {
+                throw new Error('Server download failed: ' + resp.status);
+            }
+        } catch (err) {
+            console.error('Export Robot Image error:', err);
+            Toast.error('Lỗi khi xuất ảnh lịch mổ Robot.');
+        } finally {
+            window.confirm = origConfirm;
+            window.alert = origAlert;
+            if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg> Xuất ảnh Robot`; }
         }
     },
 
