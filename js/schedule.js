@@ -493,6 +493,8 @@ const SchedulePage = {
                 : `<p class="schedule-notes-readonly">${schedule?.notes ? schedule.notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Không có ghi chú'}</p>`
             }
         </div>
+
+        ${this.renderRobotSection(schedule, dates, isAdmin)}
         `;
     },
 
