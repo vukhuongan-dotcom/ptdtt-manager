@@ -1334,85 +1334,10 @@ const SchedulePage = {
             const startFmt = `${pad(d0.getDate())}-${pad(d0.getMonth() + 1)}`;
             const endFmt = `${pad(d6.getDate())}-${pad(d6.getMonth() + 1)}-${d6.getFullYear()}`;
 
-            // 1) Download schedule image
+            // Download schedule image only
             const scheduleFilename = `Phan_cong_tuan_${startFmt}_${endFmt}.png`;
             await downloadImage(canvas, scheduleFilename);
-
-            // 2) Build & download robot surgery image
-            const robotEntries = schedule?.robotSurgery || [];
-            if (robotEntries.length > 0) {
-                const robotRows = robotEntries.map(entry => {
-                    const dayDate = new Date(entry.day);
-                    const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
-                    const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
-                    const dayNum = dayDate.getDate();
-                    const dayMonth = dayDate.getMonth() + 1;
-                    const docs = [0, 1, 2].map(slot => {
-                        if (entry.doctors?.[slot]) {
-                            const member = staff.find(s => s.id === parseInt(entry.doctors[slot]));
-                            return member ? (this.getShortName(member.id) || member.name.split(' ').pop()) : '—';
-                        }
-                        return '—';
-                    });
-                    return `<tr>
-                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155">${dayLabel}, ${dayNum}/${dayMonth}</td>
-                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">Ca ${entry.session}</td>
-                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[0]}</td>
-                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[1]}</td>
-                        <td style="border:1px solid #cbd5e1;padding:8px 12px;font-size:12px;color:#334155;text-align:center">${docs[2]}</td>
-                    </tr>`;
-                }).join('');
-
-                const robotHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
-                <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;font-family:Arial,Helvetica,sans-serif}</style>
-                </head><body>
-                <div id="capture" style="padding:28px;width:800px;background:#fff">
-                    <div style="text-align:center;margin-bottom:18px">
-                        <h2 style="font-size:20px;color:#1e293b">🤖 LỊCH PHỤ MỔ ROBOT</h2>
-                        <p style="margin:6px 0 0;font-size:14px;color:#64748b">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</p>
-                        <p style="margin:3px 0 0;font-size:14px;color:#334155;font-weight:600">${dateRange}</p>
-                    </div>
-                    <table style="width:100%;border-collapse:collapse;font-size:12px">
-                        <thead><tr>
-                            <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 12px;text-align:left">Ngày mổ</th>
-                            <th style="border:1.5px solid #94a3b8;background:#1e293b;color:#fff;padding:10px 8px;text-align:center;width:70px">Ca</th>
-                            <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 1</th>
-                            <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 2</th>
-                            <th style="border:1.5px solid #94a3b8;background:#e2e8f0;padding:10px 8px;text-align:center">BS phụ 3</th>
-                        </tr></thead>
-                        <tbody>${robotRows}</tbody>
-                    </table>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:10px;color:#94a3b8">
-                        <span>Xuất bởi: ${Auth.getSession()?.name || Auth.getSession()?.username || 'Hệ thống'}</span>
-                        <span>Xuất lúc ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}</span>
-                    </div>
-                </div></body></html>`;
-
-                const iframe2 = document.createElement('iframe');
-                iframe2.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:900px;height:1500px;border:none;opacity:0;pointer-events:none';
-                document.body.appendChild(iframe2);
-                await new Promise(resolve => { iframe2.onload = resolve; iframe2.srcdoc = robotHtml; });
-                await new Promise(r => setTimeout(r, 500));
-
-                const ROBOT_SCALE = Math.max(Math.ceil(2560 / 800), 4); // ≥ 3200px (2K+) cho robot template 800px
-                const robotCanvas = await html2canvas(iframe2.contentDocument.getElementById('capture'), {
-                    scale: ROBOT_SCALE,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    letterRendering: true,
-                    allowTaint: false,
-                    imageTimeout: 15000,
-                    windowHeight: iframe2.contentDocument.getElementById('capture').scrollHeight + 100
-                });
-                document.body.removeChild(iframe2);
-
-                // Add watermark to robot surgery canvas
-                this._addWatermark(robotCanvas);
-
-                const robotFilename = `Lich_mo_robot_${startFmt}_${endFmt}.png`;
-                await downloadImage(robotCanvas, robotFilename);
-            }
+            Toast.success('Đã xuất ảnh lịch phân công tuần thành công!');
 
         } catch (err) {
             console.error('Export error:', err);
