@@ -938,92 +938,179 @@ const SchedulePage = {
     // ===== ROBOT SURGERY SECTION =====
     renderRobotSection(schedule, dates, isAdmin) {
         const robotEntries = schedule?.robotSurgery || [];
-        const bsOptions = this.getStaffOptions('bs');
 
         return `
         <div class="card robot-surgery-card robot-surgery-card--mt">
-            <div class="flex justify-between items-center robot-card-header">
+            <div class="flex justify-between items-center robot-card-header mb-12">
                 <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
-                ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="SchedulePage.addRobotEntry()">
-                    ${Utils.plusIcon()} Thêm ca
+                ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="SchedulePage.openRobotForm()">
+                    ${Utils.plusIcon()} Thêm ca mổ Robot
                 </button>` : ''}
             </div>
             <table class="schedule-table robot-table">
                 <thead>
                     <tr>
                         <th class="robot-th-day">Ngày mổ</th>
-                        ${isAdmin ? '<th class="robot-th-session">Ca</th>' : ''}
+                        <th class="robot-th-session" style="text-align:center;width:80px">Ca</th>
                         <th>BS phụ 1</th>
                         <th>BS phụ 2</th>
                         <th>BS phụ 3</th>
-                        ${isAdmin ? '<th class="robot-th-action"></th>' : ''}
+                        ${isAdmin ? '<th class="robot-th-action" style="text-align:center;width:110px">Thao tác</th>' : ''}
                     </tr>
                 </thead>
                 <tbody id="robot-tbody">
                     ${robotEntries.length ? robotEntries.map((entry, idx) => {
-            if (isAdmin) {
-                return `<tr>
-                                <td>
-                                    <select class="schedule-select has-value" data-robot="day" data-idx="${idx}">
-                                        ${dates.map((d, i) => {
-                    const dStr = SchedulePage._localDateStr(d);
-                    const label = `${DAY_LABELS[i]}, ${d.getDate()}/${d.getMonth() + 1}`;
-                    return `<option value="${dStr}" ${entry.day === dStr ? 'selected' : ''}>${label}</option>`;
-                }).join('')}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="schedule-select has-value" data-robot="session" data-idx="${idx}">
-                                        <option value="1" ${entry.session == 1 ? 'selected' : ''}>Ca 1</option>
-                                        <option value="2" ${entry.session == 2 ? 'selected' : ''}>Ca 2</option>
-                                        <option value="3" ${entry.session == 3 ? 'selected' : ''}>Ca 3</option>
-                                    </select>
-                                </td>
-                                ${[0, 1, 2].map(slot => `<td>
-                                    <select class="schedule-select ${entry.doctors?.[slot] ? 'has-value' : ''}" data-robot="doc${slot}" data-idx="${idx}" onchange="SchedulePage.onCellChange(this)">
-                                        <option value="">—</option>
-                                        ${bsOptions.map(s => `<option value="${s.id}" ${entry.doctors?.[slot] == s.id ? 'selected' : ''}>${this.getShortName(s.id)}</option>`).join('')}
-                                    </select>
-                                </td>`).join('')}
-                                <td><button class="btn-icon" onclick="SchedulePage.removeRobotEntry(${idx})" title="Xoá">${Utils.deleteIcon()}</button></td>
-                            </tr>`;
-            } else {
-                const dayDate = new Date(entry.day);
-                const dayLabel = DAY_LABELS[dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day)] || entry.day;
-                const dayNum = dayDate.getDate();
-                const dayMonth = dayDate.getMonth() + 1;
-                return `<tr>
-                                <td>${dayLabel}, ${dayNum}/${dayMonth}</td>
-                                ${isAdmin ? `<td>Ca ${entry.session}</td>` : ''}
-                                ${[0, 1, 2].map(slot => `<td>${entry.doctors?.[slot] ? this.getShortName(entry.doctors[slot]) : '—'}</td>`).join('')}
-                            </tr>`;
-            }
-        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 4}" class="robot-empty-cell">Chưa có lịch mổ Robot tuần này</td></tr>`}
+                        const dayDate = new Date(entry.day + 'T00:00:00');
+                        const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
+                        const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
+                        const dayNum = String(dayDate.getDate()).padStart(2, '0');
+                        const dayMonth = String(dayDate.getMonth() + 1).padStart(2, '0');
+                        const dateFormatted = `${dayLabel}, ${dayNum}.${dayMonth}.${dayDate.getFullYear()}`;
+
+                        const doc0Name = entry.doctors?.[0] ? this.getShortName(entry.doctors[0]) : '—';
+                        const doc1Name = entry.doctors?.[1] ? this.getShortName(entry.doctors[1]) : '—';
+                        const doc2Name = entry.doctors?.[2] ? this.getShortName(entry.doctors[2]) : '—';
+
+                        return `<tr>
+                            <td><strong>${dateFormatted}</strong></td>
+                            <td style="text-align:center"><span class="badge badge-info">Ca ${entry.session}</span></td>
+                            <td>${doc0Name}</td>
+                            <td>${doc1Name}</td>
+                            <td>${doc2Name}</td>
+                            ${isAdmin ? `<td style="text-align:center">
+                                <div class="flex items-center justify-center gap-4">
+                                    <button class="btn-icon" onclick="SchedulePage.openRobotForm(${idx})" title="Chỉnh sửa ca mổ">${Utils.editIcon()}</button>
+                                    <button class="btn-icon text-danger" onclick="SchedulePage.removeRobotEntry(${idx})" title="Xoá ca mổ">${Utils.deleteIcon()}</button>
+                                </div>
+                            </td>` : ''}
+                        </tr>`;
+                    }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" class="robot-empty-cell" style="text-align:center;padding:24px;color:var(--text-secondary)">Chưa có lịch mổ Robot tuần này</td></tr>`}
                 </tbody>
             </table>
         </div>`;
     },
 
-    async addRobotEntry() {
+    openRobotForm(editIdx = null) {
         if (!this.canEditSchedule()) return;
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
         const schedule = this.getScheduleData(weekKey);
+        const robotEntries = schedule?.robotSurgery ? [...schedule.robotSurgery] : [];
 
-        const robotSurgery = schedule?.robotSurgery ? [...schedule.robotSurgery] : [];
-        robotSurgery.push({
+        const isEdit = editIdx !== null && editIdx >= 0 && editIdx < robotEntries.length;
+        const entry = isEdit ? robotEntries[editIdx] : {
             day: this._localDateStr(dates[0]),
             session: 1,
             doctors: [null, null, null]
-        });
+        };
 
-        const saved = await this._saveRobotToSchedule(weekKey, dates, robotSurgery);
-        if (!saved?.ok) return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch Robot.');
+        const bsOptions = this.getStaffOptions('bs');
+
+        const dayOptionsHtml = dates.map((d, i) => {
+            const dStr = this._localDateStr(d);
+            const label = `${DAY_LABELS[i]}, ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth() + 1).padStart(2,'0')}.${d.getFullYear()}`;
+            return `<option value="${dStr}" ${entry.day === dStr ? 'selected' : ''}>${label}</option>`;
+        }).join('');
+
+        const sessionOptionsHtml = [1, 2, 3].map(sess => {
+            return `<option value="${sess}" ${entry.session == sess ? 'selected' : ''}>Ca ${sess}</option>`;
+        }).join('');
+
+        const renderDocSelect = (slotIndex, labelText) => {
+            const currentDocId = entry.doctors?.[slotIndex] || '';
+            return `
+            <div class="form-group mb-12">
+                <label class="form-label" style="font-weight:600;font-size:0.85rem">${labelText}</label>
+                <select class="form-select" id="robot-doc-${slotIndex}">
+                    <option value="">— Chọn bác sĩ phụ mổ —</option>
+                    ${bsOptions.map(s => `<option value="${s.id}" ${currentDocId == s.id ? 'selected' : ''}>${this.getShortName(s.id)} — ${s.name}</option>`).join('')}
+                </select>
+            </div>`;
+        };
+
+        const formHtml = `
+            <form id="robot-form" onsubmit="SchedulePage.saveRobotForm(event, ${isEdit ? editIdx : 'null'})">
+                <div class="grid grid-2 gap-12 mb-12">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:600">📅 Ngày mổ</label>
+                        <select class="form-select" id="robot-day-select" required>
+                            ${dayOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:600">⏰ Ca mổ</label>
+                        <select class="form-select" id="robot-session-select" required>
+                            ${sessionOptionsHtml}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card p-12 bg-subtle mb-16" style="border:1px solid var(--border-color);border-radius:10px">
+                    <div class="form-section-title mb-10" style="font-weight:700;font-size:0.88rem;color:var(--primary-color)">👨‍⚕️ Ê-kíp Bác sĩ Phụ mổ Robot</div>
+                    ${renderDocSelect(0, 'Bác sĩ phụ 1')}
+                    ${renderDocSelect(1, 'Bác sĩ phụ 2')}
+                    ${renderDocSelect(2, 'Bác sĩ phụ 3')}
+                </div>
+
+                <div class="modal-footer flex justify-end gap-8">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 ${isEdit ? 'Cập nhật ca mổ Robot' : 'Lưu ca mổ Robot'}
+                    </button>
+                </div>
+            </form>
+        `;
+
+        Modal.open(isEdit ? '🤖 Chỉnh sửa ca mổ Robot' : '🤖 Thêm ca mổ Robot mới', formHtml);
+    },
+
+    async saveRobotForm(e, editIdx = null) {
+        e.preventDefault();
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        const schedule = this.getScheduleData(weekKey);
+        const robotEntries = schedule?.robotSurgery ? [...schedule.robotSurgery] : [];
+
+        const day = document.getElementById('robot-day-select')?.value;
+        const session = parseInt(document.getElementById('robot-session-select')?.value || '1');
+        const doc0 = document.getElementById('robot-doc-0')?.value ? parseInt(document.getElementById('robot-doc-0').value) : null;
+        const doc1 = document.getElementById('robot-doc-1')?.value ? parseInt(document.getElementById('robot-doc-1').value) : null;
+        const doc2 = document.getElementById('robot-doc-2')?.value ? parseInt(document.getElementById('robot-doc-2').value) : null;
+
+        const newEntry = {
+            day,
+            session,
+            doctors: [doc0, doc1, doc2]
+        };
+
+        if (editIdx !== null && editIdx >= 0 && editIdx < robotEntries.length) {
+            robotEntries[editIdx] = newEntry;
+        } else {
+            robotEntries.push(newEntry);
+        }
+
+        const saved = await this._saveRobotToSchedule(weekKey, dates, robotEntries);
+        if (!saved?.ok) {
+            return Toast.error(saved?.errors?.[0]?.message || 'Lỗi khi lưu ca mổ Robot.');
+        }
+
+        Modal.close();
+        Toast.success(editIdx !== null ? 'Đã cập nhật ca mổ Robot!' : 'Đã thêm ca mổ Robot mới!', 'Lịch Robot');
         App.renderCurrentPage();
     },
 
     async removeRobotEntry(idx) {
         if (!this.canEditSchedule()) return;
+        const confirmed = await Confirm.show({
+            title: 'Xoá ca mổ Robot',
+            message: 'Bạn có chắc chắn muốn xoá ca mổ Robot này?',
+            icon: '⚠️',
+            type: 'warning',
+            confirmText: 'Xoá ca mổ',
+            cancelText: 'Huỷ'
+        });
+        if (!confirmed) return;
+
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
         const schedule = this.getScheduleData(weekKey);
@@ -1034,6 +1121,7 @@ const SchedulePage = {
 
         const saved = await this._saveRobotToSchedule(weekKey, dates, robotSurgery);
         if (!saved?.ok) return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch Robot.');
+        Toast.info('Đã xoá ca mổ Robot.', 'Lịch Robot');
         App.renderCurrentPage();
     },
 
@@ -1042,22 +1130,10 @@ const SchedulePage = {
     },
 
     _collectRobotData() {
-        const entries = [];
-        const rows = document.querySelectorAll('#robot-tbody tr');
-        rows.forEach((row, idx) => {
-            const dayEl = row.querySelector('[data-robot="day"]');
-            const sessionEl = row.querySelector('[data-robot="session"]');
-            if (!dayEl || !sessionEl) return;
-            entries.push({
-                day: dayEl.value,
-                session: parseInt(sessionEl.value),
-                doctors: [0, 1, 2].map(slot => {
-                    const el = row.querySelector(`[data-robot="doc${slot}"]`);
-                    return el && el.value ? parseInt(el.value) : null;
-                })
-            });
-        });
-        return entries;
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        const schedule = this.getScheduleData(weekKey);
+        return schedule?.robotSurgery ? JSON.parse(JSON.stringify(schedule.robotSurgery)) : [];
     },
 
     async copyFromPrevWeek() {
