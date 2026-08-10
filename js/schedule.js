@@ -38,8 +38,8 @@ const SchedulePage = {
         }
 
         const currentWeekKey = this.getWeekKey(this.getWeekDates(0));
-        // Khóa không cho sửa các tuần đã kết thúc và tuần hiện tại (weekKey <= currentWeekKey) ngoại trừ Super Admin
-        if (weekKey <= currentWeekKey) {
+        // Chỉ khóa không cho sửa các tuần đã kết thúc trong quá khứ (weekKey < currentWeekKey) ngoại trừ Super Admin
+        if (weekKey < currentWeekKey) {
             return false;
         }
 
@@ -53,7 +53,7 @@ const SchedulePage = {
             weekKey = this.getWeekKey(dates);
         }
         const currentWeekKey = this.getWeekKey(this.getWeekDates(0));
-        return weekKey <= currentWeekKey;
+        return weekKey < currentWeekKey;
     },
 
     // Timezone-safe YYYY-MM-DD formatter (avoids UTC shift from toISOString)
