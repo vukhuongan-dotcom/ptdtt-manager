@@ -19,7 +19,7 @@ const SchedulePage = {
     weekOffset: 0,
 
     // Staff with schedule editing permission (in addition to admins)
-    _scheduleEditors: [12], // staffId 12 = Phạm Thị Tuyết Minh
+    _scheduleEditors: [3, 12], // staffId 3 = Nguyễn Thị Ngọc Thùy (ĐD Trưởng), 12 = Phạm Thị Tuyết Minh
 
     canEditSchedule(targetWeekKey) {
         const session = Auth.getSession();
