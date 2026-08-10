@@ -1097,6 +1097,12 @@ const SchedulePage = {
         const copiedNotes = prevSchedule.notes || '';
         const copiedRobot = prevSchedule.robotSurgery ? JSON.parse(JSON.stringify(prevSchedule.robotSurgery)) : [];
 
+        // Không sao chép lịch trực Điều dưỡng & Hộ lý từ tuần 2026-08-10
+        if (weekKey >= '2026-08-10') {
+            copiedPositions.trucDD = {};
+            copiedPositions.trucHL = {};
+        }
+
         // Bảo vệ các vị trí cố định từ tuần 2026-08-03 không bị ghi đè
         if (weekKey >= '2026-08-03') {
             // Trực BCN Khoa cố định: An (T2, T5, CN), Hữu (T3, T4, T6, T7)
