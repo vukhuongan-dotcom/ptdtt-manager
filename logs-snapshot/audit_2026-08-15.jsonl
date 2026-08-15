@@ -1,0 +1,13 @@
+{"ts": "2026-08-15T08:16:07.963551", "user": "nhdtram", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T08:19:55.836798", "user": "nhdtram", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 132, "nextId": null}}
+{"ts": "2026-08-15T11:01:35.976737", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T11:01:59.360794", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T11:39:41.364114", "user": "lmthanh", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "42.117.125.157", "remaining": 4}}
+{"ts": "2026-08-15T11:39:44.796430", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T13:55:39.330406", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T13:56:04.868699", "user": "ndtphu", "action": "collection.put.surgeriesTrash", "ip": "127.0.0.1", "details": {"count": 4, "nextId": null, "added": 0, "removed": 1, "changed": 0, "diff": {"added": [], "removed": [{"id": 1786064575311, "label": "id=1786064575311", "record": {"admissionId": "26048910 ", "approachType": "noisoi", "assistSurgeon1": 11, "birthYear": 1943, "createdBy": {"at": "2026-08-07T01:02:55.311Z", "name": "Hoàng Bá Sang", "username": "hbsang"}, "date": "2026-08-10", "deletedAt": "2026-08-08T04:39:21.805Z", "deletedBy": {"name": "Vũ Khương An", "username": "vkan"}, "diagnosis": "K đại tràng sigma và theo dõi u đại tràng góc gan", "duration": 180, "id": 1786064575311, "isFirstCase": false, "mainSurgeon": 2, "method": "Phẫu thuật nội soi cắt đại tràng sigma +/- đại tràng góc gan", "notes": "nội soi đại tràng trong mổ", "patientName": "Nguyễn Văn Răng", "surgeryType": "chuongtrinh", "updatedBy": {"at": "2026-08-07T01:06:21.807Z", "name": "Hoàng Bá Sang", "username": "hbsang"}}}], "changed": []}}}
+{"ts": "2026-08-15T15:54:12.073433", "user": "lhduy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T16:14:18.163945", "user": "lhduy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T18:11:39.733029", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T20:14:54.503345", "user": "hkxhang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-15T22:18:07.078218", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
