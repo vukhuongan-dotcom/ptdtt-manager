@@ -23,6 +23,43 @@ const App = {
         this.bindModal();
         Auth.init();
 
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocal) {
+            // Auto bypass login for local test/demo mode as BS. Vũ Khương An
+            const localSession = {
+                staffId: 2,
+                username: 'vkan',
+                name: 'Vũ Khương An',
+                role: 'BS Phó trưởng khoa',
+                title: 'BSCKII',
+                isAdmin: true,
+                isSuperAdmin: true,
+                color: '#06b6d4',
+                loginTime: new Date().toISOString()
+            };
+            localStorage.setItem(Auth.SESSION_KEY, JSON.stringify(localSession));
+            const mockPayload = btoa(JSON.stringify({ staffId: 2, username: 'vkan', exp: Math.floor(Date.now() / 1000) + 86400 * 365 }));
+            const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${mockPayload}.mockSignature`;
+            sessionStorage.setItem(Auth.TOKEN_KEY, mockToken);
+            localStorage.setItem(Auth.TOKEN_KEY, mockToken);
+
+            Store.init();
+            try {
+                const res = await fetch('data/db.json?t=' + Date.now());
+                if (res.ok) {
+                    const realDb = await res.json();
+                    Store._data = realDb;
+                    Store._saveLocal();
+                    console.log('✅ [Local] Loaded real database:', Object.keys(realDb).length, 'collections,', (realDb.surgeries || []).length, 'surgeries');
+                }
+            } catch (e) {
+                console.warn('[Local] Could not fetch data/db.json:', e);
+            }
+
+            this.showApp('surgery-stats');
+            return;
+        }
+
         const token = Auth.getToken();
         if (!token) {
             // No token at all — go straight to login
@@ -111,7 +148,7 @@ const App = {
     // Pages that require super admin role to access
     _superAdminOnlyPages: [],
 
-    showApp() {
+    showApp(initialPage = 'dashboard') {
         document.getElementById('auth-checking')?.remove();
         document.getElementById('app').style.display = 'flex';
         // Restore modal-overlay to CSS-controlled display (was set inline by _showAuthChecking)
@@ -120,7 +157,7 @@ const App = {
         this.updateMobileHeader();
         this.updateNavVisibility();
         this.bindNavigation();
-        this.navigate('dashboard');
+        this.navigate(initialPage);
         Notifications.startPolling();
         if (typeof EMR !== 'undefined') {
             EMR.startAutoRefresh();

@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <!-- P2.1: CSS bundle (24 files → 1 request). Build: bash build-css.sh -->
-    <link rel="stylesheet" href="css/app.bundle.css?v=2608161316">
+    <link rel="stylesheet" href="css/app.bundle.css?v=2608161811">
     <!-- U0 BUG-2: @keyframes shake + pulse chuyển vào base.css — xóa inline để tránh xung đột -->
     <!-- U0 Dark mode: set theme trước CSS bundle để tránh flash. Tôn trọng OS preference nếu chưa có saved theme -->
     <script>
@@ -240,38 +240,37 @@
         </div>
     </div>
 
-    <!-- Heavy libraries: lazy-loaded on demand via Utils.loadScript() -->
-    <!-- html2canvas, chart.js, xlsx: loaded when user triggers export/chart -->
-    <!-- jspdf: removed (unused) -->
-
-
     <!-- Core: defer — execute in order after DOM parsed -->
-    <script defer src="js/data.js?v=2606080930"></script>
-    <script defer src="js/store.js?v=2606080930"></script>
-    <script defer src="js/auth.js?v=2606080930"></script>
-    <script defer src="js/utils.js?v=2606080930"></script>
+    <script defer src="js/data.js?v=2608161811"></script>
+    <script defer src="js/store.js?v=2608161811"></script>
+    <script defer src="js/auth.js?v=2608161811"></script>
+    <script defer src="js/utils.js?v=2608161811"></script>
 
     <!-- Page modules: defer — loaded after DOM ready, in document order -->
-    <script defer src="js/dashboard.js?v=2606080930"></script>
-    <script defer src="js/staff.js?v=2606080930"></script>
-    <script defer src="js/staff-tracking.js?v=2606080930"></script>
-    <script defer src="js/tasks.js?v=2606080930"></script>
-    <script defer src="js/plans.js?v=2606080930"></script>
-    <script defer src="js/patients.js?v=2606080930"></script>
-    <script defer src="js/schedule.js?v=2606080930"></script>
-    <script defer src="js/surgery.js?v=2606080930"></script>
-    <script defer src="js/emr.js?v=2606080930"></script>
-    <script defer src="js/surgery-stats.js?v=2606080930"></script>
-    <script defer src="js/research.js?v=2606080930"></script>
-    <script defer src="js/conferences.js?v=2606080930"></script>
-    <script defer src="js/reports.js?v=2606080930"></script>
-    <script defer src="js/rooms.js?v=2606080930"></script>
-    <script defer src="js/notifications.js?v=2606080930"></script>
-    <script defer src="js/search.js?v=2606080930"></script>
-    <script defer src="js/onboarding.js?v=2606080930"></script>
-    <script defer src="js/audit-log.js?v=2606080930"></script>
+    <script>
+        var REQUIRED_VER = '2608161811';
+        if (typeof window !== 'undefined') window.REQUIRED_VER = REQUIRED_VER;
+    </script>
+    <script defer src="js/dashboard.js?v=2608161811"></script>
+    <script defer src="js/staff.js?v=2608161811"></script>
+    <script defer src="js/staff-tracking.js?v=2608161811"></script>
+    <script defer src="js/tasks.js?v=2608161811"></script>
+    <script defer src="js/plans.js?v=2608161811"></script>
+    <script defer src="js/patients.js?v=2608161811"></script>
+    <script defer src="js/schedule.js?v=2608161811"></script>
+    <script defer src="js/surgery.js?v=2608161811"></script>
+    <script defer src="js/emr.js?v=2608161811"></script>
+    <script defer src="js/surgery-stats.js?v=2608161811"></script>
+    <script defer src="js/research.js?v=2608161811"></script>
+    <script defer src="js/conferences.js?v=2608161811"></script>
+    <script defer src="js/reports.js?v=2608161811"></script>
+    <script defer src="js/rooms.js?v=2608161811"></script>
+    <script defer src="js/notifications.js?v=2608161811"></script>
+    <script defer src="js/search.js?v=2608161811"></script>
+    <script defer src="js/onboarding.js?v=2608161811"></script>
+    <script defer src="js/audit-log.js?v=2608161811"></script>
     <!-- app.js must be last — initializes after all page modules -->
-    <script defer src="js/app.js?v=2606080930"></script>
+    <script defer src="js/app.js?v=2608161811"></script>
 
     <!-- Offline Banner -->
     <div id="offline-banner"
@@ -279,25 +278,38 @@
         ⚠️ Đang offline — Dữ liệu có thể chưa cập nhật. Kiểm tra kết nối mạng.
     </div>
 
-    <!-- Service Worker Registration -->
+    <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
-            let swControllerRefreshing = false;
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                // In local test/development, clear service workers & cache to ensure instant live reload
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+                if ('caches' in window) {
+                    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+                }
+            } else {
+                let swControllerRefreshing = false;
 
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (swControllerRefreshing) return;
-                swControllerRefreshing = true;
-                window.location.reload();
-            });
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (swControllerRefreshing) return;
+                    swControllerRefreshing = true;
+                    window.location.reload();
+                });
 
-            window.addEventListener('load', async () => {
-                try {
-                    const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
-                    console.log('SW registered:', reg.scope);
-                    if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
-                    reg.update();
-                } catch (e) { console.log('SW registration failed:', e); }
-            });
+                window.addEventListener('load', async () => {
+                    try {
+                        const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+                        console.log('SW registered:', reg.scope);
+                        if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+                        reg.update();
+                    } catch (e) { console.log('SW registration failed:', e); }
+                });
+            }
         }
         // Offline/Online banner
         function updateOnlineStatus() {
