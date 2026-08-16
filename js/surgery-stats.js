@@ -577,6 +577,9 @@ const SurgeryStatsPage = {
         const shortName1 = name1.split(' ').pop();
         const shortName2 = name2.split(' ').pop();
 
+        const totalDiff = hasCompare ? (p1.total - p2.total) : 0;
+        const totalPctDiff = (hasCompare && p2.total > 0) ? Math.round(((totalDiff / p2.total) * 100) * 10) / 10 : 0;
+
         return `
         <!-- DOCTOR SELECTOR ROW -->
         <div class="card sstats-doctor-selector-card">
@@ -651,8 +654,8 @@ const SurgeryStatsPage = {
                         <span class="sstats-kpi-sub">${shortName2}</span>
                     </div>
                 </div>
-                <div class="sstats-kpi-delta ${p1.total >= p2.total ? 'positive' : 'negative'}">
-                    ${p1.total >= p2.total ? `▲ +${p1.total - p2.total}` : `▼ -${p2.total - p1.total}`} ca chênh lệch
+                <div class="sstats-kpi-delta ${totalDiff >= 0 ? 'positive' : 'negative'}">
+                    ${totalDiff >= 0 ? `▲ +${totalDiff}` : `▼ ${totalDiff}`} ca (${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`})
                 </div>
                 ` : `
                 <div class="sstats-kpi-values single-val">
@@ -883,8 +886,8 @@ const SurgeryStatsPage = {
                                 <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
                                 <td style="text-align:right;color:#e11d48"><strong>${p2.total} ca</strong></td>
                                 <td style="text-align:center">
-                                    <span class="sstats-delta-badge zero">
-                                        0.0%
+                                    <span class="sstats-delta-badge ${totalDiff >= 0 ? 'pos' : 'neg'}" title="${totalDiff >= 0 ? `+${totalDiff}` : totalDiff} ca">
+                                        ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
                                     </span>
                                 </td>
                                 ` : `
@@ -1485,6 +1488,9 @@ const SurgeryStatsPage = {
             const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
             const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
 
+            const totalDiff = hasCompare ? (p1.total - p2.total) : 0;
+            const totalPctDiff = (hasCompare && p2.total > 0) ? Math.round(((totalDiff / p2.total) * 100) * 10) / 10 : 0;
+
             // Generate clean SVG string for radar
             const radarSVGString = this._renderRadarSVG(p1, p2);
 
@@ -1878,7 +1884,11 @@ const SurgeryStatsPage = {
                             ${hasCompare ? `
                                 <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
                                 <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
-                                <td style="text-align:center;">0.0%</td>
+                                <td style="text-align:center;">
+                                    <span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;background:${totalDiff >= 0 ? '#ecfdf5' : '#fff1f2'};color:${totalDiff >= 0 ? '#059669' : '#e11d48'};">
+                                        ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
+                                    </span>
+                                </td>
                             ` : `
                                 <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
                                 <td style="text-align:right;color:#0891b2;">100%</td>
