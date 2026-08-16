@@ -4,8 +4,8 @@ const SurgeryStatsPage = {
     offset: 0, // 0 = current, -1 = previous, 1 = next, etc.
     activeTab: 'radar', // 'radar' (Dashboard BS & Radar) | 'summary' (Tổng hợp toàn khoa)
     expandedDoctor: null, // id of the doctor whose detail is shown in summary table
-    primaryDoctorId: 1, // Default: BS. Nguyễn Phú Hữu
-    compareDoctorId: 2, // Default: BS. Vũ Khương An
+    primaryDoctorId: 'dept_total', // Default: Toàn khoa (Tổng số ca tuyệt đối)
+    compareDoctorId: 'none', // Default: Luôn để trống (Không so sánh)
     showAllLogbookCases: false, // false = 100 cases, true = all cases
     logbookSearch: '', // search query
     logbookFilterAxis: 'all', // 'all' | 'colon' | 'rectal' | 'proctology' | 'stoma' | 'biliary_gi' | 'emergency'
@@ -572,8 +572,8 @@ const SurgeryStatsPage = {
         const p2 = this.compareDoctorId !== 'none' ? this.computeSurgeonProfile(this.compareDoctorId, surgeries) : null;
         const hasCompare = !!p2;
 
-        const name1 = (p1 && p1.doctor && p1.doctor.name) || 'BS Chính';
-        const name2 = (p2 && p2.doctor && p2.doctor.name) || 'BS So Sánh';
+        const name1 = (p1 && p1.doctor && p1.doctor.name) || 'Bác sĩ 1';
+        const name2 = (p2 && p2.doctor && p2.doctor.name) || 'Bác sĩ 2';
         const shortName1 = name1.split(' ').pop();
         const shortName2 = name2.split(' ').pop();
 
@@ -594,7 +594,7 @@ const SurgeryStatsPage = {
             <div class="sstats-selector-row">
                 <!-- DOCTOR 1 SELECTOR (CYAN) -->
                 <div class="sstats-doc-box sstats-doc-box-primary">
-                    <div class="sstats-doc-box-badge" style="background:#0891b2">BS Chính (Màu Xanh Cyan)</div>
+                    <div class="sstats-doc-box-badge" style="background:#0891b2">Bác sĩ 1 (Màu Xanh Cyan)</div>
                     <div class="sstats-doc-box-controls">
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setPrimaryDoctor(this.value)">
                             <option value="dept_total" ${(this.primaryDoctorId === 'dept_total' || this.primaryDoctorId === 'dept_avg') ? 'selected' : ''}>
@@ -614,7 +614,7 @@ const SurgeryStatsPage = {
                 <!-- DOCTOR 2 SELECTOR (CRIMSON / ROSE) -->
                 <div class="sstats-doc-box sstats-doc-box-compare ${hasCompare ? '' : 'is-none'}">
                     <div class="sstats-doc-box-badge" style="background:${hasCompare ? '#e11d48' : 'var(--text-muted)'}">
-                        ${hasCompare ? 'Đối tượng So Sánh (Màu Đỏ Rose)' : 'Chế Độ Xem Đơn Lẻ'}
+                        ${hasCompare ? 'Bác sĩ 2 (Màu Đỏ Rose)' : 'Bác sĩ 2 (Để trống)'}
                     </div>
                     <div class="sstats-doc-box-controls">
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setCompareDoctor(this.value)">
