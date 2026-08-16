@@ -1056,11 +1056,11 @@ const SurgeryStatsPage = {
 
     // ===== SVG RADAR CHART GENERATOR =====
     _renderRadarSVG(p1, p2) {
-        const width = 460;
-        const height = 420;
+        const width = 500;
+        const height = 430;
         const cx = width / 2;
         const cy = height / 2 + 10;
-        const radius = 135;
+        const radius = 120;
         const axisKeys = Object.keys(this.CLINICAL_AXES);
         const numAxes = axisKeys.length;
         const hasCompare = !!p2;
@@ -1091,10 +1091,10 @@ const SurgeryStatsPage = {
                 const r = lvl * radius;
                 pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
             }
-            gridSVG += `<polygon points="${pts.join(' ')}" class="sstats-radar-grid" stroke="var(--border)" stroke-dasharray="${lvlIdx === 4 ? 'none' : '2,3'}" fill="none" stroke-width="1" />`;
+            gridSVG += `<polygon points="${pts.join(' ')}" class="sstats-radar-grid" stroke="#cbd5e1" stroke-dasharray="${lvlIdx === 4 ? 'none' : '2,3'}" fill="none" stroke-width="1" />`;
             // Scale label
             const labelVal = Math.round(lvl * maxScale);
-            gridSVG += `<text x="${cx + 4}" y="${cy - lvl * radius + 10}" class="sstats-radar-grid-label" fill="var(--text-muted)" font-size="9">${labelVal}</text>`;
+            gridSVG += `<text x="${cx + 4}" y="${cy - lvl * radius + 10}" class="sstats-radar-grid-label" fill="#64748b" font-size="9">${labelVal}</text>`;
         });
 
         // Axis spokes & labels
@@ -1103,11 +1103,11 @@ const SurgeryStatsPage = {
         axisKeys.forEach((k, i) => {
             const ax = this.CLINICAL_AXES[k];
             const endCoord = getCoord(maxScale, i, maxScale);
-            spokesSVG += `<line x1="${cx}" y1="${cy}" x2="${endCoord.x}" y2="${endCoord.y}" stroke="var(--border)" stroke-width="1.2" />`;
+            spokesSVG += `<line x1="${cx}" y1="${cy}" x2="${endCoord.x}" y2="${endCoord.y}" stroke="#cbd5e1" stroke-width="1.2" />`;
 
             // Label coordinate slightly outside radius
             const labelAngle = i * angleSlice - Math.PI / 2;
-            const labelRadius = radius + 32;
+            const labelRadius = radius + 28;
             const lx = cx + labelRadius * Math.cos(labelAngle);
             const ly = cy + labelRadius * Math.sin(labelAngle);
 
@@ -1122,13 +1122,13 @@ const SurgeryStatsPage = {
 
             labelsSVG += `
             <g class="sstats-radar-axis-label-group">
-                <text x="${lx}" y="${ly - 6}" text-anchor="${anchor}" class="sstats-radar-axis-title" fill="var(--text-primary)" font-size="11.5" font-weight="700">
+                <text x="${lx}" y="${ly - 6}" text-anchor="${anchor}" class="sstats-radar-axis-title" fill="#0f172a" font-size="11.5" font-weight="700">
                     ${ax.label}
                 </text>
                 <text x="${lx}" y="${ly + 8}" text-anchor="${anchor}" class="sstats-radar-axis-values" font-size="10">
                     ${hasCompare 
-                        ? `<tspan fill="#0891b2" font-weight="700">${c1}</tspan> <tspan fill="var(--text-muted)">vs</tspan> <tspan fill="#e11d48" font-weight="700">${c2}</tspan>`
-                        : `<tspan fill="#0891b2" font-weight="700">${c1} ca</tspan> <tspan fill="var(--text-muted)">(${pct1.toFixed(0)}%)</tspan>`}
+                        ? `<tspan fill="#0891b2" font-weight="700">${c1}</tspan> <tspan fill="#64748b">vs</tspan> <tspan fill="#e11d48" font-weight="700">${c2}</tspan>`
+                        : `<tspan fill="#0891b2" font-weight="700">${c1} ca</tspan> <tspan fill="#64748b">(${pct1.toFixed(0)}%)</tspan>`}
                 </text>
             </g>`;
         });
@@ -1550,86 +1550,22 @@ const SurgeryStatsPage = {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --text-primary: #0f172a;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --bg-secondary: #f8fafc;
-            --primary: #0891b2;
-        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Be Vietnam Pro', 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #f8fafc;
+            background: #ffffff;
             color: #0f172a;
-            padding: 30px;
+            padding: 0;
+            margin: 0;
             width: 1120px;
             -webkit-font-smoothing: antialiased;
         }
         .capture-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 26px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-        }
-        .export-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #0891b2;
-            padding-bottom: 12px;
-            margin-bottom: 18px;
-        }
-        .hospital-brand {
-            font-size: 12px;
-            font-weight: 700;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .dept-brand {
-            font-size: 15px;
-            font-weight: 800;
-            color: #0891b2;
-            text-transform: uppercase;
-            margin-top: 2px;
-        }
-        .national-title {
-            text-align: right;
-            font-size: 12px;
-            font-weight: 700;
-            color: #1e293b;
-            text-transform: uppercase;
-        }
-        .national-motto {
-            text-align: right;
-            font-size: 11px;
-            font-weight: 500;
-            color: #64748b;
-            font-style: italic;
-            margin-top: 2px;
-        }
-        .main-title-block {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .main-title {
-            font-size: 19px;
-            font-weight: 800;
-            color: #0f172a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .main-subtitle {
-            font-size: 12.5px;
-            color: #475569;
-            margin-top: 4px;
-            font-weight: 500;
-        }
-        .main-subtitle strong {
-            color: #0891b2;
+            width: 1120px;
+            margin: 0 auto;
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
         }
         .kpi-grid {
             display: grid;
@@ -1740,7 +1676,7 @@ const SurgeryStatsPage = {
             border-collapse: collapse;
         }
         .matrix-table th {
-            padding: 7px 10px;
+            padding: 8px 10px;
             font-size: 10.5px;
             font-weight: 700;
             text-transform: uppercase;
@@ -1765,148 +1701,153 @@ const SurgeryStatsPage = {
             padding-top: 10px;
             border-top: 1px solid #e2e8f0;
             font-size: 10.5px;
-            color: #94a3b8;
+            color: #64748b;
         }
     </style>
 </head>
 <body>
     <div id="capture" class="capture-card">
-        <!-- HEADER BỆNH VIỆN NĐ 30 -->
-        <div class="export-header-row">
+        <!-- HEADER WITH DARK NAVY GRADIENT STANDARD ACROSS PTDTT-MANAGER -->
+        <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:22px 32px;display:flex;justify-content:space-between;align-items:center;">
             <div>
-                <div class="hospital-brand">BỆNH VIỆN BÌNH DÂN</div>
-                <div class="dept-brand">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:normal;">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                <div style="font-size:13px;color:#cbd5e1;margin-top:3px;">Bệnh viện Bình Dân · TP. Hồ Chí Minh</div>
             </div>
-            <div>
-                <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                <div class="national-motto">Độc lập - Tự do - Hạnh phúc</div>
-            </div>
-        </div>
-
-        <!-- MAIN TITLE -->
-        <div class="main-title-block">
-            <h1 class="main-title">HỒ SƠ NĂNG LỰC & CƠ CẤU PHẪU THUẬT 6 TRỤC</h1>
-            <p class="main-subtitle">
-                Phẫu thuật viên: <strong>${name1}</strong> (${p1.doctor.role}) · Kỳ thống kê: <strong>${periodLabel}</strong> (Tổng: <strong>${p1.total} ca</strong>)${hasCompare ? ` · Đối chuẩn: <strong>${name2}</strong> (${p2.total} ca)` : ''}
-            </p>
-        </div>
-
-        <!-- 4 KPI CARDS -->
-        <div class="kpi-grid">
-            <!-- KPI 1 -->
-            <div class="kpi-card">
-                <div class="kpi-card-header">🎯 Tổng ca mổ chính</div>
-                <div class="kpi-val">${p1.total}</div>
-                <div class="kpi-sub">${hasCompare ? `${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}` : ((p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? `Toàn Khoa (${p1.total} ca)` : `${name1} (Toàn bộ)`)}</div>
-                <div class="kpi-tag">${(p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng mổ chính cá nhân'}</div>
-            </div>
-
-            <!-- KPI 2 -->
-            <div class="kpi-card">
-                <div class="kpi-card-header">🔬 Tỷ lệ Nội soi (MIS)</div>
-                <div class="kpi-val">${p1.misPct.toFixed(1)}%</div>
-                <div class="kpi-sub">${p1.misCases} ca nội soi / robot</div>
-                <div class="kpi-tag">Chỉ số kỹ thuật xâm lấn tối thiểu</div>
-            </div>
-
-            <!-- KPI 3 -->
-            <div class="kpi-card">
-                <div class="kpi-card-header">⏱️ Thời gian mổ TB</div>
-                <div class="kpi-val">${p1.meanDur}p</div>
-                <div class="kpi-sub">Thời gian mổ trung bình</div>
-                <div class="kpi-tag">Chuẩn thời gian ca mổ</div>
-            </div>
-
-            <!-- KPI 4 -->
-            <div class="kpi-card">
-                <div class="kpi-card-header">📋 Cơ cấu Yêu cầu</div>
-                <div class="kpi-val">${p1.total > 0 ? (p1.electiveReq / p1.total * 100).toFixed(0) : 0}%</div>
-                <div class="kpi-sub">Mổ yêu cầu: ${p1.electiveReq} ca</div>
-                <div class="kpi-tag">C.Trình: ${p1.electiveRoutine} · Bán khẩn: ${p1.urgent}</div>
+            <div style="text-align:right;">
+                <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:normal;">HỒ SƠ NĂNG LỰC PHẪU THUẬT</div>
+                <div style="font-size:13px;color:#67e8f9;font-weight:600;margin-top:3px;">Cơ cấu &amp; Đối chuẩn 6 Trục Lâm sàng</div>
             </div>
         </div>
 
-        <!-- 2 COLUMNS: RADAR (LEFT) + MATRIX (RIGHT) -->
-        <div class="main-split">
-            <!-- LEFT: RADAR -->
-            <div class="sub-card">
-                <div>
-                    <div class="sub-card-title">
-                        <span>🎯 Biểu Đồ Radar 6 Trục</span>
+        <!-- SUB-HEADER / METADATA INFO BAR -->
+        <div style="padding:12px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:13.5px;color:#0f172a;">
+                Phẫu thuật viên: <strong style="color:#0891b2;font-size:15px;">${name1}</strong> <span style="font-size:12px;color:#64748b;">(${p1.doctor.role})</span>
+                ${hasCompare ? ` <span style="margin:0 6px;padding:2px 7px;background:#e2e8f0;border-radius:10px;font-size:11px;font-weight:700;color:#475569;">VS</span> Đối chuẩn: <strong style="color:#e11d48;font-size:15px;">${name2}</strong> <span style="font-size:12px;color:#64748b;">(${p2.doctor.role})</span>` : ''}
+            </div>
+            <div style="font-size:13px;color:#334155;font-weight:600;">
+                📅 Kỳ thống kê: <span style="color:#0891b2;">${periodLabel}</span> · Tổng: <strong style="color:#0f172a;font-size:14px;">${p1.total} ca</strong>
+            </div>
+        </div>
+
+        <div style="padding: 22px 28px;">
+            <!-- 4 KPI CARDS -->
+            <div class="kpi-grid">
+                <!-- KPI 1 -->
+                <div class="kpi-card">
+                    <div class="kpi-card-header">🎯 Tổng ca mổ chính</div>
+                    <div class="kpi-val">${p1.total}</div>
+                    <div class="kpi-sub">${hasCompare ? `${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}` : ((p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? `Toàn Khoa (${p1.total} ca)` : `${name1} (Toàn bộ)`)}</div>
+                    <div class="kpi-tag">${(p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng mổ chính cá nhân'}</div>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="kpi-card">
+                    <div class="kpi-card-header">🔬 Tỷ lệ Nội soi (MIS)</div>
+                    <div class="kpi-val">${p1.misPct.toFixed(1)}%</div>
+                    <div class="kpi-sub">${p1.misCases} ca nội soi / robot</div>
+                    <div class="kpi-tag">Chỉ số kỹ thuật xâm lấn tối thiểu</div>
+                </div>
+
+                <!-- KPI 3 -->
+                <div class="kpi-card">
+                    <div class="kpi-card-header">⏱️ Thời gian mổ TB</div>
+                    <div class="kpi-val">${p1.meanDur}p</div>
+                    <div class="kpi-sub">Thời gian mổ trung bình</div>
+                    <div class="kpi-tag">Chuẩn thời gian ca mổ</div>
+                </div>
+
+                <!-- KPI 4 -->
+                <div class="kpi-card">
+                    <div class="kpi-card-header">📋 Cơ cấu Yêu cầu</div>
+                    <div class="kpi-val">${p1.total > 0 ? (p1.electiveReq / p1.total * 100).toFixed(0) : 0}%</div>
+                    <div class="kpi-sub">Mổ yêu cầu: ${p1.electiveReq} ca</div>
+                    <div class="kpi-tag">C.Trình: ${p1.electiveRoutine} · Bán khẩn: ${p1.urgent}</div>
+                </div>
+            </div>
+
+            <!-- 2 COLUMNS: RADAR (LEFT) + MATRIX (RIGHT) -->
+            <div class="main-split">
+                <!-- LEFT: RADAR -->
+                <div class="sub-card">
+                    <div>
+                        <div class="sub-card-title">
+                            <span>🎯 Biểu Đồ Radar 6 Trục</span>
+                        </div>
+                        <div class="sub-card-desc">Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên</div>
+                        <div class="legend-pill">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0891b2;"></span>
+                            <span>${name1} (${p1.total} ca)</span>
+                            ${hasCompare ? ` · <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e11d48;margin-left:4px;"></span> ${name2} (${p2.total} ca)` : ''}
+                        </div>
                     </div>
-                    <div class="sub-card-desc">Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên</div>
-                    <div class="legend-pill">
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0891b2;"></span>
-                        <span>${name1} (${p1.total} ca)</span>
-                        ${hasCompare ? ` · <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e11d48;margin-left:4px;"></span> ${name2} (${p2.total} ca)` : ''}
+
+                    <div class="radar-box">
+                        ${radarSVGString}
+                    </div>
+
+                    <div class="disclaimer-box">
+                        ⚠️ <em>Chỉ số số lượng ca mổ và thời gian phẫu thuật phụ thuộc vào phân công lịch mổ, cơ cấu ca khó/phức tạp và tính chất cấp cứu; dùng phục vụ tự đánh giá chuyên môn và quản lý chất lượng.</em>
                     </div>
                 </div>
 
-                <div class="radar-box">
-                    ${radarSVGString}
-                </div>
-
-                <div class="disclaimer-box">
-                    ⚠️ <em>Chỉ số số lượng ca mổ và thời gian phẫu thuật phụ thuộc vào phân công lịch mổ, cơ cấu ca khó/phức tạp và tính chất cấp cứu; dùng phục vụ tự đánh giá chuyên môn và quản lý chất lượng.</em>
-                </div>
-            </div>
-
-            <!-- RIGHT: MATRIX -->
-            <div class="sub-card">
-                <div>
-                    <div class="sub-card-title">
-                        <span>📊 Bảng Phân Tích Cơ Cấu 6 Trục</span>
-                        <span style="font-size:11px;font-weight:600;color:#64748b;">Khoa PTĐTT — BV Bình Dân</span>
+                <!-- RIGHT: MATRIX -->
+                <div class="sub-card">
+                    <div>
+                        <div class="sub-card-title">
+                            <span>📊 Bảng Phân Tích Cơ Cấu 6 Trục</span>
+                            <span style="font-size:11px;font-weight:600;color:#64748b;">Khoa PTĐTT — BV Bình Dân</span>
+                        </div>
+                        <div class="sub-card-desc">Chi tiết số lượng & Tỷ trọng từng nhóm phẫu thuật</div>
                     </div>
-                    <div class="sub-card-desc">Chi tiết số lượng & Tỷ trọng từng nhóm phẫu thuật</div>
-                </div>
 
-                <table class="matrix-table">
-                    <thead>
-                        <tr>
-                            <th style="text-align:left;">TRỤC NĂNG LỰC</th>
-                            ${hasCompare ? `
-                                <th style="text-align:right;color:#0891b2;">${shortName1}</th>
-                                <th style="text-align:right;color:#e11d48;">${shortName2}</th>
-                                <th style="text-align:center;">Chênh lệch</th>
-                            ` : `
-                                <th style="text-align:right;color:#0891b2;">Số ca (${shortName1})</th>
-                                <th style="text-align:right;color:#0891b2;">Tỷ trọng cơ cấu</th>
-                            `}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRowsHTML}
-                    </tbody>
-                    <tfoot>
-                        <tr class="matrix-total-row">
-                            <td>TỔNG CỘNG</td>
-                            ${hasCompare ? `
-                                <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
-                                <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
-                                <td style="text-align:center;">
-                                    <span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;background:${totalDiff >= 0 ? '#ecfdf5' : '#fff1f2'};color:${totalDiff >= 0 ? '#059669' : '#e11d48'};">
-                                        ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
-                                    </span>
-                                </td>
-                            ` : `
-                                <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
-                                <td style="text-align:right;color:#0891b2;">100%</td>
-                            `}
-                        </tr>
-                    </tfoot>
-                </table>
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">TRỤC NĂNG LỰC</th>
+                                ${hasCompare ? `
+                                    <th style="text-align:right;color:#0891b2;">${shortName1}</th>
+                                    <th style="text-align:right;color:#e11d48;">${shortName2}</th>
+                                    <th style="text-align:center;">Chênh lệch</th>
+                                ` : `
+                                    <th style="text-align:right;color:#0891b2;">Số ca (${shortName1})</th>
+                                    <th style="text-align:right;color:#0891b2;">Tỷ trọng cơ cấu</th>
+                                `}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHTML}
+                        </tbody>
+                        <tfoot>
+                            <tr class="matrix-total-row">
+                                <td>TỔNG CỘNG</td>
+                                ${hasCompare ? `
+                                    <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
+                                    <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
+                                    <td style="text-align:center;">
+                                        <span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;background:${totalDiff >= 0 ? '#ecfdf5' : '#fff1f2'};color:${totalDiff >= 0 ? '#059669' : '#e11d48'};">
+                                            ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
+                                        </span>
+                                    </td>
+                                ` : `
+                                    <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
+                                    <td style="text-align:right;color:#0891b2;">100%</td>
+                                `}
+                            </tr>
+                        </tfoot>
+                    </table>
 
-                <div style="font-size: 10.5px; color: #64748b; margin-top: 12px; text-align: right;">
-                    Phân loại chuẩn 6 trục lâm sàng (Cleveland Clinic DDSI / ASCRS)
+                    <div style="font-size: 10.5px; color: #64748b; margin-top: 12px; text-align: right;">
+                        Phân loại chuẩn 6 trục lâm sàng (Cleveland Clinic DDSI / ASCRS)
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- FOOTER -->
-        <div class="export-footer">
-            <span>Hệ thống Quản trị Lâm sàng Khoa Phẫu Thuật Đại Trực Tràng — Bệnh viện Bình Dân</span>
-            <span>Xuất bởi: <strong>${user}</strong> · Lúc ${timeStr} — ${dateStr}</span>
+            <!-- FOOTER -->
+            <div class="export-footer">
+                <span>Hệ thống Quản trị Lâm sàng Khoa Phẫu Thuật Đại Trực Tràng — Bệnh viện Bình Dân</span>
+                <span>Xuất bởi: <strong>${user}</strong> · Lúc ${timeStr} — ${dateStr}</span>
+            </div>
         </div>
     </div>
 </body>
@@ -1937,7 +1878,7 @@ const SurgeryStatsPage = {
 
             document.body.removeChild(iframe);
 
-            // Watermark
+            // Standard Watermark across entire canvas
             this._addProfileWatermark(canvas);
 
             const safeName = (p1.doctor.name || 'HoSoBacSi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
@@ -1998,17 +1939,9 @@ const SurgeryStatsPage = {
 
     _addProfileWatermark(canvas) {
         try {
-            const ctx = canvas.getContext('2d');
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const stamp = `KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BV BÌNH DÂN · ${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            
-            ctx.save();
-            ctx.font = 'bold 18px "Be Vietnam Pro", sans-serif';
-            ctx.fillStyle = 'rgba(8, 145, 178, 0.25)';
-            ctx.textAlign = 'right';
-            ctx.fillText(stamp, canvas.width - 24, canvas.height - 18);
-            ctx.restore();
+            if (typeof Utils !== 'undefined' && typeof Utils.applyExportWatermark === 'function') {
+                Utils.applyExportWatermark(canvas);
+            }
         } catch (e) {
             console.warn('Watermark error:', e);
         }
