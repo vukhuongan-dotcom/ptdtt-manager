@@ -94,7 +94,7 @@
 
   --state-success: #10B981;
   --state-warning: #F59E0B;
-  --state-danger: #EF4444;
+  --state-danger: #F87171;
   --state-info: #38BDF8;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
@@ -140,11 +140,11 @@
     --glass-border: rgba(0, 0, 0, 0.08);
     --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
 
-    /* Gradient */
-    --gradient-primary: linear-gradient(135deg, #0891b2, #7c3aed);
+    /* Gradient — Clinical Oceanic System (Thay thế AI purple cliché) */
+    --gradient-primary: linear-gradient(135deg, #0891b2, #0e7490);
     --gradient-success: linear-gradient(135deg, #059669, #0891b2);
     --gradient-warning: linear-gradient(135deg, #d97706, #dc2626);
-    --gradient-accent: linear-gradient(135deg, #7c3aed, #db2777);
+    --gradient-accent: linear-gradient(135deg, #0284c7, #0369a1);
 
     /* Sizes */
     --sidebar-width: 260px;
@@ -167,7 +167,7 @@
     /* U1: thêm shadow-xl cho modal, dropdown nổi bật */
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
     --shadow-glow-primary: 0 0 20px rgba(8, 145, 178, 0.2);
-    --shadow-glow-accent: 0 0 20px rgba(124, 58, 237, 0.2);
+    --shadow-glow-accent: 0 0 20px rgba(2, 132, 199, 0.2);
 
     /* P3.1 — Typography scale (base: 15px từ U2) */
     /* U1: thêm --text-xxs cho badge micro, label cực nhỏ */
@@ -260,13 +260,13 @@
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
     --shadow-glow-primary: 0 0 20px rgba(56, 189, 248, 0.25);
-    --shadow-glow-accent:  0 0 20px rgba(167, 139, 250, 0.25);
+    --shadow-glow-accent:  0 0 20px rgba(2, 132, 199, 0.25);
 
-    /* Gradients — dùng màu SÁNG để -webkit-text-fill-color readable trên dark bg */
-    --gradient-primary: linear-gradient(135deg, #38bdf8, #a78bfa);
+    /* Gradients — Clinical Oceanic dark mode */
+    --gradient-primary: linear-gradient(135deg, #38bdf8, #0ea5e9);
     --gradient-success: linear-gradient(135deg, #34d399, #38bdf8);
     --gradient-warning: linear-gradient(135deg, #fbbf24, #f87171);
-    --gradient-accent:  linear-gradient(135deg, #a78bfa, #f472b6);
+    --gradient-accent:  linear-gradient(135deg, #0284c7, #38bdf8);
 
     /* Surface tokens */
     --surface:           #161b22;
@@ -281,12 +281,20 @@
     box-sizing: border-box;
 }
 
-/* A1 — Accessibility: keyboard focus ring (only shown on keyboard nav, not mouse click) */
+/* A1 — Accessibility: enhanced keyboard focus ring (WCAG 2.4.7 / 2.4.11) */
 :focus { outline: none; }
-:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-    border-radius: 2px;
+:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2.5px solid var(--primary) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.18) !important;
+    border-radius: var(--border-radius-sm, 6px);
 }
 
 /* U2: 14px → 15px — cải thiện readability, WCAG 1.4.4 */
@@ -1530,6 +1538,32 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-size: var(--text-xs, 0.7333rem);
     color: var(--text-secondary);
 }
+
+/* ── Skeleton Loading (WCAG & Perceived Performance) ── */
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s ease-in-out infinite;
+    border-radius: var(--border-radius-sm, 6px);
+    display: inline-block;
+}
+.skeleton-text { height: 1em; width: 100%; margin-bottom: 6px; }
+.skeleton-title { height: 1.4em; width: 60%; margin-bottom: 12px; }
+.skeleton-card {
+    height: 110px;
+    width: 100%;
+    border-radius: var(--border-radius, 10px);
+}
+.skeleton-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+@keyframes skeletonLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 /* ===== TOAST NOTIFICATIONS ===== */
 .toast-container {
     position: fixed;
@@ -7870,6 +7904,110 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
             padding: 6px 10px;
         }
     }
+}
+
+/* ===== MOBILE UX 2026 ENHANCEMENTS ===== */
+@media (max-width: 768px) {
+    /* 1. Bottom Sheet Modal */
+    .modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+    .modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 88vh !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        border-bottom: none !important;
+        animation: sheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .modal-header {
+        position: relative;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 16px 18px 12px !important;
+    }
+    .modal-header::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: var(--text-muted);
+        border-radius: 2px;
+        opacity: 0.35;
+    }
+    .modal-body {
+        padding: 16px 18px !important;
+    }
+    .modal-footer {
+        padding: 12px 18px !important;
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        z-index: 5;
+    }
+
+    /* 2. iOS Zoom Prevention on ALL input elements */
+    input, select, textarea, .form-input, .form-select, .form-textarea {
+        font-size: 16px !important;
+    }
+
+    /* 3. Active Touch Feedback */
+    button:active,
+    .btn:active,
+    .nav-item:active,
+    .surgery-card:active {
+        transform: scale(0.975);
+        transition: transform 0.08s ease;
+    }
+}
+
+@keyframes sheetSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* 4. Network Status Banner */
+.network-status-banner {
+    position: fixed;
+    top: 58px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    z-index: 1002;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+    align-items: center;
+    gap: 6px;
+    animation: fadeIn 0.2s ease;
+}
+.network-status-banner.offline {
+    display: flex;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+[data-theme="dark"] .network-status-banner.offline {
+    background: #450a0a;
+    color: #fca5a5;
+    border-color: #7f1d1d;
+}
+.network-status-banner.online {
+    display: flex;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+[data-theme="dark"] .network-status-banner.online {
+    background: #052e16;
+    color: #86efac;
+    border-color: #14532d;
 }
 /* ===== PTDTT MANAGER — PRINT STYLESHEET (Phase 4) ===== */
 

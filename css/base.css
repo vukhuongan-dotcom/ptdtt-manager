@@ -4,12 +4,20 @@
     box-sizing: border-box;
 }
 
-/* A1 — Accessibility: keyboard focus ring (only shown on keyboard nav, not mouse click) */
+/* A1 — Accessibility: enhanced keyboard focus ring (WCAG 2.4.7 / 2.4.11) */
 :focus { outline: none; }
-:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-    border-radius: 2px;
+:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2.5px solid var(--primary) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.18) !important;
+    border-radius: var(--border-radius-sm, 6px);
 }
 
 /* U2: 14px → 15px — cải thiện readability, WCAG 1.4.4 */

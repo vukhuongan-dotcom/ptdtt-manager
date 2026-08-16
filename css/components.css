@@ -308,3 +308,29 @@
     font-size: var(--text-xs, 0.7333rem);
     color: var(--text-secondary);
 }
+
+/* ── Skeleton Loading (WCAG & Perceived Performance) ── */
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s ease-in-out infinite;
+    border-radius: var(--border-radius-sm, 6px);
+    display: inline-block;
+}
+.skeleton-text { height: 1em; width: 100%; margin-bottom: 6px; }
+.skeleton-title { height: 1.4em; width: 60%; margin-bottom: 12px; }
+.skeleton-card {
+    height: 110px;
+    width: 100%;
+    border-radius: var(--border-radius, 10px);
+}
+.skeleton-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+@keyframes skeletonLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+

@@ -13,17 +13,17 @@ const PlansPage = {
                 <h1 class="page-title">Kế hoạch hoạt động</h1>
                 <p class="page-subtitle">Lịch hoạt động khoa — ${this.getHeaderLabel()}</p>
             </div>
-            ${isAdmin ? `<button class="btn btn-primary" onclick="PlansPage.openForm()">
+            ${isAdmin ? `<button class="btn btn-primary" onclick="PlansPage.openForm()" aria-label="Thêm kế hoạch mới">
                 ${Utils.plusIcon()} Thêm kế hoạch
             </button>` : ''}
         </div>
 
         <div class="calendar-controls">
             <div class="calendar-nav">
-                <button class="btn-icon" onclick="PlansPage.prev()">${Utils.chevronLeft()}</button>
+                <button class="btn-icon" onclick="PlansPage.prev()" aria-label="Xem khoảng thời gian trước">${Utils.chevronLeft()}</button>
                 <span class="calendar-month-label">${this.getNavLabel()}</span>
-                <button class="btn-icon" onclick="PlansPage.next()">${Utils.chevronRight()}</button>
-                <button class="btn btn-secondary btn-sm" onclick="PlansPage.today()">Hôm nay</button>
+                <button class="btn-icon" onclick="PlansPage.next()" aria-label="Xem khoảng thời gian sau">${Utils.chevronRight()}</button>
+                <button class="btn btn-secondary btn-sm" onclick="PlansPage.today()" aria-label="Xem kế hoạch hôm nay">Hôm nay</button>
             </div>
             <div class="calendar-view-modes">
                 <button class="view-mode-btn ${this.viewMode==='month'?'active':''}" onclick="PlansPage.setView('month')">Tháng</button>

@@ -151,16 +151,16 @@ const SurgeryPage = {
                 <p class="page-subtitle">Lịch phẫu thuật khoa PT Đại trực tràng</p>
             </div>
             <div class="surg-header-actions">
-                <button class="btn btn-secondary" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Tự động xóa vĩnh viễn sau 7 ngày)">
+                <button class="btn btn-secondary" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Tự động xóa vĩnh viễn sau 7 ngày)" aria-label="Thùng rác ca mổ đã hủy">
                     🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
                 </button>
-                <button class="btn btn-secondary" onclick="SurgeryPage.exportTomorrowImage()">
+                <button class="btn btn-secondary" onclick="SurgeryPage.exportTomorrowImage()" aria-label="Xuất danh sách ca mổ ngày mai">
                     📷 Xuất DS ngày mai
                 </button>
-                <button class="btn btn-secondary" onclick="SurgeryPage.exportCustomDateImage()">
+                <button class="btn btn-secondary" onclick="SurgeryPage.exportCustomDateImage()" aria-label="Xuất danh sách ca mổ theo ngày">
                     📅 Xuất theo ngày
                 </button>
-                ${canEdit ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()">
+                ${canEdit ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()" aria-label="Thêm ca phẫu thuật mới">
                     ${Utils.plusIcon()} Thêm ca mổ
                 </button>` : ''}
             </div>
@@ -172,17 +172,17 @@ const SurgeryPage = {
 
         <div class="surgery-controls">
             <div class="calendar-nav">
-                <button class="btn-icon" onclick="SurgeryPage.prevWeek()">${Utils.chevronLeft()}</button>
+                <button class="btn-icon" onclick="SurgeryPage.prevWeek()" aria-label="Xem lịch mổ tuần trước">${Utils.chevronLeft()}</button>
                 <span class="calendar-month-label">${weekLabel}</span>
-                <button class="btn-icon" onclick="SurgeryPage.nextWeek()">${Utils.chevronRight()}</button>
-                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.thisWeek()">Tuần này</button>
+                <button class="btn-icon" onclick="SurgeryPage.nextWeek()" aria-label="Xem lịch mổ tuần sau">${Utils.chevronRight()}</button>
+                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.thisWeek()" aria-label="Xem lịch mổ tuần này">Tuần này</button>
             </div>
             <div class="surgery-stats">
-                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Lưu 7 ngày)">
+                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Lưu 7 ngày)" aria-label="Thùng rác ca mổ">
                     🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
                 </button>
                 <span class="surgery-stat-chip">📅 ${todayCases} ca hôm nay</span>
-                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả">
+                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả" aria-label="Thu gọn hoặc mở rộng tất cả thẻ ca mổ">
                     <span id="surgery-toggle-icon">📂</span> <span id="surgery-toggle-text">Mở rộng</span>
                 </button>
             </div>
@@ -247,14 +247,14 @@ const SurgeryPage = {
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                     </div>
                                     ${canEdit ? `<div class="surg-card-actions">
-                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
-                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
-                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
-                                    </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
+                                        <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Sửa ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" aria-label="Xoá ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
+                                    </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
                                 </div>
                             </div>`;
             }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
-                        ${canEdit ? `<button class="surgery-add-btn" onclick="SurgeryPage.openForm(null,'${ds}')">+ Thêm ca</button>` : ''}
+                        ${canEdit ? `<button class="surgery-add-btn" aria-label="Thêm ca mổ mới cho ngày ${this.fmtDate(d)}" onclick="SurgeryPage.openForm(null,'${ds}')">+ Thêm ca</button>` : ''}
                     </div>
                 </div>`;
         }).join('')}

@@ -129,10 +129,10 @@ const StaffPage = {
                         <td>
                             <div class="staff-actions">
                                 ${isAdmin ? `
-                                <button class="btn-icon" onclick="StaffPage.openForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
-                                <button class="btn-icon" onclick="StaffPage.delete(${s.id})" title="Xoá">${Utils.deleteIcon()}</button>
+                                <button class="btn-icon" onclick="StaffPage.openForm(${s.id})" title="Sửa" aria-label="Sửa thông tin nhân sự ${(s.name || '').replace(/"/g, '&quot;')}">${Utils.editIcon()}</button>
+                                <button class="btn-icon" onclick="StaffPage.delete(${s.id})" title="Xoá" aria-label="Xoá nhân sự ${(s.name || '').replace(/"/g, '&quot;')}">${Utils.deleteIcon()}</button>
                                 ` : (s.id === myStaffId ? `
-                                <button class="btn-icon" onclick="StaffPage.openContactForm(${s.id})" title="Cập nhật SĐT / Email">${Utils.editIcon()}</button>
+                                <button class="btn-icon" onclick="StaffPage.openContactForm(${s.id})" title="Cập nhật SĐT / Email" aria-label="Cập nhật SĐT và Email của ${(s.name || '').replace(/"/g, '&quot;')}">${Utils.editIcon()}</button>
                                 ` : '')}
                             </div>
                         </td>

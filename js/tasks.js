@@ -135,8 +135,8 @@ const TasksPage = {
                 <span class="task-card-deadline" style="${t.status === 'done' ? 'color:var(--success)' : deadlineClass}">${t.status === 'done' && t.completedAt ? '✅ ' + Utils.formatDateShort(t.completedAt) : deadlineText}</span>
             </div>
             ${isAdmin ? `<div class="task-card-actions" onmousedown="event.stopPropagation()">
-                <button type="button" class="btn-icon btn-sm" draggable="false" onclick="event.preventDefault();event.stopPropagation();TasksPage.openForm(${t.id})">${Utils.editIcon()}</button>
-                <button type="button" class="btn-icon btn-sm task-delete-btn" draggable="false" onclick="event.preventDefault();event.stopPropagation();TasksPage.moveToTrash(${t.id})">${Utils.deleteIcon()}</button>
+                <button type="button" class="btn-icon btn-sm" draggable="false" onclick="event.preventDefault();event.stopPropagation();TasksPage.openForm(${t.id})" title="Sửa công việc" aria-label="Sửa công việc ${(t.title || '').replace(/"/g, '&quot;')}">${Utils.editIcon()}</button>
+                <button type="button" class="btn-icon btn-sm task-delete-btn" draggable="false" onclick="event.preventDefault();event.stopPropagation();TasksPage.moveToTrash(${t.id})" title="Chuyển vào thùng rác" aria-label="Chuyển công việc ${(t.title || '').replace(/"/g, '&quot;')} vào thùng rác">${Utils.deleteIcon()}</button>
             </div>` : ''}
         </div>`;
     },

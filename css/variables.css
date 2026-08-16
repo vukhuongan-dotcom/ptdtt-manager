@@ -37,11 +37,11 @@
     --glass-border: rgba(0, 0, 0, 0.08);
     --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
 
-    /* Gradient */
-    --gradient-primary: linear-gradient(135deg, #0891b2, #7c3aed);
+    /* Gradient — Clinical Oceanic System (Thay thế AI purple cliché) */
+    --gradient-primary: linear-gradient(135deg, #0891b2, #0e7490);
     --gradient-success: linear-gradient(135deg, #059669, #0891b2);
     --gradient-warning: linear-gradient(135deg, #d97706, #dc2626);
-    --gradient-accent: linear-gradient(135deg, #7c3aed, #db2777);
+    --gradient-accent: linear-gradient(135deg, #0284c7, #0369a1);
 
     /* Sizes */
     --sidebar-width: 260px;
@@ -64,7 +64,7 @@
     /* U1: thêm shadow-xl cho modal, dropdown nổi bật */
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
     --shadow-glow-primary: 0 0 20px rgba(8, 145, 178, 0.2);
-    --shadow-glow-accent: 0 0 20px rgba(124, 58, 237, 0.2);
+    --shadow-glow-accent: 0 0 20px rgba(2, 132, 199, 0.2);
 
     /* P3.1 — Typography scale (base: 15px từ U2) */
     /* U1: thêm --text-xxs cho badge micro, label cực nhỏ */
@@ -157,13 +157,13 @@
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
     --shadow-glow-primary: 0 0 20px rgba(56, 189, 248, 0.25);
-    --shadow-glow-accent:  0 0 20px rgba(167, 139, 250, 0.25);
+    --shadow-glow-accent:  0 0 20px rgba(2, 132, 199, 0.25);
 
-    /* Gradients — dùng màu SÁNG để -webkit-text-fill-color readable trên dark bg */
-    --gradient-primary: linear-gradient(135deg, #38bdf8, #a78bfa);
+    /* Gradients — Clinical Oceanic dark mode */
+    --gradient-primary: linear-gradient(135deg, #38bdf8, #0ea5e9);
     --gradient-success: linear-gradient(135deg, #34d399, #38bdf8);
     --gradient-warning: linear-gradient(135deg, #fbbf24, #f87171);
-    --gradient-accent:  linear-gradient(135deg, #a78bfa, #f472b6);
+    --gradient-accent:  linear-gradient(135deg, #0284c7, #38bdf8);
 
     /* Surface tokens */
     --surface:           #161b22;

@@ -139,6 +139,81 @@ const App = {
 
         // U2: Sync dark mode toggle UI sau khi app render
         this._initTheme();
+
+        // Mobile UX: Network status banner & Swipe gestures
+        this._initNetworkStatusIndicator();
+        this._initSwipeNavigation();
+    },
+
+    // Mobile UX: Offline / Online connectivity banner
+    _initNetworkStatusIndicator() {
+        const showStatus = (isOnline) => {
+            let banner = document.getElementById('network-status-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'network-status-banner';
+                banner.className = 'network-status-banner';
+                document.body.appendChild(banner);
+            }
+            if (!isOnline) {
+                banner.className = 'network-status-banner offline';
+                banner.innerHTML = '⚠️ Đang dùng ngoại tuyến (Offline)';
+            } else {
+                banner.className = 'network-status-banner online';
+                banner.innerHTML = '✅ Đã kết nối lại máy chủ';
+                setTimeout(() => {
+                    if (banner) banner.className = 'network-status-banner';
+                }, 3000);
+            }
+        };
+
+        window.addEventListener('offline', () => showStatus(false));
+        window.addEventListener('online', () => showStatus(true));
+    },
+
+    // Mobile UX: Swipe navigation for Surgery and Schedule pages
+    _initSwipeNavigation() {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const minSwipeDistance = 60; // px
+        const maxPerpendicularDistance = 45; // px
+
+        const content = document.getElementById('content');
+        if (!content) return;
+
+        content.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        content.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length !== 1) return;
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = Math.abs(touchEndY - touchStartY);
+
+            // Trigger horizontal swipe only when vertical movement is small
+            if (Math.abs(deltaX) >= minSwipeDistance && deltaY <= maxPerpendicularDistance) {
+                if (App.currentPage === 'surgery' && typeof SurgeryPage !== 'undefined') {
+                    if (deltaX < 0 && typeof SurgeryPage.nextDay === 'function') {
+                        SurgeryPage.nextDay(); // swipe left -> next day
+                    } else if (deltaX > 0 && typeof SurgeryPage.prevDay === 'function') {
+                        SurgeryPage.prevDay(); // swipe right -> prev day
+                    }
+                } else if (App.currentPage === 'schedule' && typeof SchedulePage !== 'undefined') {
+                    if (deltaX < 0 && typeof SchedulePage.nextWeek === 'function') {
+                        SchedulePage.nextWeek(); // swipe left -> next week
+                    } else if (deltaX > 0 && typeof SchedulePage.prevWeek === 'function') {
+                        SchedulePage.prevWeek(); // swipe right -> prev week
+                    }
+                }
+            }
+        }, { passive: true });
     },
 
     // P3.3b: Global keyboard shortcuts

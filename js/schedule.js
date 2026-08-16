@@ -400,27 +400,27 @@ const SchedulePage = {
                 </p>
             </div>
             <div class="flex items-center gap-8">
-                <button class="btn btn-secondary" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn">
+                <button class="btn btn-secondary" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn" aria-label="Xuất lịch mổ robot">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
                     Xuất lịch mổ robot
                 </button>
-                <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn">
+                <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn" aria-label="Xuất lịch phân công tuần">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
                     Xuất lịch tuần
                 </button>
-                ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.undo()" id="undo-schedule-btn" ${(this._undoStack && this._undoStack.length > 0) ? '' : 'disabled style="opacity:0.5;cursor:not-allowed"'}>
+                ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.undo()" id="undo-schedule-btn" aria-label="Hoàn tác thao tác chỉnh sửa" ${(this._undoStack && this._undoStack.length > 0) ? '' : 'disabled style="opacity:0.5;cursor:not-allowed"'}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
                     Hoàn tác ${(this._undoStack && this._undoStack.length > 0) ? `(${this._undoStack.length})` : ''}
                 </button>
-                <button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()">
+                <button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()" aria-label="Sao chép phân công từ tuần trước">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     Sao chép tuần trước
                 </button>
-                <button class="btn btn-danger" onclick="SchedulePage.clearSchedule()">
+                <button class="btn btn-danger" onclick="SchedulePage.clearSchedule()" aria-label="Xoá phân công tuần này">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     Xoá lịch
                 </button>
-                <button class="btn btn-primary" onclick="SchedulePage.saveSchedule()">
+                <button class="btn btn-primary" onclick="SchedulePage.saveSchedule()" aria-label="Lưu lịch phân công tuần">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Lưu lịch
                 </button>` : ''}
@@ -458,14 +458,14 @@ const SchedulePage = {
         ` : ''}
 
         <div class="schedule-nav">
-            <button class="btn-icon" onclick="SchedulePage.prevWeek()">
+            <button class="btn-icon" onclick="SchedulePage.prevWeek()" aria-label="Xem lịch tuần trước">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <span class="schedule-week-label">${startStr} — ${endStr}</span>
-            <button class="btn-icon" onclick="SchedulePage.nextWeek()">
+            <button class="btn-icon" onclick="SchedulePage.nextWeek()" aria-label="Xem lịch tuần sau">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="SchedulePage.thisWeek()">Tuần này</button>
+            <button class="btn btn-secondary btn-sm" onclick="SchedulePage.thisWeek()" aria-label="Xem lịch tuần hiện tại">Tuần này</button>
         </div>
 
         <div class="schedule-table-wrap">

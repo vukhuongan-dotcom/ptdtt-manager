@@ -288,8 +288,8 @@ const ConferencesPage = {
                         <span class="cp-pres-title">${p.title}</span>
                         <span class="cp-pres-who">— ${p.presenter}</span>
                         ${canEdit ? `<div class="cp-pres-actions">
-                            <button class="btn-icon-sm" onclick="ConferencesPage.openPresentationForm(${item.id}, ${actualIdx})" title="Sửa bài báo cáo">✏️</button>
-                            <button class="btn-icon-sm" onclick="ConferencesPage.deletePresentation(${item.id}, ${actualIdx})" title="Xoá bài báo cáo">🗑️</button>
+                            <button class="btn-icon-sm" onclick="ConferencesPage.openPresentationForm(${item.id}, ${actualIdx})" title="Sửa bài báo cáo" aria-label="Sửa bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}">✏️</button>
+                            <button class="btn-icon-sm" onclick="ConferencesPage.deletePresentation(${item.id}, ${actualIdx})" title="Xoá bài báo cáo" aria-label="Xoá bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}">🗑️</button>
                         </div>` : ''}
                     </div>`;
                 }).join('');
@@ -325,7 +325,7 @@ const ConferencesPage = {
                         <span class="cp-stat-num">${pres.length}</span>
                         <span class="cp-stat-unit">bài báo cáo</span>
                     </div>
-                    <div class="cp-stat-pill cp-stat-person cp-stat-person-btn" onclick="ConferencesPage.openPresenterModal(${item.id})" title="Xem danh sách báo cáo viên">
+                    <div class="cp-stat-pill cp-stat-person cp-stat-person-btn" onclick="ConferencesPage.openPresenterModal(${item.id})" title="Xem danh sách báo cáo viên" role="button" tabindex="0" aria-label="Xem danh sách báo cáo viên của hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">
                         <span class="cp-stat-num">${presenters.length}</span>
                         <span class="cp-stat-unit">báo cáo viên ↗</span>
                     </div>
@@ -344,12 +344,12 @@ const ConferencesPage = {
                 <div class="cp-card-footer">
                     <div class="cp-footer-left">
                         ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
-                        ${canExport && pres.length > 0 ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo">📷 Xuất ảnh</button>` : ''}
+                        ${canExport && pres.length > 0 ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo" aria-label="Xuất ảnh lịch báo cáo hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">📷 Xuất ảnh</button>` : ''}
                     </div>
                     ${canEdit ? `<div class="cp-footer-actions">
-                        <button class="btn btn-primary btn-sm" onclick="ConferencesPage.openPresentationForm(${item.id})">➕ Bài báo cáo</button>
-                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})">✏️ Sửa</button>
-                        <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})">🗑️</button>
+                        <button class="btn btn-primary btn-sm" onclick="ConferencesPage.openPresentationForm(${item.id})" aria-label="Thêm bài báo cáo mới cho hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">➕ Bài báo cáo</button>
+                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})" aria-label="Sửa thông tin hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">✏️ Sửa</button>
+                        <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})" aria-label="Xoá hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">🗑️</button>
                     </div>` : ''}
                 </div>
             </div>`;
@@ -361,11 +361,11 @@ const ConferencesPage = {
                 <h1 class="page-title">Báo cáo khoa học</h1>
                 <p class="page-subtitle">Thống kê tham gia báo cáo tại hội nghị trong nước & quốc tế</p>
             </div>
-            ${canEdit ? `<button class="btn btn-primary" onclick="ConferencesPage.openForm()">
+            ${canEdit ? `<button class="btn btn-primary" onclick="ConferencesPage.openForm()" aria-label="Thêm hội nghị mới">
                 ${Utils.plusIcon()} Thêm hội nghị
             </button>` : ''}
         </div>
-
+        
         <!-- Summary stats -->
         <div class="cp-stats-row">
             <div class="cp-stat-card">

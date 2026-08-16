@@ -41,10 +41,10 @@ const ResearchPage = {
                 <p class="page-subtitle">Lịch SHCM & Tài liệu — Khoa PTĐTT · Bệnh viện Bình Dân</p>
             </div>
             <div class="rsch-header-actions">
-                <button class="btn btn-secondary" id="shcm-export-btn" onclick="ResearchPage.exportImage()">
+                <button class="btn btn-secondary" id="shcm-export-btn" onclick="ResearchPage.exportImage()" aria-label="Xuất hình ảnh lịch sinh hoạt chuyên môn">
                     📸 Xuất hình
                 </button>
-                ${canEdit ? `<button class="btn btn-primary" onclick="ResearchPage.openForm()">
+                ${canEdit ? `<button class="btn btn-primary" onclick="ResearchPage.openForm()" aria-label="Thêm bài sinh hoạt chuyên môn mới">
                     ${Utils.plusIcon()} Thêm bài SHCM
                 </button>` : ''}
             </div>
@@ -66,7 +66,7 @@ const ResearchPage = {
                 <span class="rsch-settings-label">Thời lượng:</span>
                 <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
                 <span class="rsch-settings-unit">phút</span>
-                <button class="btn btn-secondary btn-sm" onclick="ResearchPage.saveSettings()">Lưu</button>
+                <button class="btn btn-secondary btn-sm" onclick="ResearchPage.saveSettings()" aria-label="Lưu cài đặt giờ sinh hoạt chuyên môn">Lưu</button>
             </div>
         </div>` : ''}
 
@@ -99,8 +99,8 @@ const ResearchPage = {
                                 <td><span class="rsch-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}30">${st.icon} ${st.label}</span></td>
                                 <td class="rsch-date">${dateLabel}</td>
                                 ${canEdit ? `<td class="rsch-actions">
-                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa">✏️</button>
-                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá">🗑️</button>
+                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">✏️</button>
+                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
                                 </td>` : ''}
                             </tr>`;
         }).join('')}
