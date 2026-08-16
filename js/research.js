@@ -379,11 +379,11 @@ const ResearchPage = {
     async deleteItem(id) {
         if (!this._canEdit()) return;
         const confirmed = await Confirm.show({
-            title: 'Xoà bài SHCM',
-            message: 'Bạn có chắc chắn muốn xoà bài SHCM này?<br>Hành động này không thể hoàn tác.',
+            title: 'Xoá bài SHCM',
+            message: 'Bạn có chắc chắn muốn xoá bài SHCM này?<br>Hành động này không thể hoàn tác.',
             icon: '🗑️',
             type: 'danger',
-            confirmText: 'Xoà bài',
+            confirmText: 'Xoá bài',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;
@@ -477,11 +477,11 @@ const ResearchPage = {
     async deleteFile(filename) {
         if (!this._canEdit()) return;
         const confirmed = await Confirm.show({
-            title: 'Xoà file',
-            message: `Bạn có chắc muốn xoà file <strong>${filename}</strong>?<br>Hành động này không thể hoàn tác.`,
+            title: 'Xoá file',
+            message: `Bạn có chắc muốn xoá file <strong>${filename}</strong>?<br>Hành động này không thể hoàn tác.`,
             icon: '🗑️',
             type: 'danger',
-            confirmText: 'Xoà file',
+            confirmText: 'Xoá file',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;

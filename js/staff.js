@@ -1110,18 +1110,18 @@ const StaffPage = {
         const t = teams.find(x => x.id === id);
         if (!t) return;
         const confirmed = await Confirm.show({
-            title: 'Xoà tổ đặc trách',
-            message: `Xoà tổ <strong>${t.name}</strong>?<br>Hành động này không thể hoàn tác.`,
+            title: 'Xoá tổ đặc trách',
+            message: `Xoá tổ <strong>${t.name}</strong>?<br>Hành động này không thể hoàn tác.`,
             icon: '🗑️',
             type: 'danger',
-            confirmText: 'Xoà tổ',
+            confirmText: 'Xoá tổ',
             cancelText: 'Giữ lại'
         });
         if (confirmed) {
             Store.remove('specialTeams', id);
             Store.saveCollections(['specialTeams']);
             App.renderCurrentPage();
-            Toast.success(`Đã xoà tổ ${t.name}`);
+            Toast.success(`Đã xoá tổ ${t.name}`);
         }
     }
 };

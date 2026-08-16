@@ -875,11 +875,11 @@ const SchedulePage = {
             return;
         }
         const confirmed = await Confirm.show({
-            title: 'Xoà lịch phân công tuần',
-            message: 'Xoà các vị trí linh hoạt trên lịch tuần này?<br>Các <strong>vị trí trực khoa cố định và lịch mổ Thứ 7</strong> sẽ được giữ nguyên.',
+            title: 'Xoá lịch phân công tuần',
+            message: 'Xoá các vị trí linh hoạt trên lịch tuần này?<br>Các <strong>vị trí trực khoa cố định và lịch mổ Thứ 7</strong> sẽ được giữ nguyên.',
             icon: '⚠️',
             type: 'warning',
-            confirmText: 'Xoà các vị trí linh hoạt',
+            confirmText: 'Xoá các vị trí linh hoạt',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;

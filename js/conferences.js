@@ -532,18 +532,18 @@ const ConferencesPage = {
         if (!this._canEdit()) return;
         const item = Store.getById('conferences', id);
         const confirmed = await Confirm.show({
-            title: 'Xoà hội nghị',
-            message: `Bạn có chắc chắn muốn xoà hội nghị${item?.name ? ` <strong>${item.name}</strong>` : ' này'}?<br>Hành động này không thể hoàn tác.`,
+            title: 'Xoá hội nghị',
+            message: `Bạn có chắc chắn muốn xoá hội nghị${item?.name ? ` <strong>${item.name}</strong>` : ' này'}?<br>Hành động này không thể hoàn tác.`,
             icon: '🗑️',
             type: 'danger',
-            confirmText: 'Xoà hội nghị',
+            confirmText: 'Xoá hội nghị',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;
         Store.remove('conferences', id);
         Modal.close();
         App.renderCurrentPage();
-        Toast.success('Đã xoà hội nghị');
+        Toast.success('Đã xoá hội nghị');
     },
 
     // ===== PRESENTATION MANAGEMENT (BÀI BÁO CÁO) =====
@@ -645,11 +645,11 @@ const ConferencesPage = {
 
         const pres = item.presentations[presIndex];
         const confirmed = await Confirm.show({
-            title: 'Xoà bài báo cáo',
-            message: `Bạn có chắc muốn xoà bài báo cáo <strong>${pres.title}</strong> của bác sĩ <strong>${pres.presenter}</strong>?`,
+            title: 'Xoá bài báo cáo',
+            message: `Bạn có chắc muốn xoá bài báo cáo <strong>${pres.title}</strong> của bác sĩ <strong>${pres.presenter}</strong>?`,
             icon: '🗑️',
             type: 'danger',
-            confirmText: 'Xoà bài báo cáo',
+            confirmText: 'Xoá bài báo cáo',
             cancelText: 'Giữ lại'
         });
         if (!confirmed) return;
@@ -660,7 +660,7 @@ const ConferencesPage = {
 
         Modal.close();
         App.renderCurrentPage();
-        Toast.success('Đã xoà bài báo cáo');
+        Toast.success('Đã xoá bài báo cáo');
     },
 
     // ── Xuất ảnh lịch báo cáo ──

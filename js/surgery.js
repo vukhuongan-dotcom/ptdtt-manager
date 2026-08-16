@@ -249,7 +249,7 @@ const SurgeryPage = {
                                     ${canEdit ? `<div class="surg-card-actions">
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
-                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoà</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
                                     </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
                                 </div>
                             </div>`;
