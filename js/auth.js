@@ -522,9 +522,9 @@ const LoginPage = {
                         <label class="form-label">Mật khẩu</label>
                         <input class="form-input" type="password" id="login-password" name="password" placeholder="••••••" required>
                     </div>
-                    <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:0">
-                        <input type="checkbox" id="login-remember" style="width:16px;height:16px;accent-color:#6366f1">
-                        <label for="login-remember" style="font-size:0.82rem;color:#94a3b8;cursor:pointer;user-select:none">Ghi nhớ thiết bị này</label>
+                    <div class="login-remember-row">
+                        <input type="checkbox" id="login-remember">
+                        <label for="login-remember">Ghi nhớ thiết bị này</label>
                     </div>
                     <button type="submit" class="login-btn">Đăng nhập</button>
                 </form>
