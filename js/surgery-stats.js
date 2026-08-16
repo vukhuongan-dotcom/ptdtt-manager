@@ -222,58 +222,138 @@ const SurgeryStatsPage = {
         return '—';
     },
 
-    // ===== THUẬT TOÁN PHÂN LOẠI 6 TRỤC NĂNG LỰC LÂM SÀNG =====
-    // Quy tắc ưu tiên nghiêm ngặt (Strict Priority Hierarchy) đảm bảo 1 ca mổ chỉ thuộc duy nhất 1 trục
+    // ===== THUẬT TOÁN PHÂN LOẠI 6 TRỤC NĂNG LỰC LÂM SÀNG PHẪU THUẬT =====
+    // Chuẩn hóa Unicode NFC và phân tích có trọng số theo phương pháp phẫu thuật (Method-First Priority)
     classifySurgery(s) {
-        const method = (s.method || '').toLowerCase();
-        const diag = (s.diagnosis || '').toLowerCase();
+        if (!s) return 'emergency';
+        const method = (s.method || '').normalize('NFC').toLowerCase().trim();
+        const diag = (s.diagnosis || '').normalize('NFC').toLowerCase().trim();
         const text = `${method} ${diag}`;
 
-        // 1. Ưu tiên 1: Phẫu thuật Trực tràng & TME (Trục 2)
-        if (text.includes('cắt trước thấp') || text.includes('lar') || text.includes('tme') || 
-            text.includes('miles') || text.includes('apr') || text.includes('icg') || 
-            text.includes('tatme') || text.includes('cắt trước') || text.includes('bảo tồn cơ thắt') ||
-            ((diag.includes('k trực tràng') || diag.includes('u trực tràng') || diag.includes('k ống hậu môn')) && 
-             (method.includes('cắt') || method.includes('nạo hạch') || method.includes('ptns') || method.includes('mổ mở')))) {
-            return 'rectal';
-        }
+        // 1. HẬU MÔN NHÂN TẠO & LƯU THÔNG RUỘT (STOMA - Trục 4)
+        // Ưu tiên cao nhất cho phẫu thuật đóng / mở / sửa HMNT / tái lập lưu thông ruột
+        // (Tránh bị nhầm vào nhóm Đại tràng/Trực tràng do chẩn đoán chứa bệnh nền K cũ)
+        const hasMajorResection = [
+            'cắt đại tràng', 'cắt trước thấp', 'cắt trước', 'cắt trực tràng', 'miles', 'cắt cụt', 
+            'lar', 'tme', 'tatme', 'cắt toàn bộ đại tràng', 'cắt nửa đại tràng', 'cắt đoạn đại tràng', 'colectomy'
+        ].some(k => method.includes(k));
 
-        // 2. Ưu tiên 2: Phẫu thuật Đại tràng (Trục 1)
-        if (text.includes('đại tràng phải') || text.includes('đại tràng trái') || 
-            text.includes('đại tràng sigma') || text.includes('cắt đại tràng') || 
-            text.includes('đại tràng ngang') || text.includes('colectomy') || 
-            text.includes('cme') || text.includes('nạo vét hạch d3') || text.includes('k đại tràng') ||
-            text.includes('u đại tràng') || text.includes('k sigma') || text.includes('u sigma') ||
-            text.includes('manh tràng') || text.includes('cắt nửa đại tràng') || text.includes('cắt toàn bộ đại tràng')) {
-            return 'colon';
-        }
+        const isStomaOp = (
+            (method.includes('đóng') && ['hồi tràng', 'hmnt', 'hậu môn nhân tạo', 'đại tràng', 'lỗ mở', 'ruột', 'mổ'].some(k => method.includes(k))) ||
+            method.includes('tái lập lưu thông') || method.includes('hartmann reversal') || method.includes('reversal') ||
+            (method.includes('phẫu thuật đóng') && ['hmnt', 'hồi tràng', 'hậu môn nhân tạo'].some(k => text.includes(k))) ||
+            ((method.includes('mở') || method.includes('làm') || method.includes('chuyển lưu')) && 
+             ['hồi tràng', 'hmnt', 'hậu môn nhân tạo'].some(k => method.includes(k)) && !hasMajorResection) ||
+            ['sửa hmnt', 'sửa hậu môn nhân tạo', 'chăm sóc hmnt', 'đặt lại hmnt', 'hạ lưu', 'sa hậu môn nhân tạo', 'sa hmnt'].some(k => text.includes(k))
+        );
 
-        // 3. Ưu tiên 3: Đóng / Mở HMNT & Lưu thông ruột (Trục 4)
-        if (text.includes('đóng hồi tràng') || text.includes('hartmann reversal') || 
-            text.includes('hartmann') || text.includes('đóng hậu môn') || 
-            text.includes('đóng hmnt') || text.includes('đóng đại tràng') || 
-            text.includes('tái lập lưu thông') || text.includes('mở hồi tràng') || 
-            text.includes('mở đại tràng') || text.includes('mở hmnt') || text.includes('đóng mổ')) {
+        if (isStomaOp && !hasMajorResection) {
             return 'stoma';
         }
 
-        // 4. Ưu tiên 4: Bệnh lý Hậu môn - Trực tràng lành tính (Trục 3)
-        if (text.includes('trĩ') || text.includes('dao siêu âm') || text.includes('longo') || 
-            text.includes('rò hậu môn') || text.includes('fistula') || text.includes('lift') || 
-            text.includes('mô xơ') || text.includes('nứt kẽ') || text.includes('áp xe') || 
-            text.includes('milligan') || text.includes('ferguson') || text.includes('polyp hậu môn') ||
-            text.includes('hậu môn')) {
+        // 2. BỆNH LÝ HẬU MÔN - TRỰC TRÀNG LÀNH TÍNH (PROCTOLOGY - Trục 3)
+        // Trĩ, rò hậu môn, nứt kẽ, áp xe tầng sinh môn, sa trực tràng, xoang cùng cụt, u nhú...
+        const isProctologyOp = (
+            [
+                'trĩ', 'longo', 'milligan', 'ferguson', 'khâu treo trĩ', 'thắt trĩ', 'triệt mạch trĩ', 'thd', 
+                'rò hậu môn', 'fistula', 'fistulotomy', 'fistulectomy', 'lift', 'seton', 'cột dây thun', 
+                'mô xơ đường rò', 'cắt mô xơ', 'nứt kẽ', 'cắt cơ thắt', 'áp xe hậu môn', 'apxe hậu môn', 
+                'apxe quanh hậu môn', 'áp xe quanh hậu môn', 'polyp hậu môn', 'u nhú hậu môn', 'condyloma', 
+                'sùi mào gà', 'da thừa hậu môn', 'đốt u sùi', 'rò âm đạo - trực tràng', 'rò trực tràng', 
+                'sa trực tràng', 'delorme', 'altemeier', 'rectopexy', 'cố định trực tràng',
+                'cắt polyp trực tràng qua ngã hậu môn', 'cắt polyp qua ngã hậu môn', 'cắt u qua ngã hậu môn', 
+                'cùng cụt', 'rò cùng cụt', 'xoang cùng cụt', 'pilonidal', 'nang tổ lông',
+                'cắt u mỡ quanh hậu môn', 'cắt u mỡ hậu môn', 'dẫn lưu áp xe hậu môn', 'polyp ống hậu môn',
+                'thắt trĩ qua nội soi', 'tiêm xơ trĩ'
+            ].some(k => method.includes(k)) ||
+            (
+                [
+                    'trĩ', 'rò hậu môn', 'nứt kẽ', 'áp xe quanh hậu môn', 'apxe hậu môn', 'apxe quanh hậu môn', 
+                    'sa trực tràng', 'condyloma', 'sùi mào gà', 'xoang cùng cụt', 'rò cùng cụt', 'nang tổ lông', 'polyp ống hậu môn'
+                ].some(k => diag.includes(k)) &&
+                !hasMajorResection && 
+                !['k trực tràng', 'k đại tràng', 'ung thư đại tràng', 'ung thư trực tràng'].some(k => diag.includes(k))
+            )
+        );
+
+        if (isProctologyOp && !hasMajorResection) {
             return 'proctology';
         }
 
-        // 5. Ưu tiên 5: Gan mật & Tiêu hóa phối hợp (Trục 5)
-        if (text.includes('túi mật') || text.includes('cholecystectomy') || text.includes('ruột non') || 
-            text.includes('nối tắt') || text.includes('thoát vị') || text.includes('dạ dày') || 
-            text.includes('lách') || text.includes('u mạc treo')) {
+        // 3. GAN MẬT & TIÊU HÓA PHỐI HỢP (BILIARY & GENERAL GI - Trục 5)
+        // Thoát vị bẹn, túi mật, dạ dày, lách, u sau phúc mạc, ruột non, đa cơ quan phối hợp...
+        const isBiliaryGiOp = (
+            [
+                'túi mật', 'cholecystectomy', 'sỏi mật', 'ống mật chủ', 'ercp', 'thoát vị bẹn', 'thoát vị thành bụng', 
+                'thoát vị vết mổ', 'thoát vị đùi', 'thoát vị rốn', 'thoát vị hoành', 'phục hồi thành bụng', 'phục hồi thành bẹn', 
+                'phục hồi rốn', 'phục hồi cơ hoành', 'tapp', 'tep', 'lichtenstein', 'ruột non', 'cắt ruột non', 'nối ruột', 'nối vị tràng', 
+                'nối tắt', 'dạ dày', 'cắt dạ dày', 'khâu lỗ thủng dạ dày', 'lách', 'cắt lách', 'u mạc treo', 
+                'u sau phúc mạc', 'u mỡ sau phúc mạc', 'nang mạc treo', 'nang niệu rốn', 'xoang niệu rốn', 'nang buồng trứng', 
+                'cắt tử cung', 'cắt buồng trứng', 'thực quản', 'tuyến giáp', 'gist', 'tá tràng', 'sarcoma', 'hang vị', 'thân vị',
+                'cắt u mỡ', 'u mỡ vùng lưng', 'thay jj', 'c-arm', 'u hồi tràng', 'u hỗng tràng', 'esd dạ dày', 'esd thực quản', 'esd tá tràng'
+            ].some(k => method.includes(k)) ||
+            (
+                [
+                    'sỏi túi mật', 'viêm túi mật', 'thoát vị bẹn', 'thoát vị thành bụng', 'thoát vị rốn', 'thoát vị hoành', 
+                    'thoát vị vết mổ', 'u sau phúc mạc', 'u mạc treo', 'sỏi ống mật chủ', 'nang niệu rốn', 'xoang niệu rốn', 
+                    'gist', 'dạ dày', 'thực quản', 'sarcoma', 'tá tràng', 'hang vị', 'nang mạc treo', 'u mỡ lớn vùng lưng', 'u mỡ', 'u hồi tràng'
+                ].some(k => diag.includes(k)) &&
+                !hasMajorResection && 
+                !['k trực tràng', 'k đại tràng'].some(k => diag.includes(k))
+            )
+        );
+
+        if (isBiliaryGiOp && !hasMajorResection) {
             return 'biliary_gi';
         }
 
-        // 6. Ưu tiên 6 / Fallback: Cấp cứu & Bán khẩn (Trục 6)
+        // 4. PHẪU THUẬT TRỰC TRÀNG & TME (RECTAL - Trục 2)
+        // LAR, Ultra-low LAR, TME, Miles/APR, ISR, TaTME, TAMIS, TEM, cắt u trực tràng...
+        const isRectalOp = (
+            [
+                'cắt trước thấp', 'cắt trước', 'lar', 'tme', 'miles', 'apr', 'cắt cụt trực tràng', 'cắt trực tràng', 
+                'tatme', 'tamis', 'tem', 'bảo tồn cơ thắt', 'gian cơ thắt', 'isr', 'pull-through', 'pull through', 
+                'kraske', 'mason', 'cắt u trực tràng', 'phẫu thuật nội soi cắt u trực tràng', 'sinh thiết u qua ngã hậu môn', 
+                'sinh thiết qua ngã hậu môn', 'nong miệng nối trực tràng', 'cắt polyp trực tràng'
+            ].some(k => method.includes(k)) ||
+            (
+                [
+                    'k trực tràng', 'u trực tràng', 'k ống hậu môn', 'carcinoma trực tràng', 'ung thư trực tràng', 
+                    'polyp trực tràng', 'u dưới niêm trực tràng', 'polyp lớn trực tràng'
+                ].some(k => diag.includes(k)) &&
+                ['cắt', 'nạo hạch', 'ptns', 'robot', 'mổ mở', 'phẫu thuật', 'esd', 'sinh thiết', 'nong'].some(k => method.includes(k)) &&
+                !['cắt đại tràng phải', 'cắt đại tràng trái', 'cắt đại tràng sigma', 'cắt đại tràng ngang'].some(k => method.includes(k))
+            )
+        );
+
+        if (isRectalOp) {
+            return 'rectal';
+        }
+
+        // 5. PHẪU THUẬT ĐẠI TRÀNG (COLON - Trục 1)
+        // Cắt đại tràng phải, trái, sigma, ngang, toàn bộ, CME, D3, cắt manh tràng...
+        const isColonOp = (
+            [
+                'cắt đại tràng', 'đại tràng phải', 'đại tràng trái', 'đại tràng sigma', 'đại tràng ngang', 
+                'đại tràng góc gan', 'đại tràng góc lách', 'cắt toàn bộ đại tràng', 'cắt gần toàn bộ đại tràng', 
+                'cắt nửa đại tràng', 'cme', 'd3', 'colectomy', 'hemicolectomy', 'cắt manh tràng', 'cắt đoạn đại tràng', 
+                'cắt u đại tràng', 'cắt polyp đại tràng', 'manh tràng'
+            ].some(k => method.includes(k)) ||
+            (
+                [
+                    'k đại tràng', 'u đại tràng', 'k sigma', 'u sigma', 'k manh tràng', 'ung thư đại tràng', 
+                    'viêm túi thừa đại tràng', 'xoắn đại tràng', 'xoắn sigma', 'polyp đại tràng'
+                ].some(k => diag.includes(k)) &&
+                ['cắt', 'nạo hạch', 'ptns', 'robot', 'mổ mở', 'phẫu thuật'].some(k => method.includes(k))
+            )
+        );
+
+        if (isColonOp) {
+            return 'colon';
+        }
+
+        // 6. CẤP CỨU & BÁN KHẨN (EMERGENCY / URGENT - Trục 6)
+        // Viêm phúc mạc, viêm ruột thừa, tắc ruột, thủng ruột, thám sát sinh thiết, cấp cứu bụng...
         return 'emergency';
     },
 
