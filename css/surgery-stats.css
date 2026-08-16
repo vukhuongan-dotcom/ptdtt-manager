@@ -907,6 +907,124 @@
     color: #38bdf8;
 }
 
+/* Logbook Filter Toolbar */
+.sstats-filter-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+.sstats-filter-search-box {
+    flex: 1;
+    min-width: 260px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.sstats-filter-search-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+.sstats-filter-search-input {
+    width: 100%;
+    padding-left: 32px !important;
+    padding-right: 28px !important;
+    font-size: 0.84rem;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+.sstats-clear-search-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.sstats-clear-search-btn:hover {
+    color: var(--text-primary);
+}
+.sstats-filter-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.sstats-filter-select {
+    font-size: 0.82rem;
+    height: 36px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    min-width: 145px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.sstats-reset-filters-btn {
+    height: 36px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 0 12px;
+    background: rgba(225, 29, 72, 0.1);
+    color: #e11d48;
+    border: 1px solid rgba(225, 29, 72, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.sstats-reset-filters-btn:hover {
+    background: rgba(225, 29, 72, 0.2);
+    color: #be123c;
+}
+.sstats-empty-filter-state {
+    padding: 40px 20px;
+    text-align: center;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    margin: 10px 0;
+    border: 1px dashed var(--border);
+}
+.sstats-matrix-tr-clickable {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.sstats-matrix-tr-clickable:hover {
+    background: rgba(8, 145, 178, 0.08);
+}
+.sstats-matrix-tr-clickable.is-active-axis {
+    background: rgba(8, 145, 178, 0.14) !important;
+}
+
+/* Dark Mode Overrides for Filters */
+[data-theme="dark"] .sstats-filter-search-input,
+[data-theme="dark"] .sstats-filter-select {
+    background: #0f172a;
+    border-color: #475569;
+    color: #f8fafc;
+}
+[data-theme="dark"] .sstats-empty-filter-state {
+    background: #0f172a;
+    border-color: #334155;
+}
+[data-theme="dark"] .sstats-matrix-tr-clickable:hover {
+    background: rgba(6, 182, 212, 0.12);
+}
+[data-theme="dark"] .sstats-matrix-tr-clickable.is-active-axis {
+    background: rgba(6, 182, 212, 0.2) !important;
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 1024px) {
     .sstats-compare-kpi-grid {
@@ -942,6 +1060,18 @@
     }
     .sstats-radar-canvas-container {
         min-height: 300px;
+    }
+    .sstats-filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .sstats-filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .sstats-filter-select,
+    .sstats-reset-filters-btn {
+        width: 100%;
     }
 }
 
