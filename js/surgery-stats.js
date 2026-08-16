@@ -5,7 +5,15 @@ const SurgeryStatsPage = {
     activeTab: 'radar', // 'radar' (Dashboard BS & Radar) | 'summary' (Tổng hợp toàn khoa)
     expandedDoctor: null, // id of the doctor whose detail is shown in summary table
     primaryDoctorId: 2, // Default: BS. Vũ Khương An
-    compareDoctorId: 1, // Default: TS.BSCKII Nguyễn Phú Hữu (or 'dept_avg')
+    compareDoctorId: 1, // Default: TS.BSCKII Nguyễn Phú Hữu (or 'dept_avg' or 'none')
+    showAllLogbookCases: false, // false = 100 cases, true = all cases
+
+    toggleShowAllCases() {
+        this.showAllLogbookCases = !this.showAllLogbookCases;
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
+        }
+    },
 
     // 6 Trục Năng Lực Lâm Sàng Chuẩn Hóa Khoa PTĐTT — BV Bình Dân (2026)
     // Tham khảo cơ cấu chuyên khoa sâu của các trung tâm quốc tế (Cleveland Clinic DDSI / ASCRS)
@@ -215,20 +223,37 @@ const SurgeryStatsPage = {
         return 'emergency';
     },
 
-    // Tính toán hồ sơ năng lực chi tiết của 1 bác sĩ
+    // Tính toán hồ sơ năng lực chi tiết của 1 bác sĩ hoặc bình quân khoa / BS
     computeSurgeonProfile(doctorId, surgeries) {
+        if (!doctorId || doctorId === 'none') {
+            return null;
+        }
+
         const isAvg = doctorId === 'dept_avg';
         let cases = [];
         let docInfo = null;
+        let numSurgeons = 1;
 
         if (isAvg) {
-            cases = surgeries;
-            docInfo = { id: 'dept_avg', name: 'Trung Bình Khoa', role: 'Toàn bộ phẫu thuật viên', color: '#94a3b8' };
+            cases = surgeries || [];
+            // Tính số lượng PTV mổ chính hoạt động trong kỳ lọc
+            const allDocs = this.getEligibleDoctors();
+            const activeSurgeonIds = new Set(cases.map(s => String(s.mainSurgeon)).filter(Boolean));
+            numSurgeons = Math.max(1, activeSurgeonIds.size || allDocs.length || 1);
+            docInfo = { 
+                id: 'dept_avg', 
+                name: `TB Khoa / BS (${numSurgeons} PTV)`, 
+                role: 'Bình quân phẫu thuật viên', 
+                color: '#e11d48' 
+            };
         } else {
             const allDocs = this.getEligibleDoctors();
-            docInfo = allDocs.find(d => String(d.id) === String(doctorId)) || { id: doctorId, name: 'Bác sĩ ' + doctorId, role: 'Phẫu thuật viên', color: '#06b6d4' };
-            cases = surgeries.filter(s => String(s.mainSurgeon) === String(doctorId));
+            docInfo = allDocs.find(d => String(d.id) === String(doctorId)) || { id: doctorId, name: 'Bác sĩ ' + doctorId, role: 'Phẫu thuật viên', color: '#0891b2' };
+            cases = (surgeries || []).filter(s => s && String(s.mainSurgeon) === String(doctorId));
         }
+
+        const docName = (docInfo && docInfo.name) ? docInfo.name : 'Bác sĩ';
+        docInfo.shortName = docName.split(' ').pop();
 
         const axisKeys = Object.keys(this.CLINICAL_AXES);
         const axisCounts = {};
@@ -246,31 +271,44 @@ const SurgeryStatsPage = {
             }
         });
 
-        const total = cases.length;
+        const totalRaw = cases.length;
+        // Nếu so sánh với toàn khoa: quy đổi số ca về mức trung bình trên 1 PTV để biểu đồ không bị lệch tỷ lệ
+        if (isAvg) {
+            axisKeys.forEach(k => {
+                axisCounts[k] = Math.round((axisCounts[k] / numSurgeons) * 10) / 10;
+            });
+        }
+
+        const total = isAvg ? Math.round(totalRaw / numSurgeons) : totalRaw;
         const axisPct = {};
         axisKeys.forEach(k => {
-            axisPct[k] = total > 0 ? ((axisCounts[k] / total) * 100) : 0;
+            axisPct[k] = totalRaw > 0 ? ((axisDetails[k].length / totalRaw) * 100) : 0;
         });
 
         // Approach stats
-        const misCases = cases.filter(s => s.approachType === 'noisoi' || s.approachType === 'robot').length;
-        const openCases = cases.filter(s => s.approachType === 'mo').length;
-        const robotCases = cases.filter(s => s.approachType === 'robot').length;
-        const misPct = total > 0 ? (misCases / total * 100) : 0;
-        const openPct = total > 0 ? (openCases / total * 100) : 0;
+        const misCases = cases.filter(s => s && (s.approachType === 'noisoi' || s.approachType === 'robot')).length;
+        const openCases = cases.filter(s => s && s.approachType === 'mo').length;
+        const robotCases = cases.filter(s => s && s.approachType === 'robot').length;
+        const misPct = totalRaw > 0 ? (misCases / totalRaw * 100) : 0;
+        const openPct = totalRaw > 0 ? (openCases / totalRaw * 100) : 0;
 
         // Surgery type breakdown (Yêu cầu vs Chương trình vs Bán khẩn)
-        const electiveReq = cases.filter(s => s.surgeryType === 'yeucau').length;
-        const electiveRoutine = cases.filter(s => s.surgeryType === 'chuongtrinh').length;
-        const urgent = cases.filter(s => s.surgeryType === 'bankhan').length;
+        const electiveReqRaw = cases.filter(s => s && s.surgeryType === 'yeucau').length;
+        const electiveRoutineRaw = cases.filter(s => s && s.surgeryType === 'chuongtrinh').length;
+        const urgentRaw = cases.filter(s => s && s.surgeryType === 'bankhan').length;
+        const electiveReq = isAvg ? Math.round(electiveReqRaw / numSurgeons) : electiveReqRaw;
+        const electiveRoutine = isAvg ? Math.round(electiveRoutineRaw / numSurgeons) : electiveRoutineRaw;
+        const urgent = isAvg ? Math.round(urgentRaw / numSurgeons) : urgentRaw;
 
         // Duration stats
-        const withDur = cases.filter(s => parseInt(s.duration) > 0);
+        const withDur = cases.filter(s => s && parseInt(s.duration) > 0);
         const meanDur = withDur.length > 0 ? Math.round(withDur.reduce((sum, s) => sum + parseInt(s.duration), 0) / withDur.length) : 0;
 
         return {
             doctor: docInfo,
             total,
+            totalRaw,
+            numSurgeons,
             cases: cases.sort((a, b) => new Date(b.date) - new Date(a.date)),
             axisCounts,
             axisPct,
@@ -407,9 +445,11 @@ const SurgeryStatsPage = {
         }
 
         const p1 = this.computeSurgeonProfile(this.primaryDoctorId, surgeries);
-        const p2 = this.computeSurgeonProfile(this.compareDoctorId, surgeries);
-        const name1 = (p1.doctor && p1.doctor.name) || 'BS Chính';
-        const name2 = (p2.doctor && p2.doctor.name) || 'BS So Sánh';
+        const p2 = this.compareDoctorId !== 'none' ? this.computeSurgeonProfile(this.compareDoctorId, surgeries) : null;
+        const hasCompare = !!p2;
+
+        const name1 = (p1 && p1.doctor && p1.doctor.name) || 'BS Chính';
+        const name2 = (p2 && p2.doctor && p2.doctor.name) || 'BS So Sánh';
         const shortName1 = name1.split(' ').pop();
         const shortName2 = name2.split(' ').pop();
 
@@ -418,7 +458,7 @@ const SurgeryStatsPage = {
         <div class="card sstats-doctor-selector-card">
             <div class="sstats-selector-header">
                 <div>
-                    <h3 class="sstats-selector-title">👥 Thiết Lập So Sánh Song Song 2 Bác Sĩ</h3>
+                    <h3 class="sstats-selector-title">👥 Thiết Lập Hồ Sơ & Đối Chuẩn Phẫu Thuật Viên</h3>
                     <p class="sstats-selector-subtitle">Phân loại 6 trục năng lực — Khoa PTĐTT, BV Bình Dân (2026) <i>(Tham khảo Cleveland Clinic DDSI / ASCRS)</i></p>
                 </div>
             </div>
@@ -438,14 +478,17 @@ const SurgeryStatsPage = {
                     </div>
                 </div>
 
-                <div class="sstats-vs-badge">VS</div>
+                <div class="sstats-vs-badge ${hasCompare ? '' : 'disabled'}">${hasCompare ? 'VS' : '—'}</div>
 
-                <!-- DOCTOR 2 SELECTOR (AMBER) -->
-                <div class="sstats-doc-box sstats-doc-box-compare">
-                    <div class="sstats-doc-box-badge" style="background:#f59e0b">BS So Sánh (Màu Vàng Amber)</div>
+                <!-- DOCTOR 2 SELECTOR (CRIMSON / ROSE) -->
+                <div class="sstats-doc-box sstats-doc-box-compare ${hasCompare ? '' : 'is-none'}">
+                    <div class="sstats-doc-box-badge" style="background:${hasCompare ? '#e11d48' : 'var(--text-muted)'}">
+                        ${hasCompare ? 'Đối tượng So Sánh (Màu Đỏ Rose)' : 'Chế Độ Xem Đơn Lẻ'}
+                    </div>
                     <div class="sstats-doc-box-controls">
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setCompareDoctor(this.value)">
-                            <option value="dept_avg" ${this.compareDoctorId === 'dept_avg' ? 'selected' : ''}>📊 Điểm Trung Bình Toàn Khoa (Dept Avg)</option>
+                            <option value="none" ${this.compareDoctorId === 'none' ? 'selected' : ''}>🚫 Không so sánh (Chỉ xem 1 Bác sĩ)</option>
+                            <option value="dept_avg" ${this.compareDoctorId === 'dept_avg' ? 'selected' : ''}>📊 Trung Bình Toàn Khoa / BS (Dept Avg)</option>
                             ${allDocs.map(d => `
                                 <option value="${d.id}" ${String(d.id) === String(this.compareDoctorId) ? 'selected' : ''}>
                                     ${d.name} (${d.role})
@@ -457,13 +500,15 @@ const SurgeryStatsPage = {
             </div>
         </div>
 
-        <!-- SIDE-BY-SIDE KPI METRICS -->
-        <div class="sstats-compare-kpi-grid">
+        <!-- KPI METRICS (SIDE-BY-SIDE OR SINGLE) -->
+        <div class="sstats-compare-kpi-grid ${hasCompare ? '' : 'is-single'}">
+            <!-- KPI 1: Tổng ca mổ -->
             <div class="card sstats-compare-kpi-card">
                 <div class="sstats-kpi-header">
                     <span class="sstats-kpi-icon">🎯</span>
                     <span class="sstats-kpi-title">Tổng ca mổ chính</span>
                 </div>
+                ${hasCompare ? `
                 <div class="sstats-kpi-values">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.total}</span>
@@ -478,13 +523,26 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-delta ${p1.total >= p2.total ? 'positive' : 'negative'}">
                     ${p1.total >= p2.total ? `▲ +${p1.total - p2.total}` : `▼ -${p2.total - p1.total}`} ca chênh lệch
                 </div>
+                ` : `
+                <div class="sstats-kpi-values single-val">
+                    <div class="sstats-kpi-val sstats-val-primary">
+                        <span class="sstats-kpi-num">${p1.total}</span>
+                        <span class="sstats-kpi-sub">${name1} (Toàn bộ)</span>
+                    </div>
+                </div>
+                <div class="sstats-kpi-delta neutral">
+                    Khối lượng mổ chính
+                </div>
+                `}
             </div>
 
+            <!-- KPI 2: Tỷ lệ Nội soi (MIS) -->
             <div class="card sstats-compare-kpi-card">
                 <div class="sstats-kpi-header">
                     <span class="sstats-kpi-icon">🔬</span>
                     <span class="sstats-kpi-title">Tỷ lệ Phẫu thuật Nội soi (MIS)</span>
                 </div>
+                ${hasCompare ? `
                 <div class="sstats-kpi-values">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.misPct.toFixed(1)}%</span>
@@ -499,13 +557,26 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-delta ${p1.misPct >= p2.misPct ? 'positive' : 'negative'}">
                     ${p1.misPct >= p2.misPct ? `▲ +${(p1.misPct - p2.misPct).toFixed(1)}%` : `▼ -${(p2.misPct - p1.misPct).toFixed(1)}%`}
                 </div>
+                ` : `
+                <div class="sstats-kpi-values single-val">
+                    <div class="sstats-kpi-val sstats-val-primary">
+                        <span class="sstats-kpi-num">${p1.misPct.toFixed(1)}%</span>
+                        <span class="sstats-kpi-sub">${p1.misCases} ca nội soi / robot</span>
+                    </div>
+                </div>
+                <div class="sstats-kpi-delta positive">
+                    Chỉ số kỹ thuật xâm lấn tối thiểu
+                </div>
+                `}
             </div>
 
+            <!-- KPI 3: Thời gian mổ trung bình -->
             <div class="card sstats-compare-kpi-card">
                 <div class="sstats-kpi-header">
                     <span class="sstats-kpi-icon">⏱️</span>
                     <span class="sstats-kpi-title">Thời gian mổ trung bình</span>
                 </div>
+                ${hasCompare ? `
                 <div class="sstats-kpi-values">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.meanDur}p</span>
@@ -520,13 +591,26 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-delta neutral">
                     ${p1.meanDur >= p2.meanDur ? `+${p1.meanDur - p2.meanDur} phút` : `-${p2.meanDur - p1.meanDur} phút`}
                 </div>
+                ` : `
+                <div class="sstats-kpi-values single-val">
+                    <div class="sstats-kpi-val sstats-val-primary">
+                        <span class="sstats-kpi-num">${p1.meanDur}p</span>
+                        <span class="sstats-kpi-sub">Thời gian mổ trung bình</span>
+                    </div>
+                </div>
+                <div class="sstats-kpi-delta neutral">
+                    Chuẩn thời gian ca mổ
+                </div>
+                `}
             </div>
 
+            <!-- KPI 4: Cơ cấu Mổ Yêu Cầu -->
             <div class="card sstats-compare-kpi-card">
                 <div class="sstats-kpi-header">
                     <span class="sstats-kpi-icon">📋</span>
                     <span class="sstats-kpi-title">Cơ cấu Mổ Yêu Cầu / C.Trình</span>
                 </div>
+                ${hasCompare ? `
                 <div class="sstats-kpi-values">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.total > 0 ? (p1.electiveReq / p1.total * 100).toFixed(0) : 0}%</span>
@@ -541,6 +625,17 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-delta neutral">
                     Khối lượng chuyên môn
                 </div>
+                ` : `
+                <div class="sstats-kpi-values single-val">
+                    <div class="sstats-kpi-val sstats-val-primary">
+                        <span class="sstats-kpi-num">${p1.total > 0 ? (p1.electiveReq / p1.total * 100).toFixed(0) : 0}%</span>
+                        <span class="sstats-kpi-sub">Mổ yêu cầu: ${p1.electiveReq} ca</span>
+                    </div>
+                </div>
+                <div class="sstats-kpi-delta neutral">
+                    Chương trình: ${p1.electiveRoutine} ca · Bán khẩn: ${p1.urgent} ca
+                </div>
+                `}
             </div>
         </div>
 
@@ -551,7 +646,9 @@ const SurgeryStatsPage = {
                 <div class="sstats-radar-header">
                     <div>
                         <h3 class="sstats-radar-title">🎯 Biểu Đồ Radar Cơ Cấu Phẫu Thuật 6 Trục</h3>
-                        <p class="sstats-radar-subtitle">So sánh trực quan năng lực & khối lượng lâm sàng giữa 2 phẫu thuật viên</p>
+                        <p class="sstats-radar-subtitle">
+                            ${hasCompare ? 'So sánh trực quan năng lực & khối lượng lâm sàng giữa 2 phẫu thuật viên' : 'Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên'}
+                        </p>
                     </div>
                 </div>
 
@@ -560,10 +657,12 @@ const SurgeryStatsPage = {
                         <span class="sstats-legend-dot" style="background:#0891b2"></span>
                         <span class="sstats-legend-text"><strong>${name1}</strong> (${p1.total} ca)</span>
                     </div>
+                    ${hasCompare ? `
                     <div class="sstats-legend-item">
-                        <span class="sstats-legend-dot" style="background:#f59e0b"></span>
-                        <span class="sstats-legend-text"><strong>${name2}</strong> (${p2.total} ca)</span>
+                        <span class="sstats-legend-dot" style="background:#e11d48"></span>
+                        <span class="sstats-legend-text"><strong>${name2}</strong> (${p2.total} ca${p2.totalRaw && p2.totalRaw !== p2.total ? ` - TB/${p2.numSurgeons} BS` : ''})</span>
                     </div>
+                    ` : ''}
                 </div>
 
                 <!-- SVG RADAR ENGINE -->
@@ -589,9 +688,14 @@ const SurgeryStatsPage = {
                         <thead>
                             <tr>
                                 <th>Trục Năng Lực</th>
-                                <th style="color:#0891b2;text-align:right">${shortName1}</th>
-                                <th style="color:#f59e0b;text-align:right">${shortName2}</th>
-                                <th style="text-align:center">Chênh lệch</th>
+                                ${hasCompare ? `
+                                    <th style="color:#0891b2;text-align:right">${shortName1}</th>
+                                    <th style="color:#e11d48;text-align:right">${shortName2}</th>
+                                    <th style="text-align:center">Chênh lệch</th>
+                                ` : `
+                                    <th style="color:#0891b2;text-align:right">Số ca (${shortName1})</th>
+                                    <th style="color:#0891b2;text-align:right">Tỷ trọng cơ cấu</th>
+                                `}
                             </tr>
                         </thead>
                         <tbody>
@@ -599,9 +703,9 @@ const SurgeryStatsPage = {
                                 const ax = this.CLINICAL_AXES[k];
                                 const c1 = p1.axisCounts[k] || 0;
                                 const pct1 = p1.axisPct[k] || 0;
-                                const c2 = p2.axisCounts[k] || 0;
-                                const pct2 = p2.axisPct[k] || 0;
-                                const delta = c1 - c2;
+                                const c2 = p2 ? (p2.axisCounts[k] || 0) : 0;
+                                const pct2 = p2 ? (p2.axisPct[k] || 0) : 0;
+                                const delta = Math.round((c1 - c2) * 10) / 10;
                                 return `
                                 <tr>
                                     <td>
@@ -613,11 +717,12 @@ const SurgeryStatsPage = {
                                             </div>
                                         </div>
                                     </td>
+                                    ${hasCompare ? `
                                     <td class="sstats-matrix-num" style="color:#0891b2">
                                         <strong>${c1}</strong> ca
                                         <div class="sstats-matrix-pct">${pct1.toFixed(1)}%</div>
                                     </td>
-                                    <td class="sstats-matrix-num" style="color:#f59e0b">
+                                    <td class="sstats-matrix-num" style="color:#e11d48">
                                         <strong>${c2}</strong> ca
                                         <div class="sstats-matrix-pct">${pct2.toFixed(1)}%</div>
                                     </td>
@@ -626,19 +731,32 @@ const SurgeryStatsPage = {
                                             ${delta > 0 ? `+${delta}` : delta}
                                         </span>
                                     </td>
+                                    ` : `
+                                    <td class="sstats-matrix-num" style="color:#0891b2">
+                                        <strong>${c1}</strong> ca
+                                    </td>
+                                    <td class="sstats-matrix-num" style="color:#0891b2">
+                                        <strong>${pct1.toFixed(1)}%</strong>
+                                    </td>
+                                    `}
                                 </tr>`;
                             }).join('')}
                         </tbody>
                         <tfoot>
                             <tr class="sstats-matrix-total-row">
                                 <td><strong>TỔNG CỘNG</strong></td>
+                                ${hasCompare ? `
                                 <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
-                                <td style="text-align:right;color:#f59e0b"><strong>${p2.total} ca</strong></td>
+                                <td style="text-align:right;color:#e11d48"><strong>${p2.total} ca</strong></td>
                                 <td style="text-align:center">
                                     <span class="sstats-delta-badge ${p1.total >= p2.total ? 'pos' : 'neg'}">
                                         ${p1.total - p2.total >= 0 ? `+${p1.total - p2.total}` : p1.total - p2.total}
                                     </span>
                                 </td>
+                                ` : `
+                                <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
+                                <td style="text-align:right;color:#0891b2"><strong>100%</strong></td>
+                                `}
                             </tr>
                         </tfoot>
                     </table>
@@ -671,7 +789,7 @@ const SurgeryStatsPage = {
                         </tr>
                     </thead>
                     <tbody>
-                        ${p1.cases.slice(0, 100).map((s, idx) => {
+                        ${(this.showAllLogbookCases ? p1.cases : p1.cases.slice(0, 100)).map((s, idx) => {
                             const axis = this.classifySurgery(s);
                             const axisInfo = this.CLINICAL_AXES[axis];
                             const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
@@ -692,7 +810,18 @@ const SurgeryStatsPage = {
                         }).join('')}
                     </tbody>
                 </table>
-                ${p1.cases.length > 100 ? `<div class="sstats-more-hint">Hiển thị 100 / ${p1.cases.length} ca gần nhất</div>` : ''}
+                <div class="sstats-logbook-footer">
+                    <span class="sstats-more-hint">
+                        ${this.showAllLogbookCases 
+                            ? `Đang hiển thị toàn bộ ${p1.cases.length} / ${p1.cases.length} ca phẫu thuật` 
+                            : `Đang hiển thị 100 / ${p1.cases.length} ca phẫu thuật gần nhất`}
+                    </span>
+                    ${p1.cases.length > 100 ? `
+                        <button class="btn btn-secondary btn-sm sstats-expand-btn" onclick="SurgeryStatsPage.toggleShowAllCases()">
+                            ${this.showAllLogbookCases ? '🔼 Thu gọn về 100 ca gần nhất' : `📖 Xem toàn bộ ${p1.cases.length} ca`}
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         </div>
         `;
@@ -707,10 +836,11 @@ const SurgeryStatsPage = {
         const radius = 135;
         const axisKeys = Object.keys(this.CLINICAL_AXES);
         const numAxes = axisKeys.length;
+        const hasCompare = !!p2;
 
-        // Determine max scale (percentage or volume)
+        // Determine max scale (volume)
         const maxVal1 = Math.max(10, ...axisKeys.map(k => p1.axisCounts[k] || 0));
-        const maxVal2 = Math.max(10, ...axisKeys.map(k => p2.axisCounts[k] || 0));
+        const maxVal2 = hasCompare ? Math.max(10, ...axisKeys.map(k => p2.axisCounts[k] || 0)) : 10;
         const maxScale = Math.max(maxVal1, maxVal2, 20);
 
         // Calculate angle coordinates
@@ -760,7 +890,8 @@ const SurgeryStatsPage = {
             }
 
             const c1 = p1.axisCounts[k] || 0;
-            const c2 = p2.axisCounts[k] || 0;
+            const pct1 = p1.axisPct[k] || 0;
+            const c2 = p2 ? (p2.axisCounts[k] || 0) : 0;
 
             labelsSVG += `
             <g class="sstats-radar-axis-label-group">
@@ -768,7 +899,9 @@ const SurgeryStatsPage = {
                     ${ax.label}
                 </text>
                 <text x="${lx}" y="${ly + 8}" text-anchor="${anchor}" class="sstats-radar-axis-values" font-size="10">
-                    <tspan fill="#0891b2" font-weight="700">${c1}</tspan> <tspan fill="var(--text-muted)">vs</tspan> <tspan fill="#f59e0b" font-weight="700">${c2}</tspan>
+                    ${hasCompare 
+                        ? `<tspan fill="#0891b2" font-weight="700">${c1}</tspan> <tspan fill="var(--text-muted)">vs</tspan> <tspan fill="#e11d48" font-weight="700">${c2}</tspan>`
+                        : `<tspan fill="#0891b2" font-weight="700">${c1} ca</tspan> <tspan fill="var(--text-muted)">(${pct1.toFixed(0)}%)</tspan>`}
                 </text>
             </g>`;
         });
@@ -783,15 +916,17 @@ const SurgeryStatsPage = {
             poly1Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4.5" fill="#0891b2" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="1" />`);
         });
 
-        // Polygon 2 (Doctor 2 - Amber)
+        // Polygon 2 (Doctor 2 - Crimson / Rose - Only if hasCompare)
         const poly2Pts = [];
         const poly2Dots = [];
-        axisKeys.forEach((k, i) => {
-            const val = p2.axisCounts[k] || 0;
-            const pt = getCoord(val, i, maxScale);
-            poly2Pts.push(`${pt.x},${pt.y}`);
-            poly2Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4" fill="#f59e0b" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="2" />`);
-        });
+        if (hasCompare) {
+            axisKeys.forEach((k, i) => {
+                const val = p2.axisCounts[k] || 0;
+                const pt = getCoord(val, i, maxScale);
+                poly2Pts.push(`${pt.x},${pt.y}`);
+                poly2Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4" fill="#e11d48" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="2" />`);
+            });
+        }
 
         return `
         <svg viewBox="0 0 ${width} ${height}" class="sstats-radar-svg" xmlns="http://www.w3.org/2000/svg">
@@ -800,10 +935,12 @@ const SurgeryStatsPage = {
                     <stop offset="0%" stop-color="#0891b2" stop-opacity="0.35" />
                     <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.15" />
                 </linearGradient>
+                ${hasCompare ? `
                 <linearGradient id="p2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.30" />
-                    <stop offset="100%" stop-color="#d97706" stop-opacity="0.12" />
+                    <stop offset="0%" stop-color="#e11d48" stop-opacity="0.30" />
+                    <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.12" />
                 </linearGradient>
+                ` : ''}
                 <filter id="radarGlow" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15" />
                 </filter>
@@ -813,9 +950,11 @@ const SurgeryStatsPage = {
             ${gridSVG}
             ${spokesSVG}
 
-            <!-- Doctor 2 Polygon (Amber - Underneath) -->
-            <polygon points="${poly2Pts.join(' ')}" fill="url(#p2Grad)" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="4,3" class="sstats-polygon-p2" filter="url(#radarGlow)" />
+            <!-- Doctor 2 Polygon (Crimson / Rose - Underneath) -->
+            ${hasCompare ? `
+            <polygon points="${poly2Pts.join(' ')}" fill="url(#p2Grad)" stroke="#e11d48" stroke-width="2.2" stroke-dasharray="4,3" class="sstats-polygon-p2" filter="url(#radarGlow)" />
             ${poly2Dots.join('')}
+            ` : ''}
 
             <!-- Doctor 1 Polygon (Cyan - On Top) -->
             <polygon points="${poly1Pts.join(' ')}" fill="url(#p1Grad)" stroke="#0891b2" stroke-width="2.5" class="sstats-polygon-p1" filter="url(#radarGlow)" />

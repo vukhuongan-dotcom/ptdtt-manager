@@ -473,7 +473,12 @@
     border-color: rgba(8, 145, 178, 0.4);
 }
 .sstats-doc-box-compare {
-    border-color: rgba(245, 158, 11, 0.4);
+    border-color: rgba(225, 29, 72, 0.4);
+}
+.sstats-doc-box-compare.is-none {
+    opacity: 0.8;
+    border-color: var(--border);
+    border-style: dashed;
 }
 .sstats-doc-box-badge {
     display: inline-block;
@@ -509,6 +514,9 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+.sstats-vs-badge.disabled {
+    opacity: 0.4;
 }
 
 /* Side-by-Side KPI Cards */
@@ -548,6 +556,9 @@
     justify-content: space-between;
     margin: 4px 0 8px 0;
 }
+.sstats-kpi-values.single-val {
+    justify-content: flex-start;
+}
 .sstats-kpi-val {
     flex: 1;
     display: flex;
@@ -559,7 +570,7 @@
 }
 .sstats-val-compare {
     text-align: right;
-    color: #f59e0b;
+    color: #e11d48;
 }
 .sstats-kpi-num {
     font-size: 1.35rem;
@@ -593,8 +604,8 @@
     color: #0891b2;
 }
 .sstats-kpi-delta.negative {
-    background: rgba(245, 158, 11, 0.12);
-    color: #d97706;
+    background: rgba(225, 29, 72, 0.12);
+    color: #e11d48;
 }
 
 /* Radar & Matrix Layout Grid */
@@ -766,8 +777,8 @@
     color: #0891b2;
 }
 .sstats-delta-badge.neg {
-    background: rgba(245, 158, 11, 0.14);
-    color: #d97706;
+    background: rgba(225, 29, 72, 0.14);
+    color: #e11d48;
 }
 .sstats-delta-badge.zero {
     background: var(--bg-tertiary);
@@ -811,12 +822,26 @@
     font-weight: 600;
     white-space: nowrap;
 }
+.sstats-logbook-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 6px 4px 6px;
+    margin-top: 8px;
+    border-top: 1px dashed var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+}
 .sstats-more-hint {
-    padding: 10px;
-    text-align: center;
-    font-size: 0.76rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
-    font-style: italic;
+    font-weight: 500;
+}
+.sstats-expand-btn {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
 }
 
 /* Approach Tags */
@@ -865,7 +890,7 @@
     border-color: rgba(6, 182, 212, 0.5);
 }
 [data-theme="dark"] .sstats-doc-box-compare {
-    border-color: rgba(245, 158, 11, 0.5);
+    border-color: rgba(225, 29, 72, 0.5);
 }
 [data-theme="dark"] .sstats-doc-select {
     background: #1e293b;
