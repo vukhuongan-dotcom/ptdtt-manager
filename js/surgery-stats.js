@@ -4,8 +4,8 @@ const SurgeryStatsPage = {
     offset: 0, // 0 = current, -1 = previous, 1 = next, etc.
     activeTab: 'radar', // 'radar' (Dashboard BS & Radar) | 'summary' (Tổng hợp toàn khoa)
     expandedDoctor: null, // id of the doctor whose detail is shown in summary table
-    primaryDoctorId: 'dept_total', // Default: Toàn khoa (Tổng số ca tuyệt đối)
-    compareDoctorId: 'none', // Default: Luôn để trống (Không so sánh)
+    primaryDoctorId: 1, // Default: BS. Nguyễn Phú Hữu
+    compareDoctorId: 2, // Default: BS. Vũ Khương An
     showAllLogbookCases: false, // false = 100 cases, true = all cases
     logbookSearch: '', // search query
     logbookFilterAxis: 'all', // 'all' | 'colon' | 'rectal' | 'proctology' | 'stoma' | 'biliary_gi' | 'emergency'
@@ -563,8 +563,8 @@ const SurgeryStatsPage = {
         const isAdmin = session ? (session.isAdmin || App.isAdmin()) : false;
         const currentUserId = session ? (session.staffId || session.id || 2) : 2;
 
-        // RBAC: If not admin, default to self as primary
-        if (!isAdmin && this.primaryDoctorId !== currentUserId) {
+        // RBAC: If not admin and primary is 'self', default to self
+        if (!isAdmin && this.primaryDoctorId === 'self') {
             const matchSelf = allDocs.find(d => d.id === currentUserId);
             if (matchSelf) this.primaryDoctorId = currentUserId;
         }
@@ -837,7 +837,7 @@ const SurgeryStatsPage = {
                                 const pct1 = p1.axisPct[k] || 0;
                                 const c2 = p2 ? (p2.axisCounts[k] || 0) : 0;
                                 const pct2 = p2 ? (p2.axisPct[k] || 0) : 0;
-                                const delta = Math.round((c1 - c2) * 10) / 10;
+                                const delta = Math.round((pct1 - pct2) * 10) / 10;
                                 const isActiveAxis = this.logbookFilterAxis === k;
                                 return `
                                 <tr class="sstats-matrix-tr-clickable ${isActiveAxis ? 'is-active-axis' : ''}" 
@@ -863,7 +863,7 @@ const SurgeryStatsPage = {
                                     </td>
                                     <td class="sstats-matrix-delta">
                                         <span class="sstats-delta-badge ${delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'zero'}">
-                                            ${delta > 0 ? `+${delta}` : delta}
+                                            ${delta > 0 ? `+${delta.toFixed(1)}%` : delta < 0 ? `${delta.toFixed(1)}%` : '0.0%'}
                                         </span>
                                     </td>
                                     ` : `
@@ -884,8 +884,8 @@ const SurgeryStatsPage = {
                                 <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
                                 <td style="text-align:right;color:#e11d48"><strong>${p2.total} ca</strong></td>
                                 <td style="text-align:center">
-                                    <span class="sstats-delta-badge ${p1.total >= p2.total ? 'pos' : 'neg'}">
-                                        ${p1.total - p2.total >= 0 ? `+${p1.total - p2.total}` : p1.total - p2.total}
+                                    <span class="sstats-delta-badge zero">
+                                        0.0%
                                     </span>
                                 </td>
                                 ` : `
@@ -1497,7 +1497,7 @@ const SurgeryStatsPage = {
                 const pct1 = p1.axisPct[k] || 0;
                 const c2 = p2 ? (p2.axisCounts[k] || 0) : 0;
                 const pct2 = p2 ? (p2.axisPct[k] || 0) : 0;
-                const delta = Math.round((c1 - c2) * 10) / 10;
+                const delta = Math.round((pct1 - pct2) * 10) / 10;
 
                 return `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -1521,7 +1521,7 @@ const SurgeryStatsPage = {
                     </td>
                     <td style="padding: 11px 12px; text-align: center; vertical-align: middle;">
                         <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${delta > 0 ? '#ecfdf5' : delta < 0 ? '#fff1f2' : '#f1f5f9'}; color: ${delta > 0 ? '#059669' : delta < 0 ? '#e11d48' : '#64748b'};">
-                            ${delta > 0 ? `+${delta}` : delta}
+                            ${delta > 0 ? `+${delta.toFixed(1)}%` : delta < 0 ? `${delta.toFixed(1)}%` : '0.0%'}
                         </span>
                     </td>
                     ` : `
@@ -1879,7 +1879,7 @@ const SurgeryStatsPage = {
                             ${hasCompare ? `
                                 <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
                                 <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
-                                <td style="text-align:center;">${p1.total - p2.total >= 0 ? `+${p1.total - p2.total}` : p1.total - p2.total}</td>
+                                <td style="text-align:center;">0.0%</td>
                             ` : `
                                 <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
                                 <td style="text-align:right;color:#0891b2;">100%</td>
