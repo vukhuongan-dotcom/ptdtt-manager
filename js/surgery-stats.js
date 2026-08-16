@@ -4,7 +4,7 @@ const SurgeryStatsPage = {
     offset: 0, // 0 = current, -1 = previous, 1 = next, etc.
     activeTab: 'radar', // 'radar' (Dashboard BS & Radar) | 'summary' (Tổng hợp toàn khoa)
     expandedDoctor: null, // id of the doctor whose detail is shown in summary table
-    primaryDoctorId: 'dept_avg', // Default: Trung bình toàn khoa / PTV (Dept Avg)
+    primaryDoctorId: 'dept_total', // Default: Toàn khoa (Tổng số ca tuyệt đối)
     compareDoctorId: 'none', // Default: Luôn để trống (Không so sánh)
     showAllLogbookCases: false, // false = 100 cases, true = all cases
     logbookSearch: '', // search query
@@ -363,24 +363,18 @@ const SurgeryStatsPage = {
             return null;
         }
 
-        const isAvg = doctorId === 'dept_avg';
+        const isDept = (doctorId === 'dept_total' || doctorId === 'dept_avg');
         let cases = [];
         let docInfo = null;
-        let numSurgeons = 1;
 
-        if (isAvg) {
+        if (isDept) {
             cases = surgeries || [];
-            // Tính số lượng PTV mổ chính hoạt động trong kỳ lọc
-            const allDocs = this.getEligibleDoctors();
-            const activeSurgeonIds = new Set(cases.map(s => String(s.mainSurgeon)).filter(Boolean));
-            numSurgeons = Math.max(1, activeSurgeonIds.size || allDocs.length || 1);
             docInfo = { 
-                id: 'dept_avg', 
-                name: `TB Khoa / BS (${numSurgeons} PTV)`, 
-                role: 'Bình quân phẫu thuật viên', 
-                shortName: 'TB Khoa',
+                id: 'dept_total', 
+                name: 'Toàn Khoa', 
+                role: 'Tổng khối lượng toàn khoa', 
+                shortName: 'Toàn Khoa',
                 color: '#0891b2',
-                numSurgeons: numSurgeons,
                 totalRawCases: cases.length
             };
         } else {
@@ -407,15 +401,8 @@ const SurgeryStatsPage = {
             }
         });
 
+        const total = cases.length;
         const totalRaw = cases.length;
-        // Nếu so sánh với toàn khoa: quy đổi số ca về mức trung bình trên 1 PTV để biểu đồ không bị lệch tỷ lệ
-        if (isAvg) {
-            axisKeys.forEach(k => {
-                axisCounts[k] = Math.round((axisCounts[k] / numSurgeons) * 10) / 10;
-            });
-        }
-
-        const total = isAvg ? Math.round(totalRaw / numSurgeons) : totalRaw;
         const axisPct = {};
         axisKeys.forEach(k => {
             axisPct[k] = totalRaw > 0 ? ((axisDetails[k].length / totalRaw) * 100) : 0;
@@ -429,12 +416,9 @@ const SurgeryStatsPage = {
         const openPct = totalRaw > 0 ? (openCases / totalRaw * 100) : 0;
 
         // Surgery type breakdown (Yêu cầu vs Chương trình vs Bán khẩn)
-        const electiveReqRaw = cases.filter(s => s && s.surgeryType === 'yeucau').length;
-        const electiveRoutineRaw = cases.filter(s => s && s.surgeryType === 'chuongtrinh').length;
-        const urgentRaw = cases.filter(s => s && s.surgeryType === 'bankhan').length;
-        const electiveReq = isAvg ? Math.round(electiveReqRaw / numSurgeons) : electiveReqRaw;
-        const electiveRoutine = isAvg ? Math.round(electiveRoutineRaw / numSurgeons) : electiveRoutineRaw;
-        const urgent = isAvg ? Math.round(urgentRaw / numSurgeons) : urgentRaw;
+        const electiveReq = cases.filter(s => s && s.surgeryType === 'yeucau').length;
+        const electiveRoutine = cases.filter(s => s && s.surgeryType === 'chuongtrinh').length;
+        const urgent = cases.filter(s => s && s.surgeryType === 'bankhan').length;
 
         // Duration stats
         const withDur = cases.filter(s => s && parseInt(s.duration) > 0);
@@ -614,8 +598,8 @@ const SurgeryStatsPage = {
                     <div class="sstats-doc-box-badge" style="background:#0891b2">BS Chính (Màu Xanh Cyan)</div>
                     <div class="sstats-doc-box-controls">
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setPrimaryDoctor(this.value)">
-                            <option value="dept_avg" ${this.primaryDoctorId === 'dept_avg' ? 'selected' : ''}>
-                                📊 Trung Bình Toàn Khoa / BS (Dept Avg)
+                            <option value="dept_total" ${(this.primaryDoctorId === 'dept_total' || this.primaryDoctorId === 'dept_avg') ? 'selected' : ''}>
+                                📊 Toàn Khoa (Tổng số ca)
                             </option>
                             ${allDocs.map(d => `
                                 <option value="${d.id}" ${String(d.id) === String(this.primaryDoctorId) ? 'selected' : ''}>
@@ -636,7 +620,7 @@ const SurgeryStatsPage = {
                     <div class="sstats-doc-box-controls">
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setCompareDoctor(this.value)">
                             <option value="none" ${this.compareDoctorId === 'none' ? 'selected' : ''}>🚫 Để trống (Không so sánh)</option>
-                            <option value="dept_avg" ${this.compareDoctorId === 'dept_avg' ? 'selected' : ''}>📊 Trung Bình Toàn Khoa / BS (Dept Avg)</option>
+                            <option value="dept_total" ${(this.compareDoctorId === 'dept_total' || this.compareDoctorId === 'dept_avg') ? 'selected' : ''}>📊 Toàn Khoa (Tổng số ca)</option>
                             ${allDocs.map(d => `
                                 <option value="${d.id}" ${String(d.id) === String(this.compareDoctorId) ? 'selected' : ''}>
                                     ${d.name} (${d.role})
@@ -675,11 +659,11 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-values single-val">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.total}</span>
-                        <span class="sstats-kpi-sub">${p1.doctor.id === 'dept_avg' ? `Bình quân / BS (${p1.doctor.numSurgeons || 1} PTV) • Tổng ${p1.cases.length} ca` : `${name1} (Toàn bộ)`}</span>
+                        <span class="sstats-kpi-sub">${(p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? `Toàn Khoa (${p1.total} ca)` : `${name1} (Toàn bộ)`}</span>
                     </div>
                 </div>
                 <div class="sstats-kpi-delta neutral">
-                    ${p1.doctor.id === 'dept_avg' ? 'Bình quân ca mổ / Phẫu thuật viên' : 'Khối lượng mổ chính cá nhân'}
+                    ${(p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng mổ chính cá nhân'}
                 </div>
                 `}
             </div>
@@ -841,7 +825,7 @@ const SurgeryStatsPage = {
                                     <th style="color:#e11d48;text-align:right">${shortName2}</th>
                                     <th style="text-align:center">Chênh lệch</th>
                                 ` : `
-                                    <th style="color:#0891b2;text-align:right">${p1.doctor.id === 'dept_avg' ? 'TB ca / PTV' : `Số ca (${shortName1})`}</th>
+                                    <th style="color:#0891b2;text-align:right">Số ca (${shortName1})</th>
                                     <th style="color:#0891b2;text-align:right">Tỷ trọng cơ cấu</th>
                                 `}
                             </tr>
@@ -905,7 +889,7 @@ const SurgeryStatsPage = {
                                     </span>
                                 </td>
                                 ` : `
-                                <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca ${p1.doctor.id === 'dept_avg' ? `(Tổng ${p1.cases.length} ca)` : ''}</strong></td>
+                                <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
                                 <td style="text-align:right;color:#0891b2"><strong>100%</strong></td>
                                 `}
                             </tr>
@@ -950,8 +934,8 @@ const SurgeryStatsPage = {
             <div class="card sstats-logbook-card" id="sstats-logbook-section">
                 <div class="sstats-logbook-header">
                     <div>
-                        <h3 class="sstats-logbook-title">${p1.doctor.id === 'dept_avg' ? `📖 Nhật Ký Phẫu Thuật Chi Tiết — Toàn Khoa (${p1.cases.length} ca)` : `📖 Nhật Ký Phẫu Thuật Chi Tiết — ${name1} (${p1.total} ca)`}</h3>
-                        <p class="sstats-logbook-subtitle">${p1.doctor.id === 'dept_avg' ? `Danh sách toàn bộ ca phẫu thuật của khoa trong khoảng thời gian đã chọn (Bình quân ${p1.total} ca / PTV)` : `Danh sách ca phẫu thuật của BS mổ chính trong khoảng thời gian đã chọn`}</p>
+                        <h3 class="sstats-logbook-title">📖 Nhật Ký Phẫu Thuật Chi Tiết — ${name1} (${p1.total} ca)</h3>
+                        <p class="sstats-logbook-subtitle">${(p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? `Danh sách toàn bộ ca phẫu thuật của toàn khoa trong khoảng thời gian đã chọn` : `Danh sách ca phẫu thuật của BS mổ chính trong khoảng thời gian đã chọn`}</p>
                     </div>
                 </div>
 
@@ -1798,7 +1782,7 @@ const SurgeryStatsPage = {
         <div class="main-title-block">
             <h1 class="main-title">HỒ SƠ NĂNG LỰC & CƠ CẤU PHẪU THUẬT 6 TRỤC</h1>
             <p class="main-subtitle">
-                Phẫu thuật viên: <strong>${name1}</strong> (${p1.doctor.role}) · Kỳ thống kê: <strong>${periodLabel}</strong> (Tổng: <strong>${p1.total} ca</strong>${p1.doctor.id === 'dept_avg' ? ` - Toàn khoa ${p1.cases.length} ca` : ''})${hasCompare ? ` · Đối chuẩn: <strong>${name2}</strong> (${p2.total} ca)` : ''}
+                Phẫu thuật viên: <strong>${name1}</strong> (${p1.doctor.role}) · Kỳ thống kê: <strong>${periodLabel}</strong> (Tổng: <strong>${p1.total} ca</strong>)${hasCompare ? ` · Đối chuẩn: <strong>${name2}</strong> (${p2.total} ca)` : ''}
             </p>
         </div>
 
@@ -1808,8 +1792,8 @@ const SurgeryStatsPage = {
             <div class="kpi-card">
                 <div class="kpi-card-header">🎯 Tổng ca mổ chính</div>
                 <div class="kpi-val">${p1.total}</div>
-                <div class="kpi-sub">${hasCompare ? `${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}` : (p1.doctor.id === 'dept_avg' ? `Bình quân / BS (${p1.doctor.numSurgeons} PTV)` : `${name1} (Toàn bộ)`)}</div>
-                <div class="kpi-tag">${p1.doctor.id === 'dept_avg' ? 'Bình quân ca mổ / PTV' : 'Khối lượng mổ chính cá nhân'}</div>
+                <div class="kpi-sub">${hasCompare ? `${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}` : ((p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? `Toàn Khoa (${p1.total} ca)` : `${name1} (Toàn bộ)`)}</div>
+                <div class="kpi-tag">${(p1.doctor.id === 'dept_total' || p1.doctor.id === 'dept_avg') ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng mổ chính cá nhân'}</div>
             </div>
 
             <!-- KPI 2 -->
@@ -1897,7 +1881,7 @@ const SurgeryStatsPage = {
                                 <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
                                 <td style="text-align:center;">${p1.total - p2.total >= 0 ? `+${p1.total - p2.total}` : p1.total - p2.total}</td>
                             ` : `
-                                <td style="text-align:right;color:#0891b2;">${p1.total} ca ${p1.doctor.id === 'dept_avg' ? `(Tổng ${p1.cases.length} ca)` : ''}</td>
+                                <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
                                 <td style="text-align:right;color:#0891b2;">100%</td>
                             `}
                         </tr>
