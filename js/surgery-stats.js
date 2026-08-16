@@ -428,7 +428,6 @@ const SurgeryStatsPage = {
             doctor: docInfo,
             total,
             totalRaw,
-            numSurgeons,
             cases: cases.sort((a, b) => new Date(b.date) - new Date(a.date)),
             axisCounts,
             axisPct,
@@ -792,7 +791,7 @@ const SurgeryStatsPage = {
                     ${hasCompare ? `
                     <div class="sstats-legend-item">
                         <span class="sstats-legend-dot" style="background:#e11d48"></span>
-                        <span class="sstats-legend-text"><strong>${name2}</strong> (${p2.total} ca${p2.totalRaw && p2.totalRaw !== p2.total ? ` - TB/${p2.numSurgeons} BS` : ''})</span>
+                        <span class="sstats-legend-text"><strong>${name2}</strong> (${p2.total} ca)</span>
                     </div>
                     ` : ''}
                 </div>
