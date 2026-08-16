@@ -505,6 +505,11 @@ const SurgeryStatsPage = {
                 <p class="page-subtitle">Phân tích năng lực lâm sàng & Cơ cấu phẫu thuật 6 trục — ${this.getPeriodLabel()}</p>
             </div>
             <div class="sstats-header-actions">
+                ${this.activeTab === 'radar' ? `
+                <button id="sstats-export-profile-btn" class="export-btn btn-export-profile" onclick="SurgeryStatsPage.exportProfileImage()" title="Xuất hình ảnh hồ sơ năng lực phẫu thuật viên (2K/Retina)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Xuất hồ sơ bác sĩ
+                </button>` : ''}
                 ${(this.activeTab === 'summary' && (() => { const s = Auth.getSession(); return (s && s.isAdmin); })()) ? `
                 <button class="export-btn" onclick="SurgeryStatsPage.exportExcel()" title="Xuất sổ tổng hợp ca mổ toàn khoa (Excel)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -597,6 +602,10 @@ const SurgeryStatsPage = {
                     <h3 class="sstats-selector-title">👥 Thiết Lập Hồ Sơ & Đối Chuẩn Phẫu Thuật Viên</h3>
                     <p class="sstats-selector-subtitle">Phân loại 6 trục năng lực — Khoa PTĐTT, BV Bình Dân (2026) <i>(Tham khảo Cleveland Clinic DDSI / ASCRS)</i></p>
                 </div>
+                <button class="export-btn btn-export-profile" onclick="SurgeryStatsPage.exportProfileImage()" title="Xuất hình ảnh toàn bộ hồ sơ bác sĩ (2K/Retina)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Xuất hồ sơ bác sĩ
+                </button>
             </div>
             
             <div class="sstats-selector-row">
@@ -1458,6 +1467,557 @@ const SurgeryStatsPage = {
         } catch (e) {
             console.error('Export Excel error:', e);
             Toast.error('Lỗi xuất Excel: ' + e.message);
+        }
+    },
+
+    // ===== EXPORT DOCTOR PROFILE AS HIGH-RES 2K IMAGE (RETINA QUALITY) =====
+    async exportProfileImage() {
+        const btns = document.querySelectorAll('.btn-export-profile');
+        btns.forEach(b => { b.disabled = true; b.innerHTML = '⏳ Đang tạo ảnh...'; });
+
+        try {
+            Toast.info('🖼️ Đang tạo hình ảnh hồ sơ bác sĩ độ phân giải cao...');
+
+            const surgeries = this.getSurgeriesInRange();
+            const p1 = this.computeSurgeonProfile(this.primaryDoctorId, surgeries);
+            const p2 = this.compareDoctorId !== 'none' ? this.computeSurgeonProfile(this.compareDoctorId, surgeries) : null;
+            const hasCompare = !!p2;
+
+            if (!p1) {
+                Toast.error('Không tìm thấy dữ liệu hồ sơ bác sĩ.');
+                btns.forEach(b => { b.disabled = false; b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất hồ sơ bác sĩ'; });
+                return;
+            }
+
+            const name1 = (p1.doctor && p1.doctor.name) || 'Bác sĩ';
+            const name2 = (p2 && p2.doctor && p2.doctor.name) || 'Bác sĩ so sánh';
+            const shortName1 = name1.split(' ').pop();
+            const shortName2 = name2.split(' ').pop();
+            const periodLabel = this.getPeriodLabel();
+
+            const session = (typeof Auth !== 'undefined' && Auth.getSession()) ? Auth.getSession() : null;
+            const user = (session && (session.name || session.username)) ? (session.name || session.username) : 'BS. Quản trị';
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+            // Generate clean SVG string for radar
+            const radarSVGString = this._renderRadarSVG(p1, p2);
+
+            // Table rows for Matrix
+            const axisKeys = Object.keys(this.CLINICAL_AXES);
+            const tableRowsHTML = axisKeys.map(k => {
+                const ax = this.CLINICAL_AXES[k];
+                const c1 = p1.axisCounts[k] || 0;
+                const pct1 = p1.axisPct[k] || 0;
+                const c2 = p2 ? (p2.axisCounts[k] || 0) : 0;
+                const pct2 = p2 ? (p2.axisPct[k] || 0) : 0;
+                const delta = Math.round((c1 - c2) * 10) / 10;
+
+                return `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 11px 12px; vertical-align: middle;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">${ax.icon}</span>
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px; color: #1e293b;">${ax.label}</div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 1px;">${ax.sublabel}</div>
+                            </div>
+                        </div>
+                    </td>
+                    ${hasCompare ? `
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #0891b2; font-weight: 700; font-size: 13px;">
+                        ${c1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
+                        <div style="font-size: 11px; font-weight: 600; color: #0891b2;">${pct1.toFixed(1)}%</div>
+                    </td>
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #e11d48; font-weight: 700; font-size: 13px;">
+                        ${c2} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
+                        <div style="font-size: 11px; font-weight: 600; color: #e11d48;">${pct2.toFixed(1)}%</div>
+                    </td>
+                    <td style="padding: 11px 12px; text-align: center; vertical-align: middle;">
+                        <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${delta > 0 ? '#ecfdf5' : delta < 0 ? '#fff1f2' : '#f1f5f9'}; color: ${delta > 0 ? '#059669' : delta < 0 ? '#e11d48' : '#64748b'};">
+                            ${delta > 0 ? `+${delta}` : delta}
+                        </span>
+                    </td>
+                    ` : `
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #0891b2; font-weight: 800; font-size: 14px;">
+                        ${c1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
+                    </td>
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #0891b2; font-weight: 800; font-size: 14px;">
+                        ${pct1.toFixed(1)}%
+                    </td>
+                    `}
+                </tr>`;
+            }).join('');
+
+            // Full isolated HTML export template
+            const fullHtml = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <title>Hồ Sơ Năng Lực & Cơ Cấu Phẫu Thuật 6 Trục</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --bg-secondary: #f8fafc;
+            --primary: #0891b2;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Be Vietnam Pro', 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            padding: 30px;
+            width: 1120px;
+            -webkit-font-smoothing: antialiased;
+        }
+        .capture-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 26px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+        .export-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0891b2;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+        .hospital-brand {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .dept-brand {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0891b2;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .national-title {
+            text-align: right;
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+        }
+        .national-motto {
+            text-align: right;
+            font-size: 11px;
+            font-weight: 500;
+            color: #64748b;
+            font-style: italic;
+            margin-top: 2px;
+        }
+        .main-title-block {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .main-title {
+            font-size: 19px;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .main-subtitle {
+            font-size: 12.5px;
+            color: #475569;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        .main-subtitle strong {
+            color: #0891b2;
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .kpi-card-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .kpi-val {
+            font-size: 25px;
+            font-weight: 800;
+            color: #0891b2;
+            line-height: 1.1;
+        }
+        .kpi-sub {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #334155;
+            margin-top: 3px;
+        }
+        .kpi-tag {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            background: #ecfeff;
+            color: #0891b2;
+            border: 1px solid #cffafe;
+        }
+        .main-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+        .sub-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .sub-card-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        .sub-card-desc {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        .legend-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            background: #ecfeff;
+            border: 1px solid #cffafe;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #0891b2;
+            margin-bottom: 8px;
+        }
+        .radar-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 4px 0;
+        }
+        .disclaimer-box {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 10px;
+            color: #b45309;
+            line-height: 1.35;
+            margin-top: 8px;
+        }
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .matrix-table th {
+            padding: 7px 10px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            border-bottom: 2px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        .matrix-total-row td {
+            padding: 10px 12px;
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #0f172a;
+            border-top: 2px solid #0891b2;
+            background: #f8fafc;
+        }
+        .export-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 10.5px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div id="capture" class="capture-card">
+        <!-- HEADER BỆNH VIỆN NĐ 30 -->
+        <div class="export-header-row">
+            <div>
+                <div class="hospital-brand">BỆNH VIỆN BÌNH DÂN</div>
+                <div class="dept-brand">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+            </div>
+            <div>
+                <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div class="national-motto">Độc lập - Tự do - Hạnh phúc</div>
+            </div>
+        </div>
+
+        <!-- MAIN TITLE -->
+        <div class="main-title-block">
+            <h1 class="main-title">HỒ SƠ NĂNG LỰC & CƠ CẤU PHẪU THUẬT 6 TRỤC</h1>
+            <p class="main-subtitle">
+                Phẫu thuật viên: <strong>${name1}</strong> (${p1.doctor.role}) · Kỳ thống kê: <strong>${periodLabel}</strong> (Tổng: <strong>${p1.total} ca</strong>${p1.doctor.id === 'dept_avg' ? ` - Toàn khoa ${p1.cases.length} ca` : ''})${hasCompare ? ` · Đối chuẩn: <strong>${name2}</strong> (${p2.total} ca)` : ''}
+            </p>
+        </div>
+
+        <!-- 4 KPI CARDS -->
+        <div class="kpi-grid">
+            <!-- KPI 1 -->
+            <div class="kpi-card">
+                <div class="kpi-card-header">🎯 Tổng ca mổ chính</div>
+                <div class="kpi-val">${p1.total}</div>
+                <div class="kpi-sub">${hasCompare ? `${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}` : (p1.doctor.id === 'dept_avg' ? `Bình quân / BS (${p1.doctor.numSurgeons} PTV)` : `${name1} (Toàn bộ)`)}</div>
+                <div class="kpi-tag">${p1.doctor.id === 'dept_avg' ? 'Bình quân ca mổ / PTV' : 'Khối lượng mổ chính cá nhân'}</div>
+            </div>
+
+            <!-- KPI 2 -->
+            <div class="kpi-card">
+                <div class="kpi-card-header">🔬 Tỷ lệ Nội soi (MIS)</div>
+                <div class="kpi-val">${p1.misPct.toFixed(1)}%</div>
+                <div class="kpi-sub">${p1.misCases} ca nội soi / robot</div>
+                <div class="kpi-tag">Chỉ số kỹ thuật xâm lấn tối thiểu</div>
+            </div>
+
+            <!-- KPI 3 -->
+            <div class="kpi-card">
+                <div class="kpi-card-header">⏱️ Thời gian mổ TB</div>
+                <div class="kpi-val">${p1.meanDur}p</div>
+                <div class="kpi-sub">Thời gian mổ trung bình</div>
+                <div class="kpi-tag">Chuẩn thời gian ca mổ</div>
+            </div>
+
+            <!-- KPI 4 -->
+            <div class="kpi-card">
+                <div class="kpi-card-header">📋 Cơ cấu Yêu cầu</div>
+                <div class="kpi-val">${p1.total > 0 ? (p1.electiveReq / p1.total * 100).toFixed(0) : 0}%</div>
+                <div class="kpi-sub">Mổ yêu cầu: ${p1.electiveReq} ca</div>
+                <div class="kpi-tag">C.Trình: ${p1.electiveRoutine} · Bán khẩn: ${p1.urgent}</div>
+            </div>
+        </div>
+
+        <!-- 2 COLUMNS: RADAR (LEFT) + MATRIX (RIGHT) -->
+        <div class="main-split">
+            <!-- LEFT: RADAR -->
+            <div class="sub-card">
+                <div>
+                    <div class="sub-card-title">
+                        <span>🎯 Biểu Đồ Radar 6 Trục</span>
+                    </div>
+                    <div class="sub-card-desc">Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên</div>
+                    <div class="legend-pill">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0891b2;"></span>
+                        <span>${name1} (${p1.total} ca)</span>
+                        ${hasCompare ? ` · <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e11d48;margin-left:4px;"></span> ${name2} (${p2.total} ca)` : ''}
+                    </div>
+                </div>
+
+                <div class="radar-box">
+                    ${radarSVGString}
+                </div>
+
+                <div class="disclaimer-box">
+                    ⚠️ <em>Chỉ số số lượng ca mổ và thời gian phẫu thuật phụ thuộc vào phân công lịch mổ, cơ cấu ca khó/phức tạp và tính chất cấp cứu; dùng phục vụ tự đánh giá chuyên môn và quản lý chất lượng.</em>
+                </div>
+            </div>
+
+            <!-- RIGHT: MATRIX -->
+            <div class="sub-card">
+                <div>
+                    <div class="sub-card-title">
+                        <span>📊 Bảng Phân Tích Cơ Cấu 6 Trục</span>
+                        <span style="font-size:11px;font-weight:600;color:#64748b;">Khoa PTĐTT — BV Bình Dân</span>
+                    </div>
+                    <div class="sub-card-desc">Chi tiết số lượng & Tỷ trọng từng nhóm phẫu thuật</div>
+                </div>
+
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">TRỤC NĂNG LỰC</th>
+                            ${hasCompare ? `
+                                <th style="text-align:right;color:#0891b2;">${shortName1}</th>
+                                <th style="text-align:right;color:#e11d48;">${shortName2}</th>
+                                <th style="text-align:center;">Chênh lệch</th>
+                            ` : `
+                                <th style="text-align:right;color:#0891b2;">Số ca (${shortName1})</th>
+                                <th style="text-align:right;color:#0891b2;">Tỷ trọng cơ cấu</th>
+                            `}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHTML}
+                    </tbody>
+                    <tfoot>
+                        <tr class="matrix-total-row">
+                            <td>TỔNG CỘNG</td>
+                            ${hasCompare ? `
+                                <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
+                                <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
+                                <td style="text-align:center;">${p1.total - p2.total >= 0 ? `+${p1.total - p2.total}` : p1.total - p2.total}</td>
+                            ` : `
+                                <td style="text-align:right;color:#0891b2;">${p1.total} ca ${p1.doctor.id === 'dept_avg' ? `(Tổng ${p1.cases.length} ca)` : ''}</td>
+                                <td style="text-align:right;color:#0891b2;">100%</td>
+                            `}
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="font-size: 10.5px; color: #64748b; margin-top: 12px; text-align: right;">
+                    Phân loại chuẩn 6 trục lâm sàng (Cleveland Clinic DDSI / ASCRS)
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="export-footer">
+            <span>Hệ thống Quản trị Lâm sàng Khoa Phẫu Thuật Đại Trực Tràng — Bệnh viện Bình Dân</span>
+            <span>Xuất bởi: <strong>${user}</strong> · Lúc ${timeStr} — ${dateStr}</span>
+        </div>
+    </div>
+</body>
+</html>`;
+
+            // Create off-screen iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1200px;height:2400px;border:none;opacity:0;pointer-events:none';
+            document.body.appendChild(iframe);
+
+            await new Promise(resolve => { iframe.onload = resolve; iframe.srcdoc = fullHtml; });
+            await new Promise(r => setTimeout(r, 600));
+
+            const captureEl = iframe.contentDocument.getElementById('capture');
+            await Utils.loadScript('html2canvas');
+            const EXPORT_SCALE = Math.max(Math.ceil(2560 / 1120), 2.5); // Retina 2.5K
+            const canvas = await html2canvas(captureEl, {
+                scale: EXPORT_SCALE,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                letterRendering: true,
+                allowTaint: false,
+                imageTimeout: 15000,
+                windowWidth: 1160,
+                windowHeight: captureEl.scrollHeight + 100
+            });
+
+            document.body.removeChild(iframe);
+
+            // Watermark
+            this._addProfileWatermark(canvas);
+
+            const safeName = (p1.doctor.name || 'HoSoBacSi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
+            const safePeriod = periodLabel.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
+            const filename = `HoSo_BS_${safeName}_${safePeriod}_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.png`;
+
+            // Download via server or direct fallback
+            const dataUrl = canvas.toDataURL('image/png');
+            const dlHeaders = { 'Content-Type': 'application/json' };
+            const dlToken = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
+            if (dlToken) dlHeaders['Authorization'] = 'Bearer ' + dlToken;
+
+            try {
+                const resp = await fetch('/api/download-image', {
+                    method: 'POST',
+                    headers: dlHeaders,
+                    body: JSON.stringify({ image: dataUrl, filename: filename })
+                });
+
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    await new Promise(r => setTimeout(r, 500));
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    Toast.success('✅ Đã xuất hình ảnh hồ sơ bác sĩ thành công!');
+                    return;
+                }
+            } catch (e) {
+                console.warn('Fallback to direct download:', e);
+            }
+
+            // Direct download fallback
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => document.body.removeChild(a), 500);
+            Toast.success('✅ Đã xuất hình ảnh hồ sơ bác sĩ thành công!');
+        } catch (err) {
+            console.error('Export profile image error:', err);
+            Toast.error('Lỗi khi xuất ảnh hồ sơ: ' + (err.message || err));
+        } finally {
+            btns.forEach(b => { 
+                b.disabled = false; 
+                b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất hồ sơ bác sĩ'; 
+            });
+        }
+    },
+
+    _addProfileWatermark(canvas) {
+        try {
+            const ctx = canvas.getContext('2d');
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const stamp = `KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BV BÌNH DÂN · ${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            
+            ctx.save();
+            ctx.font = 'bold 18px "Be Vietnam Pro", sans-serif';
+            ctx.fillStyle = 'rgba(8, 145, 178, 0.25)';
+            ctx.textAlign = 'right';
+            ctx.fillText(stamp, canvas.width - 24, canvas.height - 18);
+            ctx.restore();
+        } catch (e) {
+            console.warn('Watermark error:', e);
         }
     }
 };

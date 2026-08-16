@@ -5126,7 +5126,12 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border: 1px solid var(--border);
 }
 .sstats-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 .sstats-selector-title {
     margin: 0 0 4px 0;
@@ -5138,6 +5143,31 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     margin: 0;
     font-size: 0.78rem;
     color: var(--text-muted);
+}
+.btn-export-profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-secondary);
+    color: var(--primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+    white-space: nowrap;
+}
+.btn-export-profile:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+}
+.btn-export-profile svg {
+    width: 15px;
+    height: 15px;
 }
 .sstats-selector-row {
     display: flex;
