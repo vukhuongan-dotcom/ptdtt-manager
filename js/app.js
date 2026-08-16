@@ -551,64 +551,63 @@ const App = {
         if (!pageModule) return;
 
         const mainContent = document.getElementById('main-content');
+        if (!mainContent) return;
 
-        // P3.3c: Show skeleton placeholder for instant visual feedback
-        mainContent.innerHTML = `
-            <div class="skeleton-card skeleton-card-top"></div>
-            <div class="skeleton-row-3">
-                <div class="skeleton-card skeleton-card-sm"></div>
-                <div class="skeleton-card skeleton-card-sm"></div>
-                <div class="skeleton-card skeleton-card-sm"></div>
-            </div>
-            <div class="skeleton-card skeleton-card-lg"></div>
-        `;
-        mainContent.style.opacity = '1';
-        mainContent.style.transform = 'none';
-
-        requestAnimationFrame(() => {
+        try {
             const html = pageModule.render();
+            mainContent.innerHTML = html;
+            mainContent.style.opacity = '1';
+            mainContent.style.transform = 'none';
 
-            // Fade out skeleton, fade in content
-            mainContent.style.transition = 'opacity 0.15s ease';
-            mainContent.style.opacity = '0';
+            // Add data freshness timestamp
+            const timestamp = document.createElement('div');
+            timestamp.className = 'data-timestamp';
+            timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
+            timestamp.style.cssText = 'text-align:right;padding:12px 0 4px;font-size:0.75rem;color:var(--text-muted);opacity:0.6;';
+            mainContent.appendChild(timestamp);
 
-            requestAnimationFrame(() => {
-                mainContent.innerHTML = html;
+            // Run post-render hooks
+            if (typeof pageModule.afterRender === 'function') {
+                try { pageModule.afterRender(); } catch (errAfter) { console.warn('[App] afterRender error:', errAfter); }
+            }
 
-                // Add data freshness timestamp
-                const timestamp = document.createElement('div');
-                timestamp.className = 'data-timestamp';
-                timestamp.innerHTML = `<span>📡 Dữ liệu cập nhật lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} — ${new Date().toLocaleDateString('vi-VN')}</span>`;
-                timestamp.style.cssText = 'text-align:right;padding:12px 0 4px;font-size:0.75rem;color:var(--text-muted);opacity:0.6;';
-                mainContent.appendChild(timestamp);
-
-                // Animate in
-                requestAnimationFrame(() => {
-                    mainContent.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-                    mainContent.style.opacity = '1';
-                    mainContent.style.transform = 'translateY(0)';
-                });
-
-                // Run post-render hooks
-                if (pageModule.afterRender) {
-                    requestAnimationFrame(() => pageModule.afterRender());
-                }
-
-                // Update notification bell badge
+            // Update notification bell badge
+            if (typeof Notifications !== 'undefined' && Notifications.updateBell) {
                 Notifications.updateBell();
-            });
-        });
+            }
+        } catch (err) {
+            console.error('[App] Render page error:', err);
+            mainContent.innerHTML = `
+                <div class="card sstats-empty-state-card" style="padding: 40px 20px; text-align: center;">
+                    <div class="sstats-empty-icon" style="font-size: 2rem; margin-bottom: 12px;">⚠️</div>
+                    <h3 style="margin-bottom: 8px; color: var(--text-primary);">Đã xảy ra sự cố khi tải trang</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">${err.message}</p>
+                    <button class="btn btn-primary" onclick="App.renderCurrentPage()" style="margin-top: 12px;">Tải lại trang</button>
+                </div>
+            `;
+            mainContent.style.opacity = '1';
+        }
     },
 
-    // Helper: check if current user is admin
+    // Helper: check if current user is admin (BCN Khoa, Admin, SuperAdmin)
     isAdmin() {
         const session = Auth.getSession();
-        return session ? session.isAdmin : false;
+        if (!session) return false;
+        if (session.isAdmin || session.isSuperAdmin) return true;
+        const role = (session.role || '').toLowerCase();
+        if (role.includes('trưởng khoa') || role.includes('phó trưởng khoa')) return true;
+        const username = (session.username || '').toLowerCase();
+        if (username === 'vkan' || username === 'nphuu') return true;
+        return false;
     },
 
     isSuperAdmin() {
         const session = Auth.getSession();
-        return session ? session.isSuperAdmin : false;
+        if (!session) return false;
+        if (session.isSuperAdmin) return true;
+        const username = (session.username || '').toLowerCase();
+        if (username === 'vkan') return true;
+        return false;
     },
 
     getCurrentUser() {

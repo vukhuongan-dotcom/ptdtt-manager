@@ -171,7 +171,7 @@ const SurgeryStatsPage = {
         if (text.includes('cắt trước thấp') || text.includes('lar') || text.includes('tme') || 
             text.includes('miles') || text.includes('apr') || text.includes('icg') || 
             text.includes('tatme') || text.includes('cắt trước') || text.includes('bảo tồn cơ thắt') ||
-            (('k trực tràng' in diag || 'u trực tràng' in diag || 'k ống hậu môn' in diag) && 
+            ((diag.includes('k trực tràng') || diag.includes('u trực tràng') || diag.includes('k ống hậu môn')) && 
              (method.includes('cắt') || method.includes('nạo hạch') || method.includes('ptns') || method.includes('mổ mở')))) {
             return 'rectal';
         }
@@ -383,17 +383,22 @@ const SurgeryStatsPage = {
 
     // ===== RENDER TAB 1: RADAR DASHBOARD & SO SÁNH 2 BÁC SĨ =====
     _renderRadarDashboard(surgeries, allDocs) {
-        if (surgeries.length === 0) {
+        if (!surgeries || surgeries.length === 0) {
+            const allSurgeries = SurgeryPage.getAllSurgeries() || [];
             return `
-            <div class="card sstats-empty-state-card">
-                <div class="sstats-empty-icon">📋</div>
-                <p>Chưa có ca phẫu thuật nào trong ${this.getPeriodLabel()}</p>
+            <div class="card sstats-empty-state-card" style="padding: 40px 20px; text-align: center;">
+                <div class="sstats-empty-icon" style="font-size: 2.5rem; margin-bottom: 12px;">📋</div>
+                <h3 style="margin-bottom: 8px; color: var(--text-primary); font-size: 1.05rem;">Chưa có ca phẫu thuật nào trong ${this.getPeriodLabel()}</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">Tổng số ca trong toàn bộ hệ thống: <strong>${allSurgeries.length} ca</strong></p>
+                ${this.period !== 'all' ? `
+                    <button class="btn btn-primary" onclick="SurgeryStatsPage.setPeriod('all')">Xem toàn bộ lịch sử (${allSurgeries.length} ca)</button>
+                ` : ''}
             </div>`;
         }
 
         const session = Auth.getSession();
-        const isAdmin = session && session.isAdmin;
-        const currentUserId = session ? session.id : 2;
+        const isAdmin = session ? (session.isAdmin || App.isAdmin()) : false;
+        const currentUserId = session ? (session.staffId || session.id || 2) : 2;
 
         // RBAC: If not admin, default to self as primary
         if (!isAdmin && this.primaryDoctorId !== currentUserId) {
@@ -403,6 +408,10 @@ const SurgeryStatsPage = {
 
         const p1 = this.computeSurgeonProfile(this.primaryDoctorId, surgeries);
         const p2 = this.computeSurgeonProfile(this.compareDoctorId, surgeries);
+        const name1 = (p1.doctor && p1.doctor.name) || 'BS Chính';
+        const name2 = (p2.doctor && p2.doctor.name) || 'BS So Sánh';
+        const shortName1 = name1.split(' ').pop();
+        const shortName2 = name2.split(' ').pop();
 
         return `
         <!-- DOCTOR SELECTOR ROW -->
@@ -458,12 +467,12 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-values">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.total}</span>
-                        <span class="sstats-kpi-sub">${p1.doctor.name.split(' ').pop()}</span>
+                        <span class="sstats-kpi-sub">${shortName1}</span>
                     </div>
                     <div class="sstats-kpi-divider"></div>
                     <div class="sstats-kpi-val sstats-val-compare">
                         <span class="sstats-kpi-num">${p2.total}</span>
-                        <span class="sstats-kpi-sub">${p2.doctor.name.split(' ').pop()}</span>
+                        <span class="sstats-kpi-sub">${shortName2}</span>
                     </div>
                 </div>
                 <div class="sstats-kpi-delta ${p1.total >= p2.total ? 'positive' : 'negative'}">
@@ -549,11 +558,11 @@ const SurgeryStatsPage = {
                 <div class="sstats-radar-legend">
                     <div class="sstats-legend-item">
                         <span class="sstats-legend-dot" style="background:#0891b2"></span>
-                        <span class="sstats-legend-text"><strong>${p1.doctor.name}</strong> (${p1.total} ca)</span>
+                        <span class="sstats-legend-text"><strong>${name1}</strong> (${p1.total} ca)</span>
                     </div>
                     <div class="sstats-legend-item">
                         <span class="sstats-legend-dot" style="background:#f59e0b"></span>
-                        <span class="sstats-legend-text"><strong>${p2.doctor.name}</strong> (${p2.total} ca)</span>
+                        <span class="sstats-legend-text"><strong>${name2}</strong> (${p2.total} ca)</span>
                     </div>
                 </div>
 
@@ -580,8 +589,8 @@ const SurgeryStatsPage = {
                         <thead>
                             <tr>
                                 <th>Trục Năng Lực</th>
-                                <th style="color:#0891b2;text-align:right">${p1.doctor.name.split(' ').pop()}</th>
-                                <th style="color:#f59e0b;text-align:right">${p2.doctor.name.split(' ').pop()}</th>
+                                <th style="color:#0891b2;text-align:right">${shortName1}</th>
+                                <th style="color:#f59e0b;text-align:right">${shortName2}</th>
                                 <th style="text-align:center">Chênh lệch</th>
                             </tr>
                         </thead>
@@ -641,7 +650,7 @@ const SurgeryStatsPage = {
         <div class="card sstats-logbook-card">
             <div class="sstats-logbook-header">
                 <div>
-                    <h3 class="sstats-logbook-title">📖 Nhật Ký Phẫu Thuật Chi Tiết — ${p1.doctor.name} (${p1.total} ca)</h3>
+                    <h3 class="sstats-logbook-title">📖 Nhật Ký Phẫu Thuật Chi Tiết — ${name1} (${p1.total} ca)</h3>
                     <p class="sstats-logbook-subtitle">Danh sách ca phẫu thuật của BS mổ chính trong khoảng thời gian đã chọn</p>
                 </div>
             </div>
