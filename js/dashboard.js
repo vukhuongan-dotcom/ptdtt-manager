@@ -452,15 +452,11 @@ const DashboardPage = {
         return result;
     },
 
-    // Get staff members whose birthday is today (or closest upcoming birthday for test/preview)
+    // Get staff members whose birthday is today (active for 24 hours on birthday date)
     getTodayBirthdays(allStaff, todayStr) {
         if (!allStaff || !allStaff.length) return null;
         const parts = (todayStr || '').split('-');
         if (parts.length < 3) return null;
-        const curYear = parseInt(parts[0], 10);
-        const curMonth = parseInt(parts[1], 10);
-        const curDay = parseInt(parts[2], 10);
-        const curDate = new Date(curYear, curMonth - 1, curDay);
 
         const targetMonth = parts[1];
         const targetDay = parts[2];
@@ -491,45 +487,7 @@ const DashboardPage = {
             };
         }
 
-        // Find closest upcoming birthday for test/preview
-        const candidates = [];
-        allStaff.forEach(s => {
-            const dob = s.dob || '';
-            if (!dob) return;
-            let m = 0, d = 0;
-            if (dob.includes('-')) {
-                const p = dob.split('-');
-                if (p.length === 3) { m = parseInt(p[1], 10); d = parseInt(p[2], 10); }
-            } else if (dob.includes('/')) {
-                const p = dob.split('/');
-                if (p.length === 3) { d = parseInt(p[0], 10); m = parseInt(p[1], 10); }
-            } else if (dob.includes('.')) {
-                const p = dob.split('.');
-                if (p.length === 3) { d = parseInt(p[0], 10); m = parseInt(p[1], 10); }
-            }
-            if (m > 0 && d > 0) {
-                let bDate = new Date(curYear, m - 1, d);
-                let diffDays = Math.round((bDate - curDate) / (1000 * 60 * 60 * 24));
-                if (diffDays < 0) {
-                    bDate = new Date(curYear + 1, m - 1, d);
-                    diffDays = Math.round((bDate - curDate) / (1000 * 60 * 60 * 24));
-                }
-                candidates.push({ staff: s, diffDays, month: m, day: d });
-            }
-        });
-
-        if (candidates.length === 0) return null;
-        candidates.sort((a, b) => a.diffDays - b.diffDays);
-        const minDiff = candidates[0].diffDays;
-        const closestMatches = candidates.filter(c => c.diffDays === minDiff);
-
-        return {
-            isToday: false,
-            isTestPreview: true,
-            daysLeft: minDiff,
-            staff: closestMatches.map(c => c.staff),
-            dateStr: `${String(closestMatches[0].day).padStart(2, '0')}.${String(closestMatches[0].month).padStart(2, '0')}`
-        };
+        return null;
     },
 
     // Role-specific birthday wishes database
@@ -629,9 +587,18 @@ const DashboardPage = {
             subTitleBadge = isToday ? 'SINH NHẬT BÁC SĨ TRƯỞNG KHOA' : `SINH NHẬT TRƯỞNG KHOA (${dateStr})`;
             cakeIcon = '👑';
         } else if (tier === 'bcn') {
-            badgeTitle = '👑 BAN CHỦ NHIỆM KHOA';
-            subTitleBadge = isToday ? 'Sinh nhật BCN / ĐD Trưởng' : `Sinh nhật BCN / ĐD Trưởng (${dateStr})`;
-            cakeIcon = '🎂';
+            cakeIcon = '👑';
+            const isDDT = staff.some(s => {
+                const r = (s?.role || '').toLowerCase();
+                return r.includes('điều dưỡng trưởng') || r.includes('đdt');
+            });
+            if (isDDT) {
+                badgeTitle = '👑 ĐIỀU DƯỠNG TRƯỞNG';
+                subTitleBadge = isToday ? 'Sinh nhật Điều dưỡng trưởng' : `Sinh nhật Điều dưỡng trưởng (${dateStr})`;
+            } else {
+                badgeTitle = '👑 BS. PHÓ TRƯỞNG KHOA';
+                subTitleBadge = isToday ? 'Sinh nhật BS. Phó trưởng khoa' : `Sinh nhật BS. Phó trưởng khoa (${dateStr})`;
+            }
         }
 
         const prefixTag = isTestPreview ? `[CHẠY THỬ / SẮP TỚI NGÀY ${dateStr}] ` : '';

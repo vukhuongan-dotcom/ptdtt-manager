@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xem Trước Mẫu Banner Sinh Nhật — Trưởng Khoa & Điều Dưỡng Trưởng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --primary: #0ea5e9;
+            --border-radius: 14px;
+            --transition-normal: 0.25s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #374151;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 30px 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-toggle {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-toggle:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--text-muted);
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 32px 0 14px;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .tier-tag {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+        .tier-tag.chief {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #0f172a;
+        }
+        .tier-tag.bcn {
+            background: linear-gradient(135deg, #d97706, #7c2d12);
+            color: #ffffff;
+        }
+
+        /* ===== BIRTHDAY CELEBRATION BANNER CSS ===== */
+        .birthday-banner {
+            position: relative;
+            margin-bottom: 24px;
+            border-radius: var(--border-radius, 14px);
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(245, 158, 11, 0.08) 45%, rgba(139, 92, 246, 0.08) 100%);
+            border: 1px solid rgba(236, 72, 153, 0.28);
+            box-shadow: 0 4px 20px -2px rgba(236, 72, 153, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            overflow: hidden;
+            transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+        }
+        .birthday-banner:hover {
+            box-shadow: 0 6px 24px -2px rgba(236, 72, 153, 0.2);
+        }
+        [data-theme="dark"] .birthday-banner {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.16) 0%, rgba(245, 158, 11, 0.12) 45%, rgba(139, 92, 246, 0.16) 100%);
+            border-color: rgba(236, 72, 153, 0.38);
+            box-shadow: 0 4px 24px -2px rgba(236, 72, 153, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        /* Tier 2: BCN Tier (Phó trưởng khoa & Điều dưỡng trưởng) — Royal Sapphire & Amber Gold */
+        .birthday-banner.tier-bcn {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(217, 119, 6, 0.1) 45%, rgba(139, 92, 246, 0.12) 100%);
+            border: 1.5px solid rgba(245, 158, 11, 0.5);
+            box-shadow: 0 4px 24px -2px rgba(245, 158, 11, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        [data-theme="dark"] .birthday-banner.tier-bcn {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.28) 0%, rgba(217, 119, 6, 0.22) 45%, rgba(139, 92, 246, 0.25) 100%);
+            border-color: rgba(245, 158, 11, 0.6);
+            box-shadow: 0 4px 28px -2px rgba(245, 158, 11, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        .birthday-banner.tier-bcn .birthday-badge-wrap {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #7c2d12 100%);
+            box-shadow: 0 2px 14px rgba(217, 119, 6, 0.45);
+        }
+        .birthday-banner.tier-bcn .birthday-ticker-segment strong {
+            color: #d97706;
+        }
+        [data-theme="dark"] .birthday-banner.tier-bcn .birthday-ticker-segment strong {
+            color: #fbbf24;
+        }
+
+        /* Tier 3: Grand Chief Tier (Trưởng khoa — Hoành tráng & Trang trọng bậc nhất) */
+        .birthday-banner.tier-chief {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 28%, #4a044e 65%, #78350f 100%) !important;
+            border: 2px solid #fbbf24 !important;
+            box-shadow: 0 0 35px rgba(251, 191, 36, 0.35), 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+            animation: chiefHaloPulse 3s infinite alternate ease-in-out;
+        }
+        @keyframes chiefHaloPulse {
+            0% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.3), 0 8px 32px rgba(0, 0, 0, 0.35); border-color: #fbbf24; }
+            100% { box-shadow: 0 0 48px rgba(251, 191, 36, 0.65), 0 12px 40px rgba(217, 119, 6, 0.55); border-color: #fde047; }
+        }
+        .birthday-banner.tier-chief .birthday-badge-wrap {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
+            color: #0f172a !important;
+            box-shadow: 0 0 18px rgba(251, 191, 36, 0.65) !important;
+        }
+        .birthday-banner.tier-chief .birthday-badge-title {
+            color: #0f172a !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.8px;
+        }
+        .birthday-banner.tier-chief .birthday-badge-sub {
+            color: #1e1b4b !important;
+            font-weight: 700 !important;
+        }
+        .birthday-banner.tier-chief .birthday-ticker-segment {
+            color: #f8fafc !important;
+            font-weight: 500;
+        }
+        .birthday-banner.tier-chief .birthday-ticker-segment strong {
+            color: #fde047 !important;
+            font-size: 1.05em;
+            text-shadow: 0 0 12px rgba(253, 224, 71, 0.6);
+        }
+        .birthday-banner.tier-chief .birthday-person-pill {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border: 1.5px solid #fbbf24 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 14px rgba(251, 191, 36, 0.45) !important;
+        }
+        .birthday-banner.tier-chief .birthday-person-name {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        .birthday-banner.tier-chief .birthday-celebrate-btn {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+            color: #0f172a !important;
+            border: none !important;
+            font-weight: 800 !important;
+            box-shadow: 0 0 16px rgba(251, 191, 36, 0.55) !important;
+        }
+
+        .birthday-banner-inner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 18px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Left badge */
+        .birthday-badge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            border-radius: 50px;
+            color: #ffffff;
+            flex-shrink: 0;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(236, 72, 153, 0.35);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+        }
+        .birthday-badge-wrap:hover {
+            transform: scale(1.05);
+        }
+        .birthday-cake-icon {
+            font-size: 1.3rem;
+            animation: birthdayCakeBounce 2s infinite ease-in-out;
+            line-height: 1;
+        }
+        @keyframes birthdayCakeBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(-6deg); }
+            75% { transform: translateY(-3px) rotate(6deg); }
+        }
+        .birthday-badge-content {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+        }
+        .birthday-badge-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .birthday-badge-sub {
+            font-size: 0.65rem;
+            opacity: 0.92;
+            white-space: nowrap;
+        }
+
+        /* Continuous marquee track */
+        .birthday-ticker-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%);
+            cursor: pointer;
+        }
+        .birthday-ticker-track {
+            display: flex;
+            width: max-content;
+            animation: birthdayTickerScroll 28s linear infinite;
+            will-change: transform;
+        }
+        .birthday-ticker-container:hover .birthday-ticker-track {
+            animation-play-state: paused;
+        }
+        .birthday-ticker-segment {
+            display: inline-flex;
+            align-items: center;
+            padding-right: 48px;
+            white-space: nowrap;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+        }
+        .birthday-ticker-segment strong {
+            color: #ec4899;
+            margin: 0 4px;
+        }
+
+        @keyframes birthdayTickerScroll {
+            0% {
+                transform: translate3d(0, 0, 0);
+            }
+            100% {
+                transform: translate3d(-50%, 0, 0);
+            }
+        }
+
+        /* Right avatar pills & celebrate button */
+        .birthday-avatars-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .birthday-person-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 3px 10px 3px 4px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .birthday-person-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .birthday-avatar-sm {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #ffffff;
+            flex-shrink: 0;
+        }
+        .birthday-person-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .birthday-crown {
+            font-size: 0.85rem;
+            animation: birthdayCrownWiggle 2.5s infinite ease-in-out;
+        }
+        @keyframes birthdayCrownWiggle {
+            0%, 100% { transform: rotate(0deg); }
+            15% { transform: rotate(-12deg); }
+            30% { transform: rotate(12deg); }
+            45% { transform: rotate(0deg); }
+        }
+
+        .birthday-celebrate-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            border: none;
+            border-radius: 50px;
+            color: #ffffff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(236, 72, 153, 0.35);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .birthday-celebrate-btn:hover {
+            transform: scale(1.06);
+            box-shadow: 0 4px 14px rgba(236, 72, 153, 0.45);
+        }
+
+        /* Toast notifications */
+        .toast-box {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: #0f172a;
+            color: #ffffff;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000000;
+            animation: toastIn 0.3s ease;
+        }
+        @keyframes toastIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Mobile Simulation Wrapper */
+        .mobile-preview-box {
+            max-width: 414px;
+            margin: 20px auto;
+            border: 2px dashed var(--border);
+            padding: 16px;
+            border-radius: 20px;
+            background: var(--bg-secondary);
+        }
+        .mobile-preview-box .birthday-banner-inner {
+            flex-wrap: wrap;
+            padding: 10px 12px;
+            gap: 8px;
+        }
+        .mobile-preview-box .birthday-badge-wrap {
+            padding: 4px 10px;
+        }
+        .mobile-preview-box .birthday-cake-icon {
+            font-size: 1.1rem;
+        }
+        .mobile-preview-box .birthday-badge-title {
+            font-size: 0.65rem;
+        }
+        .mobile-preview-box .birthday-badge-sub {
+            font-size: 0.58rem;
+        }
+        .mobile-preview-box .birthday-ticker-container {
+            width: 100%;
+            order: 3;
+            margin-top: 2px;
+        }
+        .mobile-preview-box .birthday-avatars-wrap {
+            margin-left: auto;
+            order: 2;
+        }
+        .mobile-preview-box .birthday-ticker-segment {
+            font-size: 0.78rem;
+            padding-right: 32px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-bar">
+            <div class="header-title">
+                🎂 BẢN XEM TRƯỚC CỤC BỘ (LOCAL DEMO) — BANNER SINH NHẬT
+            </div>
+            <div class="header-controls">
+                <button class="btn-toggle" onclick="toggleTheme()">
+                    🌓 Đổi Giao Diện (Sáng / Tối)
+                </button>
+            </div>
+        </div>
+
+        <p style="color:var(--text-secondary); margin-bottom: 20px; font-size: 0.92rem;">
+            💡 <em>Trang mô phỏng trực tiếp 2 mẫu thiết kế chuyên biệt chạy trên nền tảng local. Bác sĩ có thể bấm vào banner hoặc nút "Chúc mừng" để kích hoạt chùm pháo hoa confetti theo từng phân cấp!</em>
+        </p>
+
+        <!-- =================== MẪU 1: BÁC SĨ TRƯỞNG KHOA =================== -->
+        <div class="section-label">
+            <span>👑 1. Mẫu Bác sĩ Trưởng khoa</span>
+            <span class="tier-tag chief">Grand Chief Tier — Hoành tráng nhất</span>
+        </div>
+
+        <div class="birthday-banner tier-chief" role="region" aria-label="Chúc mừng sinh nhật Bác sĩ Trưởng khoa">
+            <div class="birthday-banner-inner">
+                <div class="birthday-badge-wrap" onclick="triggerConfetti('chief')" title="Bấm để chúc mừng sinh nhật 🎉">
+                    <div class="birthday-cake-icon">👑</div>
+                    <div class="birthday-badge-content">
+                        <div class="birthday-badge-title">👑 BS. TRƯỞNG KHOA</div>
+                        <div class="birthday-badge-sub">SINH NHẬT BÁC SĨ TRƯỞNG KHOA</div>
+                    </div>
+                </div>
+
+                <div class="birthday-ticker-container" onclick="triggerConfetti('chief')" title="Bấm để bắn pháo hoa 🎉">
+                    <div class="birthday-ticker-track">
+                        <div class="birthday-ticker-segment">
+                            🎉 Chúc mừng sinh nhật <strong>TS. BSCKII Nguyễn Phú Hữu</strong> (BS Trưởng khoa)! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc Bác sĩ bước sang tuổi mới luôn dồi dào sức khỏe, tràn đầy tâm huyết, dẫn dắt Khoa PTĐTT ngày càng phát triển vững mạnh và gặt hái nhiều đỉnh cao y học mới! 🌟 💐 🎈 🎁
+                        </div>
+                        <div class="birthday-ticker-segment" aria-hidden="true">
+                            🎉 Chúc mừng sinh nhật <strong>TS. BSCKII Nguyễn Phú Hữu</strong> (BS Trưởng khoa)! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc Bác sĩ bước sang tuổi mới luôn dồi dào sức khỏe, tràn đầy tâm huyết, dẫn dắt Khoa PTĐTT ngày càng phát triển vững mạnh và gặt hái nhiều đỉnh cao y học mới! 🌟 💐 🎈 🎁
+                        </div>
+                    </div>
+                </div>
+
+                <div class="birthday-avatars-wrap">
+                    <div class="birthday-person-pill" onclick="triggerConfetti('chief')" title="Sinh nhật Nguyễn Phú Hữu 🎉">
+                        <div class="birthday-avatar-sm" style="background:#d97706">NH</div>
+                        <span class="birthday-person-name">Nguyễn Phú Hữu <small style="color:#fde047;font-weight:normal">(17.11)</small></span>
+                        <span class="birthday-crown">👑✨</span>
+                    </div>
+                    <button class="birthday-celebrate-btn" onclick="triggerConfetti('chief')" title="Bắn pháo hoa chúc mừng!">
+                        🎉 Chúc mừng
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== MẪU 2: ĐIỀU DƯỠNG TRƯỞNG =================== -->
+        <div class="section-label" style="margin-top: 36px;">
+            <span>🌺 2. Mẫu Điều dưỡng Trưởng</span>
+            <span class="tier-tag bcn">BCN Tier — Tương đương BS. Phó khoa</span>
+        </div>
+
+        <div class="birthday-banner tier-bcn" role="region" aria-label="Chúc mừng sinh nhật Điều dưỡng trưởng">
+            <div class="birthday-banner-inner">
+                <div class="birthday-badge-wrap" onclick="triggerConfetti('bcn')" title="Bấm để chúc mừng sinh nhật 🎉">
+                    <div class="birthday-cake-icon">🎂</div>
+                    <div class="birthday-badge-content">
+                        <div class="birthday-badge-title">👑 ĐIỀU DƯỠNG TRƯỞNG</div>
+                        <div class="birthday-badge-sub">Sinh nhật Điều dưỡng trưởng</div>
+                    </div>
+                </div>
+
+                <div class="birthday-ticker-container" onclick="triggerConfetti('bcn')" title="Bấm để bắn pháo hoa 🎉">
+                    <div class="birthday-ticker-track">
+                        <div class="birthday-ticker-segment">
+                            🎉 Chúc mừng sinh nhật <strong>CNĐD Nguyễn Thị Ngọc Thùy</strong> (Điều dưỡng trưởng)! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc Chị tuổi mới luôn trẻ trung, xinh đẹp, ngập tràn niềm vui, điều hành công tác điều dưỡng khoa ngày càng chuyên nghiệp và gia đình hạnh phúc viên mãn! 🌺 💐 🎈 🎁
+                        </div>
+                        <div class="birthday-ticker-segment" aria-hidden="true">
+                            🎉 Chúc mừng sinh nhật <strong>CNĐD Nguyễn Thị Ngọc Thùy</strong> (Điều dưỡng trưởng)! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc Chị tuổi mới luôn trẻ trung, xinh đẹp, ngập tràn niềm vui, điều hành công tác điều dưỡng khoa ngày càng chuyên nghiệp và gia đình hạnh phúc viên mãn! 🌺 💐 🎈 🎁
+                        </div>
+                    </div>
+                </div>
+
+                <div class="birthday-avatars-wrap">
+                    <div class="birthday-person-pill" onclick="triggerConfetti('bcn')" title="Sinh nhật Nguyễn Thị Ngọc Thùy 🎉">
+                        <div class="birthday-avatar-sm" style="background:#ec4899">NT</div>
+                        <span class="birthday-person-name">Nguyễn Thị Ngọc Thùy <small style="color:var(--text-muted);font-weight:normal">(02.02)</small></span>
+                        <span class="birthday-crown">👑</span>
+                    </div>
+                    <button class="birthday-celebrate-btn" onclick="triggerConfetti('bcn')" title="Bắn pháo hoa chúc mừng!">
+                        🎉 Chúc mừng
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== MÔ PHỎNG TRÊN MOBILE =================== -->
+        <div class="section-label" style="margin-top: 40px;">
+            <span>📱 3. Mô phỏng hiển thị trên Màn hình Điện thoại (Mobile View)</span>
+        </div>
+
+        <div class="mobile-preview-box">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+                Giao diện điện thoại (Trưởng khoa)
+            </div>
+            <div class="birthday-banner tier-chief" style="margin-bottom: 12px;">
+                <div class="birthday-banner-inner">
+                    <div class="birthday-badge-wrap" onclick="triggerConfetti('chief')">
+                        <div class="birthday-cake-icon">👑</div>
+                        <div class="birthday-badge-content">
+                            <div class="birthday-badge-title">👑 BS. TRƯỞNG KHOA</div>
+                            <div class="birthday-badge-sub">SINH NHẬT BÁC SĨ TRƯỞNG KHOA</div>
+                        </div>
+                    </div>
+                    <div class="birthday-avatars-wrap">
+                        <button class="birthday-celebrate-btn" onclick="triggerConfetti('chief')">🎉 Chúc mừng</button>
+                    </div>
+                    <div class="birthday-ticker-container" onclick="triggerConfetti('chief')">
+                        <div class="birthday-ticker-track">
+                            <div class="birthday-ticker-segment">
+                                🎉 Chúc mừng sinh nhật <strong>TS. BSCKII Nguyễn Phú Hữu</strong>! Khoa thân chúc Bác sĩ tuổi mới vạn sự an khang! 🌟
+                            </div>
+                            <div class="birthday-ticker-segment" aria-hidden="true">
+                                🎉 Chúc mừng sinh nhật <strong>TS. BSCKII Nguyễn Phú Hữu</strong>! Khoa thân chúc Bác sĩ tuổi mới vạn sự an khang! 🌟
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+                Giao diện điện thoại (Điều dưỡng trưởng)
+            </div>
+            <div class="birthday-banner tier-bcn" style="margin-bottom: 0;">
+                <div class="birthday-banner-inner">
+                    <div class="birthday-badge-wrap" onclick="triggerConfetti('bcn')">
+                        <div class="birthday-cake-icon">🎂</div>
+                        <div class="birthday-badge-content">
+                            <div class="birthday-badge-title">👑 ĐD. TRƯỞNG</div>
+                            <div class="birthday-badge-sub">Điều dưỡng trưởng</div>
+                        </div>
+                    </div>
+                    <div class="birthday-avatars-wrap">
+                        <button class="birthday-celebrate-btn" onclick="triggerConfetti('bcn')">🎉 Chúc mừng</button>
+                    </div>
+                    <div class="birthday-ticker-container" onclick="triggerConfetti('bcn')">
+                        <div class="birthday-ticker-track">
+                            <div class="birthday-ticker-segment">
+                                🎉 Chúc mừng sinh nhật <strong>CNĐD Nguyễn Thị Ngọc Thùy</strong>! Chúc Chị tuổi mới nhiều sức khỏe và hạnh phúc! 🌺
+                            </div>
+                            <div class="birthday-ticker-segment" aria-hidden="true">
+                                🎉 Chúc mừng sinh nhật <strong>CNĐD Nguyễn Thị Ngọc Thùy</strong>! Chúc Chị tuổi mới nhiều sức khỏe và hạnh phúc! 🌺
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast" class="toast-box"></div>
+
+    <script>
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', target);
+            showToast(target === 'dark' ? '🌙 Đã chuyển sang giao diện Tối' : '☀️ Đã chuyển sang giao diện Sáng');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Zero-dependency Canvas Confetti Burst Engine
+        function triggerConfetti(tier = 'standard') {
+            try {
+                let colors = ['#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#a855f7', '#fbbf24'];
+                let count = 70;
+                let maxDuration = 2600;
+                let toastMsg = 'Khoa PTĐTT chúc mừng sinh nhật ngập tràn niềm vui và hạnh phúc! 🎂🎉✨';
+
+                if (tier === 'chief') {
+                    colors = ['#fbbf24', '#f59e0b', '#d97706', '#fde047', '#e11d48', '#8b5cf6', '#38bdf8', '#ffffff'];
+                    count = 130;
+                    maxDuration = 3600;
+                    toastMsg = '👑 KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG TRỌNG THỂ CHÚC MỪNG SINH NHẬT BÁC SĨ TRƯỞNG KHOA! 🎂🎉🌟✨';
+                } else if (tier === 'bcn') {
+                    colors = ['#f59e0b', '#fbbf24', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6', '#ffffff'];
+                    count = 95;
+                    maxDuration = 3000;
+                    toastMsg = '👑 Khoa PTĐTT trân trọng chúc mừng sinh nhật Ban Chủ Nhiệm Khoa & Điều Dưỡng Trưởng! 🎂🎉✨';
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.style.position = 'fixed';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.width = '100vw';
+                canvas.style.height = '100vh';
+                canvas.style.pointerEvents = 'none';
+                canvas.style.zIndex = '999999';
+                document.body.appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = window.innerWidth * dpr;
+                canvas.height = window.innerHeight * dpr;
+                ctx.scale(dpr, dpr);
+
+                const particles = [];
+                const startX = window.innerWidth / 2;
+                const startY = Math.min(window.innerHeight * 0.35, 260);
+
+                for (let i = 0; i < count; i++) {
+                    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+                    const speed = 5 + Math.random() * (tier === 'chief' ? 13 : 9);
+                    particles.push({
+                        x: startX + (Math.random() - 0.5) * (tier === 'chief' ? 180 : 100),
+                        y: startY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - (tier === 'chief' ? 6 : 4),
+                        size: 5 + Math.random() * (tier === 'chief' ? 9 : 7),
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        rotation: Math.random() * 360,
+                        rSpeed: (Math.random() - 0.5) * 14,
+                        opacity: 1,
+                        gravity: tier === 'chief' ? 0.22 : 0.28,
+                        shape: Math.random() > 0.35 ? 'rect' : 'circle'
+                    });
+                }
+
+                let startTime = null;
+                const reqAnim = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
+                function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const elapsed = timestamp - startTime;
+                    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+                    let hasAlive = false;
+                    for (const p of particles) {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += p.gravity;
+                        p.rotation += p.rSpeed;
+                        p.opacity = Math.max(0, 1 - elapsed / (maxDuration - 200));
+
+                        if (p.opacity > 0) {
+                            hasAlive = true;
+                            ctx.save();
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate((p.rotation * Math.PI) / 180);
+                            ctx.globalAlpha = p.opacity;
+                            ctx.fillStyle = p.color;
+
+                            if (p.shape === 'rect') {
+                                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.6);
+                            } else {
+                                ctx.beginPath();
+                                ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                            ctx.restore();
+                        }
+                    }
+
+                    if (hasAlive && elapsed < maxDuration) {
+                        reqAnim(animate);
+                    } else {
+                        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+                    }
+                }
+                reqAnim(animate);
+                showToast(toastMsg);
+            } catch (e) {
+                console.error('Confetti error:', e);
+            }
+        }
+    </script>
+</body>
+</html>
