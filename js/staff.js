@@ -105,6 +105,7 @@ const StaffPage = {
                 <thead>
                     <tr>
                         <th>Họ tên</th>
+                        <th>Ngày sinh</th>
                         <th>Chức danh</th>
                         <th>Vai trò</th>
                         <th>Điện thoại</th>
@@ -122,6 +123,7 @@ const StaffPage = {
                                 <span class="staff-fullname">${s.name}</span>
                             </div>
                         </td>
+                        <td class="td-muted-sm">${s.dob ? Utils.formatDate(s.dob) : '—'}</td>
                         <td>${s.title}</td>
                         <td><span class="badge badge-primary">${s.role}</span></td>
                         <td class="td-muted">${s.phone || '—'}</td>
@@ -137,7 +139,7 @@ const StaffPage = {
                             </div>
                         </td>
                     </tr>`;
-        }).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
+        }).join('') : `<tr><td colspan="7"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
                 </tbody>
             </table>
         </div>
@@ -480,6 +482,20 @@ const StaffPage = {
                         <input class="form-input" name="name" value="${s?.name || ''}" required>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Ngày sinh</label>
+                        <input class="form-input" type="date" name="dob" value="${s?.dob || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Giới tính</label>
+                        <select class="form-select" name="gender">
+                            <option value="">-- Chọn --</option>
+                            <option value="Nam" ${s?.gender === 'Nam' ? 'selected' : ''}>Nam</option>
+                            <option value="Nữ" ${s?.gender === 'Nữ' ? 'selected' : ''}>Nữ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Chức danh</label>
                         <input class="form-input" name="title" value="${s?.title || ''}" required placeholder="BS., ThS. BS, CN. ĐD...">
                     </div>
@@ -516,6 +532,8 @@ const StaffPage = {
         const form = new FormData(e.target);
         const data = {
             name: form.get('name'),
+            dob: form.get('dob') || '',
+            gender: form.get('gender') || '',
             title: form.get('title'),
             role: form.get('role'),
             phone: form.get('phone'),
@@ -826,13 +844,13 @@ const StaffPage = {
             const external = Store.getAll('externalDoctors') || [];
 
             // Sheet 1: Internal staff
-            const headers1 = ['STT', 'Họ tên', 'Chức danh', 'Vai trò', 'Cơ hữu', 'SĐT', 'Ghi chú'];
+            const headers1 = ['STT', 'Họ tên', 'Ngày sinh', 'Giới tính', 'Chức danh', 'Vai trò', 'Cơ hữu', 'SĐT', 'Email', 'Ghi chú'];
             const data1 = [headers1];
             staff.forEach((s, i) => {
-                data1.push([i + 1, s.name, s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.note || '']);
+                data1.push([i + 1, s.name, s.dob ? Utils.formatDate(s.dob) : '', s.gender || '', s.title, s.role, s.cơHữu ? 'Có' : 'Không', s.phone || '', s.email || '', s.note || '']);
             });
             const ws1 = XLSX.utils.aoa_to_sheet(data1);
-            ws1['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 12 }, { wch: 22 }, { wch: 8 }, { wch: 14 }, { wch: 20 }];
+            ws1['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 8 }, { wch: 14 }, { wch: 28 }, { wch: 20 }];
             XLSX.utils.book_append_sheet(wb, ws1, 'Nhan vien khoa');
 
             // Sheet 2: External doctors
