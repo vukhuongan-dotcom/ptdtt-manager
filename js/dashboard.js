@@ -28,6 +28,9 @@ const DashboardPage = {
 
         const dotColors = ['cyan', 'purple', 'green', 'cyan'];
 
+        // Birthday staff detection
+        const todayBirthdays = this.getTodayBirthdays(staff, today);
+
         return `
         <div class="page-header">
             <div>
@@ -41,6 +44,8 @@ const DashboardPage = {
                 </div>
             </div>
         </div>
+
+        ${this.renderBirthdayBanner(todayBirthdays, today)}
 
         <div class="stats-grid">
             ${(() => {
@@ -445,5 +450,172 @@ const DashboardPage = {
             }
         });
         return result;
+    },
+
+    // Get staff members whose birthday is today
+    getTodayBirthdays(allStaff, todayStr) {
+        if (!allStaff || !allStaff.length) return [];
+        const parts = (todayStr || '').split('-');
+        if (parts.length < 3) return [];
+        const targetMonth = parts[1];
+        const targetDay = parts[2];
+
+        return allStaff.filter(s => {
+            const dob = s.dob || '';
+            if (!dob) return false;
+            let m = '', d = '';
+            if (dob.includes('-')) {
+                const p = dob.split('-');
+                if (p.length === 3) { m = p[1].padStart(2, '0'); d = p[2].padStart(2, '0'); }
+            } else if (dob.includes('/')) {
+                const p = dob.split('/');
+                if (p.length === 3) { d = p[0].padStart(2, '0'); m = p[1].padStart(2, '0'); }
+            } else if (dob.includes('.')) {
+                const p = dob.split('.');
+                if (p.length === 3) { d = p[0].padStart(2, '0'); m = p[1].padStart(2, '0'); }
+            }
+            return m === targetMonth && d === targetDay;
+        });
+    },
+
+    // Render continuous marquee celebratory banner
+    renderBirthdayBanner(birthdays, todayStr) {
+        if (!birthdays || birthdays.length === 0) return '';
+
+        const dateParts = (todayStr || '').split('-');
+        const dateDisplay = (dateParts.length === 3) ? `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}` : todayStr;
+
+        // Construct congratulation messages
+        const messageParts = birthdays.map(s => {
+            const titleName = `${s.title ? s.title + ' ' : ''}${s.name}`;
+            const roleStr = s.role ? ` (${s.role})` : '';
+            const pronoun = s.gender === 'Nữ' ? 'Chị' : (s.role.includes('Trưởng khoa') || s.role.includes('Bác sĩ') ? 'Bác sĩ' : 'Anh');
+            return `🎉 Chúc mừng sinh nhật <strong>${titleName}</strong>${roleStr}! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc ${pronoun} bước sang tuổi mới luôn dồi dào sức khỏe, ngập tràn niềm vui, gia đình hạnh phúc và gặt hái nhiều thành công rực rỡ! 💐 🎈 ✨ 🎁`;
+        });
+        const combinedMessage = messageParts.join(' &nbsp;&nbsp;✦&nbsp;&nbsp; ');
+
+        return `
+        <div class="birthday-banner slide-up" role="region" aria-label="Chúc mừng sinh nhật nhân sự khoa">
+            <div class="birthday-banner-inner">
+                <div class="birthday-badge-wrap" onclick="DashboardPage.triggerConfetti()" title="Bấm để chúc mừng sinh nhật 🎉">
+                    <div class="birthday-cake-icon">🎂</div>
+                    <div class="birthday-badge-content">
+                        <div class="birthday-badge-title">HAPPY BIRTHDAY</div>
+                        <div class="birthday-badge-sub">Chúc mừng sinh nhật</div>
+                    </div>
+                </div>
+
+                <div class="birthday-ticker-container" onclick="DashboardPage.triggerConfetti()" title="Bấm để bắn pháo hoa 🎉">
+                    <div class="birthday-ticker-track">
+                        <div class="birthday-ticker-segment">${combinedMessage}</div>
+                        <div class="birthday-ticker-segment" aria-hidden="true">${combinedMessage}</div>
+                    </div>
+                </div>
+
+                <div class="birthday-avatars-wrap">
+                    ${birthdays.map(s => `
+                        <div class="birthday-person-pill" onclick="DashboardPage.triggerConfetti()" title="Sinh nhật ${s.name} (${dateDisplay}) 🎉">
+                            <div class="birthday-avatar-sm" style="background:${s.color || '#ec4899'}">${Utils.getInitials(s.name)}</div>
+                            <span class="birthday-person-name">${s.name}</span>
+                            <span class="birthday-crown">👑</span>
+                        </div>
+                    `).join('')}
+                    <button class="birthday-celebrate-btn" onclick="DashboardPage.triggerConfetti()" title="Bắn pháo hoa chúc mừng!">
+                        🎉 Chúc mừng
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    },
+
+    // Joyful zero-dependency 60fps confetti effect
+    triggerConfetti() {
+        try {
+            const colors = ['#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#a855f7', '#fbbf24'];
+            const canvas = document.createElement('canvas');
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100vw';
+            canvas.style.height = '100vh';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '999999';
+            document.body.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+
+            const particles = [];
+            const count = 70;
+            const startX = window.innerWidth / 2;
+            const startY = Math.min(window.innerHeight * 0.35, 260);
+
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+                const speed = 5 + Math.random() * 9;
+                particles.push({
+                    x: startX + (Math.random() - 0.5) * 100,
+                    y: startY,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 4,
+                    size: 5 + Math.random() * 7,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rSpeed: (Math.random() - 0.5) * 12,
+                    opacity: 1,
+                    gravity: 0.28,
+                    shape: Math.random() > 0.4 ? 'rect' : 'circle'
+                });
+            }
+
+            let startTime = null;
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+                let hasAlive = false;
+                for (const p of particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += p.gravity;
+                    p.rotation += p.rSpeed;
+                    p.opacity = Math.max(0, 1 - elapsed / 2400);
+
+                    if (p.opacity > 0) {
+                        hasAlive = true;
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate((p.rotation * Math.PI) / 180);
+                        ctx.globalAlpha = p.opacity;
+                        ctx.fillStyle = p.color;
+
+                        if (p.shape === 'rect') {
+                            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.6);
+                        } else {
+                            ctx.beginPath();
+                            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.restore();
+                    }
+                }
+
+                if (hasAlive && elapsed < 2600) {
+                    reqAnim(animate);
+                } else {
+                    if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+                }
+            }
+            const reqAnim = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
+            reqAnim(animate);
+            Toast.success('Khoa PTĐTT chúc mừng sinh nhật ngập tràn niềm vui và hạnh phúc! 🎂🎉✨');
+        } catch (e) {
+            console.error('Confetti error:', e);
+        }
     }
 };
