@@ -588,6 +588,25 @@ const DashboardPage = {
         return 'bs_chinh';
     },
 
+    getBirthdayTier(staffList) {
+        if (!staffList || !staffList.length) return 'standard';
+        // Tier 3: Chief (Bác sĩ Trưởng khoa - Hoành tráng nhất)
+        if (staffList.some(s => {
+            const r = (s?.role || '').toLowerCase();
+            return r.includes('trưởng khoa') && !r.includes('phó') && !r.includes('điều dưỡng');
+        })) {
+            return 'chief';
+        }
+        // Tier 2: BCN (BS Phó trưởng khoa)
+        if (staffList.some(s => {
+            const r = (s?.role || '').toLowerCase();
+            return r.includes('phó trưởng khoa') || r.includes('phó khoa');
+        })) {
+            return 'bcn';
+        }
+        return 'standard';
+    },
+
     getRandomWish(s) {
         const cat = this.getStaffRoleCategory(s);
         const list = this.BIRTHDAY_WISHES_BY_ROLE[cat] || this.BIRTHDAY_WISHES_BY_ROLE['bs_chinh'];
@@ -595,12 +614,26 @@ const DashboardPage = {
         return list[idx];
     },
 
-    // Render continuous marquee celebratory banner
+    // Render continuous marquee celebratory banner (Tier-adapted)
     renderBirthdayBanner(bdayInfo, todayStr) {
         if (!bdayInfo || !bdayInfo.staff || bdayInfo.staff.length === 0) return '';
         const { isToday, isTestPreview, staff, dateStr, daysLeft } = bdayInfo;
+        const tier = this.getBirthdayTier(staff);
 
-        const subTitleBadge = isToday ? 'Hôm nay sinh nhật' : `Sinh nhật sắp tới (${dateStr})`;
+        let badgeTitle = 'HAPPY BIRTHDAY';
+        let subTitleBadge = isToday ? 'Hôm nay sinh nhật' : `Sinh nhật sắp tới (${dateStr})`;
+        let cakeIcon = '🎂';
+
+        if (tier === 'chief') {
+            badgeTitle = '👑 ĐẠI LỄ CHÚC MỪNG';
+            subTitleBadge = isToday ? 'SINH NHẬT BÁC SĨ TRƯỞNG KHOA' : `SINH NHẬT TRƯỞNG KHOA (${dateStr})`;
+            cakeIcon = '👑';
+        } else if (tier === 'bcn') {
+            badgeTitle = '👑 BAN CHỦ NHIỆM KHOA';
+            subTitleBadge = isToday ? 'Sinh nhật BS. Phó trưởng khoa' : `Sinh nhật BCN Khoa (${dateStr})`;
+            cakeIcon = '🎂';
+        }
+
         const prefixTag = isTestPreview ? `[CHẠY THỬ / SẮP TỚI NGÀY ${dateStr}] ` : '';
 
         // Construct role-tailored congratulation messages
@@ -614,17 +647,17 @@ const DashboardPage = {
         const combinedMessage = messageParts.join(' &nbsp;&nbsp;✦&nbsp;&nbsp; ');
 
         return `
-        <div class="birthday-banner slide-up" role="region" aria-label="Chúc mừng sinh nhật nhân sự khoa">
+        <div class="birthday-banner tier-${tier} slide-up" role="region" aria-label="Chúc mừng sinh nhật nhân sự khoa">
             <div class="birthday-banner-inner">
-                <div class="birthday-badge-wrap" onclick="DashboardPage.triggerConfetti()" title="Bấm để chúc mừng sinh nhật 🎉">
-                    <div class="birthday-cake-icon">🎂</div>
+                <div class="birthday-badge-wrap" onclick="DashboardPage.triggerConfetti('${tier}')" title="Bấm để chúc mừng sinh nhật 🎉">
+                    <div class="birthday-cake-icon">${cakeIcon}</div>
                     <div class="birthday-badge-content">
-                        <div class="birthday-badge-title">HAPPY BIRTHDAY</div>
+                        <div class="birthday-badge-title">${badgeTitle}</div>
                         <div class="birthday-badge-sub">${subTitleBadge}</div>
                     </div>
                 </div>
 
-                <div class="birthday-ticker-container" onclick="DashboardPage.triggerConfetti()" title="Bấm để bắn pháo hoa 🎉">
+                <div class="birthday-ticker-container" onclick="DashboardPage.triggerConfetti('${tier}')" title="Bấm để bắn pháo hoa 🎉">
                     <div class="birthday-ticker-track">
                         <div class="birthday-ticker-segment">${combinedMessage}</div>
                         <div class="birthday-ticker-segment" aria-hidden="true">${combinedMessage}</div>
@@ -633,13 +666,13 @@ const DashboardPage = {
 
                 <div class="birthday-avatars-wrap">
                     ${staff.map(s => `
-                        <div class="birthday-person-pill" onclick="DashboardPage.triggerConfetti()" title="Sinh nhật ${s.name} (${dateStr}) 🎉">
-                            <div class="birthday-avatar-sm" style="background:${s.color || '#ec4899'}">${Utils.getInitials(s.name)}</div>
+                        <div class="birthday-person-pill" onclick="DashboardPage.triggerConfetti('${tier}')" title="Sinh nhật ${s.name} (${dateStr}) 🎉">
+                            <div class="birthday-avatar-sm" style="background:${s.color || (tier === 'chief' ? '#d97706' : '#ec4899')}">${Utils.getInitials(s.name)}</div>
                             <span class="birthday-person-name">${s.name} <small style="color:var(--text-muted);font-weight:normal">(${dateStr})</small></span>
-                            <span class="birthday-crown">👑</span>
+                            <span class="birthday-crown">${tier === 'chief' ? '👑✨' : '👑'}</span>
                         </div>
                     `).join('')}
-                    <button class="birthday-celebrate-btn" onclick="DashboardPage.triggerConfetti()" title="Bắn pháo hoa chúc mừng!">
+                    <button class="birthday-celebrate-btn" onclick="DashboardPage.triggerConfetti('${tier}')" title="Bắn pháo hoa chúc mừng!">
                         🎉 Chúc mừng
                     </button>
                 </div>
@@ -648,10 +681,26 @@ const DashboardPage = {
         `;
     },
 
-    // Joyful zero-dependency 60fps confetti effect
-    triggerConfetti() {
+    // Joyful zero-dependency 60fps confetti effect (Tier-adapted)
+    triggerConfetti(tier = 'standard') {
         try {
-            const colors = ['#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#a855f7', '#fbbf24'];
+            let colors = ['#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#a855f7', '#fbbf24'];
+            let count = 70;
+            let maxDuration = 2600;
+            let toastMsg = 'Khoa PTĐTT chúc mừng sinh nhật ngập tràn niềm vui và hạnh phúc! 🎂🎉✨';
+
+            if (tier === 'chief') {
+                colors = ['#fbbf24', '#f59e0b', '#d97706', '#fde047', '#e11d48', '#8b5cf6', '#38bdf8', '#ffffff'];
+                count = 125;
+                maxDuration = 3600;
+                toastMsg = '👑 KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG TRỌNG THỂ CHÚC MỪNG SINH NHẬT BÁC SĨ TRƯỞNG KHOA! 🎂🎉🌟✨';
+            } else if (tier === 'bcn') {
+                colors = ['#f59e0b', '#fbbf24', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6', '#ffffff'];
+                count = 90;
+                maxDuration = 3000;
+                toastMsg = '👑 Khoa PTĐTT trân trọng chúc mừng sinh nhật Ban Chủ Nhiệm Khoa! 🎂🎉✨';
+            }
+
             const canvas = document.createElement('canvas');
             canvas.style.position = 'fixed';
             canvas.style.top = '0';
@@ -669,29 +718,29 @@ const DashboardPage = {
             ctx.scale(dpr, dpr);
 
             const particles = [];
-            const count = 70;
             const startX = window.innerWidth / 2;
             const startY = Math.min(window.innerHeight * 0.35, 260);
 
             for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-                const speed = 5 + Math.random() * 9;
+                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+                const speed = 5 + Math.random() * (tier === 'chief' ? 12 : 9);
                 particles.push({
-                    x: startX + (Math.random() - 0.5) * 100,
+                    x: startX + (Math.random() - 0.5) * (tier === 'chief' ? 160 : 100),
                     y: startY,
                     vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 4,
-                    size: 5 + Math.random() * 7,
+                    vy: Math.sin(angle) * speed - (tier === 'chief' ? 6 : 4),
+                    size: 5 + Math.random() * (tier === 'chief' ? 9 : 7),
                     color: colors[Math.floor(Math.random() * colors.length)],
                     rotation: Math.random() * 360,
-                    rSpeed: (Math.random() - 0.5) * 12,
+                    rSpeed: (Math.random() - 0.5) * 14,
                     opacity: 1,
-                    gravity: 0.28,
-                    shape: Math.random() > 0.4 ? 'rect' : 'circle'
+                    gravity: tier === 'chief' ? 0.22 : 0.28,
+                    shape: Math.random() > 0.35 ? 'rect' : 'circle'
                 });
             }
 
             let startTime = null;
+            const reqAnim = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
@@ -703,7 +752,7 @@ const DashboardPage = {
                     p.y += p.vy;
                     p.vy += p.gravity;
                     p.rotation += p.rSpeed;
-                    p.opacity = Math.max(0, 1 - elapsed / 2400);
+                    p.opacity = Math.max(0, 1 - elapsed / (maxDuration - 200));
 
                     if (p.opacity > 0) {
                         hasAlive = true;
@@ -724,15 +773,14 @@ const DashboardPage = {
                     }
                 }
 
-                if (hasAlive && elapsed < 2600) {
+                if (hasAlive && elapsed < maxDuration) {
                     reqAnim(animate);
                 } else {
                     if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
                 }
             }
-            const reqAnim = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
             reqAnim(animate);
-            Toast.success('Khoa PTĐTT chúc mừng sinh nhật ngập tràn niềm vui và hạnh phúc! 🎂🎉✨');
+            Toast.success(toastMsg);
         } catch (e) {
             console.error('Confetti error:', e);
         }

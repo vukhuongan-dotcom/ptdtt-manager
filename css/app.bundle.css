@@ -2425,6 +2425,80 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     box-shadow: 0 4px 24px -2px rgba(236, 72, 153, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+/* Tier 2: BCN Tier (Phó trưởng khoa) — Royal Sapphire & Amber Gold */
+.birthday-banner.tier-bcn {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(217, 119, 6, 0.1) 45%, rgba(139, 92, 246, 0.12) 100%);
+    border: 1.5px solid rgba(245, 158, 11, 0.5);
+    box-shadow: 0 4px 24px -2px rgba(245, 158, 11, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .birthday-banner.tier-bcn {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.28) 0%, rgba(217, 119, 6, 0.22) 45%, rgba(139, 92, 246, 0.25) 100%);
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 4px 28px -2px rgba(245, 158, 11, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.birthday-banner.tier-bcn .birthday-badge-wrap {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #7c2d12 100%);
+    box-shadow: 0 2px 14px rgba(217, 119, 6, 0.45);
+}
+.birthday-banner.tier-bcn .birthday-ticker-segment strong {
+    color: #d97706;
+}
+[data-theme="dark"] .birthday-banner.tier-bcn .birthday-ticker-segment strong {
+    color: #fbbf24;
+}
+
+/* Tier 3: Grand Chief Tier (Trưởng khoa — Hoành tráng & Trang trọng bậc nhất) */
+.birthday-banner.tier-chief {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 28%, #4a044e 65%, #78350f 100%) !important;
+    border: 2px solid #fbbf24 !important;
+    box-shadow: 0 0 35px rgba(251, 191, 36, 0.35), 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+    animation: chiefHaloPulse 3s infinite alternate ease-in-out;
+}
+@keyframes chiefHaloPulse {
+    0% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.3), 0 8px 32px rgba(0, 0, 0, 0.35); border-color: #fbbf24; }
+    100% { box-shadow: 0 0 48px rgba(251, 191, 36, 0.65), 0 12px 40px rgba(217, 119, 6, 0.55); border-color: #fde047; }
+}
+.birthday-banner.tier-chief .birthday-badge-wrap {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
+    color: #0f172a !important;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.65) !important;
+}
+.birthday-banner.tier-chief .birthday-badge-title {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.8px;
+}
+.birthday-banner.tier-chief .birthday-badge-sub {
+    color: #1e1b4b !important;
+    font-weight: 700 !important;
+}
+.birthday-banner.tier-chief .birthday-ticker-segment {
+    color: #f8fafc !important;
+    font-weight: 500;
+}
+.birthday-banner.tier-chief .birthday-ticker-segment strong {
+    color: #fde047 !important;
+    font-size: 1.05em;
+    text-shadow: 0 0 12px rgba(253, 224, 71, 0.6);
+}
+.birthday-banner.tier-chief .birthday-person-pill {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1.5px solid #fbbf24 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.45) !important;
+}
+.birthday-banner.tier-chief .birthday-person-name {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+.birthday-banner.tier-chief .birthday-celebrate-btn {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+    color: #0f172a !important;
+    border: none !important;
+    font-weight: 800 !important;
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.55) !important;
+}
+
 .birthday-banner-inner {
     display: flex;
     align-items: center;
