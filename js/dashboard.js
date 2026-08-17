@@ -532,6 +532,69 @@ const DashboardPage = {
         };
     },
 
+    // Role-specific birthday wishes database
+    BIRTHDAY_WISHES_BY_ROLE: {
+        'bcn': [
+            'bước sang tuổi mới luôn dồi dào sức khỏe, tràn đầy tâm huyết, dẫn dắt Khoa PTĐTT ngày càng phát triển vững mạnh và gặt hái nhiều đỉnh cao y học mới! 🌟',
+            'tuổi mới luôn vững tay dao, sáng tâm y đức, lãnh đạo khoa đoàn kết phát triển và gia đình vạn sự an khang thịnh vượng! 🌿',
+            'thêm một tuổi mới tràn đầy năng lượng, sức khỏe dẻo dai, luôn là ngọn hải đăng soi đường cho tập thể khoa và đạt nhiều thắng lợi rực rỡ trong chuyên môn lẫn NCKH! 🏆',
+            'tuổi mới luôn an khang, tràn đầy nhiệt huyết đổi mới sáng tạo, đưa uy tín chuyên môn của khoa ngày càng vươn xa! ✨'
+        ],
+        'ddt': [
+            'tuổi mới luôn trẻ trung, xinh đẹp, ngập tràn niềm vui, điều hành công tác điều dưỡng khoa ngày càng chuyên nghiệp và gia đình hạnh phúc viên mãn! 🌺',
+            'thêm tuổi mới dồi dào sức khỏe, tràn đầy nhiệt huyết, luôn là người chị cả vững vàng kết nối tập thể điều dưỡng khoa đoàn kết yêu thương! 💖',
+            'bước sang tuổi mới vạn sự như ý, luôn tươi vui rạng rỡ, hoàn thành xuất sắc mọi nhiệm vụ và giữ mãi ngọn lửa yêu nghề ấm áp! ✨'
+        ],
+        'bs_chinh': [
+            'bước sang tuổi mới vững vàng tay dao, tinh anh đường mổ, cứu chữa thành công nhiều ca bệnh khó và luôn gặt hái nhiều thành tựu lớn trong sự nghiệp ngoại khoa! 🩺',
+            'tuổi mới luôn dồi dào sức khỏe, phẫu thuật bách phát bách trúng, nghiên cứu khoa học thăng hoa và gia đình hạnh phúc an vui! 🌟',
+            'thêm tuổi mới ngập tràn năng lượng tích cực, luôn giữ vững ngọn lửa đam mê ngoại khoa, truyền cảm hứng cho thế hệ trẻ và vạn sự hanh thông! 🏆',
+            'tuổi mới vạn sự cát tường, đường mổ hanh thông, luôn là trụ cột phẫu thuật vững chắc của khoa và đạt nhiều bước tiến vượt bậc! 💫'
+        ],
+        'bs_hocvien': [
+            'tuổi mới học tập xuất sắc, tôi luyện tay dao ngày càng sắc bén, tích lũy nhiều kinh nghiệm quý báu và sớm trở thành phẫu thuật viên ưu tú của ngoại khoa! 🎓',
+            'thêm tuổi mới dồi dào sức khỏe, thi cử xuất sắc, vững vàng chuyên môn lâm sàng và đạt nhiều bước tiến vượt bậc trên con đường y nghiệp! 🚀',
+            'bước sang tuổi mới ngập tràn nhiệt huyết tuổi trẻ, học hỏi nhiều điều hay từ các thầy cô, đồng nghiệp và gặt hái nhiều thành công rực rỡ! ✨',
+            'tuổi mới tràn đầy năng lượng, vững vàng tay nghề, trực gác bình an và hoàn thành xuất sắc chương trình đào tạo! 🌟'
+        ],
+        'dieu_duong': [
+            'tuổi mới luôn dồi dào sức khỏe, xinh tươi rạng rỡ, tận tâm yêu nghề và luôn là điểm tựa ấm áp mang lại niềm tin cho mọi người bệnh! 🌸',
+            'thêm một tuổi mới ngập tràn niềm vui, công tác thuận lợi, gia đình hạnh phúc và luôn giữ vững nụ cười ân cần, chu đáo! 💖',
+            'bước sang tuổi mới vạn sự như ý, luôn bình an, may mắn và tiếp tục đồng hành gắn bó cùng sự phát triển của đại gia đình PTĐTT! 🌷',
+            'tuổi mới nhiều sức khỏe, luôn vui tươi, tràn ngập may mắn và luôn là hậu phương chăm sóc người bệnh chu đáo nhất! 🌺'
+        ],
+        'ho_ly': [
+            'tuổi mới luôn dồi dào sức khỏe, nhiều niềm vui, công việc thuận lợi và gia đình luôn êm ấm, thuận hòa, an khang thịnh vượng! 🍀',
+            'thêm tuổi mới ngập tràn may mắn, luôn bình an, vui vẻ và cảm ơn sự cần mẫn, tận tụy giữ gìn khoa phòng luôn sạch đẹp mỗi ngày! 🌟',
+            'bước sang tuổi mới dồi dào năng lượng, gia đạo bình an, hạnh phúc và vạn sự như ý! 💐'
+        ],
+        'thu_ky': [
+            'tuổi mới luôn xinh đẹp, trẻ trung, công việc hành chính hanh thông suôn sẻ và gặt hái nhiều niềm vui, hạnh phúc trong cuộc sống! 🌼',
+            'thêm tuổi mới ngập tràn may mắn, nụ cười luôn rạng rỡ, hoàn thành xuất sắc mọi công việc và gia đình luôn tràn ngập tiếng cười! 💖',
+            'bước sang tuổi mới vạn sự cát tường, công tác thuận lợi, nhiều sức khỏe và hạnh phúc viên mãn! ✨'
+        ]
+    },
+
+    getStaffRoleCategory(s) {
+        const role = (s?.role || '').toLowerCase();
+        const title = (s?.title || '').toLowerCase();
+        if (role.includes('trưởng khoa') || role.includes('phó trưởng khoa') || role.includes('phó khoa')) return 'bcn';
+        if (role.includes('điều dưỡng trưởng') || role.includes('đdt')) return 'ddt';
+        if (role.includes('bác sĩ chính') || role.includes('bác sĩ trường')) return 'bs_chinh';
+        if (role.includes('học viên') || role.includes('nội trú') || title.includes('bsnt') || title.includes('học viên')) return 'bs_hocvien';
+        if (role.includes('điều dưỡng')) return 'dieu_duong';
+        if (role.includes('hộ lý')) return 'ho_ly';
+        if (role.includes('thư ký')) return 'thu_ky';
+        return 'bs_chinh';
+    },
+
+    getRandomWish(s) {
+        const cat = this.getStaffRoleCategory(s);
+        const list = this.BIRTHDAY_WISHES_BY_ROLE[cat] || this.BIRTHDAY_WISHES_BY_ROLE['bs_chinh'];
+        const idx = Math.floor(Math.random() * list.length);
+        return list[idx];
+    },
+
     // Render continuous marquee celebratory banner
     renderBirthdayBanner(bdayInfo, todayStr) {
         if (!bdayInfo || !bdayInfo.staff || bdayInfo.staff.length === 0) return '';
@@ -540,13 +603,13 @@ const DashboardPage = {
         const subTitleBadge = isToday ? 'Hôm nay sinh nhật' : `Sinh nhật sắp tới (${dateStr})`;
         const prefixTag = isTestPreview ? `[CHẠY THỬ / SẮP TỚI NGÀY ${dateStr}] ` : '';
 
-        // Construct congratulation messages
+        // Construct role-tailored congratulation messages
         const messageParts = staff.map(s => {
             const titleName = `${s.title ? s.title + ' ' : ''}${s.name}`;
             const roleStr = s.role ? ` (${s.role})` : '';
             const pronoun = s.gender === 'Nữ' ? 'Chị' : (s.role.includes('Trưởng khoa') || s.role.includes('Bác sĩ') ? 'Bác sĩ' : 'Anh');
-            const wishTime = isToday ? 'bước sang tuổi mới' : `sắp bước sang ngày sinh nhật (${dateStr})`;
-            return `🎉 ${prefixTag}Chúc mừng sinh nhật <strong>${titleName}</strong>${roleStr}! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc ${pronoun} ${wishTime} luôn dồi dào sức khỏe, ngập tràn niềm vui, gia đình hạnh phúc và gặt hái nhiều thành công rực rỡ! 💐 🎈 ✨ 🎁`;
+            const wishContent = this.getRandomWish(s);
+            return `🎉 ${prefixTag}Chúc mừng sinh nhật <strong>${titleName}</strong>${roleStr}! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc ${pronoun} ${wishContent} 💐 🎈 🎁`;
         });
         const combinedMessage = messageParts.join(' &nbsp;&nbsp;✦&nbsp;&nbsp; ');
 
