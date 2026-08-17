@@ -452,15 +452,19 @@ const DashboardPage = {
         return result;
     },
 
-    // Get staff members whose birthday is today
+    // Get staff members whose birthday is today (or closest upcoming birthday for test/preview)
     getTodayBirthdays(allStaff, todayStr) {
-        if (!allStaff || !allStaff.length) return [];
+        if (!allStaff || !allStaff.length) return null;
         const parts = (todayStr || '').split('-');
-        if (parts.length < 3) return [];
+        if (parts.length < 3) return null;
+        const curYear = parseInt(parts[0], 10);
+        const curMonth = parseInt(parts[1], 10);
+        const curDay = parseInt(parts[2], 10);
+        const curDate = new Date(curYear, curMonth - 1, curDay);
+
         const targetMonth = parts[1];
         const targetDay = parts[2];
-
-        return allStaff.filter(s => {
+        const exactMatches = allStaff.filter(s => {
             const dob = s.dob || '';
             if (!dob) return false;
             let m = '', d = '';
@@ -476,21 +480,73 @@ const DashboardPage = {
             }
             return m === targetMonth && d === targetDay;
         });
+
+        if (exactMatches.length > 0) {
+            return {
+                isToday: true,
+                isTestPreview: false,
+                staff: exactMatches,
+                dateStr: `${targetDay}.${targetMonth}`,
+                daysLeft: 0
+            };
+        }
+
+        // Find closest upcoming birthday for test/preview
+        const candidates = [];
+        allStaff.forEach(s => {
+            const dob = s.dob || '';
+            if (!dob) return;
+            let m = 0, d = 0;
+            if (dob.includes('-')) {
+                const p = dob.split('-');
+                if (p.length === 3) { m = parseInt(p[1], 10); d = parseInt(p[2], 10); }
+            } else if (dob.includes('/')) {
+                const p = dob.split('/');
+                if (p.length === 3) { d = parseInt(p[0], 10); m = parseInt(p[1], 10); }
+            } else if (dob.includes('.')) {
+                const p = dob.split('.');
+                if (p.length === 3) { d = parseInt(p[0], 10); m = parseInt(p[1], 10); }
+            }
+            if (m > 0 && d > 0) {
+                let bDate = new Date(curYear, m - 1, d);
+                let diffDays = Math.round((bDate - curDate) / (1000 * 60 * 60 * 24));
+                if (diffDays < 0) {
+                    bDate = new Date(curYear + 1, m - 1, d);
+                    diffDays = Math.round((bDate - curDate) / (1000 * 60 * 60 * 24));
+                }
+                candidates.push({ staff: s, diffDays, month: m, day: d });
+            }
+        });
+
+        if (candidates.length === 0) return null;
+        candidates.sort((a, b) => a.diffDays - b.diffDays);
+        const minDiff = candidates[0].diffDays;
+        const closestMatches = candidates.filter(c => c.diffDays === minDiff);
+
+        return {
+            isToday: false,
+            isTestPreview: true,
+            daysLeft: minDiff,
+            staff: closestMatches.map(c => c.staff),
+            dateStr: `${String(closestMatches[0].day).padStart(2, '0')}.${String(closestMatches[0].month).padStart(2, '0')}`
+        };
     },
 
     // Render continuous marquee celebratory banner
-    renderBirthdayBanner(birthdays, todayStr) {
-        if (!birthdays || birthdays.length === 0) return '';
+    renderBirthdayBanner(bdayInfo, todayStr) {
+        if (!bdayInfo || !bdayInfo.staff || bdayInfo.staff.length === 0) return '';
+        const { isToday, isTestPreview, staff, dateStr, daysLeft } = bdayInfo;
 
-        const dateParts = (todayStr || '').split('-');
-        const dateDisplay = (dateParts.length === 3) ? `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}` : todayStr;
+        const subTitleBadge = isToday ? 'Hôm nay sinh nhật' : `Sinh nhật sắp tới (${dateStr})`;
+        const prefixTag = isTestPreview ? `[CHẠY THỬ / SẮP TỚI NGÀY ${dateStr}] ` : '';
 
         // Construct congratulation messages
-        const messageParts = birthdays.map(s => {
+        const messageParts = staff.map(s => {
             const titleName = `${s.title ? s.title + ' ' : ''}${s.name}`;
             const roleStr = s.role ? ` (${s.role})` : '';
             const pronoun = s.gender === 'Nữ' ? 'Chị' : (s.role.includes('Trưởng khoa') || s.role.includes('Bác sĩ') ? 'Bác sĩ' : 'Anh');
-            return `🎉 Chúc mừng sinh nhật <strong>${titleName}</strong>${roleStr}! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc ${pronoun} bước sang tuổi mới luôn dồi dào sức khỏe, ngập tràn niềm vui, gia đình hạnh phúc và gặt hái nhiều thành công rực rỡ! 💐 🎈 ✨ 🎁`;
+            const wishTime = isToday ? 'bước sang tuổi mới' : `sắp bước sang ngày sinh nhật (${dateStr})`;
+            return `🎉 ${prefixTag}Chúc mừng sinh nhật <strong>${titleName}</strong>${roleStr}! 🎂 Khoa Phẫu thuật Đại trực tràng thân chúc ${pronoun} ${wishTime} luôn dồi dào sức khỏe, ngập tràn niềm vui, gia đình hạnh phúc và gặt hái nhiều thành công rực rỡ! 💐 🎈 ✨ 🎁`;
         });
         const combinedMessage = messageParts.join(' &nbsp;&nbsp;✦&nbsp;&nbsp; ');
 
@@ -501,7 +557,7 @@ const DashboardPage = {
                     <div class="birthday-cake-icon">🎂</div>
                     <div class="birthday-badge-content">
                         <div class="birthday-badge-title">HAPPY BIRTHDAY</div>
-                        <div class="birthday-badge-sub">Chúc mừng sinh nhật</div>
+                        <div class="birthday-badge-sub">${subTitleBadge}</div>
                     </div>
                 </div>
 
@@ -513,10 +569,10 @@ const DashboardPage = {
                 </div>
 
                 <div class="birthday-avatars-wrap">
-                    ${birthdays.map(s => `
-                        <div class="birthday-person-pill" onclick="DashboardPage.triggerConfetti()" title="Sinh nhật ${s.name} (${dateDisplay}) 🎉">
+                    ${staff.map(s => `
+                        <div class="birthday-person-pill" onclick="DashboardPage.triggerConfetti()" title="Sinh nhật ${s.name} (${dateStr}) 🎉">
                             <div class="birthday-avatar-sm" style="background:${s.color || '#ec4899'}">${Utils.getInitials(s.name)}</div>
-                            <span class="birthday-person-name">${s.name}</span>
+                            <span class="birthday-person-name">${s.name} <small style="color:var(--text-muted);font-weight:normal">(${dateStr})</small></span>
                             <span class="birthday-crown">👑</span>
                         </div>
                     `).join('')}
