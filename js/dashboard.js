@@ -597,10 +597,10 @@ const DashboardPage = {
         })) {
             return 'chief';
         }
-        // Tier 2: BCN (BS Phó trưởng khoa)
+        // Tier 2: BCN & Điều Dưỡng Trưởng (BS Phó trưởng khoa + CNĐD Điều dưỡng trưởng)
         if (staffList.some(s => {
             const r = (s?.role || '').toLowerCase();
-            return r.includes('phó trưởng khoa') || r.includes('phó khoa');
+            return r.includes('phó trưởng khoa') || r.includes('phó khoa') || r.includes('điều dưỡng trưởng') || r.includes('đdt');
         })) {
             return 'bcn';
         }
@@ -614,7 +614,7 @@ const DashboardPage = {
         return list[idx];
     },
 
-    // Render continuous marquee celebratory banner (Tier-adapted)
+    // Render continuous marquee celebratory banner (Active for 24h on birthday date)
     renderBirthdayBanner(bdayInfo, todayStr) {
         if (!bdayInfo || !bdayInfo.staff || bdayInfo.staff.length === 0) return '';
         const { isToday, isTestPreview, staff, dateStr, daysLeft } = bdayInfo;
@@ -625,12 +625,12 @@ const DashboardPage = {
         let cakeIcon = '🎂';
 
         if (tier === 'chief') {
-            badgeTitle = '👑 ĐẠI LỄ CHÚC MỪNG';
+            badgeTitle = '👑 BS. TRƯỞNG KHOA';
             subTitleBadge = isToday ? 'SINH NHẬT BÁC SĨ TRƯỞNG KHOA' : `SINH NHẬT TRƯỞNG KHOA (${dateStr})`;
             cakeIcon = '👑';
         } else if (tier === 'bcn') {
             badgeTitle = '👑 BAN CHỦ NHIỆM KHOA';
-            subTitleBadge = isToday ? 'Sinh nhật BS. Phó trưởng khoa' : `Sinh nhật BCN Khoa (${dateStr})`;
+            subTitleBadge = isToday ? 'Sinh nhật BCN / ĐD Trưởng' : `Sinh nhật BCN / ĐD Trưởng (${dateStr})`;
             cakeIcon = '🎂';
         }
 
@@ -698,7 +698,7 @@ const DashboardPage = {
                 colors = ['#f59e0b', '#fbbf24', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6', '#ffffff'];
                 count = 90;
                 maxDuration = 3000;
-                toastMsg = '👑 Khoa PTĐTT trân trọng chúc mừng sinh nhật Ban Chủ Nhiệm Khoa! 🎂🎉✨';
+                toastMsg = '👑 Khoa PTĐTT trân trọng chúc mừng sinh nhật Ban Chủ Nhiệm Khoa & Điều Dưỡng Trưởng! 🎂🎉✨';
             }
 
             const canvas = document.createElement('canvas');
