@@ -487,18 +487,6 @@ const DashboardPage = {
             };
         }
 
-        // Chạy thử chúc mừng sinh nhật cho Điều dưỡng trưởng Nguyễn Thị Ngọc Thùy
-        const testTarget = allStaff.find(s => (s.name || '').includes('Nguyễn Thị Ngọc Thùy') || (s.role || '').toLowerCase().includes('điều dưỡng trưởng'));
-        if (testTarget) {
-            return {
-                isToday: false,
-                isTestPreview: true,
-                staff: [testTarget],
-                dateStr: '02.02',
-                daysLeft: 0
-            };
-        }
-
         return null;
     },
 
