@@ -169,17 +169,17 @@ const DashboardPage = {
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">Trung bình / tháng</div>
-                        <div class="trend-kpi-val text-emerald">${avgMonthly} <span class="trend-kpi-unit">ca</span></div>
+                        <div class="trend-kpi-val text-green">${avgMonthly} <span class="trend-kpi-unit">ca</span></div>
                         <div class="trend-kpi-sub">Công suất khoa</div>
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">PT Yêu cầu</div>
-                        <div class="trend-kpi-val text-purple">${typeBreakdown.yeucauPct}%</div>
+                        <div class="trend-kpi-val text-amber">${typeBreakdown.yeucauPct}%</div>
                         <div class="trend-kpi-sub">${typeBreakdown.yeucau} ca</div>
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">Xâm lấn tối thiểu (MIS)</div>
-                        <div class="trend-kpi-val text-ocean">${misStats.misPct}%</div>
+                        <div class="trend-kpi-val text-blue">${misStats.misPct}%</div>
                         <div class="trend-kpi-sub">Nội soi + Robot (${misStats.misCases} ca)</div>
                     </div>
                 </div>
@@ -190,22 +190,22 @@ const DashboardPage = {
                     <div class="trend-chart-tooltip" id="trend-tooltip"></div>
                 </div>
 
-                <!-- Togglable Legend -->
+                <!-- Togglable Legend (Exact colors from Lịch Mổ Tuần) -->
                 <div class="trend-chart-legend">
                     <div class="trend-legend-item ${this._hiddenSeries['yeucau'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('yeucau')">
-                        <div class="trend-legend-dot" style="background:#7c3aed"></div>
+                        <div class="trend-legend-dot" style="background:#f59e0b"></div>
                         PT Yêu cầu
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['chuongtrinh'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('chuongtrinh')">
-                        <div class="trend-legend-dot" style="background:#0284c7"></div>
+                        <div class="trend-legend-dot" style="background:#3b82f6"></div>
                         PT Chương trình
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['robot'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('robot')">
-                        <div class="trend-legend-dot" style="background:#10b981"></div>
+                        <div class="trend-legend-dot" style="background:#1e3a5f"></div>
                         PT Robot
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['bankhan'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('bankhan')">
-                        <div class="trend-legend-dot" style="background:#e11d48"></div>
+                        <div class="trend-legend-dot" style="background:#ef4444"></div>
                         Bán khẩn
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['total'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('total')">
@@ -233,10 +233,10 @@ const DashboardPage = {
                             <div class="mis-donut-box">
                                 <svg viewBox="0 0 36 36" class="mis-donut-chart">
                                     <path class="mis-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#e2e8f0" stroke-width="3.5" fill="none"/>
-                                    <!-- Noisoi arc (Ocean Blue) -->
-                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#0284c7" stroke-width="3.8" stroke-linecap="round" fill="none"/>
-                                    <!-- Robot arc (Emerald Green) -->
-                                    <path class="mis-circle-robot" stroke-dashoffset="-${misStats.noisoiPct}" stroke-dasharray="${misStats.robotPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#10b981" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+                                    <!-- Noisoi arc (Green - Lịch mổ chuẩn) -->
+                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#16a34a" stroke-width="3.8" stroke-linecap="round" fill="none"/>
+                                    <!-- Robot arc (Navy - Lịch mổ chuẩn) -->
+                                    <path class="mis-circle-robot" stroke-dashoffset="-${misStats.noisoiPct}" stroke-dasharray="${misStats.robotPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#1e3a5f" stroke-width="4.2" stroke-linecap="round" fill="none"/>
                                 </svg>
                                 <div class="mis-donut-center">
                                     <div class="mis-donut-val">${misStats.misPct}%</div>
@@ -246,34 +246,34 @@ const DashboardPage = {
                         </div>
 
                         <div class="mis-stat-list">
-                            <div class="mis-stat-row mis-row-cyan">
-                                <div class="mis-stat-icon-label">
-                                    <span class="mis-dot cyan"></span>
-                                    <span class="mis-stat-name">Nội soi (Laparoscopy)</span>
-                                </div>
-                                <div class="mis-stat-val-group">
-                                    <span class="mis-stat-badge cyan">${misStats.noisoi} ca</span>
-                                    <span class="mis-stat-pct cyan">${misStats.noisoiPct}%</span>
-                                </div>
-                            </div>
                             <div class="mis-stat-row mis-row-green">
                                 <div class="mis-stat-icon-label">
                                     <span class="mis-dot green"></span>
+                                    <span class="mis-stat-name">Nội soi (Laparoscopy)</span>
+                                </div>
+                                <div class="mis-stat-val-group">
+                                    <span class="mis-stat-badge green">${misStats.noisoi} ca</span>
+                                    <span class="mis-stat-pct green">${misStats.noisoiPct}%</span>
+                                </div>
+                            </div>
+                            <div class="mis-stat-row mis-row-navy">
+                                <div class="mis-stat-icon-label">
+                                    <span class="mis-dot navy"></span>
                                     <span class="mis-stat-name">Phẫu thuật Robot</span>
                                 </div>
                                 <div class="mis-stat-val-group">
-                                    <span class="mis-stat-badge green">${misStats.robot} ca</span>
-                                    <span class="mis-stat-pct green">${misStats.robotPct}%</span>
+                                    <span class="mis-stat-badge navy">${misStats.robot} ca</span>
+                                    <span class="mis-stat-pct navy">${misStats.robotPct}%</span>
                                 </div>
                             </div>
-                            <div class="mis-stat-row mis-row-slate">
+                            <div class="mis-stat-row mis-row-rose">
                                 <div class="mis-stat-icon-label">
-                                    <span class="mis-dot slate"></span>
+                                    <span class="mis-dot rose"></span>
                                     <span class="mis-stat-name">Mổ mở & Tầng sinh môn</span>
                                 </div>
                                 <div class="mis-stat-val-group">
-                                    <span class="mis-stat-badge slate">${misStats.mo} ca</span>
-                                    <span class="mis-stat-pct slate">${misStats.openPct}%</span>
+                                    <span class="mis-stat-badge rose">${misStats.mo} ca</span>
+                                    <span class="mis-stat-pct rose">${misStats.openPct}%</span>
                                 </div>
                             </div>
                         </div>
@@ -523,12 +523,12 @@ const DashboardPage = {
             ctx.restore();
         }
 
-        // 3. Draw Stacked Bars
+        // 3. Draw Stacked Bars (Exact colors from Lịch Mổ Tuần)
         const seriesColors = {
-            yeucau: '#7c3aed',      // Royal Purple / Violet (Hue 270°)
-            chuongtrinh: '#0284c7', // Ocean Blue (Hue 200°)
-            robot: '#10b981',       // Emerald Green (Hue 155°)
-            bankhan: '#e11d48'      // Rose / Crimson Red (Hue 350°)
+            yeucau: isDark ? '#fbbf24' : '#f59e0b',      // Vàng cam (Lịch mổ tuần)
+            chuongtrinh: isDark ? '#60a5fa' : '#3b82f6', // Xanh dương (Lịch mổ tuần)
+            robot: isDark ? '#818cf8' : '#1e3a5f',       // Xanh Navy (Lịch mổ tuần)
+            bankhan: isDark ? '#f87171' : '#ef4444'      // Đỏ (Lịch mổ tuần)
         };
 
         const barCoordinates = [];
@@ -714,25 +714,25 @@ const DashboardPage = {
                     </div>
                     <div class="trend-tooltip-breakdown">
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#7c3aed"></span> PT Yêu cầu</span>
+                            <span><span class="trend-legend-dot" style="background:#f59e0b"></span> PT Yêu cầu</span>
                             <strong>${m.byType.yeucau} <small>(${m.total > 0 ? (m.byType.yeucau/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#0284c7"></span> PT Chương trình</span>
+                            <span><span class="trend-legend-dot" style="background:#3b82f6"></span> PT Chương trình</span>
                             <strong>${m.byType.chuongtrinh} <small>(${m.total > 0 ? (m.byType.chuongtrinh/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#10b981"></span> PT Robot</span>
+                            <span><span class="trend-legend-dot" style="background:#1e3a5f"></span> PT Robot</span>
                             <strong>${m.byType.robot} <small>(${m.total > 0 ? (m.byType.robot/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#e11d48"></span> Bán khẩn</span>
+                            <span><span class="trend-legend-dot" style="background:#ef4444"></span> Bán khẩn</span>
                             <strong>${m.byType.bankhan} <small>(${m.total > 0 ? (m.byType.bankhan/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                     </div>
                     <div class="trend-tooltip-mis-row">
                         <span>✨ Tỉ lệ MIS (Nội soi + Robot):</span>
-                        <strong class="text-ocean">${m.mis.misPct}%</strong>
+                        <strong class="text-blue">${m.mis.misPct}%</strong>
                     </div>
                     ${runRateHtml}
                 `;
