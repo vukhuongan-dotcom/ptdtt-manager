@@ -6,6 +6,9 @@ const SHCM_STATUSES = {
 };
 
 const ResearchPage = {
+    searchQuery: '',
+    statusFilter: 'all',
+
     _canEdit() {
         const s = Auth.getSession();
         if (!s) return false;
@@ -21,18 +24,48 @@ const ResearchPage = {
         return { defaultTime: '15:30', defaultDuration: '30m' };
     },
 
+    setFilter(status) {
+        this.statusFilter = status;
+        App.renderCurrentPage();
+    },
+
+    handleSearch(q) {
+        this.searchQuery = q.trim();
+        App.renderCurrentPage();
+    },
+
+    clearSearch() {
+        this.searchQuery = '';
+        App.renderCurrentPage();
+    },
+
     render() {
         const canEdit = this._canEdit();
-        const items = Store.getAll('shcmSchedule').sort((a, b) => {
+        const allItems = Store.getAll('shcmSchedule').sort((a, b) => {
             if (a.presentDate && b.presentDate) return a.presentDate.localeCompare(b.presentDate);
             return a.id - b.id;
         });
         const settings = this._getSettings();
 
-        // Stats
-        const done = items.filter(i => i.status === 'done').length;
-        const pending = items.filter(i => i.status === 'pending').length;
-        const registered = items.filter(i => i.status === 'registered').length;
+        // Stats counts
+        const doneCount = allItems.filter(i => i.status === 'done').length;
+        const pendingCount = allItems.filter(i => i.status === 'pending').length;
+        const regCount = allItems.filter(i => i.status === 'registered').length;
+
+        // Apply filters & search
+        const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        const qNorm = norm(this.searchQuery);
+
+        const filteredItems = allItems.filter(item => {
+            if (this.statusFilter !== 'all' && item.status !== this.statusFilter) return false;
+            if (qNorm) {
+                const matchDoc = norm(item.doctorName).includes(qNorm);
+                const matchTitle = norm(item.title).includes(qNorm);
+                const matchDate = item.presentDate && item.presentDate.includes(qNorm);
+                return matchDoc || matchTitle || matchDate;
+            }
+            return true;
+        });
 
         return `
         <div class="page-header">
@@ -52,16 +85,28 @@ const ResearchPage = {
 
         <!-- Stats cards -->
         <div class="rsch-stats">
-            <div class="rsch-stat-card"><span class="rsch-stat-val">${items.length}</span><span class="rsch-stat-lbl">Tổng bài</span></div>
-            <div class="rsch-stat-card rsch-done"><span class="rsch-stat-val">${done}</span><span class="rsch-stat-lbl">Đã trình</span></div>
-            <div class="rsch-stat-card rsch-pending"><span class="rsch-stat-val">${pending}</span><span class="rsch-stat-lbl">Chưa trình</span></div>
-            <div class="rsch-stat-card rsch-reg"><span class="rsch-stat-val">${registered}</span><span class="rsch-stat-lbl">Mới đăng ký</span></div>
+            <div class="rsch-stat-card ${this.statusFilter==='all'?'active-stat':''}" onclick="ResearchPage.setFilter('all')">
+                <span class="rsch-stat-val">${allItems.length}</span>
+                <span class="rsch-stat-lbl">Tổng bài</span>
+            </div>
+            <div class="rsch-stat-card rsch-done ${this.statusFilter==='done'?'active-stat':''}" onclick="ResearchPage.setFilter('done')">
+                <span class="rsch-stat-val">${doneCount}</span>
+                <span class="rsch-stat-lbl">Đã trình</span>
+            </div>
+            <div class="rsch-stat-card rsch-pending ${this.statusFilter==='pending'?'active-stat':''}" onclick="ResearchPage.setFilter('pending')">
+                <span class="rsch-stat-val">${pendingCount}</span>
+                <span class="rsch-stat-lbl">Chưa trình</span>
+            </div>
+            <div class="rsch-stat-card rsch-reg ${this.statusFilter==='registered'?'active-stat':''}" onclick="ResearchPage.setFilter('registered')">
+                <span class="rsch-stat-val">${regCount}</span>
+                <span class="rsch-stat-lbl">Mới đăng ký</span>
+            </div>
         </div>
 
         <!-- Settings (admin only) -->
         ${canEdit ? `<div class="card rsch-settings-card">
             <div class="rsch-settings-row">
-                <span class="rsch-settings-label">⚙️ Giờ mặc định SHCM:</span>
+                <span class="rsch-settings-label">⚙️ Giờ mặc định:</span>
                 <input type="time" class="form-input rsch-time-input" id="shcm-default-time" value="${settings.defaultTime}">
                 <span class="rsch-settings-label">Thời lượng:</span>
                 <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
@@ -70,50 +115,127 @@ const ResearchPage = {
             </div>
         </div>` : ''}
 
-        <!-- SHCM Table -->
+        <!-- Search and Filter Controls -->
+        <div class="rsch-controls-bar">
+            <div class="rsch-filter-pills">
+                <button class="rsch-pill-btn ${this.statusFilter==='all'?'active':''}" onclick="ResearchPage.setFilter('all')">Tất cả (${allItems.length})</button>
+                <button class="rsch-pill-btn rsch-pill-done ${this.statusFilter==='done'?'active':''}" onclick="ResearchPage.setFilter('done')">✅ Đã trình (${doneCount})</button>
+                <button class="rsch-pill-btn rsch-pill-pending ${this.statusFilter==='pending'?'active':''}" onclick="ResearchPage.setFilter('pending')">⏳ Chưa trình (${pendingCount})</button>
+                <button class="rsch-pill-btn rsch-pill-reg ${this.statusFilter==='registered'?'active':''}" onclick="ResearchPage.setFilter('registered')">📝 Mới đăng ký (${regCount})</button>
+            </div>
+            <div class="rsch-search-box">
+                <span class="rsch-search-icon">🔍</span>
+                <input type="text" class="form-input rsch-search-input" placeholder="Tìm đề tài, bác sĩ, ngày trình..." value="${this.searchQuery}" oninput="ResearchPage.handleSearch(this.value)">
+                ${this.searchQuery ? `<button class="search-clear-btn" onclick="ResearchPage.clearSearch()" title="Xóa tìm kiếm">✕</button>` : ''}
+            </div>
+        </div>
+
+        <!-- Dual-View: Desktop Table (>=768px) & Mobile Cards (<768px) -->
         <div class="card rsch-table-card">
             <div class="rsch-table-header">
                 <h3>📋 Lịch Sinh hoạt Chuyên môn tại Khoa</h3>
+                <span class="rsch-count-badge">${filteredItems.length} bài</span>
             </div>
-            <div class="rsch-table-wrap">
-                <table class="rsch-table">
-                    <thead>
-                        <tr>
-                            <th class="rsch-th-stt">STT</th>
-                            <th class="rsch-th-doctor">Bác sĩ</th>
-                            <th>Tên bài</th>
-                            <th class="rsch-th-status">Tiến độ</th>
-                            <th class="rsch-th-date">Ngày trình</th>
-                            ${canEdit ? '<th class="rsch-th-actions"></th>' : ''}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${items.map((item, idx) => {
-            const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
-            const d = item.presentDate ? new Date(item.presentDate) : null;
-            const dateLabel = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '—';
-            return `<tr class="rsch-row rsch-row-${item.status}">
-                                <td class="rsch-stt">${idx + 1}</td>
-                                <td class="rsch-doctor">${item.doctorName}</td>
-                                <td class="rsch-title">${item.title}</td>
-                                <td><span class="rsch-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}30">${st.icon} ${st.label}</span></td>
-                                <td class="rsch-date">${dateLabel}</td>
-                                ${canEdit ? `<td class="rsch-actions">
-                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">✏️</button>
-                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
-                                </td>` : ''}
-                            </tr>`;
-        }).join('')}
-                    </tbody>
-                </table>
+
+            <!-- Desktop View: Table -->
+            <div class="rsch-desktop-view">
+                <div class="rsch-table-wrap">
+                    <table class="rsch-table">
+                        <thead>
+                            <tr>
+                                <th class="rsch-th-stt">STT</th>
+                                <th class="rsch-th-doctor">Bác sĩ</th>
+                                <th>Tên bài báo cáo</th>
+                                <th class="rsch-th-status">Tiến độ</th>
+                                <th class="rsch-th-date">Ngày trình</th>
+                                ${canEdit ? '<th class="rsch-th-actions">Thao tác</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filteredItems.length === 0 ? `
+                                <tr>
+                                    <td colspan="${canEdit ? 6 : 5}" class="rsch-empty-cell">
+                                        <div class="rsch-empty-state">
+                                            <span>🔍</span> Không tìm thấy bài SHCM nào phù hợp
+                                        </div>
+                                    </td>
+                                </tr>
+                            ` : filteredItems.map((item, idx) => {
+                                const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
+                                const d = item.presentDate ? new Date(item.presentDate) : null;
+                                const dateLabel = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '—';
+                                const initials = Utils.getInitials(item.doctorName || 'BS');
+                                return `<tr class="rsch-row rsch-row-${item.status}">
+                                    <td class="rsch-stt">${idx + 1}</td>
+                                    <td class="rsch-doctor">
+                                        <div class="rsch-doc-cell">
+                                            <span class="rsch-doc-avatar">${initials}</span>
+                                            <span>${item.doctorName}</span>
+                                        </div>
+                                    </td>
+                                    <td class="rsch-title">${item.title}</td>
+                                    <td><span class="rsch-badge rsch-badge-${item.status}">${st.icon} ${st.label}</span></td>
+                                    <td class="rsch-date">${dateLabel}</td>
+                                    ${canEdit ? `<td class="rsch-actions">
+                                        <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">✏️</button>
+                                        <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
+                                    </td>` : ''}
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile View: Modern Cards -->
+            <div class="rsch-mobile-cards">
+                ${filteredItems.length === 0 ? `
+                    <div class="rsch-empty-state">
+                        <span>🔍</span> Không tìm thấy bài SHCM nào phù hợp
+                    </div>
+                ` : filteredItems.map((item, idx) => {
+                    const st = SHCM_STATUSES[item.status] || SHCM_STATUSES.pending;
+                    const d = item.presentDate ? new Date(item.presentDate) : null;
+                    const dateLabel = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : 'Chưa định ngày';
+                    const initials = Utils.getInitials(item.doctorName || 'BS');
+                    return `
+                    <div class="rsch-card-item rsch-card-${item.status}">
+                        <div class="rsch-card-header">
+                            <div class="rsch-card-doc-info">
+                                <span class="rsch-doc-avatar">${initials}</span>
+                                <div class="rsch-doc-text">
+                                    <span class="rsch-doc-name">${item.doctorName}</span>
+                                    <span class="rsch-card-idx">#${idx + 1}</span>
+                                </div>
+                            </div>
+                            <span class="rsch-badge rsch-badge-${item.status}">${st.icon} ${st.label}</span>
+                        </div>
+                        <div class="rsch-card-title">${item.title}</div>
+                        <div class="rsch-card-footer">
+                            <div class="rsch-card-meta">
+                                <span class="rsch-card-date">📅 ${dateLabel}</span>
+                                <span class="rsch-card-time">⏰ ${settings.defaultTime || '15:30'} (${parseInt(settings.defaultDuration) || 30}p)</span>
+                            </div>
+                            ${canEdit ? `
+                            <div class="rsch-card-actions">
+                                <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa">✏️</button>
+                                <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá">🗑️</button>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
             </div>
         </div>
 
         <!-- Files section -->
         <div class="card rsch-files-card">
             <div class="rsch-files-header">
-                <h3>📁 Bài Sinh hoạt Chuyên môn đã có</h3>
-                <div class="rsch-files-note">PDF SHCM được quản lý ngoài web, không upload trực tiếp tại đây.</div>
+                <div>
+                    <h3>📁 Kho Tài liệu & Bài Sinh hoạt Chuyên môn</h3>
+                    <div class="rsch-files-note">PDF SHCM được lưu trữ và đồng bộ an toàn từ máy chủ khoa.</div>
+                </div>
             </div>
             <div id="shcm-files-list" class="rsch-files-list">
                 <div class="rsch-loading-placeholder">Đang tải danh sách file...</div>

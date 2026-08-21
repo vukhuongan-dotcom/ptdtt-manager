@@ -1,23 +1,46 @@
 // ===== PLANS (CALENDAR) PAGE =====
 const PlansPage = {
     currentDate: new Date(),
-    viewMode: 'month', // 'month', 'week', '3day'
+    viewMode: 'agenda', // 'agenda', 'month', 'week', '3day'
+    typeFilter: 'all',
+    selectedDate: null,
+
+    setTypeFilter(type) {
+        this.typeFilter = type;
+        App.renderCurrentPage();
+    },
+
+    selectDate(dateStr) {
+        if (this.selectedDate === dateStr) {
+            this.selectedDate = null; // toggle off
+        } else {
+            this.selectedDate = dateStr;
+        }
+        App.renderCurrentPage();
+    },
 
     render() {
         const isAdmin = Auth.getSession()?.isAdmin;
-        const viewLabel = { month: 'Tháng', week: 'Tuần', '3day': '3 ngày' }[this.viewMode];
+        const allMonthPlans = Store.getPlansByMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
+
+        // Count by type for filter pills
+        const meetingCount = allMonthPlans.filter(p => p.type === 'meeting').length;
+        const consultCount = allMonthPlans.filter(p => p.type === 'consultation').length;
+        const trainCount = allMonthPlans.filter(p => p.type === 'training' || p.source === 'shcm').length;
+        const confCount = allMonthPlans.filter(p => p.type === 'conference').length;
 
         return `
         <div class="page-header">
             <div>
                 <h1 class="page-title">Kế hoạch hoạt động</h1>
-                <p class="page-subtitle">Lịch hoạt động khoa — ${this.getHeaderLabel()}</p>
+                <p class="page-subtitle">Lịch hoạt động & công tác khoa — ${this.getHeaderLabel()}</p>
             </div>
             ${isAdmin ? `<button class="btn btn-primary" onclick="PlansPage.openForm()" aria-label="Thêm kế hoạch mới">
                 ${Utils.plusIcon()} Thêm kế hoạch
             </button>` : ''}
         </div>
 
+        <!-- Controls: Navigation & View Mode Switcher -->
         <div class="calendar-controls">
             <div class="calendar-nav">
                 <button class="btn-icon" onclick="PlansPage.prev()" aria-label="Xem khoảng thời gian trước">${Utils.chevronLeft()}</button>
@@ -26,13 +49,169 @@ const PlansPage = {
                 <button class="btn btn-secondary btn-sm" onclick="PlansPage.today()" aria-label="Xem kế hoạch hôm nay">Hôm nay</button>
             </div>
             <div class="calendar-view-modes">
+                <button class="view-mode-btn ${this.viewMode==='agenda'?'active':''}" onclick="PlansPage.setView('agenda')">📅 Lịch trình</button>
                 <button class="view-mode-btn ${this.viewMode==='month'?'active':''}" onclick="PlansPage.setView('month')">Tháng</button>
                 <button class="view-mode-btn ${this.viewMode==='week'?'active':''}" onclick="PlansPage.setView('week')">Tuần</button>
                 <button class="view-mode-btn ${this.viewMode==='3day'?'active':''}" onclick="PlansPage.setView('3day')">3 ngày</button>
             </div>
         </div>
 
-        ${this.viewMode === 'month' ? this.renderMonth(isAdmin) : this.renderDayColumns(isAdmin)}
+        <!-- Type Filter Pills -->
+        <div class="cal-type-filters">
+            <button class="cal-filter-pill ${this.typeFilter==='all'?'active':''}" onclick="PlansPage.setTypeFilter('all')">
+                Tất cả (${allMonthPlans.length})
+            </button>
+            <button class="cal-filter-pill pill-meeting ${this.typeFilter==='meeting'?'active':''}" onclick="PlansPage.setTypeFilter('meeting')">
+                🔵 Giao ban (${meetingCount})
+            </button>
+            <button class="cal-filter-pill pill-consultation ${this.typeFilter==='consultation'?'active':''}" onclick="PlansPage.setTypeFilter('consultation')">
+                🟣 Hội chẩn (${consultCount})
+            </button>
+            <button class="cal-filter-pill pill-training ${this.typeFilter==='training'?'active':''}" onclick="PlansPage.setTypeFilter('training')">
+                🟢 Đào tạo / SHCM (${trainCount})
+            </button>
+            <button class="cal-filter-pill pill-conference ${this.typeFilter==='conference'?'active':''}" onclick="PlansPage.setTypeFilter('conference')">
+                🟡 Hội nghị (${confCount})
+            </button>
+        </div>
+
+        ${this.viewMode === 'agenda' ? this.renderAgenda(isAdmin) : (this.viewMode === 'month' ? this.renderMonth(isAdmin) : this.renderDayColumns(isAdmin))}
+        `;
+    },
+
+    // ===== AGENDA / TIMELINE VIEW (MOBILE & DESKTOP) =====
+    renderAgenda(isAdmin) {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        let plans = Store.getPlansByMonth(year, month);
+
+        if (this.typeFilter !== 'all') {
+            plans = plans.filter(p => p.type === this.typeFilter || (this.typeFilter === 'training' && p.source === 'shcm'));
+        }
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+        // Map plans to dates
+        const dateMap = new Map();
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dayPlans = plans.filter(p => this._isDateInRange(dateStr, p))
+                .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+            if (dayPlans.length > 0) {
+                dateMap.set(dateStr, dayPlans);
+            }
+        }
+
+        const staff = Store.getAll('staff');
+        const staffMap = new Map(staff.map(s => [s.id, s]));
+
+        // Filter by selected date if clicked on dot calendar
+        let displayDates = Array.from(dateMap.keys());
+        if (this.selectedDate) {
+            displayDates = displayDates.filter(d => d === this.selectedDate);
+        }
+
+        return `
+        <div class="cal-agenda-container">
+            <!-- Mini Dot Calendar Strip -->
+            <div class="cal-mini-strip-card card">
+                <div class="cal-mini-strip-header">
+                    <span class="cal-mini-title">🗓️ Lịch tháng ${month + 1}/${year}</span>
+                    ${this.selectedDate ? `<button class="btn btn-secondary btn-sm" onclick="PlansPage.selectDate('${this.selectedDate}')">Xem tất cả</button>` : ''}
+                </div>
+                <div class="cal-mini-strip-days">
+                    ${Array.from({length: daysInMonth}, (_, i) => {
+                        const d = i + 1;
+                        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                        const dayObj = new Date(year, month, d);
+                        const dayName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dayObj.getDay()];
+                        const isToday = dateStr === todayStr;
+                        const isSelected = dateStr === this.selectedDate;
+                        const dayPlans = plans.filter(p => this._isDateInRange(dateStr, p));
+                        const hasPlans = dayPlans.length > 0;
+
+                        return `
+                        <div class="cal-mini-day-cell ${isToday?'today':''} ${isSelected?'selected':''} ${hasPlans?'has-plans':''}" onclick="PlansPage.selectDate('${dateStr}')">
+                            <span class="cal-mini-day-name">${dayName}</span>
+                            <span class="cal-mini-day-num">${d}</span>
+                            <div class="cal-mini-dots">
+                                ${dayPlans.slice(0, 3).map(p => `<span class="cal-dot cal-dot-${p.type}"></span>`).join('')}
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- Timeline Event Groups -->
+            <div class="cal-agenda-list">
+                ${displayDates.length === 0 ? `
+                    <div class="card cal-agenda-empty">
+                        <span class="cal-empty-icon">📅</span>
+                        <h3>Không có kế hoạch nào ${this.selectedDate ? 'trong ngày ' + Utils.formatDate(this.selectedDate) : 'trong tháng này'}</h3>
+                        <p class="text-muted">Nhấn "+ Thêm kế hoạch" để tạo lịch công tác mới cho khoa.</p>
+                        ${isAdmin ? `<button class="btn btn-primary" onclick="PlansPage.openForm(null, '${this.selectedDate || todayStr}')">
+                            ${Utils.plusIcon()} Thêm kế hoạch ngay
+                        </button>` : ''}
+                    </div>
+                ` : displayDates.map(dateStr => {
+                    const dayPlans = dateMap.get(dateStr) || [];
+                    const d = new Date(dateStr);
+                    const dayOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][d.getDay()];
+                    const dateDisplay = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                    const isToday = dateStr === todayStr;
+
+                    return `
+                    <div class="cal-agenda-group">
+                        <div class="cal-agenda-group-header ${isToday?'today-header':''}">
+                            <div class="cal-agenda-date-badge">
+                                <span class="cal-group-day">${dayOfWeek}</span>
+                                <span class="cal-group-date">${dateDisplay}</span>
+                            </div>
+                            ${isToday ? '<span class="cal-today-pill">🌟 Hôm nay</span>' : ''}
+                            <span class="cal-group-count">${dayPlans.length} sự kiện</span>
+                        </div>
+                        <div class="cal-agenda-cards">
+                            ${dayPlans.map(p => {
+                                const resp = staffMap.get(p.responsible);
+                                const isSHCM = p.source === 'shcm';
+                                const typeLabel = isSHCM ? 'Sinh hoạt chuyên môn' : Utils.planTypeLabel(p.type);
+                                return `
+                                <div class="cal-agenda-card cal-card-${p.type} ${isSHCM?'cal-card-shcm':''}" onclick="PlansPage.viewOrEdit(${p.id})">
+                                    <div class="cal-agenda-card-left">
+                                        <span class="cal-card-time">${p.allDay ? '📌 Cả ngày' : (p.time || '08:00')}</span>
+                                        ${p.duration && !p.allDay ? `<span class="cal-card-duration">${p.duration}</span>` : ''}
+                                    </div>
+                                    <div class="cal-agenda-card-body">
+                                        <div class="cal-card-top-row">
+                                            <span class="cal-card-type-badge cal-badge-${p.type}">
+                                                ${isSHCM ? '🔬 ' : ''}${typeLabel}
+                                            </span>
+                                        </div>
+                                        <div class="cal-card-title">${p.title}</div>
+                                        <div class="cal-card-meta-row">
+                                            ${p.location ? `<span class="cal-card-meta-item">📍 ${p.location}</span>` : ''}
+                                            ${resp ? `<span class="cal-card-meta-item">👤 ${resp.title || 'BS.'} ${resp.name}</span>` : ''}
+                                        </div>
+                                        ${p.note ? `<div class="cal-card-note">📝 ${p.note}</div>` : ''}
+                                    </div>
+                                    ${isAdmin ? `
+                                    <div class="cal-agenda-card-actions" onclick="event.stopPropagation()">
+                                        <button class="btn-icon" onclick="PlansPage.viewOrEdit(${p.id})" title="Xem / Sửa">✏️</button>
+                                        ${!isSHCM ? `<button class="btn-icon" onclick="PlansPage.deletePlan(${p.id})" title="Xoá">🗑️</button>` : ''}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
         `;
     },
 
@@ -41,7 +220,7 @@ const PlansPage = {
     },
 
     getNavLabel() {
-        if (this.viewMode === 'month') {
+        if (this.viewMode === 'month' || this.viewMode === 'agenda') {
             const l = this.currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
             return l.charAt(0).toUpperCase() + l.slice(1);
         }
@@ -67,8 +246,12 @@ const PlansPage = {
     renderMonth(isAdmin) {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
-        const plans = Store.getPlansByMonth(year, month)
-            .sort((a, b) => a.time.localeCompare(b.time));
+        let plans = Store.getPlansByMonth(year, month)
+            .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+        if (this.typeFilter !== 'all') {
+            plans = plans.filter(p => p.type === this.typeFilter || (this.typeFilter === 'training' && p.source === 'shcm'));
+        }
 
         return `
         <div class="calendar-grid">
@@ -133,10 +316,14 @@ const PlansPage = {
         const dates = this.getViewDates();
         const today = new Date();
         today.setHours(0,0,0,0);
-        const allPlans = Store.getAll('plans').sort((a, b) => {
+        let allPlans = Store.getAll('plans').sort((a, b) => {
             if (a.date !== b.date) return a.date.localeCompare(b.date);
-            return a.time.localeCompare(b.time);
+            return (a.time || '').localeCompare(b.time || '');
         });
+
+        if (this.typeFilter !== 'all') {
+            allPlans = allPlans.filter(p => p.type === this.typeFilter || (this.typeFilter === 'training' && p.source === 'shcm'));
+        }
 
         const hours = [];
         for (let h = 6; h <= 22; h++) hours.push(h);
