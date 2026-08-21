@@ -246,34 +246,34 @@ const DashboardPage = {
                         </div>
 
                         <div class="mis-stat-list">
-                            <div class="mis-stat-row">
+                            <div class="mis-stat-row mis-row-cyan">
                                 <div class="mis-stat-icon-label">
                                     <span class="mis-dot cyan"></span>
-                                    <span>Nội soi (Laparoscopy)</span>
+                                    <span class="mis-stat-name">Nội soi (Laparoscopy)</span>
                                 </div>
                                 <div class="mis-stat-val-group">
-                                    <strong>${misStats.noisoi} ca</strong>
-                                    <small>${misStats.noisoiPct}%</small>
+                                    <span class="mis-stat-badge cyan">${misStats.noisoi} ca</span>
+                                    <span class="mis-stat-pct cyan">${misStats.noisoiPct}%</span>
                                 </div>
                             </div>
-                            <div class="mis-stat-row">
+                            <div class="mis-stat-row mis-row-green">
                                 <div class="mis-stat-icon-label">
                                     <span class="mis-dot green"></span>
-                                    <span>Phẫu thuật Robot</span>
+                                    <span class="mis-stat-name">Phẫu thuật Robot</span>
                                 </div>
                                 <div class="mis-stat-val-group">
-                                    <strong>${misStats.robot} ca</strong>
-                                    <small>${misStats.robotPct}%</small>
+                                    <span class="mis-stat-badge green">${misStats.robot} ca</span>
+                                    <span class="mis-stat-pct green">${misStats.robotPct}%</span>
                                 </div>
                             </div>
-                            <div class="mis-stat-row">
+                            <div class="mis-stat-row mis-row-slate">
                                 <div class="mis-stat-icon-label">
-                                    <span class="mis-dot muted"></span>
-                                    <span>Mổ mở & Tầng sinh môn</span>
+                                    <span class="mis-dot slate"></span>
+                                    <span class="mis-stat-name">Mổ mở & Tầng sinh môn</span>
                                 </div>
                                 <div class="mis-stat-val-group">
-                                    <strong>${misStats.mo} ca</strong>
-                                    <small>${misStats.openPct}%</small>
+                                    <span class="mis-stat-badge slate">${misStats.mo} ca</span>
+                                    <span class="mis-stat-pct slate">${misStats.openPct}%</span>
                                 </div>
                             </div>
                         </div>
@@ -291,24 +291,36 @@ const DashboardPage = {
                     </div>
 
                     <div class="bed-flow-grid">
-                        <div class="bed-flow-card card-primary">
-                            <div class="bed-flow-lbl">BN Hiện diện</div>
+                        <div class="bed-flow-card bed-flow-cyan">
+                            <div class="bed-flow-header">
+                                <span class="bed-flow-icon">🏥</span>
+                                <span class="bed-flow-lbl">BN Hiện diện</span>
+                            </div>
                             <div class="bed-flow-num">${currentInpatients}</div>
                             <div class="bed-flow-sub">Nội trú tại khoa</div>
                         </div>
-                        <div class="bed-flow-card card-success">
-                            <div class="bed-flow-lbl">Nhập viện mới</div>
-                            <div class="bed-flow-num text-success">+${newAdmissions}</div>
+                        <div class="bed-flow-card bed-flow-green">
+                            <div class="bed-flow-header">
+                                <span class="bed-flow-icon">📥</span>
+                                <span class="bed-flow-lbl">Nhập viện mới</span>
+                            </div>
+                            <div class="bed-flow-num">+${newAdmissions}</div>
                             <div class="bed-flow-sub">Trong 24h</div>
                         </div>
-                        <div class="bed-flow-card card-warning">
-                            <div class="bed-flow-lbl">Xuất viện</div>
-                            <div class="bed-flow-num text-warning">-${discharges}</div>
+                        <div class="bed-flow-card bed-flow-amber">
+                            <div class="bed-flow-header">
+                                <span class="bed-flow-icon">📤</span>
+                                <span class="bed-flow-lbl">Xuất viện</span>
+                            </div>
+                            <div class="bed-flow-num">-${discharges}</div>
                             <div class="bed-flow-sub">Hoàn tất điều trị</div>
                         </div>
-                        <div class="bed-flow-card card-purple">
-                            <div class="bed-flow-lbl">Từ HSCC / Hồi tỉnh</div>
-                            <div class="bed-flow-num text-purple">${fromHSCC}</div>
+                        <div class="bed-flow-card bed-flow-purple">
+                            <div class="bed-flow-header">
+                                <span class="bed-flow-icon">⚡</span>
+                                <span class="bed-flow-lbl">Từ HSCC / Hồi tỉnh</span>
+                            </div>
+                            <div class="bed-flow-num">${fromHSCC}</div>
                             <div class="bed-flow-sub">Nhận về phòng</div>
                         </div>
                     </div>
