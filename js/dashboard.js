@@ -1,11 +1,17 @@
 // ===== DASHBOARD PAGE =====
 const DashboardPage = {
+    _trendMonths: 6,
+    _hiddenSeries: {},
+
     render() {
         const staff = Store.getAll('staff');
         const patients = Store.getAll('patients');
         const tasks = Store.getAll('tasks');
         const plans = Store.getAll('plans');
-        const pStats = Store.getPatientStats();
+        const surgeries = Store.getAll('surgeries') || [];
+        const reports7h = Store.getAll('reports7h') || [];
+        const reports16h = Store.getAll('reports16h') || [];
+
         const _now = new Date();
         const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
 
@@ -14,15 +20,32 @@ const DashboardPage = {
         const dailyS = SurgeryPage.getDailyStats();
         const weeklyS = SurgeryPage.getWeeklyStats();
         const monthlyS = SurgeryPage.getMonthlyStats();
-        const currentMonth = new Date().toLocaleDateString('vi-VN', { month: 'long' });
-        
-        // Get today's duty staff from weekly schedule
+
+        // MIS & Clinical Approach Metrics via shared SurgeryMetrics
+        const recentMonths = SurgeryMetrics.getMonthlyTrend(surgeries, this._trendMonths || 6);
+        const totalRecentCases = recentMonths.reduce((sum, m) => sum + m.total, 0);
+        const allRecentCases = surgeries.filter(s => {
+            const minKey = recentMonths[0].key + '-01';
+            return s && s.date && s.date >= minKey && s.date <= today;
+        });
+        const misStats = SurgeryMetrics.calculateMIS(allRecentCases);
+        const typeBreakdown = SurgeryMetrics.calculateTypeBreakdown(allRecentCases);
+        const avgMonthly = recentMonths.length > 0 ? (totalRecentCases / recentMonths.length).toFixed(1) : 0;
+
+        // Inpatient Flow (Widget 3) from latest reports7h & reports16h
+        const latest16h = [...reports16h].filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date))[0] || {};
+        const latest7h = [...reports7h].filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date))[0] || {};
+        const currentInpatients = latest16h.totalPatients || latest7h.totalPatients || 0;
+        const newAdmissions = latest16h.admissions || 0;
+        const discharges = latest16h.discharges || 0;
+        const fromHSCC = (latest7h.fromHSCC || 0) + (latest7h.fromHoiTinh || 0);
+
+        // Duty staff
         const todayDutyKhoa = this.getTodayDutyByGroup(staff, today, 'khoa');
         const todayDutyCapCuu = this.getTodayDutyByGroup(staff, today, 'capcuu');
 
-        const todayStr = today;
         const upcomingPlans = plans
-            .filter(p => p.date >= todayStr)
+            .filter(p => p.date >= today)
             .sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''))
             .slice(0, 4);
 
@@ -47,19 +70,17 @@ const DashboardPage = {
 
         ${this.renderBirthdayBanner(todayBirthdays, today)}
 
+        <!-- TOP STATS GRID -->
         <div class="stats-grid">
             ${(() => {
-                const now = new Date();
-                const _today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-                // Chỉ tính nhân sự đã bắt đầu làm việc (startDate <= hôm nay)
-                const allStaff = Store.getActiveStaff(_today);
+                const allStaff = Store.getActiveStaff(today);
                 const entries = Store.getAll('staffStatuses') || [];
                 const absentList = [];
                 allStaff.forEach(s => {
-                    const dayEntry = entries.find(e => e.staffId === s.id && e.date === _today);
+                    const dayEntry = entries.find(e => e.staffId === s.id && e.date === today);
                     let status = 'active';
                     if (dayEntry) status = dayEntry.status;
-                    else if (s.statusType && s.statusType !== 'active' && s.statusFrom && s.statusTo && _today >= s.statusFrom && _today <= s.statusTo) status = s.statusType;
+                    else if (s.statusType && s.statusType !== 'active' && s.statusFrom && s.statusTo && today >= s.statusFrom && today <= s.statusTo) status = s.statusType;
                     if (status !== 'active') {
                         const info = STAFF_STATUSES[status] || STAFF_STATUSES.active;
                         absentList.push(`${info.icon} ${s.name}`);
@@ -74,7 +95,6 @@ const DashboardPage = {
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="7.5" cy="6" r="3.5" fill="currentColor"/>
                                 <path d="M 1.5 18 C 1.5 13 4 11.5 7.5 11.5 C 11 11.5 13.5 13 13.5 18 Z" fill="currentColor"/>
-                                <path d="M 5 12.5 C 5 15.5 10 15.5 10 12.5" stroke="var(--surface-card)" stroke-width="1.3" fill="none"/>
                                 <circle cx="17" cy="7" r="5" fill="currentColor" stroke="none"/>
                                 <path d="M 17 4.5 V 9.5 M 14.5 7 H 19.5" stroke="var(--surface-card)" stroke-width="1.6"/>
                             </svg>
@@ -84,6 +104,7 @@ const DashboardPage = {
                     <div class="stat-change">${absentList.length ? absentList.join(' · ') : '✅ Đủ nhân sự'}</div>
                 </div>`;
             })()}
+
             <div class="stat-card slide-up" style="animation-delay:0.05s">
                 <div class="stat-header">
                     <span class="stat-label">BN đang điều trị</span>
@@ -91,37 +112,10 @@ const DashboardPage = {
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
                     </div>
                 </div>
-                ${(() => {
-                    // Read from 7h/16h reports — no EMR
-                    const nowH = new Date();
-                    const todayStr = `${nowH.getFullYear()}-${String(nowH.getMonth()+1).padStart(2,'0')}-${String(nowH.getDate()).padStart(2,'0')}`;
-                    const hour = nowH.getHours();
-                    let patientCount = 0;
-                    let sourceLabel = '';
-                    if (hour >= 16) {
-                        const rep16 = (Store.getAll('reports16h') || []).find(r => r.date === todayStr);
-                        if (rep16 && rep16.totalPatients) { patientCount = rep16.totalPatients; sourceLabel = 'BC 16h hôm nay'; }
-                    }
-                    if (!sourceLabel && hour >= 7) {
-                        const rep7 = (Store.getAll('reports7h') || []).find(r => r.date === todayStr);
-                        if (rep7 && rep7.totalPatients) { patientCount = rep7.totalPatients; sourceLabel = 'BC 7h hôm nay'; }
-                    }
-                    if (!sourceLabel) {
-                        const all16 = (Store.getAll('reports16h') || []).filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
-                        if (all16[0]) { patientCount = all16[0].totalPatients; sourceLabel = `BC 16h ${Utils.formatDateShort(all16[0].date)}`; }
-                        else {
-                            const all7 = (Store.getAll('reports7h') || []).filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
-                            if (all7[0]) { patientCount = all7[0].totalPatients; sourceLabel = `BC 7h ${Utils.formatDateShort(all7[0].date)}`; }
-                        }
-                    }
-                    if (patientCount > 0) {
-                        return `<div class="stat-value">${patientCount}</div>
-                            <div class="stat-change">📋 ${sourceLabel}</div>`;
-                    }
-                    return `<div class="stat-value stat-value-empty">—</div>
-                            <div class="stat-change">Chưa có báo cáo hôm nay</div>`;
-                })()}
+                <div class="stat-value">${currentInpatients > 0 ? currentInpatients : '—'}</div>
+                <div class="stat-change">📋 ${latest16h.date ? 'BC 16h ' + Utils.formatDateShort(latest16h.date) : (latest7h.date ? 'BC 7h ' + Utils.formatDateShort(latest7h.date) : 'Đang cập nhật')}</div>
             </div>
+
             <div class="stat-card slide-up" style="animation-delay:0.1s">
                 <div class="stat-header">
                     <span class="stat-label">PT hôm nay</span>
@@ -136,6 +130,7 @@ const DashboardPage = {
                 <div class="stat-value">${dailyS.total}</div>
                 <div class="stat-change">${Object.entries(SURGERY_TYPES).map(([k,t]) => `${t.label}: ${dailyS[k]||0}`).join(' · ')}</div>
             </div>
+
             <div class="stat-card slide-up" style="animation-delay:0.15s">
                 <div class="stat-header">
                     <span class="stat-label">Công việc</span>
@@ -148,120 +143,230 @@ const DashboardPage = {
             </div>
         </div>
 
-        <div class="chart-card slide-up" style="animation-delay:0.2s">
-                <div class="chart-header">
-                    <h3 class="chart-title">Số lượng phẫu thuật</h3>
-                </div>
-                <div class="surgery-stats-row">
+        <!-- HERO ANALYTICS ROW (2/3 + 1/3 Grid) -->
+        <div class="hero-analytics-row slide-up" style="animation-delay:0.2s">
+            <!-- Left Column: Combo Stacked Bar + Spline Trend Chart -->
+            <div class="trend-chart-card">
+                <div class="trend-chart-header">
                     <div>
-                        <div class="surgery-stats-period-header">
-                            <span class="surgery-stats-period-label">Trong tuần (T2 → CN)</span>
-                            <span class="surgery-stats-total">${weeklyS.total} ca</span>
-                        </div>
-                        ${Object.entries(SURGERY_TYPES).map(([k,t]) => {
-                            const val = weeklyS[k]||0;
-                            const pct = weeklyS.total > 0 ? (val / weeklyS.total * 100) : 0;
-                            return `<div class="surgery-bar-row">
-                                <span class="surgery-bar-label">${t.label}</span>
-                                <div class="surgery-bar-track">
-                                    <div class="surgery-bar-fill" style="width:${Math.max(pct, val > 0 ? 8 : 0)}%;background:${t.color}"></div>
-                                </div>
-                                <span class="surgery-bar-count">${val}</span>
-                            </div>`;
-                        }).join('')}
+                        <div class="trend-chart-title">📈 Xu hướng phẫu thuật ${this._trendMonths || 6} tháng</div>
+                        <div class="trend-chart-subtitle">Cơ cấu loại phẫu thuật & tổng số ca theo tháng</div>
                     </div>
-                    <div class="surgery-month-col">
-                        <div class="surgery-stats-period-header">
-                            <span class="surgery-stats-period-label">Tháng ${currentMonth}</span>
-                            <span class="surgery-stats-total">${monthlyS.total} ca</span>
-                        </div>
-                        ${Object.entries(SURGERY_TYPES).map(([k,t]) => {
-                            const val = monthlyS[k]||0;
-                            const pct = monthlyS.total > 0 ? (val / monthlyS.total * 100) : 0;
-                            return `<div class="surgery-bar-row">
-                                <span class="surgery-bar-label">${t.label}</span>
-                                <div class="surgery-bar-track">
-                                    <div class="surgery-bar-fill" style="width:${Math.max(pct, val > 0 ? 8 : 0)}%;background:${t.color}"></div>
-                                </div>
-                                <span class="surgery-bar-count">${val}</span>
-                            </div>`;
-                        }).join('')}
+                    <div class="trend-filter-pills">
+                        <button class="trend-filter-btn ${this._trendMonths === 6 ? 'active' : ''}" onclick="DashboardPage.setTrendFilter(6)">6 Tháng</button>
+                        <button class="trend-filter-btn ${this._trendMonths === 12 ? 'active' : ''}" onclick="DashboardPage.setTrendFilter(12)">12 Tháng</button>
+                        <button class="trend-filter-btn ${this._trendMonths === 'year' ? 'active' : ''}" onclick="DashboardPage.setTrendFilter('year')">Năm 2026</button>
+                    </div>
+                </div>
+
+                <!-- 4 Micro KPI Summary Strip -->
+                <div class="trend-kpi-strip">
+                    <div class="trend-kpi-item">
+                        <div class="trend-kpi-lbl">Tổng số ca</div>
+                        <div class="trend-kpi-val">${totalRecentCases.toLocaleString('vi-VN')} <span class="trend-kpi-unit">ca</span></div>
+                        <div class="trend-kpi-sub">${recentMonths.length} tháng qua</div>
+                    </div>
+                    <div class="trend-kpi-item">
+                        <div class="trend-kpi-lbl">Trung bình / tháng</div>
+                        <div class="trend-kpi-val">${avgMonthly} <span class="trend-kpi-unit">ca</span></div>
+                        <div class="trend-kpi-sub">Công suất khoa</div>
+                    </div>
+                    <div class="trend-kpi-item">
+                        <div class="trend-kpi-lbl">PT Yêu cầu</div>
+                        <div class="trend-kpi-val text-purple">${typeBreakdown.yeucauPct}%</div>
+                        <div class="trend-kpi-sub">${typeBreakdown.yeucau} ca</div>
+                    </div>
+                    <div class="trend-kpi-item">
+                        <div class="trend-kpi-lbl">Xâm lấn tối thiểu (MIS)</div>
+                        <div class="trend-kpi-val text-cyan">${misStats.misPct}%</div>
+                        <div class="trend-kpi-sub">Nội soi + Robot (${misStats.misCases} ca)</div>
+                    </div>
+                </div>
+
+                <!-- Chart Canvas Container -->
+                <div class="trend-chart-container" id="trend-chart-wrap">
+                    <canvas id="trend-chart"></canvas>
+                    <div class="trend-chart-tooltip" id="trend-tooltip"></div>
+                </div>
+
+                <!-- Togglable Legend -->
+                <div class="trend-chart-legend">
+                    <div class="trend-legend-item ${this._hiddenSeries['yeucau'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('yeucau')">
+                        <div class="trend-legend-dot" style="background:#8b5cf6"></div>
+                        PT Yêu cầu
+                    </div>
+                    <div class="trend-legend-item ${this._hiddenSeries['chuongtrinh'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('chuongtrinh')">
+                        <div class="trend-legend-dot" style="background:#06b6d4"></div>
+                        PT Chương trình
+                    </div>
+                    <div class="trend-legend-item ${this._hiddenSeries['robot'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('robot')">
+                        <div class="trend-legend-dot" style="background:#10b981"></div>
+                        PT Robot
+                    </div>
+                    <div class="trend-legend-item ${this._hiddenSeries['bankhan'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('bankhan')">
+                        <div class="trend-legend-dot" style="background:#ef4444"></div>
+                        Bán khẩn
+                    </div>
+                    <div class="trend-legend-item ${this._hiddenSeries['total'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('total')">
+                        <div class="trend-legend-dot" style="background:var(--text-primary);border:2px solid #fff"></div>
+                        ● Tổng số ca
+                    </div>
+                    <div class="trend-legend-item" title="Đường trung bình 6 tháng chuẩn">
+                        <div class="trend-legend-line-dashed"></div>
+                        Mốc TB (${Math.round(avgMonthly)} ca)
+                    </div>
                 </div>
             </div>
 
-        <div class="trend-chart-card slide-up" style="animation-delay:0.22s">
-            <div class="trend-chart-header">
-                <div>
-                    <div class="trend-chart-title">📈 Xu hướng phẫu thuật 6 tháng</div>
-                    <div class="trend-chart-subtitle">Số ca PT theo tháng — phân loại theo loại phẫu thuật</div>
-                </div>
-            </div>
-            <div class="trend-chart-container" id="trend-chart-wrap">
-                <canvas id="trend-chart"></canvas>
-                <div class="trend-chart-tooltip" id="trend-tooltip"></div>
-            </div>
-            <div class="trend-chart-legend">
-                ${Object.entries(SURGERY_TYPES).map(([k,t]) => `
-                    <div class="trend-legend-item">
-                        <div class="trend-legend-dot" style="background:${t.color}"></div>
-                        ${t.label}
+            <!-- Right Column: 2 Clinical Widgets (Widget 1 & Widget 3) -->
+            <div class="sidebar-widgets-column">
+                <!-- WIDGET 1: Chỉ số Phẫu thuật Mũi nhọn (MIS Index) -->
+                <div class="widget-card mis-widget">
+                    <div class="widget-header-flex">
+                        <h3 class="widget-title mb-0">🤖 Phẫu thuật Mũi nhọn (MIS)</h3>
+                        <span class="mis-score-badge">⭐ Ngoại khoa Hiện đại</span>
                     </div>
-                `).join('')}
-                <div class="trend-legend-item">
-                    <div class="trend-legend-dot" style="background:var(--text-primary)"></div>
-                    Tổng
+
+                    <div class="mis-content-wrap">
+                        <div class="mis-donut-section">
+                            <div class="mis-donut-box">
+                                <svg viewBox="0 0 36 36" class="mis-donut-chart">
+                                    <path class="mis-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#e2e8f0" stroke-width="3.5" fill="none"/>
+                                    <!-- Noisoi arc -->
+                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#06b6d4" stroke-width="3.8" stroke-linecap="round" fill="none"/>
+                                    <!-- Robot arc -->
+                                    <path class="mis-circle-robot" stroke-dashoffset="-${misStats.noisoiPct}" stroke-dasharray="${misStats.robotPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#10b981" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+                                </svg>
+                                <div class="mis-donut-center">
+                                    <div class="mis-donut-val">${misStats.misPct}%</div>
+                                    <div class="mis-donut-lbl">MIS Rate</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mis-stat-list">
+                            <div class="mis-stat-row">
+                                <div class="mis-stat-icon-label">
+                                    <span class="mis-dot cyan"></span>
+                                    <span>Nội soi (Laparoscopy)</span>
+                                </div>
+                                <div class="mis-stat-val-group">
+                                    <strong>${misStats.noisoi} ca</strong>
+                                    <small>${misStats.noisoiPct}%</small>
+                                </div>
+                            </div>
+                            <div class="mis-stat-row">
+                                <div class="mis-stat-icon-label">
+                                    <span class="mis-dot green"></span>
+                                    <span>Phẫu thuật Robot</span>
+                                </div>
+                                <div class="mis-stat-val-group">
+                                    <strong>${misStats.robot} ca</strong>
+                                    <small>${misStats.robotPct}%</small>
+                                </div>
+                            </div>
+                            <div class="mis-stat-row">
+                                <div class="mis-stat-icon-label">
+                                    <span class="mis-dot muted"></span>
+                                    <span>Mổ mở & Tầng sinh môn</span>
+                                </div>
+                                <div class="mis-stat-val-group">
+                                    <strong>${misStats.mo} ca</strong>
+                                    <small>${misStats.openPct}%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mis-stat-footer">
+                        <small class="text-muted">💡 Bao gồm phẫu thuật nội soi đại trực tràng, robot và bệnh lý hậu môn sàn chậu.</small>
+                    </div>
+                </div>
+
+                <!-- WIDGET 3: Tình hình Buồng bệnh & Lưu chuyển Bệnh nhân -->
+                <div class="widget-card bed-flow-widget">
+                    <div class="widget-header-flex">
+                        <h3 class="widget-title mb-0">🛏️ Lưu chuyển Buồng bệnh</h3>
+                        <span class="badge badge-info">${latest16h.date ? Utils.formatDateShort(latest16h.date) : 'Hôm nay'}</span>
+                    </div>
+
+                    <div class="bed-flow-grid">
+                        <div class="bed-flow-card card-primary">
+                            <div class="bed-flow-lbl">BN Hiện diện</div>
+                            <div class="bed-flow-num">${currentInpatients}</div>
+                            <div class="bed-flow-sub">Nội trú tại khoa</div>
+                        </div>
+                        <div class="bed-flow-card card-success">
+                            <div class="bed-flow-lbl">Nhập viện mới</div>
+                            <div class="bed-flow-num text-success">+${newAdmissions}</div>
+                            <div class="bed-flow-sub">Trong 24h</div>
+                        </div>
+                        <div class="bed-flow-card card-warning">
+                            <div class="bed-flow-lbl">Xuất viện</div>
+                            <div class="bed-flow-num text-warning">-${discharges}</div>
+                            <div class="bed-flow-sub">Hoàn tất điều trị</div>
+                        </div>
+                        <div class="bed-flow-card card-purple">
+                            <div class="bed-flow-lbl">Từ HSCC / Hồi tỉnh</div>
+                            <div class="bed-flow-num text-purple">${fromHSCC}</div>
+                            <div class="bed-flow-sub">Nhận về phòng</div>
+                        </div>
+                    </div>
+                    <div class="bed-flow-footer">
+                        <small class="text-muted">📋 Dữ liệu đồng bộ từ Sổ giao ban 7h & 16h của Điều dưỡng.</small>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- BOTTOM OPERATIONAL GRID (3 Balanced Columns) -->
         <div class="duty-grid">
-                <div class="widget-card slide-up" style="animation-delay:0.25s">
-                    <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
-                    ${todayDutyKhoa.length > 0 ? (() => { const _c = ['#06b6d4','#8b5cf6','#f59e0b','#ec4899']; return todayDutyKhoa.map((item, i) => {
-                        const eff = StaffPage.getEffectiveStatus(item.staff, today);
-                        const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
-                        return `
-                    <div class="duty-item">
-                        <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
-                        <div class="duty-info">
-                            <div class="duty-name">${item.staff.title} ${item.staff.name}</div>
-                            <div class="duty-role">${item.dutyType}</div>
-                        </div>
-                        <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
-                    </div>`;
-                    }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
-                </div>
-
-                <div class="widget-card slide-up" style="animation-delay:0.3s">
-                    <h3 class="widget-title">🚑 Trực cấp cứu hôm nay</h3>
-                    ${todayDutyCapCuu.length > 0 ? (() => { const _c = ['#ef4444','#3b82f6','#14b8a6','#f97316','#a855f7','#10b981']; return todayDutyCapCuu.map((item, i) => {
-                        const eff = StaffPage.getEffectiveStatus(item.staff, today);
-                        const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
-                        return `
-                    <div class="duty-item">
-                        <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
-                        <div class="duty-info">
-                            <div class="duty-name">${item.staff.title} ${item.staff.name}</div>
-                            <div class="duty-role">${item.dutyType}</div>
-                        </div>
-                        <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
-                    </div>`;
-                    }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
-                </div>
-
-                <div class="widget-card slide-up" style="animation-delay:0.35s">
-                    <h3 class="widget-title">📅 Hoạt động sắp tới</h3>
-                    ${upcomingPlans.length > 0 ? upcomingPlans.map((p, i) => `
-                    <div class="timeline-item">
-                        <div class="timeline-dot ${dotColors[i % dotColors.length]}"></div>
-                        <div class="timeline-content">
-                            <div class="timeline-title">${p.title}</div>
-                            <div class="timeline-time">${Utils.formatDateShort(p.date)} · ${p.time}</div>
-                        </div>
+            <div class="widget-card slide-up" style="animation-delay:0.25s">
+                <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
+                ${todayDutyKhoa.length > 0 ? (() => { const _c = ['#06b6d4','#8b5cf6','#f59e0b','#ec4899']; return todayDutyKhoa.map((item, i) => {
+                    const eff = StaffPage.getEffectiveStatus(item.staff, today);
+                    const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
+                    return `
+                <div class="duty-item">
+                    <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
+                    <div class="duty-info">
+                        <div class="duty-name">${item.staff.title ? item.staff.title + ' ' : ''}${item.staff.name}</div>
+                        <div class="duty-role">${item.dutyType}</div>
                     </div>
-                    `).join('') : '<p class="widget-empty-msg">Chưa có hoạt động nào sắp tới</p>'}
-                </div>
+                    <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
+                </div>`;
+                }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
             </div>
+
+            <div class="widget-card slide-up" style="animation-delay:0.3s">
+                <h3 class="widget-title">🚑 Trực cấp cứu hôm nay</h3>
+                ${todayDutyCapCuu.length > 0 ? (() => { const _c = ['#ef4444','#3b82f6','#14b8a6','#f97316','#a855f7','#10b981']; return todayDutyCapCuu.map((item, i) => {
+                    const eff = StaffPage.getEffectiveStatus(item.staff, today);
+                    const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
+                    return `
+                <div class="duty-item">
+                    <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
+                    <div class="duty-info">
+                        <div class="duty-name">${item.staff.title ? item.staff.title + ' ' : ''}${item.staff.name}</div>
+                        <div class="duty-role">${item.dutyType}</div>
+                    </div>
+                    <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
+                </div>`;
+                }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
+            </div>
+
+            <div class="widget-card slide-up" style="animation-delay:0.35s">
+                <h3 class="widget-title">📅 Hoạt động sắp tới</h3>
+                ${upcomingPlans.length > 0 ? upcomingPlans.map((p, i) => `
+                <div class="timeline-item">
+                    <div class="timeline-dot ${dotColors[i % dotColors.length]}"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">${p.title}</div>
+                        <div class="timeline-time">${Utils.formatDateShort(p.date)} · ${p.time || ''}</div>
+                    </div>
+                </div>
+                `).join('') : '<p class="widget-empty-msg">Chưa có hoạt động nào sắp tới</p>'}
+            </div>
+        </div>
         `;
     },
 
@@ -281,6 +386,16 @@ const DashboardPage = {
         // Render trend chart
         setTimeout(() => this.renderTrendChart(), 50);
 
+        // Window resize re-render
+        if (!this._resizeHandler) {
+            this._resizeHandler = () => {
+                if (App.currentPage === 'dashboard') {
+                    this.renderTrendChart();
+                }
+            };
+            window.addEventListener('resize', this._resizeHandler);
+        }
+
         // Listen for EMR data updates to re-render dashboard
         if (!this._emrListener) {
             this._emrListener = () => {
@@ -290,169 +405,345 @@ const DashboardPage = {
         }
     },
 
-    renderChart() { /* legacy - replaced by renderTrendChart */ },
-
-    // Get surgery data grouped by last 6 months
-    getMonthlyTrendData() {
-        const all = SurgeryPage.getAllSurgeries();
-        const types = Object.keys(SURGERY_TYPES);
-        const now = new Date();
-        const months = [];
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const start = new Date(d.getFullYear(), d.getMonth(), 1);
-            const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-            const label = `T${d.getMonth()+1}/${d.getFullYear()}`;
-            const shortLabel = `T${d.getMonth()+1}`;
-            const monthSurgeries = all.filter(s => {
-                const sd = new Date(s.date);
-                return sd >= start && sd <= end;
-            });
-            const byType = {};
-            types.forEach(t => { byType[t] = monthSurgeries.filter(s => s.surgeryType === t).length; });
-            months.push({ label, shortLabel, total: monthSurgeries.length, byType });
+    setTrendFilter(mode) {
+        this._trendMonths = mode;
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
+        } else {
+            this.renderTrendChart();
         }
-        return months;
     },
 
+    toggleSeries(seriesKey) {
+        this._hiddenSeries[seriesKey] = !this._hiddenSeries[seriesKey];
+        this.renderTrendChart();
+        // Update legend active UI
+        const legendItems = document.querySelectorAll('.trend-legend-item');
+        legendItems.forEach(el => {
+            if (el.textContent.includes(seriesKey)) {
+                el.classList.toggle('inactive', this._hiddenSeries[seriesKey]);
+            }
+        });
+    },
+
+    // RENDER ADVANCED COMBO STACKED BAR + SPLINE TREND CHART
     renderTrendChart() {
         const canvas = document.getElementById('trend-chart');
         if (!canvas) return;
         const wrap = document.getElementById('trend-chart-wrap');
-        const w = wrap.clientWidth;
-        const h = wrap.clientHeight;
+        if (!wrap) return;
+
+        const w = wrap.clientWidth || 600;
+        const h = wrap.clientHeight || 280;
         const dpr = window.devicePixelRatio || 1;
-        canvas.width = w * dpr; canvas.height = h * dpr;
-        canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
 
-        const data = this.getMonthlyTrendData();
-        const types = Object.keys(SURGERY_TYPES);
-        const pad = { top: 20, right: 20, bottom: 35, left: 42 };
+        const surgeries = Store.getAll('surgeries') || [];
+        let numMonths = 6;
+        if (this._trendMonths === 12) numMonths = 12;
+        else if (this._trendMonths === 'year') {
+            numMonths = new Date().getMonth() + 1;
+        }
+
+        const data = SurgeryMetrics.getMonthlyTrend(surgeries, numMonths);
+        if (!data || data.length === 0) return;
+
+        const pad = { top: 32, right: 24, bottom: 38, left: 46 };
         const cW = w - pad.left - pad.right;
         const cH = h - pad.top - pad.bottom;
 
-        const allV = data.map(m => m.total);
-        types.forEach(t => data.forEach(m => allV.push(m.byType[t])));
-        const nMax = Math.ceil(Math.max(...allV, 5) / 5) * 5;
+        // Calculate max value for Y-axis (including benchmark & run-rate projections)
+        const allTotals = data.map(m => Math.max(m.total, m.runRateProjected || 0));
+        const avgValue = data.reduce((s, m) => s + m.total, 0) / data.length;
+        const maxVal = Math.max(...allTotals, avgValue, 10);
+        const yMax = Math.ceil(maxVal / 50) * 50 || 250;
 
-        const yOf = v => pad.top + cH - (v / nMax) * cH;
-        const xOf = i => pad.left + (i / Math.max(data.length - 1, 1)) * cW;
+        const yOf = v => pad.top + cH - (v / yMax) * cH;
+        const xOf = i => pad.left + (i + 0.5) * (cW / data.length);
+        const barWidth = Math.min(Math.max((cW / data.length) * 0.46, 18), 44);
 
-        // Grid
-        ctx.strokeStyle = 'rgba(148,163,184,0.15)'; ctx.lineWidth = 1;
-        ctx.font = '11px Inter, system-ui'; ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8';
-        for (let i = 0; i <= 4; i++) {
-            const val = Math.round((nMax / 4) * i);
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(148,163,184,0.18)';
+        const textMuted = isDark ? '#94a3b8' : '#64748b';
+
+        // 1. Draw Horizontal Grid Lines
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillStyle = textMuted;
+
+        const gridSteps = 4;
+        for (let i = 0; i <= gridSteps; i++) {
+            const val = Math.round((yMax / gridSteps) * i);
             const y = yOf(val);
-            ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(w - pad.right, y);
+            ctx.stroke();
             ctx.fillText(val, pad.left - 8, y + 4);
         }
-        // X labels
-        ctx.textAlign = 'center'; ctx.fillStyle = '#94a3b8';
-        data.forEach((m, i) => { ctx.fillText(m.shortLabel, xOf(i), h - 8); });
 
-        // Draw smooth bezier line
-        const drawLine = (values, color, lw) => {
-            if (values.every(v => v === 0)) return;
-            ctx.strokeStyle = color; ctx.lineWidth = lw;
-            ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash([]);
+        // 2. Draw Benchmark Line (6-Month Average Reference)
+        if (avgValue > 0) {
+            const yAvg = yOf(avgValue);
+            ctx.save();
+            ctx.setLineDash([5, 4]);
+            ctx.strokeStyle = isDark ? 'rgba(245, 158, 11, 0.65)' : 'rgba(217, 119, 6, 0.75)';
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
-            values.forEach((v, i) => {
-                const x = xOf(i), y = yOf(v);
-                if (i === 0) ctx.moveTo(x, y);
-                else { const cpX = (xOf(i-1) + x) / 2; ctx.bezierCurveTo(cpX, yOf(values[i-1]), cpX, y, x, y); }
-            });
+            ctx.moveTo(pad.left, yAvg);
+            ctx.lineTo(w - pad.right, yAvg);
             ctx.stroke();
-            // Dots
-            values.forEach((v, i) => {
-                ctx.beginPath(); ctx.arc(xOf(i), yOf(v), 4, 0, Math.PI * 2);
-                ctx.fillStyle = '#fff'; ctx.fill();
-                ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-            });
-        };
 
-        // Area fill for total
-        const totalVals = data.map(m => m.total);
-        if (totalVals.some(v => v > 0)) {
-            ctx.beginPath();
-            totalVals.forEach((v, i) => {
-                if (i === 0) ctx.moveTo(xOf(i), yOf(v));
-                else { const cpX = (xOf(i-1)+xOf(i))/2; ctx.bezierCurveTo(cpX, yOf(totalVals[i-1]), cpX, yOf(v), xOf(i), yOf(v)); }
-            });
-            ctx.lineTo(xOf(data.length-1), yOf(0)); ctx.lineTo(xOf(0), yOf(0)); ctx.closePath();
-            const grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
-            grad.addColorStop(0, 'rgba(15,23,42,0.08)'); grad.addColorStop(1, 'rgba(15,23,42,0)');
-            ctx.fillStyle = grad; ctx.fill();
+            // Benchmark label on right
+            ctx.font = '10px Inter, system-ui, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = isDark ? '#fbbf24' : '#d97706';
+            ctx.fillText(`Mốc TB: ${Math.round(avgValue)} ca`, w - pad.right, yAvg - 6);
+            ctx.restore();
         }
 
-        // Lines per type + total
-        types.forEach(t => drawLine(data.map(m => m.byType[t]), SURGERY_TYPES[t].color, 2));
-        drawLine(totalVals, '#0f172a', 2.5);
+        // 3. Draw Stacked Bars
+        const seriesColors = {
+            yeucau: '#8b5cf6',
+            chuongtrinh: '#06b6d4',
+            robot: '#10b981',
+            bankhan: '#ef4444'
+        };
 
-        // Tooltip on hover
+        const barCoordinates = [];
+
+        data.forEach((m, i) => {
+            const xCenter = xOf(i);
+            const xLeft = xCenter - barWidth / 2;
+            let currentYVal = 0;
+
+            const hidden = this._hiddenSeries;
+            const stackParts = [
+                { key: 'yeucau', val: hidden['yeucau'] ? 0 : (m.byType.yeucau || 0), color: seriesColors.yeucau },
+                { key: 'chuongtrinh', val: hidden['chuongtrinh'] ? 0 : (m.byType.chuongtrinh || 0), color: seriesColors.chuongtrinh },
+                { key: 'robot', val: hidden['robot'] ? 0 : (m.byType.robot || 0), color: seriesColors.robot },
+                { key: 'bankhan', val: hidden['bankhan'] ? 0 : (m.byType.bankhan || 0), color: seriesColors.bankhan }
+            ];
+
+            const activeStacks = stackParts.filter(p => p.val > 0);
+
+            // Draw stacked segments
+            activeStacks.forEach((part, partIdx) => {
+                const yBottom = yOf(currentYVal);
+                currentYVal += part.val;
+                const yTop = yOf(currentYVal);
+                const segHeight = yBottom - yTop;
+
+                ctx.fillStyle = part.color;
+                const isLastPart = (partIdx === activeStacks.length - 1);
+
+                if (isLastPart && !m.isCurrentMonth) {
+                    // Rounded top corners for topmost segment
+                    ctx.beginPath();
+                    const radius = 4;
+                    ctx.moveTo(xLeft, yBottom);
+                    ctx.lineTo(xLeft, yTop + radius);
+                    ctx.quadraticCurveTo(xLeft, yTop, xLeft + radius, yTop);
+                    ctx.lineTo(xLeft + barWidth - radius, yTop);
+                    ctx.quadraticCurveTo(xLeft + barWidth, yTop, xLeft + barWidth, yTop + radius);
+                    ctx.lineTo(xLeft + barWidth, yBottom);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(xLeft, yTop, barWidth, segHeight);
+                }
+            });
+
+            // For Current Month: Draw Run-Rate Projection Extension
+            if (m.isCurrentMonth && m.runRateProjected > m.total) {
+                const yActualTop = yOf(m.total);
+                const yProjTop = yOf(m.runRateProjected);
+                const projHeight = yActualTop - yProjTop;
+
+                ctx.save();
+                ctx.fillStyle = isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.15)';
+                ctx.strokeStyle = isDark ? 'rgba(139, 92, 246, 0.65)' : 'rgba(124, 58, 237, 0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 3]);
+
+                // Draw dashed projection box
+                ctx.beginPath();
+                const radius = 4;
+                ctx.moveTo(xLeft, yActualTop);
+                ctx.lineTo(xLeft, yProjTop + radius);
+                ctx.quadraticCurveTo(xLeft, yProjTop, xLeft + radius, yProjTop);
+                ctx.lineTo(xLeft + barWidth - radius, yProjTop);
+                ctx.quadraticCurveTo(xLeft + barWidth, yProjTop, xLeft + barWidth, yProjTop + radius);
+                ctx.lineTo(xLeft + barWidth, yActualTop);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Projection badge on top
+                ctx.font = 'bold 9.5px Inter, system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = isDark ? '#c084fc' : '#7c3aed';
+                ctx.fillText(`~${m.runRateProjected}*`, xCenter, yProjTop - 6);
+                ctx.restore();
+            }
+
+            barCoordinates.push({
+                index: i,
+                month: m,
+                xCenter,
+                xLeft,
+                xRight: xLeft + barWidth,
+                yTop: yOf(m.total),
+                yBottom: yOf(0)
+            });
+
+            // X-axis label
+            ctx.font = m.isCurrentMonth ? 'bold 11px Inter, system-ui, sans-serif' : '11px Inter, system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = m.isCurrentMonth ? (isDark ? '#38bdf8' : '#0284c7') : textMuted;
+            ctx.fillText(m.shortLabel + (m.isCurrentMonth ? '*' : ''), xCenter, h - pad.bottom + 16);
+
+            if (m.isCurrentMonth) {
+                ctx.font = '9px Inter, system-ui, sans-serif';
+                ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+                ctx.fillText('(đến 21/8)', xCenter, h - pad.bottom + 28);
+            }
+        });
+
+        // 4. Draw Spline Line for Total (if not hidden)
+        if (!this._hiddenSeries['total']) {
+            const points = data.map((m, i) => ({ x: xOf(i), y: yOf(m.total), val: m.total, isCur: m.isCurrentMonth }));
+
+            ctx.save();
+            ctx.strokeStyle = isDark ? '#38bdf8' : '#0f172a';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            points.forEach((pt, i) => {
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                else {
+                    const prev = points[i - 1];
+                    const cpX = (prev.x + pt.x) / 2;
+                    ctx.bezierCurveTo(cpX, prev.y, cpX, pt.y, pt.x, pt.y);
+                }
+            });
+            ctx.stroke();
+
+            // Total circular badges
+            points.forEach(pt => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = isDark ? '#38bdf8' : '#0f172a';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Number label on top
+                if (!pt.isCur) {
+                    ctx.font = 'bold 10px Inter, system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+                    ctx.fillText(pt.val, pt.x, pt.y - 8);
+                }
+            });
+            ctx.restore();
+        }
+
+        // 5. Tooltip on Hover
         canvas.onmousemove = (e) => {
             const rect = canvas.getBoundingClientRect();
             const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
             const tooltip = document.getElementById('trend-tooltip');
             if (!tooltip) return;
-            let closest = -1, minD = Infinity;
-            data.forEach((_, i) => { const d = Math.abs(mx - xOf(i)); if (d < minD) { minD = d; closest = i; } });
-            if (closest >= 0 && minD < cW / data.length) {
-                const m = data[closest];
-                tooltip.innerHTML = `<div class="trend-tooltip-title">${m.label}</div>` +
-                    types.map(t => `<div class="trend-tooltip-row"><span class="trend-tooltip-label"><span class="trend-legend-dot" style="background:${SURGERY_TYPES[t].color};width:7px;height:7px"></span> ${SURGERY_TYPES[t].label}</span><strong>${m.byType[t]}</strong></div>`).join('') +
-                    `<div class="trend-tooltip-row trend-tooltip-total-row"><strong>Tổng</strong><strong>${m.total}</strong></div>`;
-                tooltip.classList.add('visible');
-                tooltip.style.left = (xOf(closest) > w/2 ? xOf(closest)-150 : xOf(closest)+15) + 'px';
-                tooltip.style.top = '10px';
-            } else { tooltip.classList.remove('visible'); }
-        };
-        canvas.onmouseleave = () => { const t = document.getElementById('trend-tooltip'); if (t) t.classList.remove('visible'); };
-    },
 
-    getTodayDutyByGroup(allStaff, todayStr, group) {
-        const DAYS = ['T2','T3','T4','T5','T6','T7','CN'];
-        const now = new Date();
-        const dayOfWeek = now.getDay();
-        const dayKey = dayOfWeek === 0 ? 'CN' : DAYS[dayOfWeek - 1];
-
-        const monday = new Date(now);
-        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        const weekKey = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
-
-        const schedules = Store.getAll('schedules');
-        const schedule = schedules.find(s => s.weekKey === weekKey);
-        if (!schedule || !schedule.positions) return [];
-
-        const positions = group === 'khoa'
-            ? [{ key: 'trucKhoa', label: 'Trực khoa', slots: 4 }]
-            : [
-                { key: 'trucBV', label: 'Trực BV', slots: 3 },
-                { key: 'trucDD', label: 'Trực Đ.D', slots: 3 },
-                { key: 'trucHL', label: 'Trực Hộ lý', slots: 1 }
-              ];
-
-        const result = [];
-        positions.forEach(pos => {
-            const posData = schedule.positions[pos.key];
-            if (!posData) return;
-            for (let slot = 0; slot < pos.slots; slot++) {
-                const cellKey = `${dayKey}_${slot}`;
-                const staffId = posData[cellKey];
-                if (staffId) {
-                    const staffMember = allStaff.find(s => s.id === parseInt(staffId));
-                    if (staffMember) {
-                        result.push({ staff: staffMember, dutyType: pos.label });
-                    }
+            let hovered = barCoordinates.find(b => mx >= b.xLeft - 6 && mx <= b.xRight + 6);
+            if (!hovered) {
+                // Check closest
+                let closest = -1, minD = Infinity;
+                barCoordinates.forEach((b, idx) => {
+                    const d = Math.abs(mx - b.xCenter);
+                    if (d < minD) { minD = d; closest = idx; }
+                });
+                if (closest >= 0 && minD < (cW / data.length) * 0.6) {
+                    hovered = barCoordinates[closest];
                 }
             }
-        });
-        return result;
+
+            if (hovered) {
+                const m = hovered.month;
+                const statusTag = m.isCurrentMonth ? '<span class="trend-tooltip-badge live">Đang diễn ra (đến 21/08)</span>' : '<span class="trend-tooltip-badge">Hoàn tất</span>';
+                const runRateHtml = m.isCurrentMonth ? `
+                    <div class="trend-tooltip-proj-box">
+                        <div class="trend-proj-title">⚡ Dự phóng cả tháng (Run-rate): <strong>~${m.runRateProjected} ca</strong></div>
+                        <div class="trend-proj-sub">Tốc độ hiện tại thấp hơn TB 6 tháng (${Math.round(avgValue)} ca) <strong>-${Math.abs(Math.round(((m.runRateProjected/avgValue)-1)*100))}%</strong></div>
+                    </div>` : '';
+
+                tooltip.innerHTML = `
+                    <div class="trend-tooltip-header">
+                        <strong>${m.label}</strong>
+                        ${statusTag}
+                    </div>
+                    <div class="trend-tooltip-total-row">
+                        <span>Tổng số ca:</span>
+                        <strong class="trend-tooltip-total-num">${m.total} ca</strong>
+                    </div>
+                    <div class="trend-tooltip-breakdown">
+                        <div class="trend-tooltip-row">
+                            <span><span class="trend-legend-dot" style="background:#8b5cf6"></span> PT Yêu cầu</span>
+                            <strong>${m.byType.yeucau} <small>(${m.total > 0 ? (m.byType.yeucau/m.total*100).toFixed(1) : 0}%)</small></strong>
+                        </div>
+                        <div class="trend-tooltip-row">
+                            <span><span class="trend-legend-dot" style="background:#06b6d4"></span> PT Chương trình</span>
+                            <strong>${m.byType.chuongtrinh} <small>(${m.total > 0 ? (m.byType.chuongtrinh/m.total*100).toFixed(1) : 0}%)</small></strong>
+                        </div>
+                        <div class="trend-tooltip-row">
+                            <span><span class="trend-legend-dot" style="background:#10b981"></span> PT Robot</span>
+                            <strong>${m.byType.robot} <small>(${m.total > 0 ? (m.byType.robot/m.total*100).toFixed(1) : 0}%)</small></strong>
+                        </div>
+                        <div class="trend-tooltip-row">
+                            <span><span class="trend-legend-dot" style="background:#ef4444"></span> Bán khẩn</span>
+                            <strong>${m.byType.bankhan} <small>(${m.total > 0 ? (m.byType.bankhan/m.total*100).toFixed(1) : 0}%)</small></strong>
+                        </div>
+                    </div>
+                    <div class="trend-tooltip-mis-row">
+                        <span>✨ Tỉ lệ MIS (Nội soi + Robot):</span>
+                        <strong class="text-cyan">${m.mis.misPct}%</strong>
+                    </div>
+                    ${runRateHtml}
+                `;
+                tooltip.classList.add('visible');
+
+                // Positioning
+                const tipW = tooltip.offsetWidth || 220;
+                let leftPos = hovered.xCenter - tipW / 2;
+                if (leftPos < 10) leftPos = 10;
+                if (leftPos + tipW > w - 10) leftPos = w - tipW - 10;
+                tooltip.style.left = leftPos + 'px';
+                tooltip.style.top = '10px';
+            } else {
+                tooltip.classList.remove('visible');
+            }
+        };
+
+        canvas.onmouseleave = () => {
+            const t = document.getElementById('trend-tooltip');
+            if (t) t.classList.remove('visible');
+        };
     },
 
-    // Get staff members whose birthday is today (active for 24 hours on birthday date)
+    // Birthday Logic
     getTodayBirthdays(allStaff, todayStr) {
         if (!allStaff || !allStaff.length) return null;
         const parts = (todayStr || '').split('-');
@@ -518,61 +809,65 @@ const DashboardPage = {
         'dieu_duong': [
             'tuổi mới luôn dồi dào sức khỏe, xinh tươi rạng rỡ, tận tâm yêu nghề và luôn là điểm tựa ấm áp mang lại niềm tin cho mọi người bệnh! 🌸',
             'thêm một tuổi mới ngập tràn niềm vui, công tác thuận lợi, gia đình hạnh phúc và luôn giữ vững nụ cười ân cần, chu đáo! 💖',
-            'bước sang tuổi mới vạn sự như ý, luôn bình an, may mắn và tiếp tục đồng hành gắn bó cùng sự phát triển của đại gia đình PTĐTT! 🌷',
-            'tuổi mới nhiều sức khỏe, luôn vui tươi, tràn ngập may mắn và luôn là hậu phương chăm sóc người bệnh chu đáo nhất! 🌺'
+            'tuổi mới vạn sự may mắn, tràn đầy năng lượng tích cực, chăm sóc người bệnh tận tụy và cùng tập thể khoa gặt hái nhiều thành công! 🌷'
         ],
         'ho_ly': [
-            'tuổi mới luôn dồi dào sức khỏe, nhiều niềm vui, công việc thuận lợi và gia đình luôn êm ấm, thuận hòa, an khang thịnh vượng! 🍀',
-            'thêm tuổi mới ngập tràn may mắn, luôn bình an, vui vẻ và cảm ơn sự cần mẫn, tận tụy giữ gìn khoa phòng luôn sạch đẹp mỗi ngày! 🌟',
-            'bước sang tuổi mới dồi dào năng lượng, gia đạo bình an, hạnh phúc và vạn sự như ý! 💐'
+            'tuổi mới dồi dào sức khỏe, luôn tươi vui yêu đời, công việc thuận lợi và gia đình luôn đầm ấm, an vui hạnh phúc! 🍀',
+            'thêm tuổi mới an khang thịnh vượng, luôn là hậu phương thầm lặng vững chắc giúp khoa luôn sạch đẹp, ngăn nắp và chu đáo! 💐'
         ],
         'thu_ky': [
-            'tuổi mới luôn xinh đẹp, trẻ trung, công việc hành chính hanh thông suôn sẻ và gặt hái nhiều niềm vui, hạnh phúc trong cuộc sống! 🌼',
-            'thêm tuổi mới ngập tràn may mắn, nụ cười luôn rạng rỡ, hoàn thành xuất sắc mọi công việc và gia đình luôn tràn ngập tiếng cười! 💖',
-            'bước sang tuổi mới vạn sự cát tường, công tác thuận lợi, nhiều sức khỏe và hạnh phúc viên mãn! ✨'
+            'tuổi mới xinh đẹp rạng ngời, công việc hanh thông, quản lý hồ sơ hành chính khoa học chỉn chu và ngập tràn niềm vui may mắn! 🎀',
+            'thêm một tuổi mới vạn sự như ý, luôn tươi trẻ, tràn đầy nhiệt huyết và hoàn thành xuất sắc mọi kế hoạch công tác! ✨'
         ]
     },
 
-    getStaffRoleCategory(s) {
-        const role = (s?.role || '').toLowerCase();
-        const title = (s?.title || '').toLowerCase();
-        if (role.includes('trưởng khoa') || role.includes('phó trưởng khoa') || role.includes('phó khoa')) return 'bcn';
+    getWishRoleGroup(staffMember) {
+        if (!staffMember) return 'dieu_duong';
+        const role = (staffMember.role || '').toLowerCase();
+        const title = (staffMember.title || '').toLowerCase();
+        const name = (staffMember.name || '').toLowerCase();
+
+        if (role.includes('trưởng khoa') && !role.includes('phó') && !role.includes('điều dưỡng')) return 'bcn';
+        if (role.includes('phó trưởng khoa') || role.includes('phó khoa')) return 'bcn';
         if (role.includes('điều dưỡng trưởng') || role.includes('đdt')) return 'ddt';
-        if (role.includes('bác sĩ chính') || role.includes('bác sĩ trường')) return 'bs_chinh';
-        if (role.includes('học viên') || role.includes('nội trú') || title.includes('bsnt') || title.includes('học viên')) return 'bs_hocvien';
-        if (role.includes('điều dưỡng')) return 'dieu_duong';
-        if (role.includes('hộ lý')) return 'ho_ly';
-        if (role.includes('thư ký')) return 'thu_ky';
-        return 'bs_chinh';
+
+        if (role.includes('bác sĩ') || title.includes('bs') || title.includes('ts') || title.includes('ths') || title.includes('bsck')) {
+            if (role.includes('học viên') || role.includes('nội trú') || role.includes('bsnt') || role.includes('ck1') || role.includes('ck2') || role.includes('luân khoa')) {
+                return 'bs_hocvien';
+            }
+            return 'bs_chinh';
+        }
+
+        if (role.includes('hộ lý') || role.includes('y công')) return 'ho_ly';
+        if (role.includes('thư ký') || role.includes('hành chính') || role.includes('tk y khoa')) return 'thu_ky';
+
+        return 'dieu_duong';
     },
 
-    getBirthdayTier(staffList) {
-        if (!staffList || !staffList.length) return 'standard';
-        // Tier 3: Chief (Bác sĩ Trưởng khoa - Hoành tráng nhất)
-        if (staffList.some(s => {
-            const r = (s?.role || '').toLowerCase();
-            return r.includes('trưởng khoa') && !r.includes('phó') && !r.includes('điều dưỡng');
-        })) {
-            return 'chief';
-        }
-        // Tier 2: BCN & Điều Dưỡng Trưởng (BS Phó trưởng khoa + CNĐD Điều dưỡng trưởng)
-        if (staffList.some(s => {
-            const r = (s?.role || '').toLowerCase();
-            return r.includes('phó trưởng khoa') || r.includes('phó khoa') || r.includes('điều dưỡng trưởng') || r.includes('đdt');
-        })) {
-            return 'bcn';
-        }
-        return 'standard';
-    },
-
-    getRandomWish(s) {
-        const cat = this.getStaffRoleCategory(s);
-        const list = this.BIRTHDAY_WISHES_BY_ROLE[cat] || this.BIRTHDAY_WISHES_BY_ROLE['bs_chinh'];
+    getRandomWish(staffMember) {
+        const group = this.getWishRoleGroup(staffMember);
+        const list = this.BIRTHDAY_WISHES_BY_ROLE[group] || this.BIRTHDAY_WISHES_BY_ROLE['dieu_duong'];
         const idx = Math.floor(Math.random() * list.length);
         return list[idx];
     },
 
-    // Render continuous marquee celebratory banner (Active for 24h on birthday date)
+    getBirthdayTier(staffList) {
+        if (!staffList || !staffList.length) return 'standard';
+        const isChief = staffList.some(s => {
+            const r = (s?.role || '').toLowerCase();
+            return r.includes('trưởng khoa') && !r.includes('phó') && !r.includes('điều dưỡng');
+        });
+        if (isChief) return 'chief';
+
+        const isBCN = staffList.some(s => {
+            const r = (s?.role || '').toLowerCase();
+            return r.includes('phó trưởng khoa') || r.includes('phó khoa') || r.includes('điều dưỡng trưởng') || r.includes('đdt');
+        });
+        if (isBCN) return 'bcn';
+
+        return 'standard';
+    },
+
     renderBirthdayBanner(bdayInfo, todayStr) {
         if (!bdayInfo || !bdayInfo.staff || bdayInfo.staff.length === 0) return '';
         const { isToday, isTestPreview, staff, dateStr, daysLeft } = bdayInfo;
@@ -603,7 +898,6 @@ const DashboardPage = {
 
         const prefixTag = isTestPreview ? `[CHẠY THỬ / SẮP TỚI NGÀY ${dateStr}] ` : '';
 
-        // Construct role-tailored congratulation messages
         const messageParts = staff.map(s => {
             const titleName = `${s.title ? s.title + ' ' : ''}${s.name}`;
             const roleStr = s.role ? ` (${s.role})` : '';
@@ -639,117 +933,133 @@ const DashboardPage = {
                             <span class="birthday-crown">${tier === 'chief' ? '👑✨' : '👑'}</span>
                         </div>
                     `).join('')}
-                    <button class="birthday-celebrate-btn" onclick="DashboardPage.triggerConfetti('${tier}')" title="Bắn pháo hoa chúc mừng!">
+                    <button class="birthday-btn-celebrate" onclick="DashboardPage.triggerConfetti('${tier}')" title="Bắn pháo hoa chúc mừng">
                         🎉 Chúc mừng
                     </button>
                 </div>
             </div>
+            <canvas id="birthday-confetti-canvas" class="birthday-confetti-canvas"></canvas>
         </div>
         `;
     },
 
-    // Joyful zero-dependency 60fps confetti effect (Tier-adapted)
     triggerConfetti(tier = 'standard') {
-        try {
-            let colors = ['#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#a855f7', '#fbbf24'];
-            let count = 70;
-            let maxDuration = 2600;
-            let toastMsg = 'Khoa PTĐTT chúc mừng sinh nhật ngập tràn niềm vui và hạnh phúc! 🎂🎉✨';
+        const canvas = document.getElementById('birthday-confetti-canvas');
+        if (!canvas) {
+            Toast.success('🎉 Chúc mừng sinh nhật đồng nghiệp Khoa Phẫu thuật Đại trực tràng! 🎂✨');
+            return;
+        }
 
-            if (tier === 'chief') {
-                colors = ['#fbbf24', '#f59e0b', '#d97706', '#fde047', '#e11d48', '#8b5cf6', '#38bdf8', '#ffffff'];
-                count = 125;
-                maxDuration = 3600;
-                toastMsg = '👑 KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG TRỌNG THỂ CHÚC MỪNG SINH NHẬT BÁC SĨ TRƯỞNG KHOA! 🎂🎉🌟✨';
-            } else if (tier === 'bcn') {
-                colors = ['#f59e0b', '#fbbf24', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6', '#ffffff'];
-                count = 90;
-                maxDuration = 3000;
-                toastMsg = '👑 Khoa PTĐTT trân trọng chúc mừng sinh nhật Ban Chủ Nhiệm Khoa & Điều Dưỡng Trưởng! 🎂🎉✨';
-            }
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width || window.innerWidth;
+        canvas.height = rect.height || 120;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-            const canvas = document.createElement('canvas');
-            canvas.style.position = 'fixed';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.width = '100vw';
-            canvas.style.height = '100vh';
-            canvas.style.pointerEvents = 'none';
-            canvas.style.zIndex = '999999';
-            document.body.appendChild(canvas);
+        let particleCount = 65;
+        let colors = ['#ec4899', '#f43f5e', '#a855f7', '#06b6d4', '#fbbf24', '#10b981'];
 
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            ctx.scale(dpr, dpr);
+        if (tier === 'chief') {
+            particleCount = 125;
+            colors = ['#fbbf24', '#f59e0b', '#d97706', '#6366f1', '#8b5cf6', '#ffffff', '#e0e7ff'];
+        } else if (tier === 'bcn') {
+            particleCount = 90;
+            colors = ['#38bdf8', '#0284c7', '#fbbf24', '#f59e0b', '#ec4899', '#ffffff'];
+        }
 
-            const particles = [];
-            const startX = window.innerWidth / 2;
-            const startY = Math.min(window.innerHeight * 0.35, 260);
+        const particles = [];
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: canvas.width / 2 + (Math.random() - 0.5) * (canvas.width * 0.7),
+                y: canvas.height * 0.4,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.7) * 8 - 2,
+                size: Math.random() * 6 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * 360,
+                vRot: (Math.random() - 0.5) * 12,
+                alpha: 1,
+                decay: Math.random() * 0.015 + 0.015
+            });
+        }
 
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
-                const speed = 5 + Math.random() * (tier === 'chief' ? 12 : 9);
-                particles.push({
-                    x: startX + (Math.random() - 0.5) * (tier === 'chief' ? 160 : 100),
-                    y: startY,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - (tier === 'chief' ? 6 : 4),
-                    size: 5 + Math.random() * (tier === 'chief' ? 9 : 7),
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    rotation: Math.random() * 360,
-                    rSpeed: (Math.random() - 0.5) * 14,
-                    opacity: 1,
-                    gravity: tier === 'chief' ? 0.22 : 0.28,
-                    shape: Math.random() > 0.35 ? 'rect' : 'circle'
-                });
-            }
-
-            let startTime = null;
-            const reqAnim = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
-            function animate(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-                let hasAlive = false;
-                for (const p of particles) {
+        let animId;
+        const renderFrame = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = 0;
+            particles.forEach(p => {
+                if (p.alpha > 0) {
+                    active++;
                     p.x += p.vx;
                     p.y += p.vy;
-                    p.vy += p.gravity;
-                    p.rotation += p.rSpeed;
-                    p.opacity = Math.max(0, 1 - elapsed / (maxDuration - 200));
+                    p.vy += 0.22;
+                    p.rotation += p.vRot;
+                    p.alpha -= p.decay;
 
-                    if (p.opacity > 0) {
-                        hasAlive = true;
-                        ctx.save();
-                        ctx.translate(p.x, p.y);
-                        ctx.rotate((p.rotation * Math.PI) / 180);
-                        ctx.globalAlpha = p.opacity;
-                        ctx.fillStyle = p.color;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(p.alpha, 0);
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                }
+            });
 
-                        if (p.shape === 'rect') {
-                            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.6);
-                        } else {
-                            ctx.beginPath();
-                            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                        ctx.restore();
+            if (active > 0) {
+                animId = requestAnimationFrame(renderFrame);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                cancelAnimationFrame(animId);
+            }
+        };
+
+        if (this._confettiAnimId) cancelAnimationFrame(this._confettiAnimId);
+        this._confettiAnimId = requestAnimationFrame(renderFrame);
+        Toast.success(tier === 'chief' ? '👑 Tập thể Khoa Phẫu thuật Đại trực tràng kính chúc mừng sinh nhật Bác sĩ Trưởng khoa! 🎂🌟' : '🎉 Chúc mừng sinh nhật đồng nghiệp! 🎂💐');
+    },
+
+    getTodayDutyByGroup(allStaff, todayStr, group) {
+        const DAYS = ['T2','T3','T4','T5','T6','T7','CN'];
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const dayKey = dayOfWeek === 0 ? 'CN' : DAYS[dayOfWeek - 1];
+
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        const weekKey = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
+
+        const schedules = Store.getAll('schedules');
+        const schedule = schedules.find(s => s.weekKey === weekKey);
+        if (!schedule || !schedule.positions) return [];
+
+        const positions = group === 'khoa'
+            ? [{ key: 'trucKhoa', label: 'Trực khoa', slots: 4 }]
+            : [
+                { key: 'trucBV', label: 'Trực BV', slots: 3 },
+                { key: 'trucDD', label: 'Trực Đ.D', slots: 3 },
+                { key: 'trucHL', label: 'Trực Hộ lý', slots: 1 }
+              ];
+
+        const result = [];
+        positions.forEach(pos => {
+            const posData = schedule.positions[pos.key];
+            if (!posData) return;
+            for (let slot = 0; slot < pos.slots; slot++) {
+                const cellKey = `${dayKey}_${slot}`;
+                const staffId = posData[cellKey];
+                if (staffId) {
+                    const staffMember = allStaff.find(s => s.id === parseInt(staffId));
+                    if (staffMember) {
+                        result.push({ staff: staffMember, dutyType: pos.label });
                     }
                 }
-
-                if (hasAlive && elapsed < maxDuration) {
-                    reqAnim(animate);
-                } else {
-                    if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
-                }
             }
-            reqAnim(animate);
-            Toast.success(toastMsg);
-        } catch (e) {
-            console.error('Confetti error:', e);
-        }
+        });
+        return result;
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.DashboardPage = DashboardPage;
+}

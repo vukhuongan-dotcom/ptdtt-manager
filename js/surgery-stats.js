@@ -408,17 +408,19 @@ const SurgeryStatsPage = {
             axisPct[k] = totalRaw > 0 ? ((axisDetails[k].length / totalRaw) * 100) : 0;
         });
 
-        // Approach stats
-        const misCases = cases.filter(s => s && (s.approachType === 'noisoi' || s.approachType === 'robot')).length;
-        const openCases = cases.filter(s => s && s.approachType === 'mo').length;
-        const robotCases = cases.filter(s => s && s.approachType === 'robot').length;
-        const misPct = totalRaw > 0 ? (misCases / totalRaw * 100) : 0;
-        const openPct = totalRaw > 0 ? (openCases / totalRaw * 100) : 0;
+        // Approach stats & surgery type breakdown via shared SurgeryMetrics
+        const misStats = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateMIS(cases) : { misCases: 0, mo: 0, robot: 0, misPct: 0, openPct: 0 };
+        const typeBreakdown = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateTypeBreakdown(cases) : { yeucau: 0, chuongtrinh: 0, bankhan: 0 };
+        const misCases = misStats.misCases;
+        const openCases = misStats.mo;
+        const robotCases = misStats.robot;
+        const misPct = misStats.misPct;
+        const openPct = misStats.openPct;
 
         // Surgery type breakdown (Yêu cầu vs Chương trình vs Bán khẩn)
-        const electiveReq = cases.filter(s => s && s.surgeryType === 'yeucau').length;
-        const electiveRoutine = cases.filter(s => s && s.surgeryType === 'chuongtrinh').length;
-        const urgent = cases.filter(s => s && s.surgeryType === 'bankhan').length;
+        const electiveReq = typeBreakdown.yeucau;
+        const electiveRoutine = typeBreakdown.chuongtrinh;
+        const urgent = typeBreakdown.bankhan;
 
         // Duration stats
         const withDur = cases.filter(s => s && parseInt(s.duration) > 0);
