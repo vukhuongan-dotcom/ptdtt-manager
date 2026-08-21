@@ -69,7 +69,16 @@ const SurgeryMetrics = {
         const now = new Date();
         const months = [];
 
-        for (let i = numMonths - 1; i >= 0; i--) {
+        let count = 6;
+        if (numMonths === 'year' || numMonths === 'ytd') {
+            count = now.getMonth() + 1;
+        } else if (typeof numMonths === 'number' && numMonths > 0) {
+            count = numMonths;
+        } else if (typeof numMonths === 'string' && !isNaN(parseInt(numMonths))) {
+            count = parseInt(numMonths);
+        }
+
+        for (let i = count - 1; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const y = d.getFullYear();
             const m = d.getMonth();

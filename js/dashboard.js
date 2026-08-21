@@ -22,14 +22,15 @@ const DashboardPage = {
         const monthlyS = SurgeryPage.getMonthlyStats();
 
         // MIS & Clinical Approach Metrics via shared SurgeryMetrics
-        const recentMonths = SurgeryMetrics.getMonthlyTrend(surgeries, this._trendMonths || 6);
-        const totalRecentCases = recentMonths.reduce((sum, m) => sum + m.total, 0);
+        const monthCount = (this._trendMonths === 'year') ? (new Date().getMonth() + 1) : (parseInt(this._trendMonths) || 6);
+        const recentMonths = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.getMonthlyTrend(surgeries, monthCount) : [];
+        const totalRecentCases = recentMonths.reduce((sum, m) => sum + (m.total || 0), 0);
+        const minKey = (recentMonths.length > 0 && recentMonths[0]?.key) ? (recentMonths[0].key + '-01') : `${today.slice(0, 7)}-01`;
         const allRecentCases = surgeries.filter(s => {
-            const minKey = recentMonths[0].key + '-01';
             return s && s.date && s.date >= minKey && s.date <= today;
         });
-        const misStats = SurgeryMetrics.calculateMIS(allRecentCases);
-        const typeBreakdown = SurgeryMetrics.calculateTypeBreakdown(allRecentCases);
+        const misStats = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateMIS(allRecentCases) : { misPct: 0, noisoiPct: 0, robotPct: 0, openPct: 0, misCases: 0, noisoi: 0, robot: 0, mo: 0 };
+        const typeBreakdown = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateTypeBreakdown(allRecentCases) : { yeucauPct: 0, chuongtrinhPct: 0, robotPct: 0, bankhanPct: 0, yeucau: 0, chuongtrinh: 0, robot: 0, bankhan: 0 };
         const avgMonthly = recentMonths.length > 0 ? (totalRecentCases / recentMonths.length).toFixed(1) : 0;
 
         // Inpatient Flow (Widget 3) from latest reports7h & reports16h
