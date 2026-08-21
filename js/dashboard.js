@@ -164,12 +164,12 @@ const DashboardPage = {
                 <div class="trend-kpi-strip">
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">Tổng số ca</div>
-                        <div class="trend-kpi-val">${totalRecentCases.toLocaleString('vi-VN')} <span class="trend-kpi-unit">ca</span></div>
+                        <div class="trend-kpi-val text-dark">${totalRecentCases.toLocaleString('vi-VN')} <span class="trend-kpi-unit">ca</span></div>
                         <div class="trend-kpi-sub">${recentMonths.length} tháng qua</div>
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">Trung bình / tháng</div>
-                        <div class="trend-kpi-val">${avgMonthly} <span class="trend-kpi-unit">ca</span></div>
+                        <div class="trend-kpi-val text-emerald">${avgMonthly} <span class="trend-kpi-unit">ca</span></div>
                         <div class="trend-kpi-sub">Công suất khoa</div>
                     </div>
                     <div class="trend-kpi-item">
@@ -179,7 +179,7 @@ const DashboardPage = {
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">Xâm lấn tối thiểu (MIS)</div>
-                        <div class="trend-kpi-val text-cyan">${misStats.misPct}%</div>
+                        <div class="trend-kpi-val text-ocean">${misStats.misPct}%</div>
                         <div class="trend-kpi-sub">Nội soi + Robot (${misStats.misCases} ca)</div>
                     </div>
                 </div>
@@ -193,11 +193,11 @@ const DashboardPage = {
                 <!-- Togglable Legend -->
                 <div class="trend-chart-legend">
                     <div class="trend-legend-item ${this._hiddenSeries['yeucau'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('yeucau')">
-                        <div class="trend-legend-dot" style="background:#8b5cf6"></div>
+                        <div class="trend-legend-dot" style="background:#7c3aed"></div>
                         PT Yêu cầu
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['chuongtrinh'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('chuongtrinh')">
-                        <div class="trend-legend-dot" style="background:#06b6d4"></div>
+                        <div class="trend-legend-dot" style="background:#0284c7"></div>
                         PT Chương trình
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['robot'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('robot')">
@@ -205,7 +205,7 @@ const DashboardPage = {
                         PT Robot
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['bankhan'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('bankhan')">
-                        <div class="trend-legend-dot" style="background:#ef4444"></div>
+                        <div class="trend-legend-dot" style="background:#e11d48"></div>
                         Bán khẩn
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['total'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('total')">
@@ -233,9 +233,9 @@ const DashboardPage = {
                             <div class="mis-donut-box">
                                 <svg viewBox="0 0 36 36" class="mis-donut-chart">
                                     <path class="mis-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#e2e8f0" stroke-width="3.5" fill="none"/>
-                                    <!-- Noisoi arc -->
-                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#06b6d4" stroke-width="3.8" stroke-linecap="round" fill="none"/>
-                                    <!-- Robot arc -->
+                                    <!-- Noisoi arc (Ocean Blue) -->
+                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#0284c7" stroke-width="3.8" stroke-linecap="round" fill="none"/>
+                                    <!-- Robot arc (Emerald Green) -->
                                     <path class="mis-circle-robot" stroke-dashoffset="-${misStats.noisoiPct}" stroke-dasharray="${misStats.robotPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#10b981" stroke-width="4.2" stroke-linecap="round" fill="none"/>
                                 </svg>
                                 <div class="mis-donut-center">
@@ -525,10 +525,10 @@ const DashboardPage = {
 
         // 3. Draw Stacked Bars
         const seriesColors = {
-            yeucau: '#8b5cf6',
-            chuongtrinh: '#06b6d4',
-            robot: '#10b981',
-            bankhan: '#ef4444'
+            yeucau: '#7c3aed',      // Royal Purple / Violet (Hue 270°)
+            chuongtrinh: '#0284c7', // Ocean Blue (Hue 200°)
+            robot: '#10b981',       // Emerald Green (Hue 155°)
+            bankhan: '#e11d48'      // Rose / Crimson Red (Hue 350°)
         };
 
         const barCoordinates = [];
@@ -714,11 +714,11 @@ const DashboardPage = {
                     </div>
                     <div class="trend-tooltip-breakdown">
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#8b5cf6"></span> PT Yêu cầu</span>
+                            <span><span class="trend-legend-dot" style="background:#7c3aed"></span> PT Yêu cầu</span>
                             <strong>${m.byType.yeucau} <small>(${m.total > 0 ? (m.byType.yeucau/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#06b6d4"></span> PT Chương trình</span>
+                            <span><span class="trend-legend-dot" style="background:#0284c7"></span> PT Chương trình</span>
                             <strong>${m.byType.chuongtrinh} <small>(${m.total > 0 ? (m.byType.chuongtrinh/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
@@ -726,13 +726,13 @@ const DashboardPage = {
                             <strong>${m.byType.robot} <small>(${m.total > 0 ? (m.byType.robot/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#ef4444"></span> Bán khẩn</span>
+                            <span><span class="trend-legend-dot" style="background:#e11d48"></span> Bán khẩn</span>
                             <strong>${m.byType.bankhan} <small>(${m.total > 0 ? (m.byType.bankhan/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                     </div>
                     <div class="trend-tooltip-mis-row">
                         <span>✨ Tỉ lệ MIS (Nội soi + Robot):</span>
-                        <strong class="text-cyan">${m.mis.misPct}%</strong>
+                        <strong class="text-ocean">${m.mis.misPct}%</strong>
                     </div>
                     ${runRateHtml}
                 `;
