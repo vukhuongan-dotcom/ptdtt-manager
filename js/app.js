@@ -634,6 +634,10 @@ const App = {
         this._updateThemeToggleUI(next);
         this._updateMetaThemeColor(next);
         this.updateMobileHeader(); // cập nhật icon sun/moon trên mobile header
+        // Re-render dashboard trend chart if active
+        if (window.DashboardPage && typeof DashboardPage.renderTrendChart === 'function') {
+            DashboardPage.renderTrendChart();
+        }
         // Nếu đang ở trang login, re-render để icon toggle cập nhật
         const loginContainer = document.getElementById('login-container');
         if (loginContainer) loginContainer.innerHTML = LoginPage.render();

@@ -193,23 +193,23 @@ const DashboardPage = {
                 <!-- Togglable Legend (Exact colors from Lịch Mổ Tuần) -->
                 <div class="trend-chart-legend">
                     <div class="trend-legend-item ${this._hiddenSeries['yeucau'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('yeucau')">
-                        <div class="trend-legend-dot" style="background:#f59e0b"></div>
+                        <div class="trend-legend-dot trend-dot-yeucau"></div>
                         PT Yêu cầu
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['chuongtrinh'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('chuongtrinh')">
-                        <div class="trend-legend-dot" style="background:#3b82f6"></div>
+                        <div class="trend-legend-dot trend-dot-chuongtrinh"></div>
                         PT Chương trình
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['robot'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('robot')">
-                        <div class="trend-legend-dot" style="background:#1e3a5f"></div>
+                        <div class="trend-legend-dot trend-dot-robot"></div>
                         PT Robot
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['bankhan'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('bankhan')">
-                        <div class="trend-legend-dot" style="background:#ef4444"></div>
+                        <div class="trend-legend-dot trend-dot-bankhan"></div>
                         Bán khẩn
                     </div>
                     <div class="trend-legend-item ${this._hiddenSeries['total'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('total')">
-                        <div class="trend-legend-dot" style="background:var(--text-primary);border:2px solid #fff"></div>
+                        <div class="trend-legend-dot trend-dot-total"></div>
                         ● Tổng số ca
                     </div>
                     <div class="trend-legend-item" title="Đường trung bình 6 tháng chuẩn">
@@ -232,11 +232,11 @@ const DashboardPage = {
                         <div class="mis-donut-section">
                             <div class="mis-donut-box">
                                 <svg viewBox="0 0 36 36" class="mis-donut-chart">
-                                    <path class="mis-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#e2e8f0" stroke-width="3.5" fill="none"/>
+                                    <path class="mis-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-width="3.5" fill="none"/>
                                     <!-- Noisoi arc (Green - Lịch mổ chuẩn) -->
-                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#16a34a" stroke-width="3.8" stroke-linecap="round" fill="none"/>
+                                    <path class="mis-circle-noisoi" stroke-dasharray="${misStats.noisoiPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-width="3.8" stroke-linecap="round" fill="none"/>
                                     <!-- Robot arc (Navy - Lịch mổ chuẩn) -->
-                                    <path class="mis-circle-robot" stroke-dashoffset="-${misStats.noisoiPct}" stroke-dasharray="${misStats.robotPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#1e3a5f" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+                                    <path class="mis-circle-robot" stroke-dashoffset="-${misStats.noisoiPct}" stroke-dasharray="${misStats.robotPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-width="4.2" stroke-linecap="round" fill="none"/>
                                 </svg>
                                 <div class="mis-donut-center">
                                     <div class="mis-donut-val">${misStats.misPct}%</div>
@@ -416,6 +416,16 @@ const DashboardPage = {
             };
             window.addEventListener('emr-data-updated', this._emrListener);
         }
+
+        // Listen for Theme switch to dynamically redraw canvas
+        if (!this._themeObserver) {
+            this._themeObserver = new MutationObserver(() => {
+                if (App.currentPage === 'dashboard') {
+                    this.renderTrendChart();
+                }
+            });
+            this._themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        }
     },
 
     setTrendFilter(mode) {
@@ -481,7 +491,9 @@ const DashboardPage = {
         const xOf = i => pad.left + (i + 0.5) * (cW / data.length);
         const barWidth = Math.min(Math.max((cW / data.length) * 0.46, 18), 44);
 
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const isDark = (document.documentElement.getAttribute('data-theme') === 'dark') ||
+                       (localStorage.getItem('ptdtt_theme') === 'dark') ||
+                       (!document.documentElement.getAttribute('data-theme') && !localStorage.getItem('ptdtt_theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(148,163,184,0.18)';
         const textMuted = isDark ? '#94a3b8' : '#64748b';
 
