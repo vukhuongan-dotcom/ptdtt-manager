@@ -303,50 +303,64 @@ const StaffTrackingPage = {
         const parts = dateStr.split('-');
         const dateLabel = `${parts[2]}/${parts[1]}/${parts[0]}`;
 
-        const options = Object.entries(STAFF_STATUSES).map(([key, val]) =>
-            `<option value="${key}" ${currentStatus === key ? 'selected' : ''}>${val.icon} ${val.label}</option>`
-        ).join('');
-
         Modal.open(`${staffName} — ${dateLabel}`, `
             <form onsubmit="StaffTrackingPage.saveDayStatus(event, ${staffId}, '${dateStr}')">
-                <div class="form-group">
-                    <label class="form-label">Trạng thái</label>
-                    <select class="form-select" name="status" style="font-size:15px;padding:10px" onchange="StaffTrackingPage._toggleRangeFields()">
-                        ${options}
-                    </select>
+                <input type="hidden" name="status" id="tracking-status-input" value="${currentStatus}">
+                
+                <label class="form-label" style="margin-bottom:8px">Chọn trạng thái nhanh</label>
+                <div class="st-quick-status-selector">
+                    ${Object.entries(STAFF_STATUSES).map(([key, val]) => `
+                        <button type="button" class="st-quick-status-btn ${currentStatus === key ? 'active' : ''} st-btn-${key}" 
+                                onclick="StaffTrackingPage._selectQuickStatus('${key}')">
+                            <span class="st-status-icon">${val.icon}</span>
+                            <span class="st-status-text">${val.label}</span>
+                        </button>
+                    `).join('')}
                 </div>
-                <div id="tracking-range-fields" style="${currentStatus !== 'active' ? '' : 'display:none'}">
+
+                <div id="tracking-range-fields" style="${currentStatus !== 'active' ? '' : 'display:none'};margin-top:14px">
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Từ ngày</label>
-                            <input class="form-input" type="date" name="fromDate" value="${dateStr}">
+                            <input class="form-input" type="date" name="fromDate" id="tracking-from-date" value="${dateStr}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Đến ngày</label>
-                            <input class="form-input" type="date" name="toDate" value="${dateStr}">
+                            <input class="form-input" type="date" name="toDate" id="tracking-to-date" value="${dateStr}">
                         </div>
                     </div>
-                    <div style="font-size:0.72rem;color:var(--text-muted);margin-top:-4px;margin-bottom:8px">
-                        💡 Để khoảng ngày giống nhau nếu chỉ cập nhật 1 ngày
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:-4px;margin-bottom:8px">
+                        💡 Giữ nguyên khoảng ngày nếu chỉ cập nhật riêng cho ngày này
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Ghi chú</label>
-                    <input class="form-input" name="note" placeholder="Lý do..." value="${this._getNoteForDay(staffId, dateStr)}">
+
+                <div class="form-group" style="margin-top:10px">
+                    <label class="form-label">Ghi chú (tuỳ chọn)</label>
+                    <input class="form-input" name="note" placeholder="Lý do nghỉ, nơi công tác..." value="${this._getNoteForDay(staffId, dateStr)}">
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
-                    <button type="submit" class="btn btn-primary">Lưu</button>
+                    <button type="submit" class="btn btn-primary">Lưu trạng thái</button>
                 </div>
             </form>
         `);
     },
 
-    _toggleRangeFields() {
-        const sel = document.querySelector('select[name="status"]');
-        const fields = document.getElementById('tracking-range-fields');
-        if (sel && fields) {
-            fields.style.display = sel.value === 'active' ? 'none' : '';
+    _selectQuickStatus(statusKey) {
+        const inp = document.getElementById('tracking-status-input');
+        if (inp) inp.value = statusKey;
+        
+        document.querySelectorAll('.st-quick-status-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.classList.contains('st-btn-' + statusKey)) {
+                btn.classList.add('active');
+            }
+        });
+
+        const rangeFields = document.getElementById('tracking-range-fields');
+        if (rangeFields) {
+            rangeFields.style.display = statusKey === 'active' ? 'none' : '';
         }
     },
 

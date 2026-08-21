@@ -56,6 +56,40 @@ const StaffPage = {
         App.renderCurrentPage();
     },
 
+    _renderRoleBadge(role) {
+        if (!role) return '';
+        if (role.includes('Trưởng khoa') && !role.includes('Phó')) {
+            return `<span class="badge badge-chief">👑 ${role}</span>`;
+        }
+        if (role.includes('Phó trưởng khoa')) {
+            return `<span class="badge badge-deputy">👑 ${role}</span>`;
+        }
+        if (role.includes('Điều dưỡng trưởng')) {
+            return `<span class="badge badge-nurse-lead">👑 ${role}</span>`;
+        }
+        if (role.includes('Bác sĩ chính') || role.includes('BS chính')) {
+            return `<span class="badge badge-primary">${role}</span>`;
+        }
+        if (role.includes('học viên') || role.includes('BSNT')) {
+            return `<span class="badge badge-indigo">${role}</span>`;
+        }
+        if (role.includes('Điều dưỡng') || role.includes('ĐD')) {
+            return `<span class="badge badge-teal">${role}</span>`;
+        }
+        if (role.includes('Hộ lý')) {
+            return `<span class="badge badge-amber">${role}</span>`;
+        }
+        if (role.includes('Thư ký')) {
+            return `<span class="badge badge-purple">${role}</span>`;
+        }
+        return `<span class="badge badge-primary">${role}</span>`;
+    },
+
+    clearSearch() {
+        this.searchQuery = '';
+        App.renderCurrentPage();
+    },
+
     // ===== INTERNAL STAFF TAB =====
     renderInternal() {
         const allStaff = Store.getAll('staff');
@@ -82,66 +116,139 @@ const StaffPage = {
         };
 
         return `
-        <div class="flex justify-between items-center">
-            <div class="staff-filters">
-                ${roleDefs.map(r => {
-            const cnt = getCatStaff(r.key).length;
-            return `<button class="filter-btn ${this.currentFilter === r.key ? 'active' : ''}" onclick="StaffPage.setFilter('${r.key}')">${r.label} (${cnt})</button>`;
-        }).join('')}
+        <div class="staff-header-controls">
+            <div class="staff-filters-scroll">
+                <div class="staff-filters">
+                    ${roleDefs.map(r => {
+                        const cnt = getCatStaff(r.key).length;
+                        return `<button class="filter-btn ${this.currentFilter === r.key ? 'active' : ''}" onclick="StaffPage.setFilter('${r.key}')">${r.label} (${cnt})</button>`;
+                    }).join('')}
+                </div>
             </div>
             <div class="staff-toolbar-mid">
                 <div class="search-box">
                     ${Utils.searchIcon()}
-                    <input type="text" placeholder="Tìm nhân sự..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
+                    <input type="text" placeholder="Tìm nhân sự, SĐT, vai trò..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
+                    ${this.searchQuery ? `<button class="search-clear-btn" onclick="StaffPage.clearSearch()" title="Xóa">✕</button>` : ''}
                 </div>
-                ${isAdmin ? `<button class="btn btn-primary" onclick="StaffPage.openForm()">
-                    ${Utils.plusIcon()} Thêm
+                ${isAdmin ? `<button class="btn btn-primary btn-add-staff" onclick="StaffPage.openForm()">
+                    ${Utils.plusIcon()} <span>Thêm</span>
                 </button>` : ''}
             </div>
         </div>
 
-        <div class="card staff-table-card">
-            <table>
+        <!-- 1. DESKTOP VIEW: Bảng dữ liệu Y tế cao cấp (≥ 768px) -->
+        <div class="card staff-table-card staff-desktop-view">
+            <table class="staff-table">
                 <thead>
                     <tr>
-                        <th>Họ tên</th>
-                        <th>Ngày sinh</th>
-                        <th>Chức danh</th>
-                        <th>Vai trò</th>
-                        <th>Điện thoại</th>
-                        <th>Email</th>
+                        <th class="th-name">Họ tên</th>
+                        <th class="th-dob">Ngày sinh</th>
+                        <th class="th-title">Chức danh</th>
+                        <th class="th-role">Vai trò</th>
+                        <th class="th-phone">Điện thoại</th>
+                        <th class="th-email">Email</th>
                         <th class="th-action">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${staff.length ? staff.map(s => {
-            return `
-                    <tr>
-                        <td>
-                            <div class="staff-name-cell">
-                                <div class="staff-avatar-sm" style="background:${s.color}">${Utils.getInitials(s.name)}</div>
-                                <span class="staff-fullname">${s.name}</span>
-                            </div>
-                        </td>
-                        <td class="td-muted-sm">${s.dob ? Utils.formatDate(s.dob) : '—'}</td>
-                        <td>${s.title}</td>
-                        <td><span class="badge badge-primary">${s.role}</span></td>
-                        <td class="td-muted">${s.phone || '—'}</td>
-                        <td class="td-muted-sm">${s.email || '—'}</td>
-                        <td>
-                            <div class="staff-actions">
-                                ${isAdmin ? `
-                                <button class="btn-icon" onclick="StaffPage.openForm(${s.id})" title="Sửa" aria-label="Sửa thông tin nhân sự ${(s.name || '').replace(/"/g, '&quot;')}">${Utils.editIcon()}</button>
-                                <button class="btn-icon" onclick="StaffPage.delete(${s.id})" title="Xoá" aria-label="Xoá nhân sự ${(s.name || '').replace(/"/g, '&quot;')}">${Utils.deleteIcon()}</button>
-                                ` : (s.id === myStaffId ? `
-                                <button class="btn-icon" onclick="StaffPage.openContactForm(${s.id})" title="Cập nhật SĐT / Email" aria-label="Cập nhật SĐT và Email của ${(s.name || '').replace(/"/g, '&quot;')}">${Utils.editIcon()}</button>
-                                ` : '')}
-                            </div>
-                        </td>
-                    </tr>`;
-        }).join('') : `<tr><td colspan="7"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
+                        const eff = this.getEffectiveStatus(s, today);
+                        return `
+                        <tr>
+                            <td>
+                                <div class="staff-name-cell">
+                                    <div class="staff-avatar-sm" style="background:${s.color}">${Utils.getInitials(s.name)}</div>
+                                    <div class="staff-name-col">
+                                        <span class="staff-fullname">${s.name}</span>
+                                        ${eff.status !== 'active' ? `<span class="staff-status-inline-tag ${eff.status}">${STAFF_STATUSES[eff.status]?.abbr || ''}</span>` : ''}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="td-muted-sm">${s.dob ? Utils.formatDate(s.dob) : '—'}</td>
+                            <td class="td-title-cell">${s.title || '—'}</td>
+                            <td>${this._renderRoleBadge(s.role)}</td>
+                            <td>
+                                ${s.phone ? `<a href="tel:${s.phone}" class="staff-contact-link phone" title="Gọi ${s.phone}">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    <span>${s.phone}</span>
+                                </a>` : '<span class="td-muted">—</span>'}
+                            </td>
+                            <td>
+                                ${s.email ? `<a href="mailto:${s.email}" class="staff-contact-link email" title="Gửi mail ${s.email}">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                    <span>${s.email}</span>
+                                </a>` : '<span class="td-muted">—</span>'}
+                            </td>
+                            <td>
+                                <div class="staff-actions">
+                                    ${isAdmin ? `
+                                    <button class="btn-icon" onclick="StaffPage.openForm(${s.id})" title="Sửa" aria-label="Sửa">${Utils.editIcon()}</button>
+                                    <button class="btn-icon btn-danger-icon" onclick="StaffPage.delete(${s.id})" title="Chuyển rời khoa" aria-label="Rời khoa">${Utils.deleteIcon()}</button>
+                                    ` : (s.id === myStaffId ? `
+                                    <button class="btn-icon" onclick="StaffPage.openContactForm(${s.id})" title="Cập nhật SĐT / Email">${Utils.editIcon()}</button>
+                                    ` : '')}
+                                </div>
+                            </td>
+                        </tr>`;
+                    }).join('') : `<tr><td colspan="7"><div class="empty-state"><p>Không tìm thấy nhân sự</p></div></td></tr>`}
                 </tbody>
             </table>
+        </div>
+
+        <!-- 2. MOBILE VIEW: Danh sách Thẻ nhân sự Hiện đại (< 768px) -->
+        <div class="staff-mobile-cards mobile-only">
+            ${staff.length ? staff.map(s => {
+                const eff = this.getEffectiveStatus(s, today);
+                return `
+                <div class="staff-card-item">
+                    <div class="staff-card-top">
+                        <div class="staff-avatar-md" style="background:${s.color}">
+                            ${Utils.getInitials(s.name)}
+                        </div>
+                        <div class="staff-card-main-info">
+                            <div class="staff-card-name-row">
+                                <span class="staff-card-fullname">${s.name}</span>
+                                ${eff.status !== 'active' ? `<span class="staff-card-status-badge ${eff.status}">${STAFF_STATUSES[eff.status]?.abbr || ''}</span>` : ''}
+                            </div>
+                            <div class="staff-card-sub-info">
+                                ${s.title ? `<span class="staff-card-title-pill">${s.title}</span>` : ''}
+                                ${this._renderRoleBadge(s.role)}
+                            </div>
+                        </div>
+                        <div class="staff-card-menu-actions">
+                            ${isAdmin ? `
+                            <button class="btn-icon-sm" onclick="StaffPage.openForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
+                            <button class="btn-icon-sm btn-danger-icon" onclick="StaffPage.delete(${s.id})" title="Xoá">${Utils.deleteIcon()}</button>
+                            ` : (s.id === myStaffId ? `
+                            <button class="btn-icon-sm" onclick="StaffPage.openContactForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
+                            ` : '')}
+                        </div>
+                    </div>
+
+                    <div class="staff-card-bottom-row">
+                        <div class="staff-card-details">
+                            ${s.dob ? `
+                            <div class="staff-card-detail-item">
+                                <span class="staff-detail-icon">🎂</span>
+                                <span class="staff-detail-val">${Utils.formatDate(s.dob)}</span>
+                            </div>` : ''}
+                        </div>
+                        <div class="staff-card-quick-actions">
+                            ${s.phone ? `
+                            <a href="tel:${s.phone}" class="staff-card-action-pill phone" title="Gọi ${s.phone}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>${s.phone}</span>
+                            </a>` : ''}
+                            ${s.email ? `
+                            <a href="mailto:${s.email}" class="staff-card-action-pill email" title="Gửi mail ${s.email}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                <span>Email</span>
+                            </a>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('') : `<div class="empty-state"><p>Không tìm thấy nhân sự</p></div>`}
         </div>
         `;
     },
@@ -155,34 +262,36 @@ const StaffPage = {
         let filtered = doctors;
         if (this.searchQuery) {
             const q = this._normalize(this.searchQuery);
-            filtered = doctors.filter(d => this._normalize(d.name).includes(q) || this._normalize(d.department || '').includes(q));
+            filtered = doctors.filter(d => this._normalize(d.name).includes(q) || this._normalize(d.department || '').includes(q) || this._normalize(d.position || '').includes(q));
         }
 
         return `
-        <div class="flex justify-between items-center">
+        <div class="staff-header-controls">
             <div class="staff-filters">
-                <span class="guest-staff-note">Danh sách bác sĩ ngoài khoa hỗ trợ phẫu thuật</span>
+                <span class="guest-staff-note">Danh sách bác sĩ ngoài khoa hỗ trợ phẫu thuật (${filtered.length})</span>
             </div>
             <div class="staff-toolbar-mid">
                 <div class="search-box">
                     ${Utils.searchIcon()}
                     <input type="text" placeholder="Tìm BS ngoài khoa..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
+                    ${this.searchQuery ? `<button class="search-clear-btn" onclick="StaffPage.clearSearch()" title="Xóa">✕</button>` : ''}
                 </div>
-                ${isAdmin ? `<button class="btn btn-primary" onclick="StaffPage.openExternalForm()">
-                    ${Utils.plusIcon()} Thêm BS
+                ${isAdmin ? `<button class="btn btn-primary btn-add-staff" onclick="StaffPage.openExternalForm()">
+                    ${Utils.plusIcon()} <span>Thêm BS</span>
                 </button>` : ''}
             </div>
         </div>
 
-        <div class="card staff-table-card">
-            <table>
+        <!-- Desktop Table -->
+        <div class="card staff-table-card staff-desktop-view">
+            <table class="staff-table">
                 <thead>
                     <tr>
                         <th class="th-stt">STT</th>
-                        <th>Họ tên</th>
-                        <th>Học vị</th>
-                        <th>Chức vụ</th>
-                        <th>Khoa / Phòng</th>
+                        <th class="th-name">Họ tên</th>
+                        <th class="th-title">Học vị</th>
+                        <th class="th-role">Chức vụ</th>
+                        <th class="th-dept">Khoa / Phòng</th>
                         <th>Ghi chú</th>
                         ${isAdmin ? '<th class="th-action">Thao tác</th>' : ''}
                     </tr>
@@ -197,20 +306,49 @@ const StaffPage = {
                                 <span class="staff-fullname">${d.name}</span>
                             </div>
                         </td>
-                        <td>${d.title || '—'}</td>
+                        <td class="td-title-cell">${d.title || '—'}</td>
                         <td><span class="badge badge-primary">${d.position || '—'}</span></td>
                         <td class="td-secondary">${d.department || '—'}</td>
                         <td class="td-muted-sm">${d.note || '—'}</td>
                         ${isAdmin ? `<td>
                             <div class="staff-actions">
                                 <button class="btn-icon" onclick="StaffPage.openExternalForm(${d.id})" title="Sửa">${Utils.editIcon()}</button>
-                                <button class="btn-icon" onclick="StaffPage.deleteExternal(${d.id})" title="Xoá">${Utils.deleteIcon()}</button>
+                                <button class="btn-icon btn-danger-icon" onclick="StaffPage.deleteExternal(${d.id})" title="Xoá">${Utils.deleteIcon()}</button>
                             </div>
                         </td>` : ''}
-                    </tr>
-                    `).join('') : `<tr><td colspan="${isAdmin ? 7 : 6}"><div class="empty-state"><p>Chưa có BS ngoài khoa</p></div></td></tr>`}
+                    </tr>`).join('') : `<tr><td colspan="${isAdmin ? 7 : 6}"><div class="empty-state"><p>Chưa có BS ngoài khoa</p></div></td></tr>`}
                 </tbody>
             </table>
+        </div>
+
+        <!-- Mobile Cards -->
+        <div class="staff-mobile-cards mobile-only">
+            ${filtered.length ? filtered.map(d => `
+            <div class="staff-card-item">
+                <div class="staff-card-top">
+                    <div class="staff-avatar-md" style="background:${d.color || '#6366f1'}">${Utils.getInitials(d.name)}</div>
+                    <div class="staff-card-main-info">
+                        <div class="staff-card-name-row">
+                            <span class="staff-card-fullname">${d.name}</span>
+                        </div>
+                        <div class="staff-card-sub-info">
+                            ${d.title ? `<span class="staff-card-title-pill">${d.title}</span>` : ''}
+                            ${d.position ? `<span class="badge badge-primary">${d.position}</span>` : ''}
+                        </div>
+                    </div>
+                    ${isAdmin ? `
+                    <div class="staff-card-menu-actions">
+                        <button class="btn-icon-sm" onclick="StaffPage.openExternalForm(${d.id})" title="Sửa">${Utils.editIcon()}</button>
+                        <button class="btn-icon-sm btn-danger-icon" onclick="StaffPage.deleteExternal(${d.id})" title="Xoá">${Utils.deleteIcon()}</button>
+                    </div>` : ''}
+                </div>
+                <div class="staff-card-bottom-row">
+                    <div class="staff-card-details">
+                        ${d.department ? `<div class="staff-card-detail-item"><span>🏥 ${d.department}</span></div>` : ''}
+                        ${d.note ? `<div class="staff-card-detail-item"><span>📝 ${d.note}</span></div>` : ''}
+                    </div>
+                </div>
+            </div>`).join('') : `<div class="empty-state"><p>Chưa có BS ngoài khoa</p></div>`}
         </div>
         `;
     },
@@ -658,20 +796,21 @@ const StaffPage = {
         const isAdmin = Auth.getSession()?.isAdmin;
 
         return `
-        <div class="flex justify-between items-center">
+        <div class="staff-header-controls">
             <div class="staff-filters">
-                <span style="color:var(--text-muted);font-size:0.85rem;padding:6px 12px">Nhân sự đã rời khoa — có thể khôi phục</span>
+                <span class="guest-staff-note">Nhân sự đã rời khoa (${departed.length}) — có thể khôi phục</span>
             </div>
         </div>
 
-        <div class="card staff-table-card">
-            <table>
+        <!-- Desktop Table -->
+        <div class="card staff-table-card staff-desktop-view">
+            <table class="staff-table">
                 <thead>
                     <tr>
                         <th class="th-stt">STT</th>
-                        <th>Họ tên</th>
-                        <th>Chức danh</th>
-                        <th>Vai trò</th>
+                        <th class="th-name">Họ tên</th>
+                        <th class="th-title">Chức danh</th>
+                        <th class="th-role">Vai trò cũ</th>
                         <th>Ngày rời</th>
                         ${isAdmin ? '<th class="th-action-wide">Thao tác</th>' : ''}
                     </tr>
@@ -686,7 +825,7 @@ const StaffPage = {
                                 <span class="staff-fullname">${s.name}</span>
                             </div>
                         </td>
-                        <td>${s.title || '—'}</td>
+                        <td class="td-title-cell">${s.title || '—'}</td>
                         <td><span class="badge badge-departed">${s.role}</span></td>
                         <td class="td-muted-sm">${s.departedDate || '—'}</td>
                         ${isAdmin ? `<td>
@@ -698,6 +837,35 @@ const StaffPage = {
                     </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Không có nhân sự rời khoa</p></div></td></tr>`}
                 </tbody>
             </table>
+        </div>
+
+        <!-- Mobile Cards -->
+        <div class="staff-mobile-cards mobile-only">
+            ${departed.length ? departed.map((s, idx) => `
+            <div class="staff-card-item departed-card">
+                <div class="staff-card-top">
+                    <div class="staff-avatar-md" style="background:${s.color || '#94a3b8'};filter:grayscale(50%)">${Utils.getInitials(s.name)}</div>
+                    <div class="staff-card-main-info">
+                        <div class="staff-card-name-row">
+                            <span class="staff-card-fullname">${s.name}</span>
+                        </div>
+                        <div class="staff-card-sub-info">
+                            ${s.title ? `<span class="staff-card-title-pill">${s.title}</span>` : ''}
+                            <span class="badge badge-departed">${s.role}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="staff-card-bottom-row">
+                    <div class="staff-card-details">
+                        <div class="staff-card-detail-item"><span>📅 Rời: ${s.departedDate || '—'}</span></div>
+                    </div>
+                    ${isAdmin ? `
+                    <div class="staff-card-quick-actions">
+                        <button class="btn btn-sm btn-restore" onclick="StaffPage.restoreStaff(${idx})">♻️ Khôi phục</button>
+                        <button class="btn-icon-sm btn-danger-icon" onclick="StaffPage.deletePermanent(${idx})" title="Xóa vĩnh viễn">${Utils.deleteIcon()}</button>
+                    </div>` : ''}
+                </div>
+            </div>`).join('') : `<div class="empty-state"><p>Không có nhân sự rời khoa</p></div>`}
         </div>
         `;
     },

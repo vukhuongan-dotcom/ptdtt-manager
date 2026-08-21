@@ -348,40 +348,24 @@
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        padding: 3px;
     }
     .staff-subtab {
-        padding: 8px 14px;
-        font-size: 0.78rem;
+        padding: 8px 12px;
+        font-size: 0.76rem;
         white-space: nowrap;
+        flex-shrink: 0;
     }
-    .staff-filters {
-        flex-wrap: wrap;
-        gap: 6px;
+    .staff-desktop-view {
+        display: none !important;
     }
-    .filter-btn {
-        padding: 6px 12px;
-        font-size: 0.75rem;
-    }
-    .staff-name-cell {
-        gap: 8px;
+    .staff-mobile-cards {
+        display: flex !important;
+        flex-direction: column;
+        gap: 10px;
     }
     .staff-fullname {
-        white-space: normal;
-        word-break: break-word;
-    }
-
-    /* Staff table: bọc overflow để tên không bị squeeze dọc */
-    .staff-table-card {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    .staff-table-card table {
-        min-width: 540px;   /* đủ chỗ 6 cột, scroll ngang khi cần */
-    }
-    /* Ẩn cột Email trên mobile để table gọn hơn */
-    .staff-table-card th:nth-child(5),
-    .staff-table-card td:nth-child(5) {
-        display: none;
+        white-space: nowrap;
     }
 
     /* ===== RESEARCH / SHCM ===== */
