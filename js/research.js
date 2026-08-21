@@ -106,11 +106,15 @@ const ResearchPage = {
         <!-- Settings (admin only) -->
         ${canEdit ? `<div class="card rsch-settings-card">
             <div class="rsch-settings-row">
-                <span class="rsch-settings-label">⚙️ Giờ mặc định:</span>
-                <input type="time" class="form-input rsch-time-input" id="shcm-default-time" value="${settings.defaultTime}">
-                <span class="rsch-settings-label">Thời lượng:</span>
-                <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
-                <span class="rsch-settings-unit">phút</span>
+                <div class="rsch-settings-group">
+                    <span class="rsch-settings-label">⚙️ Giờ mặc định:</span>
+                    <input type="time" class="form-input rsch-time-input" id="shcm-default-time" value="${settings.defaultTime}">
+                </div>
+                <div class="rsch-settings-group">
+                    <span class="rsch-settings-label">Thời lượng:</span>
+                    <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
+                    <span class="rsch-settings-unit">phút</span>
+                </div>
                 <button class="btn btn-secondary btn-sm" onclick="ResearchPage.saveSettings()" aria-label="Lưu cài đặt giờ sinh hoạt chuyên môn">Lưu</button>
             </div>
         </div>` : ''}

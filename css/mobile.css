@@ -409,15 +409,32 @@
     .rsch-stat-card { padding: 10px 12px; }
     .rsch-stat-val { font-size: 1.35rem; }
     .rsch-stat-lbl { font-size: 0.72rem; }
-    .rsch-settings-card { padding: 10px 12px !important; }
     .rsch-settings-row {
         flex-direction: row;
         align-items: center;
         flex-wrap: wrap;
+        gap: 10px;
+    }
+    .rsch-settings-group {
+        display: inline-flex;
+        align-items: center;
         gap: 6px;
     }
-    .rsch-time-input { width: 100px !important; }
-    .rsch-dur-input { width: 56px !important; }
+    .rsch-time-input {
+        width: 135px !important;
+        min-width: 130px !important;
+        padding: 6px 8px !important;
+        font-size: 0.85rem !important;
+        box-sizing: border-box;
+    }
+    .rsch-dur-input {
+        width: 75px !important;
+        min-width: 70px !important;
+        padding: 6px 8px !important;
+        font-size: 0.85rem !important;
+        text-align: center;
+        box-sizing: border-box;
+    }
     .rsch-controls-bar {
         flex-direction: column;
         align-items: stretch;
