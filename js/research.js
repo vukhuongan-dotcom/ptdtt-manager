@@ -41,6 +41,7 @@ const ResearchPage = {
 
     render() {
         const canEdit = this._canEdit();
+        const isSuperAdmin = (typeof App !== 'undefined' && App.isSuperAdmin) ? App.isSuperAdmin() : false;
         const allItems = Store.getAll('shcmSchedule').sort((a, b) => {
             if (a.presentDate && b.presentDate) return a.presentDate.localeCompare(b.presentDate);
             return a.id - b.id;
@@ -169,6 +170,7 @@ const ResearchPage = {
                                 const d = item.presentDate ? new Date(item.presentDate) : null;
                                 const dateLabel = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '—';
                                 const initials = Utils.getInitials(item.doctorName || 'BS');
+                                const isDone = item.status === 'done';
                                 return `<tr class="rsch-row rsch-row-${item.status}">
                                     <td class="rsch-stt">${idx + 1}</td>
                                     <td class="rsch-doctor">
@@ -181,8 +183,12 @@ const ResearchPage = {
                                     <td><span class="rsch-badge rsch-badge-${item.status}">${st.icon} ${st.label}</span></td>
                                     <td class="rsch-date">${dateLabel}</td>
                                     ${canEdit ? `<td class="rsch-actions">
-                                        <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">✏️</button>
-                                        <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
+                                        ${(isDone && !isSuperAdmin) ? `
+                                            <span class="rsch-locked-pill" title="Bài đã trình đã khoá — Chỉ Super Admin mới được sửa/xoá">🔒 Đã khoá</span>
+                                        ` : `
+                                            <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">✏️</button>
+                                            <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
+                                        `}
                                     </td>` : ''}
                                 </tr>`;
                             }).join('')}
@@ -202,6 +208,7 @@ const ResearchPage = {
                     const d = item.presentDate ? new Date(item.presentDate) : null;
                     const dateLabel = d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : 'Chưa định ngày';
                     const initials = Utils.getInitials(item.doctorName || 'BS');
+                    const isDone = item.status === 'done';
                     return `
                     <div class="rsch-card-item rsch-card-${item.status}">
                         <div class="rsch-card-header">
@@ -222,8 +229,12 @@ const ResearchPage = {
                             </div>
                             ${canEdit ? `
                             <div class="rsch-card-actions">
-                                <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="Sửa">✏️</button>
-                                <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="Xoá">🗑️</button>
+                                ${(isDone && !isSuperAdmin) ? `
+                                    <span class="rsch-locked-pill" title="Bài đã trình đã khoá — Chỉ Super Admin mới được sửa/xoá">🔒 Đã khoá</span>
+                                ` : `
+                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}">✏️</button>
+                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}">🗑️</button>
+                                `}
                             </div>
                             ` : ''}
                         </div>
@@ -274,10 +285,10 @@ const ResearchPage = {
         if (changed > 0) console.log(`[SHCM] Auto-transitioned ${changed} registered → pending`);
     },
 
-    // Auto-dedup: shift items with duplicate dates +14 days
+    // Auto-dedup: shift items with duplicate dates +14 days (ONLY for pending/registered, never touch done)
     _autoDedupDates() {
         const items = Store.getAll('shcmSchedule')
-            .filter(i => i.presentDate)
+            .filter(i => i.presentDate && i.status !== 'done')
             .sort((a, b) => a.presentDate.localeCompare(b.presentDate) || a.id - b.id);
         const seen = new Map(); // date → first item id
         let shifted = 0;
@@ -321,12 +332,25 @@ const ResearchPage = {
     openForm(id) {
         if (!this._canEdit()) return;
         const item = id ? Store.getById('shcmSchedule', id) : null;
+        const isSuperAdmin = (typeof App !== 'undefined' && App.isSuperAdmin) ? App.isSuperAdmin() : false;
+
+        if (item && item.status === 'done' && !isSuperAdmin) {
+            Toast.warning('🔒 Bài đã trình đã bị khoá. Chỉ Super Admin mới có quyền chỉnh sửa hoặc xoá.');
+            return;
+        }
+
         const staff = Store.getAll('staff').filter(s =>
             s.role.includes('Bác sĩ') || s.role.includes('Trưởng khoa') || s.role.includes('Phó trưởng khoa')
         );
 
-        Modal.open(item ? 'Sửa bài SHCM' : 'Thêm bài SHCM', `
+        Modal.open(item ? (item.status === 'done' ? 'Sửa bài SHCM (Super Admin)' : 'Sửa bài SHCM') : 'Thêm bài SHCM', `
             <form onsubmit="ResearchPage.save(event, ${id || 0})">
+                ${(item && item.status === 'done') ? `
+                    <div class="alert alert-warning mb-12" style="padding:8px 12px;font-size:0.82rem;display:flex;align-items:center;gap:6px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.3);border-radius:8px;color:#d97706;margin-bottom:14px">
+                        <span>🔒</span>
+                        <span><strong>Lưu ý:</strong> Bài báo cáo này đã hoàn thành trình bày (Đã trình). Bạn đang sửa với quyền Super Admin.</span>
+                    </div>
+                ` : ''}
                 <div class="form-group">
                     <label class="form-label">Bác sĩ trình bày</label>
                     <select class="form-select" name="doctorId" required>
@@ -362,7 +386,7 @@ const ResearchPage = {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    ${item ? `<button type="button" class="btn btn-danger" onclick="ResearchPage.deleteItem(${id});Modal.close()">Xoá</button>` : ''}
+                    ${(item && (!item.status || item.status !== 'done' || isSuperAdmin)) ? `<button type="button" class="btn btn-danger" onclick="ResearchPage.deleteItem(${id});Modal.close()">Xoá</button>` : ''}
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">${item ? 'Cập nhật' : 'Thêm'}</button>
                 </div>
@@ -397,6 +421,14 @@ const ResearchPage = {
     save(e, id) {
         if (!this._canEdit()) return;
         e.preventDefault();
+        const oldItem = id ? Store.getById('shcmSchedule', id) : null;
+        const isSuperAdmin = (typeof App !== 'undefined' && App.isSuperAdmin) ? App.isSuperAdmin() : false;
+
+        if (oldItem && oldItem.status === 'done' && !isSuperAdmin) {
+            Toast.error('⛔ Bài đã trình đã bị khoá. Chỉ Super Admin mới có quyền chỉnh sửa.');
+            return;
+        }
+
         const f = new FormData(e.target);
         const doctorId = parseInt(f.get('doctorId'));
         const staff = Store.getAll('staff').find(s => s.id === doctorId);
@@ -424,7 +456,6 @@ const ResearchPage = {
 
         if (id) {
             // Check if date changed — cascade subsequent items
-            const oldItem = Store.getById('shcmSchedule', id);
             Store.update('shcmSchedule', id, data);
             if (data.presentDate && oldItem && oldItem.presentDate !== data.presentDate && id >= 12) {
                 this._cascadeFrom(id, data.presentDate);
@@ -442,13 +473,13 @@ const ResearchPage = {
 
         Modal.close();
         App.renderCurrentPage();
-        Toast.success(id ? 'Đã cập nhật (lịch sau tự điều chỉnh +2 tuần)' : 'Đã thêm bài SHCM mới (lịch sau tự dời +2 tuần)');
+        Toast.success(id ? 'Đã cập nhật bài SHCM' : 'Đã thêm bài SHCM mới (lịch sau tự dời +2 tuần)');
     },
 
-    // When a date is changed for items #12+, recalculate all subsequent items +14 days each
+    // When a date is changed for items #12+, recalculate all subsequent items +14 days each (excluding done items)
     _cascadeFrom(changedId, newDate) {
         const items = Store.getAll('shcmSchedule')
-            .filter(i => i.id >= 12)
+            .filter(i => i.status !== 'done')
             .sort((a, b) => a.id - b.id);
 
         const idx = items.findIndex(i => i.id === changedId);
@@ -479,13 +510,13 @@ const ResearchPage = {
         }
     },
 
-    // Shift all SHCM entries after insertedDate forward by 2 weeks (for new items)
+    // Shift all SHCM entries after insertedDate forward by 2 weeks (excluding done items)
     _shiftSubsequentDates(newItemId, insertedDate) {
         const items = Store.getAll('shcmSchedule');
         let shifted = 0;
         items.forEach(item => {
             if (item.id === newItemId) return;
-            if (!item.presentDate) return;
+            if (!item.presentDate || item.status === 'done') return;
             if (item.presentDate >= insertedDate) {
                 const d = new Date(item.presentDate);
                 d.setDate(d.getDate() + 14);
@@ -504,9 +535,18 @@ const ResearchPage = {
 
     async deleteItem(id) {
         if (!this._canEdit()) return;
+        const item = Store.getById('shcmSchedule', id);
+        if (!item) return;
+        const isSuperAdmin = (typeof App !== 'undefined' && App.isSuperAdmin) ? App.isSuperAdmin() : false;
+
+        if (item.status === 'done' && !isSuperAdmin) {
+            Toast.error('⛔ Bài đã trình đã bị khoá. Chỉ Super Admin mới có quyền xoá.');
+            return;
+        }
+
         const confirmed = await Confirm.show({
             title: 'Xoá bài SHCM',
-            message: 'Bạn có chắc chắn muốn xoá bài SHCM này?<br>Hành động này không thể hoàn tác.',
+            message: `Bạn có chắc chắn muốn xoá bài SHCM "${item.title}"?<br>Hành động này không thể hoàn tác.`,
             icon: '🗑️',
             type: 'danger',
             confirmText: 'Xoá bài',
@@ -514,8 +554,7 @@ const ResearchPage = {
         });
         if (!confirmed) return;
         // Remove linked plan
-        const item = Store.getById('shcmSchedule', id);
-        if (item?.planId) {
+        if (item.planId) {
             Store.remove('plans', item.planId);
         }
         Store.remove('shcmSchedule', id);

@@ -220,6 +220,28 @@
     border-color: rgba(192, 132, 252, 0.35);
 }
 
+/* Locked presentation pill */
+.rsch-locked-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-tertiary, rgba(148, 163, 184, 0.12));
+    border: 1px solid var(--border);
+    cursor: not-allowed;
+    user-select: none;
+    white-space: nowrap;
+}
+[data-theme="dark"] .rsch-locked-pill {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
 /* Mobile Cards View */
 .rsch-mobile-cards {
     display: none;
