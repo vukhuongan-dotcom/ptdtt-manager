@@ -33,13 +33,30 @@ const DashboardPage = {
         const typeBreakdown = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateTypeBreakdown(allRecentCases) : { yeucauPct: 0, chuongtrinhPct: 0, robotPct: 0, bankhanPct: 0, yeucau: 0, chuongtrinh: 0, robot: 0, bankhan: 0 };
         const avgMonthly = recentMonths.length > 0 ? (totalRecentCases / recentMonths.length).toFixed(1) : 0;
 
-        // Inpatient Flow (Widget 3) from latest reports7h & reports16h
-        const latest16h = [...reports16h].filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date))[0] || {};
-        const latest7h = [...reports7h].filter(r => r.totalPatients).sort((a,b) => b.date.localeCompare(a.date))[0] || {};
-        const currentInpatients = latest16h.totalPatients || latest7h.totalPatients || 0;
+        // Inpatient Flow (Widget 3) from latest reports7h & reports16h (strictly chronological)
+        const valid16h = [...reports16h].filter(r => r && r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
+        const valid7h = [...reports7h].filter(r => r && r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
+        const latest16h = valid16h[0] || {};
+        const latest7h = valid7h[0] || {};
+
+        // Compare chronological timestamps (7h is 07:00, 16h is 16:00)
+        let latestReport = null;
+        if (latest16h.date && latest7h.date) {
+            const time16 = `${latest16h.date} 16:00`;
+            const time7 = `${latest7h.date} 07:00`;
+            latestReport = (time16 >= time7) 
+                ? { ...latest16h, type: '16h', typeLabel: 'Báo cáo 16h', shortLabel: `16h · ${Utils.formatDateShort(latest16h.date)}` }
+                : { ...latest7h, type: '7h', typeLabel: 'Báo cáo 7h', shortLabel: `7h · ${Utils.formatDateShort(latest7h.date)}` };
+        } else if (latest16h.date) {
+            latestReport = { ...latest16h, type: '16h', typeLabel: 'Báo cáo 16h', shortLabel: `16h · ${Utils.formatDateShort(latest16h.date)}` };
+        } else if (latest7h.date) {
+            latestReport = { ...latest7h, type: '7h', typeLabel: 'Báo cáo 7h', shortLabel: `7h · ${Utils.formatDateShort(latest7h.date)}` };
+        }
+
+        const currentInpatients = latestReport?.totalPatients || 0;
         const newAdmissions = latest16h.admissions || 0;
         const discharges = latest16h.discharges || 0;
-        const fromHSCC = (latest7h.fromHSCC || 0) + (latest7h.fromHoiTinh || 0);
+        const fromHSCC = (latest7h.fromHSCC || 0) + (latest7h.fromHoiTinh || 0) + (latest7h.fromICU || 0) + (latest7h.fromGiaiAp || 0);
 
         // Duty staff
         const todayDutyKhoa = this.getTodayDutyByGroup(staff, today, 'khoa');
@@ -114,7 +131,7 @@ const DashboardPage = {
                     </div>
                 </div>
                 <div class="stat-value">${currentInpatients > 0 ? currentInpatients : '—'}</div>
-                <div class="stat-change">📋 ${latest16h.date ? 'BC 16h ' + Utils.formatDateShort(latest16h.date) : (latest7h.date ? 'BC 7h ' + Utils.formatDateShort(latest7h.date) : 'Đang cập nhật')}</div>
+                <div class="stat-change">📋 ${latestReport ? latestReport.shortLabel : 'Đang cập nhật'}</div>
             </div>
 
             <div class="stat-card slide-up" style="animation-delay:0.1s">
@@ -287,7 +304,7 @@ const DashboardPage = {
                 <div class="widget-card bed-flow-widget">
                     <div class="widget-header-flex">
                         <h3 class="widget-title mb-0">🛏️ Lưu chuyển Buồng bệnh</h3>
-                        <span class="badge badge-info">${latest16h.date ? Utils.formatDateShort(latest16h.date) : 'Hôm nay'}</span>
+                        <span class="badge badge-info">${latestReport ? latestReport.shortLabel : 'Hôm nay'}</span>
                     </div>
 
                     <div class="bed-flow-grid">
