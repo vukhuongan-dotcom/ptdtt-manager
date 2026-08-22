@@ -160,17 +160,30 @@ const GlobalSearch = {
             }
         });
 
-        // Search tasks
-        const tasks = Store.getAll('tasks');
-        tasks.forEach(t => {
-            if (this.normalize(t.title).includes(nq) || this.normalize(t.desc || '').includes(nq)) {
-                const statusLabels = { todo: 'Chờ', doing: 'Đang làm', done: 'Hoàn thành' };
+        // Search SHCM (Research)
+        const shcm = Store.getAll('shcmSchedule') || [];
+        shcm.forEach(s => {
+            if (this.normalize(s.title || '').includes(nq) || this.normalize(s.doctorName || '').includes(nq)) {
                 results.push({
-                    type: 'task', icon: '📋', iconBg: '#f59e0b20',
-                    name: t.title,
-                    detail: t.desc || '',
-                    badge: statusLabels[t.status] || t.status, badgeBg: '#f59e0b20', badgeColor: '#d97706',
-                    action: () => { App.navigateTo('tasks'); }
+                    type: 'research', icon: '🔬', iconBg: '#0891b220',
+                    name: s.title,
+                    detail: `${s.doctorName || 'BS'} · ${s.presentDate || 'Chưa định ngày'}`,
+                    badge: s.status === 'done' ? 'Đã trình' : 'SHCM', badgeBg: '#0891b220', badgeColor: '#0891b2',
+                    action: () => { App.navigateTo('research'); }
+                });
+            }
+        });
+
+        // Search Plans
+        const plans = Store.getAll('plans') || [];
+        plans.forEach(p => {
+            if (this.normalize(p.title || '').includes(nq) || this.normalize(p.note || '').includes(nq)) {
+                results.push({
+                    type: 'plan', icon: '📅', iconBg: '#f59e0b20',
+                    name: p.title,
+                    detail: `${p.date || ''} ${p.time || ''} · ${p.location || ''} ${p.note ? '— ' + p.note : ''}`,
+                    badge: 'Kế hoạch', badgeBg: '#f59e0b20', badgeColor: '#d97706',
+                    action: () => { App.navigateTo('plans'); }
                 });
             }
         });
@@ -181,12 +194,13 @@ const GlobalSearch = {
             { name: 'Nhân sự', detail: 'Quản lý nhân viên', icon: '👥', page: 'staff' },
             { name: 'Theo dõi nhân viên', detail: 'Staff tracking', icon: '📋', page: 'staff-tracking' },
             { name: 'Phòng bệnh', detail: 'Sơ đồ phòng', icon: '🏠', page: 'rooms' },
-            { name: 'Công việc', detail: 'Kanban board', icon: '✅', page: 'tasks' },
             { name: 'Kế hoạch', detail: 'Lịch kế hoạch', icon: '📅', page: 'plans' },
-            { name: 'Bệnh nhân', detail: 'Danh sách BN', icon: '🏥', page: 'patients' },
             { name: 'Phân công tuần', detail: 'Lịch phân công', icon: '📆', page: 'schedule' },
             { name: 'Lịch mổ tuần', detail: 'Surgery schedule', icon: '🔪', page: 'surgery' },
             { name: 'Thống kê PT', detail: 'Surgery stats', icon: '📈', page: 'surgery-stats' },
+            { name: 'Nghiên cứu', detail: 'Sinh hoạt chuyên môn', icon: '🔬', page: 'research' },
+            { name: 'Hội nghị', detail: 'Hội nghị y khoa', icon: '👥', page: 'conferences' },
+            { name: 'Báo cáo', detail: 'Báo cáo khoa', icon: '📄', page: 'reports' },
         ];
         navItems.forEach(n => {
             if (this.normalize(n.name).includes(nq) || this.normalize(n.detail).includes(nq)) {
@@ -216,14 +230,14 @@ const GlobalSearch = {
 
         // Group by type
         const groups = {};
-        const groupLabels = { nav: 'Trang', staff: 'Nhân sự', surgery: 'Ca phẫu thuật', patient: 'Bệnh nhân', task: 'Công việc' };
+        const groupLabels = { nav: 'Trang', staff: 'Nhân sự', surgery: 'Ca phẫu thuật', research: 'Sinh hoạt chuyên môn', plan: 'Kế hoạch', patient: 'Bệnh nhân' };
         this.results.forEach((r, idx) => {
             if (!groups[r.type]) groups[r.type] = [];
             groups[r.type].push({ ...r, idx });
         });
 
         let html = '';
-        const order = ['nav', 'staff', 'surgery', 'patient', 'task'];
+        const order = ['nav', 'staff', 'surgery', 'research', 'plan', 'patient'];
         order.forEach(type => {
             if (!groups[type]) return;
             html += `<div class="search-group-label">${groupLabels[type]} (${groups[type].length})</div>`;

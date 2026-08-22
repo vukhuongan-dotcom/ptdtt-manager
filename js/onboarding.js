@@ -47,7 +47,7 @@ const Onboarding = {
         {
             icon: '🔍',
             title: 'Tìm kiếm nhanh (⌘K)',
-            desc: 'Nhấn ⌘K (hoặc Ctrl+K) để tìm kiếm toàn hệ thống: nhân sự, bệnh nhân, ca mổ, công việc — mọi thứ trong 1 ô tìm kiếm!',
+            desc: 'Nhấn ⌘K (hoặc Ctrl+K) để tìm kiếm toàn hệ thống: nhân sự, ca mổ, lịch SHCM, kế hoạch — mọi thứ trong 1 ô tìm kiếm!',
             target: '.sidebar-search-btn',
             position: 'right'
         }

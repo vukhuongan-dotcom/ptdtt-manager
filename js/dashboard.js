@@ -149,15 +149,20 @@ const DashboardPage = {
                 <div class="stat-change">${Object.entries(SURGERY_TYPES).map(([k,t]) => `${t.label}: ${dailyS[k]||0}`).join(' · ')}</div>
             </div>
 
-            <div class="stat-card slide-up" style="animation-delay:0.15s">
+            <div class="stat-card slide-up" style="animation-delay:0.15s;cursor:pointer" onclick="App.navigate('plans')" title="Nhấn để xem Lịch kế hoạch chi tiết">
                 <div class="stat-header">
-                    <span class="stat-label">Công việc</span>
+                    <span class="stat-label">Kế hoạch tháng ${parseInt(_now.getMonth() + 1)}</span>
                     <div class="stat-icon amber">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
                     </div>
                 </div>
-                <div class="stat-value">${tasks.filter(t=>t.status!=='done').length}</div>
-                <div class="stat-change">${tasks.filter(t=>t.status==='done').length} đã hoàn thành</div>
+                <div class="stat-value">${(plans || []).filter(p => p.date && p.date.startsWith(today.slice(0, 7))).length}</div>
+                <div class="stat-change">📅 Lịch SHCM & công tác khoa</div>
             </div>
         </div>
 

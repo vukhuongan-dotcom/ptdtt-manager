@@ -288,9 +288,11 @@ const App = {
             const navItem = document.getElementById(`nav-${page}`);
             if (navItem) navItem.style.display = isSuperAdmin ? '' : 'none';
         });
-        // Hide patients tab (disabled)
+        // Hide archived tabs (disabled)
         const navPatients = document.getElementById('nav-patients');
         if (navPatients) navPatients.style.display = 'none';
+        const navTasks = document.getElementById('nav-tasks');
+        if (navTasks) navTasks.style.display = 'none';
     },
 
     // === Idle Auto-Logout (5 minutes) ===
@@ -515,8 +517,8 @@ const App = {
     },
 
     navigate(page) {
-        // Guard: patients tab is disabled
-        if (page === 'patients') {
+        // Guard: archived tabs (disabled)
+        if (page === 'patients' || page === 'tasks') {
             return;
         }
         // Guard: admin-only pages

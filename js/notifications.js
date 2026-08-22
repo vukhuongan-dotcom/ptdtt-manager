@@ -255,9 +255,8 @@ const Notifications = {
                 </div>
             `);
         } else {
-            // For accepted or already-read notifications, just mark read and navigate
             this.markRead(notifId);
-            App.navigate('tasks');
+            App.navigate('plans');
         }
     },
 
