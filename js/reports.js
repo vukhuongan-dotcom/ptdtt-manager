@@ -69,17 +69,17 @@ const ReportsPage = {
                 <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
                 <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
-            ${!isWeekend ? `<div class="rpt-export-btns">
+            <div class="rpt-export-btns">
                 ${todayReport ? `<button class="btn btn-sm rpt-export-orange" onclick="ReportsPage.exportReportImage()">
                     📸 Xuất hình trực khoa
                 </button>` : ''}
-                ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport16hForm()">
+                ${!todayReport ? `<button class="btn btn-primary" onclick="ReportsPage.openReport16hForm('${this.selectedDate}')">
                     ${Utils.plusIcon()} Tạo báo cáo
                 </button>` : ''}
-            </div>` : ''}
+            </div>
         </div>
 
-        ${isWeekend ? this.renderWeekendNotice() : (todayReport ? this.renderReport16hCard(todayReport) : this.renderNoReport({
+        ${todayReport ? this.renderReport16hCard(todayReport) : (isWeekend ? this.renderWeekendNotice() : this.renderNoReport({
             date: this.selectedDate,
             latestReport,
             emptyLabel: 'Chưa có báo cáo cho ngày',
@@ -98,8 +98,13 @@ const ReportsPage = {
         return `
         <div class="card rpt-empty-card" style="background:linear-gradient(135deg,#fefce8,#fef9c3);border:1px solid #fde68a">
             <div class="rpt-weekend-icon">🏖️</div>
-            <p style="font-size:1rem;font-weight:700;color:#92400e;margin-bottom:6px">${this.getDayOfWeek(this.selectedDate)} — Không trực khoa</p>
-            <p style="font-size:0.85rem;color:#a16207">Thứ bảy và Chủ nhật không có báo cáo trực khoa 16h</p>
+            <p style="font-size:1rem;font-weight:700;color:#92400e;margin-bottom:6px">${this.getDayOfWeek(this.selectedDate)} — Không trực khoa thường quy</p>
+            <p style="font-size:0.85rem;color:#a16207;margin-bottom:12px">Thứ bảy và Chủ nhật thường quy không có báo cáo trực khoa 16h</p>
+            <div>
+                <button class="btn btn-primary btn-sm" onclick="ReportsPage.openReport16hForm('${this.selectedDate}')">
+                    📝 Tạo báo cáo ngày làm bù / trực đặc biệt
+                </button>
+            </div>
         </div>`;
     },
 
@@ -168,7 +173,7 @@ const ReportsPage = {
             <div class="rpt-detail-padding">
                 ${(r.surgeryTotal > 0 || r.surgeryDay) ? `
                 <div class="rpt-info-blue">
-                    <div class="rpt-info-title-blue">BỆNH MỔ ${this.getDayOfWeek(this._getNextDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextDay(r.date))})</div>
+                    <div class="rpt-info-title-blue">BỆNH MỔ ${this.getDayOfWeek(this._getNextSurgeryDay(r.date)).toUpperCase()} (${this.formatDateShort(this._getNextSurgeryDay(r.date))})</div>
                     <div class="rpt-info-val-blue">${r.surgeryTotal || '0'} ca <span style="font-weight:400;font-size:0.85rem">(${r.surgeryCT || '0'} CT, ${r.surgeryYC || '0'} YC${r.surgeryRobot ? ', ' + r.surgeryRobot + ' Robot' : ''})</span></div>
                 </div>` : ''}
 
@@ -325,7 +330,7 @@ const ReportsPage = {
                 class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name === defaultReporter ? 'var(--primary)' : 'var(--border,#cbd5e1)'};background:${d.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary,#f1f5f9)'};color:${d.name === defaultReporter ? '#fff' : 'var(--text-secondary,#334155)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
         }).join('');
 
-        const nextDay = this._getNextDay(date);
+        const nextDay = this._getNextSurgeryDay(date);
         const nextDayLabel = `${this.getDayOfWeek(nextDay)} (${this.formatDateShort(nextDay)})`;
         const isFri = this._isFriday(date);
 
@@ -559,7 +564,7 @@ const ReportsPage = {
         // Removed separate severe patients section - it's now in the stat boxes
 
         // ===== Surgery (next day) =====
-        const nextDay = this._getNextDay(r.date);
+        const nextDay = this._getNextSurgeryDay(r.date);
         if (r.surgeryTotal > 0 || r.surgeryDay) {
             const blockH = 45;
             ctx.fillStyle = '#eff6ff';
@@ -1236,6 +1241,13 @@ const ReportsPage = {
         const d = this._parseDate(dateStr);
         d.setDate(d.getDate() + (addDays || 1));
         return this._localDateStr(d);
+    },
+    // Get next surgery day (Saturday -> Monday (+2 days), Sunday -> Monday (+1 day), Mon-Fri -> next day (+1 day))
+    _getNextSurgeryDay(dateStr) {
+        const day = this._parseDate(dateStr).getDay();
+        if (day === 6) return this._getNextDay(dateStr, 2);
+        if (day === 0) return this._getNextDay(dateStr, 1);
+        return this._getNextDay(dateStr, 1);
     },
     // Check if a date is Friday (day 5)
     _isFriday(dateStr) {

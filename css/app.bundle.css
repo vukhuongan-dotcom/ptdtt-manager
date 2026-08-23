@@ -5832,6 +5832,204 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: rgba(239, 68, 68, 0.5) !important;
 }
 
+/* ===== RESPONSIVE TOOLBAR & ACTIONS ===== */
+.schedule-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.schedule-primary-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.schedule-secondary-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ===== MOBILE DAY PICKER & VIEW ===== */
+.schedule-mobile-day-picker {
+    display: none;
+    margin-bottom: 12px;
+}
+.schedule-mobile-view-toggle {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.sched-view-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.sched-view-btn.active {
+    background: var(--surface-card);
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.schedule-day-pills-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.schedule-day-pills-row::-webkit-scrollbar { display: none; }
+.schedule-day-pill {
+    flex: 1;
+    min-width: 44px;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-default);
+    background: var(--surface-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 48px;
+}
+.schedule-day-pill.active {
+    border-color: var(--primary);
+    background: rgba(8,145,178,0.12);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+.schedule-day-pill.today .sched-pill-name {
+    color: var(--primary);
+    font-weight: 700;
+}
+.sched-pill-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.sched-pill-date {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* ===== MOBILE DAY CARD VIEW ===== */
+.schedule-mobile-day-view {
+    display: none;
+    margin-bottom: 16px;
+}
+.schedule-day-card {
+    padding: 14px;
+}
+.schedule-day-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-default);
+}
+.schedule-day-card-header.today {
+    border-bottom-color: var(--primary);
+}
+.schedule-day-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.schedule-day-card-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.schedule-day-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.schedule-day-duty-item {
+    background: var(--surface-1);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+.schedule-day-duty-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.schedule-day-duty-assigned {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.schedule-duty-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-default);
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+    .schedule-mobile-day-picker { display: block; }
+    .schedule-mobile-day-view.active { display: block; }
+    .schedule-table-wrap.mobile-hidden { display: none; }
+    .schedule-header-actions {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .schedule-primary-actions {
+        flex: 1;
+        display: flex;
+        gap: 8px;
+    }
+    .schedule-primary-actions button {
+        flex: 1;
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+    .schedule-secondary-actions {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .schedule-secondary-actions button {
+        white-space: nowrap;
+        min-height: 44px;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+    }
+}
+
 
 /* ===== SURGERY SCHEDULE ===== */
 .surgery-controls {
@@ -6310,6 +6508,225 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 /* Export date picker section */
 .export-date-section { padding: 8px 0; }
 .export-date-section .form-input { font-size: 16px; padding: 10px; }
+
+/* ===== SURGERY FILTERS BAR ===== */
+.surgery-filters-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.surgery-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.surgery-filter-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.surgery-filter-select {
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    height: 38px;
+    min-width: 140px;
+    border-radius: var(--border-radius);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+}
+
+/* ===== MOBILE DAY PICKER BAR ===== */
+.surgery-mobile-day-picker {
+    display: none;
+    margin-bottom: 12px;
+}
+.surgery-mobile-view-toggle {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.surg-view-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.surg-view-btn.active {
+    background: var(--surface-card);
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.surgery-day-pills-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.surgery-day-pills-row::-webkit-scrollbar { display: none; }
+.surgery-day-pill {
+    flex: 1;
+    min-width: 48px;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-default);
+    background: var(--surface-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 48px;
+}
+.surgery-day-pill.active {
+    border-color: var(--primary);
+    background: rgba(8,145,178,0.12);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+.surgery-day-pill.today .surg-pill-name {
+    color: var(--primary);
+    font-weight: 700;
+}
+.surg-pill-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.surg-pill-date {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+.surg-pill-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.surg-pill-badge.has-cases {
+    background: var(--primary);
+    color: white;
+}
+
+/* ===== MOBILE DAY FOCUS VIEW ===== */
+.surgery-mobile-day-view {
+    display: none;
+    margin-bottom: 16px;
+}
+.surg-day-focus-card {
+    padding: 14px;
+}
+.surg-day-focus-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-default);
+}
+.surg-day-focus-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.surg-day-focus-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.surg-day-focus-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.surg-mobile-full-card {
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    background: var(--surface-card);
+}
+.surg-mobile-full-card .surgery-card-compact-row {
+    padding: 10px 12px;
+    gap: 8px;
+}
+.surg-mobile-full-card .surgery-card-order {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+}
+.surg-mobile-full-card .surgery-card-compact-name {
+    font-size: 0.88rem;
+}
+.surg-mobile-full-card .surg-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-default);
+}
+.surg-mobile-full-card .surg-card-actions button {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .surgery-mobile-day-picker { display: block; }
+    .surgery-mobile-day-view.active { display: block; }
+    .surgery-scroll-zone.mobile-hidden { display: none; }
+    .surgery-filters-bar {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .surgery-filter-group {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .surgery-filter-label {
+        min-width: 100px;
+        font-size: 0.8rem;
+    }
+    .surgery-filter-select {
+        flex: 1;
+        min-width: 180px;
+        height: 44px;
+        font-size: 16px;
+    }
+    #surgery-toggle-btn {
+        width: 100%;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .surg-header-actions button { min-height: 44px; }
+}
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;

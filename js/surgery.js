@@ -69,6 +69,10 @@ function canEditSurgery(weekMondayStr) {
 
 const SurgeryPage = {
     currentWeekStart: null,
+    _filterDoctor: 'all',
+    _filterType: 'all',
+    _selectedDayStr: null,
+    _mobileViewMode: 'day', // 'day' | 'week'
 
     init() {
         const today = new Date();
@@ -108,6 +112,21 @@ const SurgeryPage = {
         return all.filter(s => weekDates.includes(s.date));
     },
 
+    getFilteredSurgeries(dateStr = null) {
+        let list = this.getSurgeries();
+        if (dateStr) {
+            list = list.filter(s => s.date === dateStr);
+        }
+        if (this._filterDoctor && this._filterDoctor !== 'all') {
+            const docId = parseInt(this._filterDoctor);
+            list = list.filter(s => s.mainSurgeon === docId);
+        }
+        if (this._filterType && this._filterType !== 'all') {
+            list = list.filter(s => s.surgeryType === this._filterType);
+        }
+        return list;
+    },
+
     getAllSurgeries() {
         // Migration: move old localStorage data into Store (one-time)
         const legacy = localStorage.getItem('ptdtt_surgeries');
@@ -127,6 +146,26 @@ const SurgeryPage = {
         Store.saveCollections(['surgeries']);
     },
 
+    setDoctorFilter(docId) {
+        this._filterDoctor = docId;
+        App.renderCurrentPage();
+    },
+
+    setTypeFilter(typeKey) {
+        this._filterType = typeKey;
+        App.renderCurrentPage();
+    },
+
+    selectDay(dateStr) {
+        this._selectedDayStr = dateStr;
+        App.renderCurrentPage();
+    },
+
+    setMobileViewMode(mode) {
+        this._mobileViewMode = mode;
+        App.renderCurrentPage();
+    },
+
     render() {
         if (!this.currentWeekStart) this.init();
         const weekKey = this.getWeekKey();
@@ -134,14 +173,28 @@ const SurgeryPage = {
         const canEdit = canEditSurgery(weekKey);
         const weekDates = this.getWeekDates();
         const surgeries = this.getSurgeries();
+        const filteredSurgeries = this.getFilteredSurgeries();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const todayStr = this.dateStr(today);
+
+        // Determine selected day for mobile day-view
+        if (!this._selectedDayStr || !weekDates.map(d => this.dateStr(d)).includes(this._selectedDayStr)) {
+            const hasToday = weekDates.some(d => this.dateStr(d) === todayStr);
+            this._selectedDayStr = hasToday ? todayStr : this.dateStr(weekDates[0]);
+        }
+        const selectedDayStr = this._selectedDayStr;
 
         const weekLabel = `${weekDates[0].getDate()}/${weekDates[0].getMonth() + 1} — ${weekDates[6].getDate()}/${weekDates[6].getMonth() + 1}/${weekDates[6].getFullYear()}`;
 
-        // Stats
-        const totalCases = surgeries.length;
-        const todayCases = surgeries.filter(s => s.date === this.dateStr(today)).length;
+        // Stats (using filtered collection)
+        const totalCases = filteredSurgeries.length;
+        const totalUnfiltered = surgeries.length;
+        const todayCases = filteredSurgeries.filter(s => s.date === todayStr).length;
+
+        // Doctors for filter dropdown
+        const allStaff = Store.getAll('staff') || [];
+        const doctors = allStaff.filter(s => (s.role || '').toLowerCase().includes('bác sĩ') || (s.role || '').toLowerCase().includes('trưởng khoa') || (s.role || '').toLowerCase().includes('phó trưởng khoa'));
 
         return `
         <div class="surgery-sticky-header">
@@ -177,49 +230,132 @@ const SurgeryPage = {
                 <button class="btn-icon" onclick="SurgeryPage.nextWeek()" aria-label="Xem lịch mổ tuần sau">${Utils.chevronRight()}</button>
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.thisWeek()" aria-label="Xem lịch mổ tuần này">Tuần này</button>
             </div>
-            <div class="surgery-stats">
-                <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Lưu 7 ngày)" aria-label="Thùng rác ca mổ">
-                    🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
-                </button>
-                <span class="surgery-stat-chip">📅 ${todayCases} ca hôm nay</span>
+            <div class="surgery-filters-bar">
+                <div class="surgery-filter-group">
+                    <label class="surgery-filter-label" for="surg-filter-doc">🔍 BS mổ chính:</label>
+                    <select id="surg-filter-doc" class="form-select form-select-sm surgery-filter-select" onchange="SurgeryPage.setDoctorFilter(this.value)" aria-label="Lọc theo bác sĩ mổ chính">
+                        <option value="all" ${this._filterDoctor === 'all' ? 'selected' : ''}>Tất cả bác sĩ</option>
+                        ${doctors.map(d => `<option value="${d.id}" ${String(this._filterDoctor) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="surgery-filter-group">
+                    <label class="surgery-filter-label" for="surg-filter-type">🏷️ Loại mổ:</label>
+                    <select id="surg-filter-type" class="form-select form-select-sm surgery-filter-select" onchange="SurgeryPage.setTypeFilter(this.value)" aria-label="Lọc theo loại phẫu thuật">
+                        <option value="all" ${this._filterType === 'all' ? 'selected' : ''}>Tất cả loại mổ</option>
+                        ${Object.entries(SURGERY_TYPES).map(([k, t]) => `<option value="${k}" ${this._filterType === k ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </div>
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả" aria-label="Thu gọn hoặc mở rộng tất cả thẻ ca mổ">
                     <span id="surgery-toggle-icon">📂</span> <span id="surgery-toggle-text">Mở rộng</span>
                 </button>
             </div>
         </div>
 
+        <!-- MOBILE DAY PICKER BAR -->
+        <div class="surgery-mobile-day-picker">
+            <div class="surgery-mobile-view-toggle">
+                <button type="button" class="surg-view-btn ${this._mobileViewMode === 'day' ? 'active' : ''}" onclick="SurgeryPage.setMobileViewMode('day')">
+                    📱 Xem theo ngày
+                </button>
+                <button type="button" class="surg-view-btn ${this._mobileViewMode === 'week' ? 'active' : ''}" onclick="SurgeryPage.setMobileViewMode('week')">
+                    📊 Xem bảng tuần
+                </button>
+            </div>
+            <div class="surgery-day-pills-row">
+                ${weekDates.map(d => {
+                    const ds = this.dateStr(d);
+                    const isSelected = ds === selectedDayStr;
+                    const isToday = ds === todayStr;
+                    const daySurgeries = this.getFilteredSurgeries(ds);
+                    const dayName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
+                    return `
+                    <button type="button" class="surgery-day-pill ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}" onclick="SurgeryPage.selectDay('${ds}')" aria-label="${dayName} ${d.getDate()}/${d.getMonth()+1}, ${daySurgeries.length} ca">
+                        <span class="surg-pill-name">${dayName}</span>
+                        <span class="surg-pill-date">${d.getDate()}/${d.getMonth()+1}</span>
+                        <span class="surg-pill-badge ${daySurgeries.length > 0 ? 'has-cases' : ''}">${daySurgeries.length}</span>
+                    </button>`;
+                }).join('')}
+            </div>
+        </div>
+
         <div class="surgery-summary-panel">
             <div class="surgery-summary-chips">
                 ${Object.entries(SURGERY_TYPES).map(([key, t]) => {
-            const cnt = surgeries.filter(s => s.surgeryType === key).length;
-            return `<div class="surgery-summary-chip">
-                        <span class="surgery-summary-dot" style="background:${t.color}"></span>
-                        <span class="surgery-summary-label">${t.label}</span>
-                        <span class="surgery-summary-count">${cnt}</span>
-                    </div>`;
-        }).join('')}
+                    const cnt = filteredSurgeries.filter(s => s.surgeryType === key).length;
+                    return `<div class="surgery-summary-chip">
+                                <span class="surgery-summary-dot" style="background:${t.color}"></span>
+                                <span class="surgery-summary-label">${t.label}</span>
+                                <span class="surgery-summary-count">${cnt}</span>
+                            </div>`;
+                }).join('')}
                 ${[{ key: 'mo', label: 'Mổ mở', color: '#e11d48' }, { key: 'noisoi', label: 'Nội soi', color: '#16a34a' }, { key: 'nsth', label: 'NSTH', color: '#8b5cf6' }].map(a => {
-            const cnt = surgeries.filter(s => s.approachType === a.key).length;
-            return `<div class="surgery-summary-chip">
-                        <span class="surgery-summary-dot" style="background:${a.color}"></span>
-                        <span class="surgery-summary-label">${a.label}</span>
-                        <span class="surgery-summary-count">${cnt}</span>
-                    </div>`;
-        }).join('')}
+                    const cnt = filteredSurgeries.filter(s => s.approachType === a.key).length;
+                    return `<div class="surgery-summary-chip">
+                                <span class="surgery-summary-dot" style="background:${a.color}"></span>
+                                <span class="surgery-summary-label">${a.label}</span>
+                                <span class="surgery-summary-count">${cnt}</span>
+                            </div>`;
+                }).join('')}
                 <div class="surgery-summary-chip surgery-summary-total">
-                    <span class="surgery-summary-label"><strong>Tổng tuần</strong></span>
-                    <span class="surgery-summary-count"><strong>${totalCases}</strong></span>
+                    <span class="surgery-summary-label"><strong>${this._filterDoctor !== 'all' || this._filterType !== 'all' ? 'Tổng đã lọc' : 'Tổng tuần'}</strong></span>
+                    <span class="surgery-summary-count"><strong>${totalCases}</strong>${(this._filterDoctor !== 'all' || this._filterType !== 'all') ? `<span style="font-size:0.7rem;font-weight:400;opacity:0.75;margin-left:3px;">/${totalUnfiltered}</span>` : ''}</span>
                 </div>
             </div>
         </div>
         </div><!-- end .surgery-sticky-header -->
 
-        <div class="surgery-scroll-zone">
+        <!-- MOBILE DAY FOCUS VIEW (Active when _mobileViewMode === 'day' on mobile) -->
+        <div class="surgery-mobile-day-view ${this._mobileViewMode === 'day' ? 'active' : ''}">
+            ${(() => {
+                const selDateObj = weekDates.find(d => this.dateStr(d) === selectedDayStr) || weekDates[0];
+                const daySurgeries = sortSurgeries(this.getFilteredSurgeries(selectedDayStr), selDateObj);
+                const dayNameLong = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'][selDateObj.getDay()];
+                return `
+                <div class="surg-day-focus-card card">
+                    <div class="surg-day-focus-header">
+                        <div>
+                            <div class="surg-day-focus-title">📅 ${dayNameLong} — ${selDateObj.getDate()}/${selDateObj.getMonth() + 1}/${selDateObj.getFullYear()}</div>
+                            <div class="surg-day-focus-subtitle">${daySurgeries.length} ca phẫu thuật ${this._filterDoctor !== 'all' ? '(đã lọc theo BS)' : ''}</div>
+                        </div>
+                        ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="SurgeryPage.openForm(null,'${selectedDayStr}')">+ Thêm ca</button>` : ''}
+                    </div>
+                    <div class="surg-day-focus-list">
+                        ${daySurgeries.length ? daySurgeries.map((s, idx) => {
+                            const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                            return `
+                            <div class="surgery-card surgery-expanded surg-mobile-full-card" data-surgery-id="${s.id}">
+                                <div class="surgery-card-compact-row">
+                                    <span class="surgery-card-order">${idx + 1}</span>
+                                    <span class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</span>
+                                    <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
+                                    <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
+                                </div>
+                                <div class="surgery-card-detail" style="max-height:none;padding:0 12px 12px;">
+                                    ${s.diagnosis ? `<div class="surgery-card-diagnosis">📋 ${s.diagnosis}</div>` : ''}
+                                    ${s.method ? `<div class="surgery-card-method">🔬 ${s.method}</div>` : ''}
+                                    <div class="surgery-card-footer">
+                                        <span class="surgery-card-surgeons">🔪 <strong>BS:</strong> ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
+                                        ${s.duration ? `<span class="surg-card-duration">⏱ ${s.duration}p</span>` : ''}
+                                    </div>
+                                    ${canEdit ? `<div class="surg-card-actions">
+                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
+                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
+                                    </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
+                                </div>
+                            </div>`;
+                        }).join('') : `<div class="surgery-empty">Không có ca mổ trong ngày này</div>`}
+                    </div>
+                </div>`;
+            })()}
+        </div>
+
+        <div class="surgery-scroll-zone ${this._mobileViewMode === 'day' ? 'mobile-hidden' : ''}">
         <div class="surgery-week-grid">
             ${weekDates.map(d => {
             const ds = this.dateStr(d);
             const isToday = d.getTime() === today.getTime();
-            const daySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), d);
+            const daySurgeries = sortSurgeries(this.getFilteredSurgeries(ds), d);
 
             return `
                 <div class="surgery-day ${isToday ? 'today' : ''} ${d.getDay() === 0 || d.getDay() === 6 ? 'weekend' : ''}">

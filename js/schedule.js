@@ -17,9 +17,21 @@ const DAY_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Th�
 
 const SchedulePage = {
     weekOffset: 0,
+    _selectedMobileDayIdx: null,
+    _mobileViewMode: 'day', // 'day' | 'table'
 
     // Staff with schedule editing permission (in addition to admins)
     _scheduleEditors: [3, 12], // staffId 3 = Nguyễn Thị Ngọc Thùy (ĐD Trưởng), 12 = Phạm Thị Tuyết Minh
+
+    selectMobileDay(idx) {
+        this._selectedMobileDayIdx = parseInt(idx);
+        App.renderCurrentPage();
+    },
+
+    setMobileViewMode(mode) {
+        this._mobileViewMode = mode;
+        App.renderCurrentPage();
+    },
 
     canEditSchedule(targetWeekKey) {
         const session = Auth.getSession();
@@ -390,6 +402,16 @@ const SchedulePage = {
 
         const activeConflicts = this.checkScheduleConflicts(effectivePositions);
 
+        // Selected mobile day index
+        if (this._selectedMobileDayIdx === null || this._selectedMobileDayIdx < 0 || this._selectedMobileDayIdx > 6) {
+            const todayIdx = dates.findIndex(d => this._localDateStr(d) === today);
+            this._selectedMobileDayIdx = todayIdx !== -1 ? todayIdx : 0;
+        }
+        const selectedMobileDayIdx = this._selectedMobileDayIdx;
+
+        const currentUndoStack = this._getUndoStack(weekKey);
+        const undoCount = currentUndoStack.length;
+
         return `
         <div class="page-header">
             <div>
@@ -399,31 +421,33 @@ const SchedulePage = {
                     ${isLocked ? `<span class="schedule-locked-badge" style="margin-left:8px;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;background:${isSuperAdmin ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.12)'};color:${isSuperAdmin ? '#d97706' : '#dc2626'};border:1px solid ${isSuperAdmin ? 'rgba(234,179,8,0.3)' : 'rgba(239,68,68,0.3)'}">🔒 Lịch tuần đã khóa ${isSuperAdmin ? '(Super Admin đang mở quyền)' : '(Chỉ Super Admin mới được sửa)'}</span>` : ''}
                 </p>
             </div>
-            <div class="flex items-center gap-8">
-                <button class="btn btn-secondary" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn" aria-label="Xuất lịch mổ robot">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                    Xuất lịch mổ robot
-                </button>
-                <button class="btn btn-secondary" onclick="SchedulePage.exportPDF()" id="export-pdf-btn" aria-label="Xuất lịch phân công tuần">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                    Xuất lịch tuần
-                </button>
-                ${isAdmin ? `<button class="btn btn-secondary" onclick="SchedulePage.undo()" id="undo-schedule-btn" aria-label="Hoàn tác thao tác chỉnh sửa" ${(this._undoStack && this._undoStack.length > 0) ? '' : 'disabled style="opacity:0.5;cursor:not-allowed"'}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-                    Hoàn tác ${(this._undoStack && this._undoStack.length > 0) ? `(${this._undoStack.length})` : ''}
-                </button>
-                <button class="btn btn-secondary" onclick="SchedulePage.copyFromPrevWeek()" aria-label="Sao chép phân công từ tuần trước">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Sao chép tuần trước
-                </button>
-                <button class="btn btn-danger" onclick="SchedulePage.clearSchedule()" aria-label="Xoá phân công tuần này">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    Xoá lịch
-                </button>
-                <button class="btn btn-primary" onclick="SchedulePage.saveSchedule()" aria-label="Lưu lịch phân công tuần">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Lưu lịch
-                </button>` : ''}
+            <div class="schedule-header-actions">
+                <div class="schedule-primary-actions">
+                    ${isAdmin ? `
+                    <button class="btn btn-secondary btn-sm" onclick="SchedulePage.undo()" id="undo-schedule-btn" aria-label="Hoàn tác thao tác chỉnh sửa" ${(undoCount > 0) ? '' : 'disabled style="opacity:0.5;cursor:not-allowed"'}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        Hoàn tác ${(undoCount > 0) ? `(${undoCount})` : ''}
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="SchedulePage.saveSchedule()" aria-label="Lưu lịch phân công tuần">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Lưu lịch
+                    </button>` : ''}
+                </div>
+                <div class="schedule-secondary-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="SchedulePage.exportRobotImage()" id="export-robot-btn" aria-label="Xuất lịch mổ robot">
+                        🤖 Robot
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="SchedulePage.exportPDF()" id="export-pdf-btn" aria-label="Xuất lịch phân công tuần">
+                        📄 Xuất tuần
+                    </button>
+                    ${isAdmin ? `
+                    <button class="btn btn-secondary btn-sm" onclick="SchedulePage.copyFromPrevWeek()" aria-label="Sao chép phân công từ tuần trước">
+                        📋 Sao chép
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="SchedulePage.clearSchedule()" aria-label="Xoá phân công tuần này">
+                        🗑️ Xoá
+                    </button>` : ''}
+                </div>
             </div>
         </div>
 
@@ -468,7 +492,79 @@ const SchedulePage = {
             <button class="btn btn-secondary btn-sm" onclick="SchedulePage.thisWeek()" aria-label="Xem lịch tuần hiện tại">Tuần này</button>
         </div>
 
-        <div class="schedule-table-wrap">
+        <!-- MOBILE DAY PICKER BAR -->
+        <div class="schedule-mobile-day-picker">
+            <div class="schedule-mobile-view-toggle">
+                <button class="sched-view-btn ${this._mobileViewMode === 'day' ? 'active' : ''}" onclick="SchedulePage.setMobileViewMode('day')">
+                    📱 Xem theo ngày
+                </button>
+                <button class="sched-view-btn ${this._mobileViewMode === 'table' ? 'active' : ''}" onclick="SchedulePage.setMobileViewMode('table')">
+                    📊 Xem bảng tuần
+                </button>
+            </div>
+            <div class="schedule-day-pills-row">
+                ${dates.map((d, i) => {
+                    const isSelected = i === selectedMobileDayIdx;
+                    const dateStr = this._localDateStr(d);
+                    const isToday = dateStr === today;
+                    return `
+                    <button type="button" class="schedule-day-pill ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}" onclick="SchedulePage.selectMobileDay(${i})" aria-label="${DAY_LABELS[i]} ${d.getDate()}/${d.getMonth()+1}">
+                        <span class="sched-pill-name">${DAYS[i]}</span>
+                        <span class="sched-pill-date">${d.getDate()}/${d.getMonth()+1}</span>
+                    </button>`;
+                }).join('')}
+            </div>
+        </div>
+
+        <!-- MOBILE DAY CARD VIEW -->
+        <div class="schedule-mobile-day-view ${this._mobileViewMode === 'day' ? 'active' : ''}">
+            ${(() => {
+                const selDate = dates[selectedMobileDayIdx] || dates[0];
+                const dayKey = DAYS[selectedMobileDayIdx] || DAYS[0];
+                const dayLabel = DAY_LABELS[selectedMobileDayIdx] || DAY_LABELS[0];
+                const isToday = this._localDateStr(selDate) === today;
+                return `
+                <div class="card schedule-day-card">
+                    <div class="schedule-day-card-header ${isToday ? 'today' : ''}">
+                        <div>
+                            <div class="schedule-day-card-title">📅 ${dayLabel} — ${selDate.getDate()}/${selDate.getMonth() + 1}/${selDate.getFullYear()}</div>
+                            <div class="schedule-day-card-sub">${isToday ? '⭐️ Hôm nay' : 'Phân công nhân sự theo vị trí'}</div>
+                        </div>
+                    </div>
+                    <div class="schedule-day-card-body">
+                        ${SCHEDULE_POSITIONS.map(pos => {
+                            const posData = effectivePositions[pos.key] || {};
+                            const assignedStaff = [];
+                            for (let slot = 0; slot < pos.slots; slot++) {
+                                const cellKey = `${dayKey}_${slot}`;
+                                const staffId = posData[cellKey];
+                                if (staffId) {
+                                    const staffName = this.getShortName(staffId);
+                                    const label = pos.slotLabels ? pos.slotLabels[slot] : (slot === 0 && pos.key === 'mo' ? 'Ca đầu' : `#${slot+1}`);
+                                    assignedStaff.push({ staffId, staffName, label, slot });
+                                }
+                            }
+                            return `
+                            <div class="schedule-day-duty-item" style="border-left: 3px solid ${pos.color}">
+                                <div class="schedule-day-duty-name">
+                                    <span class="schedule-duty-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pos.color};margin-right:6px;flex-shrink:0;"></span>
+                                    <span>${pos.label}</span>
+                                </div>
+                                <div class="schedule-day-duty-assigned">
+                                    ${assignedStaff.length ? assignedStaff.map(a => `
+                                        <span class="schedule-duty-pill">
+                                            ${pos.slotLabels ? `<strong style="font-size:0.75rem;color:var(--text-muted);">${a.label}:</strong> ` : ''}<strong>${a.staffName}</strong>
+                                        </span>
+                                    `).join('') : '<span class="text-muted" style="font-size:0.75rem">— Chưa phân công —</span>'}
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            })()}
+        </div>
+
+        <div class="schedule-table-wrap ${this._mobileViewMode === 'day' ? 'mobile-hidden' : ''}">
             <table class="schedule-table">
                 <thead>
                     <tr>
@@ -563,50 +659,64 @@ const SchedulePage = {
         return rows;
     },
 
-    _undoStack: [],
+    _undoStacksByWeek: {},
+    _lastKnownPositionsByWeek: {},
+
+    _getUndoStack(weekKey) {
+        if (!this._undoStacksByWeek) this._undoStacksByWeek = {};
+        if (!this._undoStacksByWeek[weekKey]) this._undoStacksByWeek[weekKey] = [];
+        return this._undoStacksByWeek[weekKey];
+    },
 
     pushUndoState() {
-        if (!this._undoStack) this._undoStack = [];
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
+        const stack = this._getUndoStack(weekKey);
         const schedule = this.getScheduleData(weekKey);
         
-        const positions = {};
-        const selects = document.querySelectorAll('.schedule-select');
-        if (selects.length > 0) {
-            selects.forEach(sel => {
-                const pos = sel.dataset.pos;
-                const cell = sel.dataset.cell;
-                if (!positions[pos]) positions[pos] = {};
-                if (sel.value) positions[pos][cell] = parseInt(sel.value);
-            });
+        let positions = {};
+        if (this._lastKnownPositionsByWeek && this._lastKnownPositionsByWeek[weekKey]) {
+            positions = JSON.parse(JSON.stringify(this._lastKnownPositionsByWeek[weekKey]));
         } else if (schedule?.positions) {
-            Object.assign(positions, JSON.parse(JSON.stringify(schedule.positions)));
+            positions = JSON.parse(JSON.stringify(schedule.positions));
+        } else {
+            const selects = document.querySelectorAll('.schedule-select');
+            if (selects.length > 0) {
+                selects.forEach(sel => {
+                    const pos = sel.dataset.pos;
+                    const cell = sel.dataset.cell;
+                    if (!positions[pos]) positions[pos] = {};
+                    if (sel.value) positions[pos][cell] = parseInt(sel.value);
+                });
+            }
         }
 
         const notesEl = document.getElementById('schedule-notes');
         const notes = notesEl ? notesEl.value : (schedule?.notes || '');
         const robotSurgery = schedule?.robotSurgery ? JSON.parse(JSON.stringify(schedule.robotSurgery)) : [];
 
-        const lastState = this._undoStack[this._undoStack.length - 1];
+        const lastState = stack[stack.length - 1];
         if (lastState && JSON.stringify(lastState.positions) === JSON.stringify(positions) && lastState.notes === notes) {
             return;
         }
 
-        this._undoStack.push({
+        stack.push({
             weekKey,
             positions,
             notes,
             robotSurgery
         });
-        if (this._undoStack.length > 30) this._undoStack.shift();
-        this._updateUndoButton();
+        if (stack.length > 30) stack.shift();
+        this._updateUndoButton(weekKey);
     },
 
-    _updateUndoButton() {
+    _updateUndoButton(targetWeekKey) {
         const btn = document.getElementById('undo-schedule-btn');
         if (!btn) return;
-        const count = (this._undoStack || []).length;
+        const dates = this.getWeekDates(this.weekOffset);
+        const currentWeekKey = targetWeekKey || this.getWeekKey(dates);
+        const stack = this._getUndoStack(currentWeekKey);
+        const count = stack.length;
         btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Hoàn tác ${count > 0 ? `(${count})` : ''}`;
         if (count > 0) {
             btn.removeAttribute('disabled');
@@ -620,16 +730,27 @@ const SchedulePage = {
     },
 
     async undo() {
-        if (!this._undoStack || this._undoStack.length === 0) {
-            Toast.info('Không có thao tác nào để hoàn tác.');
+        const dates = this.getWeekDates(this.weekOffset);
+        const currentWeekKey = this.getWeekKey(dates);
+        const stack = this._getUndoStack(currentWeekKey);
+
+        if (!stack || stack.length === 0) {
+            Toast.info('Không có thao tác nào để hoàn tác cho tuần này.');
             return;
         }
 
-        const state = this._undoStack.pop();
-        const dates = this.getWeekDates(this.weekOffset);
-        const weekKey = this.getWeekKey(dates);
+        // Peek state without popping yet (R5-F02)
+        const state = stack[stack.length - 1];
 
-        const saved = await this._upsertSchedule(weekKey, dates, {
+        // Safety Guard: Assert state.weekKey strictly matches currentWeekKey
+        if (state.weekKey !== currentWeekKey) {
+            console.warn(`[SchedulePage] Undo weekKey mismatch! Expected ${currentWeekKey}, got ${state.weekKey}`);
+            Toast.error('Lỗi an toàn: Trạng thái hoàn tác không khớp với tuần hiện tại.');
+            this._updateUndoButton(currentWeekKey);
+            return;
+        }
+
+        const saved = await this._upsertSchedule(currentWeekKey, dates, {
             positions: state.positions,
             notes: state.notes,
             robotSurgery: state.robotSurgery
@@ -637,8 +758,15 @@ const SchedulePage = {
 
         if (!saved?.ok) {
             Toast.error('Lỗi khi hoàn tác lịch phân công.');
+            this._updateUndoButton(currentWeekKey);
             return;
         }
+
+        // ONLY pop state and update cache AFTER save succeeds! (R5-F02)
+        stack.pop();
+
+        if (!this._lastKnownPositionsByWeek) this._lastKnownPositionsByWeek = {};
+        this._lastKnownPositionsByWeek[currentWeekKey] = state.positions ? JSON.parse(JSON.stringify(state.positions)) : {};
 
         App.renderCurrentPage();
         Toast.info('Đã hoàn tác thao tác vừa rồi!', 'Hoàn tác');
@@ -646,6 +774,8 @@ const SchedulePage = {
 
     onCellChange(el) {
         this.pushUndoState();
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
         const pos = el.dataset.pos;
         const cell = el.dataset.cell;
 
@@ -673,6 +803,16 @@ const SchedulePage = {
         } else {
             el.classList.remove('has-value');
         }
+
+        const currentPositions = {};
+        document.querySelectorAll('.schedule-select').forEach(sel => {
+            const p = sel.dataset.pos;
+            const c = sel.dataset.cell;
+            if (!currentPositions[p]) currentPositions[p] = {};
+            if (sel.value) currentPositions[p][c] = parseInt(sel.value);
+        });
+        if (!this._lastKnownPositionsByWeek) this._lastKnownPositionsByWeek = {};
+        this._lastKnownPositionsByWeek[weekKey] = currentPositions;
 
         const positions = {};
         document.querySelectorAll('.schedule-select').forEach(sel => {

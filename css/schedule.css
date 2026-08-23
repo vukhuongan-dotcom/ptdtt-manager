@@ -436,4 +436,202 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: rgba(239, 68, 68, 0.5) !important;
 }
 
+/* ===== RESPONSIVE TOOLBAR & ACTIONS ===== */
+.schedule-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.schedule-primary-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.schedule-secondary-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ===== MOBILE DAY PICKER & VIEW ===== */
+.schedule-mobile-day-picker {
+    display: none;
+    margin-bottom: 12px;
+}
+.schedule-mobile-view-toggle {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.sched-view-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 12px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.sched-view-btn.active {
+    background: var(--surface-card);
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.schedule-day-pills-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.schedule-day-pills-row::-webkit-scrollbar { display: none; }
+.schedule-day-pill {
+    flex: 1;
+    min-width: 44px;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-default);
+    background: var(--surface-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 48px;
+}
+.schedule-day-pill.active {
+    border-color: var(--primary);
+    background: rgba(8,145,178,0.12);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+.schedule-day-pill.today .sched-pill-name {
+    color: var(--primary);
+    font-weight: 700;
+}
+.sched-pill-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.sched-pill-date {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* ===== MOBILE DAY CARD VIEW ===== */
+.schedule-mobile-day-view {
+    display: none;
+    margin-bottom: 16px;
+}
+.schedule-day-card {
+    padding: 14px;
+}
+.schedule-day-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-default);
+}
+.schedule-day-card-header.today {
+    border-bottom-color: var(--primary);
+}
+.schedule-day-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.schedule-day-card-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.schedule-day-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.schedule-day-duty-item {
+    background: var(--surface-1);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+.schedule-day-duty-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.schedule-day-duty-assigned {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.schedule-duty-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-default);
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+    .schedule-mobile-day-picker { display: block; }
+    .schedule-mobile-day-view.active { display: block; }
+    .schedule-table-wrap.mobile-hidden { display: none; }
+    .schedule-header-actions {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .schedule-primary-actions {
+        flex: 1;
+        display: flex;
+        gap: 8px;
+    }
+    .schedule-primary-actions button {
+        flex: 1;
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+    .schedule-secondary-actions {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .schedule-secondary-actions button {
+        white-space: nowrap;
+        min-height: 44px;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+    }
+}
+
 
