@@ -1,0 +1,40 @@
+{"ts": "2026-08-23T05:07:27.369913", "user": "upmoanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T05:32:33.130241", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T05:34:35.568488", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 140, "nextId": null}}
+{"ts": "2026-08-23T05:36:30.291446", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 140, "nextId": null}}
+{"ts": "2026-08-23T08:12:23.618336", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T08:14:25.730496", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T08:31:55.660085", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T08:39:40.245829", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T09:26:21.369795", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T09:37:41.539980", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T10:00:19.650777", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T10:19:16.741426", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T10:45:13.229047", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 23, "nextId": 18, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 17, "label": "2026-08-24", "from": {"notes": ""}, "to": {"notes": "BS Tuấn về trường chiều T2, T3, T5. CHIỀU THỨ 2 BS QUY TRỰC KHOA THAY BS TUẤN\nBS Như Đức có lịch làm việc phòng KHTH 2 tuần\nBS Tú có lịch thi chiều T5"}}]}}}
+{"ts": "2026-08-23T10:50:59.877958", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T10:52:28.362451", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 23, "nextId": 18, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-08-23T10:56:27.368802", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 23, "nextId": 18, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-08-23T11:18:40.087791", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T11:19:02.732690", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 23, "nextId": 18, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-08-23T11:54:46.654371", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T12:28:58.893858", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T12:31:21.543780", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 23, "nextId": 18, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 17, "label": "2026-08-24", "from": {"notes": "BS Tuấn về trường chiều T2, T3, T5. CHIỀU THỨ 2 BS QUY TRỰC KHOA THAY BS TUẤN\nBS Như Đức có lịch làm việc phòng KHTH 2 tuần\nBS Tú có lịch thi chiều T5"}, "to": {"notes": "TS Hữu chiều T4 đi công tác BV Bà Rịa cùng BGĐ. BS An trực BCN khoa chiều T4.\nBS Tuấn về trường chiều T2, T3, T5. CHIỀU THỨ 2 BS QUY TRỰC KHOA THAY BS TUẤN\nBS Như Đức có lịch làm việc phòng KHTH 2 tuần\nBS Tú có lịch thi chiều T5"}}]}}}
+{"ts": "2026-08-23T13:07:57.366244", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T13:13:51.303767", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T13:19:41.979989", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T13:24:07.106836", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T14:14:24.933380", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T14:14:27.184628", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T14:30:52.484172", "user": "ptctien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "123.21.148.56", "remaining": 4}}
+{"ts": "2026-08-23T14:30:54.038001", "user": "ptctien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "123.21.148.56", "remaining": 4}}
+{"ts": "2026-08-23T14:31:02.390499", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T15:50:27.643776", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T16:01:19.219870", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T16:21:12.140307", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T16:45:17.796951", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T16:46:11.210395", "user": "vkan", "action": "collection.put.surgeriesTrash", "ip": "127.0.0.1", "details": {"count": 8, "nextId": null, "added": 0, "removed": 1, "changed": 0, "diff": {"added": [], "removed": [{"id": 1786941637855, "label": "id=1786941637855", "record": {"admissionId": "26053313", "approachType": "noisoi", "assistSurgeon1": 11, "birthYear": 1964, "createdBy": {"at": "2026-08-17T04:40:37.855Z", "name": "Lê Minh Thành", "username": "lmthanh"}, "date": "2026-08-21", "deletedAt": "2026-08-17T07:37:26.382Z", "deletedBy": {"name": "Nguyễn Ngọc Minh Khôi", "username": "nnmkhoi"}, "diagnosis": "Theo dõi GIST ruột non", "duration": 180, "id": 1786941637855, "isFirstCase": false, "mainSurgeon": 5, "method": "PTNS thám sát cắt u", "notes": "", "patientName": "Phạm Thị Hiền", "surgeryType": "chuongtrinh"}}], "changed": []}}}
+{"ts": "2026-08-23T16:46:15.960140", "user": "vkan", "action": "collection.put.surgeriesTrash", "ip": "127.0.0.1", "details": {"count": 7, "nextId": null, "added": 0, "removed": 1, "changed": 0, "diff": {"added": [], "removed": [{"id": 1787022677582, "label": "id=1787022677582", "record": {"admissionId": "26053589 ", "approachType": "mo", "assistSurgeon1": 9, "birthYear": 1966, "createdBy": {"at": "2026-08-18T03:11:17.581Z", "name": "Hoàng Bá Sang", "username": "hbsang"}, "date": "2026-08-19", "deletedAt": "2026-08-18T04:21:19.378Z", "deletedBy": {"name": "Hoàng Bá Sang", "username": "hbsang"}, "diagnosis": "Thoát vị rốn", "duration": 60, "id": 1787022677582, "isFirstCase": false, "mainSurgeon": 2, "method": "Phục hồi thành bụng bằng mảnh ghép", "notes": "", "patientName": "Trần Thị Thu Thủy", "surgeryType": "yeucau"}}], "changed": []}}}
+{"ts": "2026-08-23T16:46:41.181823", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T18:03:14.575810", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T18:12:54.621435", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-23T18:45:05.470017", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
