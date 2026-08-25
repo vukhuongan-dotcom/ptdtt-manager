@@ -173,15 +173,23 @@ const SurgeryStatsPage = {
 
     _getAllTimeRange() {
         const all = SurgeryPage.getAllSurgeries();
+        const now = new Date();
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
         if (all.length === 0) {
-            const now = new Date();
-            return { start: new Date(now.getFullYear(), 0, 1), end: now };
+            return { start: new Date(now.getFullYear(), 0, 1), end: todayEnd };
         }
-        const dates = all.map(s => new Date(s.date)).sort((a, b) => a - b);
+        // Thống kê toàn bộ chỉ tính tới ngày hiện tại, không tính xa hơn
+        const pastSurgeries = all.filter(s => {
+            const d = new Date(s.date);
+            return d <= todayEnd;
+        });
+        if (pastSurgeries.length === 0) {
+            return { start: new Date(now.getFullYear(), 0, 1), end: todayEnd };
+        }
+        const dates = pastSurgeries.map(s => new Date(s.date)).sort((a, b) => a - b);
         const start = new Date(dates[0]);
         start.setHours(0, 0, 0, 0);
-        const end = new Date(dates[dates.length - 1]);
-        end.setHours(23, 59, 59, 999);
+        const end = todayEnd;
         return { start, end };
     },
 
@@ -208,12 +216,20 @@ const SurgeryStatsPage = {
 
     getSurgeriesInRange() {
         const all = SurgeryPage.getAllSurgeries();
+        const now = new Date();
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
         if (this.period === 'all') {
-            return all;
+            return all.filter(s => {
+                const d = new Date(s.date);
+                return d <= todayEnd;
+            });
         }
         const { start, end } = this.getDateRange();
         return all.filter(s => {
             const d = new Date(s.date);
+            if (this.offset <= 0 && d > todayEnd) {
+                return false;
+            }
             return d >= start && d <= end;
         });
     },
@@ -548,7 +564,9 @@ const SurgeryStatsPage = {
     // ===== RENDER TAB 1: RADAR DASHBOARD & SO SÁNH 2 BÁC SĨ =====
     _renderRadarDashboard(surgeries, allDocs) {
         if (!surgeries || surgeries.length === 0) {
-            const allSurgeries = SurgeryPage.getAllSurgeries() || [];
+            const now = new Date();
+            const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+            const allSurgeries = (SurgeryPage.getAllSurgeries() || []).filter(s => new Date(s.date) <= todayEnd);
             return `
             <div class="card sstats-empty-state-card" style="padding: 40px 20px; text-align: center;">
                 <div class="sstats-empty-icon" style="font-size: 2.5rem; margin-bottom: 12px;">📋</div>
@@ -1949,3 +1967,7 @@ const SurgeryStatsPage = {
         }
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.SurgeryStatsPage = SurgeryStatsPage;
+}

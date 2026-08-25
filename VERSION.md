@@ -68,6 +68,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 
 | Version | Ngày | Phạm vi | Mô tả chi tiết |
 |---|---|---|---|
+| `2608252103` | 25/08/2026 | Surgery Stats | Giới hạn thống kê phẫu thuật Toàn bộ và theo kỳ tối đa đến ngày hiện tại (chặn ca tương lai lọt vào thống kê lâm sàng). |
 | `2608251015` | 25/08/2026 | Full Release | Nâng cấp Lịch mổ Robot (responsive mobile cards + filter theo ngày), Birthday protocol (demo handler qua URL query & console), fix CSS canvas overlay. |
 | `2608231548` | 23/08/2026 | Full Release | Báo cáo 16h Thứ 7 (22/08/2026), nâng cấp Lịch mổ & Phân công tuần, Undo isolation theo tuần, upgrade-path verification. |
 | `2608221515` | 22/08/2026 | UI/Schedule | Schedule Undo multi-week isolation, peek-before-save guard, touch targets $\ge 44\text{px}$. |

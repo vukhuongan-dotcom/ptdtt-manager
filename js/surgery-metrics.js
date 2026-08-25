@@ -88,11 +88,12 @@ const SurgeryMetrics = {
             const label = `Tháng ${m + 1}/${y}`;
             const shortLabel = `T${m + 1}`;
 
-            const monthCases = surgeries.filter(s => s && s.date && s.date >= startStr && s.date <= endStr);
+            const isCurrentMonth = (i === 0);
+            const maxStr = isCurrentMonth ? `${y}-${String(m + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` : endStr;
+            const monthCases = surgeries.filter(s => s && s.date && s.date >= startStr && s.date <= maxStr);
             const types = this.calculateTypeBreakdown(monthCases);
             const mis = this.calculateMIS(monthCases);
 
-            const isCurrentMonth = (i === 0);
             let runRateProjected = types.total;
 
             if (isCurrentMonth) {
