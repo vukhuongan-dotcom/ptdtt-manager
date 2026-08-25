@@ -793,6 +793,50 @@ const DashboardPage = {
     // Birthday Logic
     getTodayBirthdays(allStaff, todayStr) {
         if (!allStaff || !allStaff.length) return null;
+
+        // Support Demo Mode via URL params (?demo_bday=hang, ?bday=hang, ?demo_birthday=hang) or window.__DEMO_BDAY__
+        try {
+            let demoQuery = (typeof window !== 'undefined') ? (window.__DEMO_BDAY__ || null) : null;
+            if (!demoQuery && typeof window !== 'undefined' && window.location && window.location.search) {
+                const urlParams = new URLSearchParams(window.location.search);
+                demoQuery = urlParams.get('demo_bday') || urlParams.get('bday') || urlParams.get('demo_birthday');
+            }
+
+            if (demoQuery) {
+                const stripVn = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+                const q = String(demoQuery).trim().toLowerCase();
+                const cleanQ = stripVn(q);
+                const matched = allStaff.filter(s => {
+                    const rawName = (s.name || '').toLowerCase();
+                    const cleanName = stripVn(s.name);
+                    const role = (s.role || '').toLowerCase();
+                    const title = (s.title || '').toLowerCase();
+                    const idStr = String(s.id);
+                    return rawName.includes(q) || cleanName.includes(cleanQ) || idStr === q || role.includes(q) || title.includes(q);
+                });
+
+                if (matched.length > 0) {
+                    const sample = matched[0];
+                    let dateStr = '05.05';
+                    if (sample.dob) {
+                        const p = sample.dob.split(/[-/.]/);
+                        if (p.length === 3) {
+                            dateStr = sample.dob.includes('-') ? `${p[2].padStart(2, '0')}.${p[1].padStart(2, '0')}` : `${p[0].padStart(2, '0')}.${p[1].padStart(2, '0')}`;
+                        }
+                    }
+                    return {
+                        isToday: true,
+                        isTestPreview: false,
+                        staff: matched,
+                        dateStr: dateStr,
+                        daysLeft: 0
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn('Birthday demo detection error:', e);
+        }
+
         const parts = (todayStr || '').split('-');
         if (parts.length < 3) return null;
 
@@ -1104,9 +1148,48 @@ const DashboardPage = {
             }
         });
         return result;
+    },
+
+    demoBirthday(nameOrId = 'Hằng') {
+        window.__DEMO_BDAY__ = nameOrId;
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('demo_birthday', nameOrId);
+        }
+        if (typeof App !== 'undefined' && typeof App.renderCurrentPage === 'function') {
+            App.renderCurrentPage();
+        } else {
+            const mainEl = document.getElementById('main-content');
+            if (mainEl) mainEl.innerHTML = this.render();
+            if (this.renderTrendChart) this.renderTrendChart();
+        }
+        setTimeout(() => {
+            const staffList = (typeof Store !== 'undefined' && Store.getAll) ? Store.getAll('staff') : [];
+            const matched = staffList.filter(s => (s.name || '').toLowerCase().includes(String(nameOrId).toLowerCase()));
+            const tier = this.getBirthdayTier(matched);
+            this.triggerConfetti(tier || 'standard');
+        }, 400);
+        if (typeof Toast !== 'undefined') {
+            Toast.success(`🎉 Đang chạy demo chúc mừng sinh nhật ${nameOrId}! 🎂✨`);
+        }
+    },
+
+    clearDemoBirthday() {
+        window.__DEMO_BDAY__ = null;
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('demo_birthday');
+        }
+        if (typeof App !== 'undefined' && typeof App.renderCurrentPage === 'function') {
+            App.renderCurrentPage();
+        }
+        if (typeof Toast !== 'undefined') {
+            Toast.info('Đã tắt chế độ demo chúc mừng sinh nhật.');
+        }
     }
 };
 
 if (typeof window !== 'undefined') {
     window.DashboardPage = DashboardPage;
+    window.demoBirthday = (name = 'Hằng') => DashboardPage.demoBirthday(name);
+    window.clearDemoBirthday = () => DashboardPage.clearDemoBirthday();
 }
+

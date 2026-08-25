@@ -35,7 +35,7 @@ YYMMDDHHMM (10 chữ số, không leading zero)
 
 ## 3. Quy Trình Bump Version Chuẩn Cho Release Candidate
 
-Mỗi khi chuẩn bị release bản build mới (ví dụ: `NEW_VER=2608231548`):
+Mỗi khi chuẩn bị release bản build mới (ví dụ: `NEW_VER=2608251015`):
 
 ### Bước 1: Build CSS Bundle
 ```bash
@@ -68,6 +68,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 
 | Version | Ngày | Phạm vi | Mô tả chi tiết |
 |---|---|---|---|
+| `2608251015` | 25/08/2026 | Full Release | Nâng cấp Lịch mổ Robot (responsive mobile cards + filter theo ngày), Birthday protocol (demo handler qua URL query & console), fix CSS canvas overlay. |
 | `2608231548` | 23/08/2026 | Full Release | Báo cáo 16h Thứ 7 (22/08/2026), nâng cấp Lịch mổ & Phân công tuần, Undo isolation theo tuần, upgrade-path verification. |
 | `2608221515` | 22/08/2026 | UI/Schedule | Schedule Undo multi-week isolation, peek-before-save guard, touch targets $\ge 44\text{px}$. |
 | `2608221436` | 22/08/2026 | UI/CSS | Refactor CSS components, surgery metrics card updates. |

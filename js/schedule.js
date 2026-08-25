@@ -1077,60 +1077,166 @@ const SchedulePage = {
 
     // ===== ROBOT SURGERY SECTION =====
     renderRobotSection(schedule, dates, isAdmin) {
-        const robotEntries = schedule?.robotSurgery || [];
+        const allRobotEntries = schedule?.robotSurgery || [];
+        const isDayView = this._mobileViewMode === 'day';
+        const today = this._localDateStr(new Date());
+
+        let selectedIdx = this._selectedMobileDayIdx;
+        if (selectedIdx === null || selectedIdx < 0 || selectedIdx > 6) {
+            const todayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === today);
+            selectedIdx = todayIdx !== -1 ? todayIdx : 0;
+        }
+
+        const selectedDate = dates[selectedIdx] || dates[0];
+        const selectedDateStr = this._localDateStr(selectedDate);
+        const selectedDayLabel = DAY_LABELS[selectedIdx] || DAY_LABELS[0];
+        const dayNum = String(selectedDate.getDate()).padStart(2, '0');
+        const dayMonth = String(selectedDate.getMonth() + 1).padStart(2, '0');
+
+        // Determine displayed entries based on view mode
+        const displayedEntries = isDayView
+            ? allRobotEntries.filter(e => e.day === selectedDateStr)
+            : allRobotEntries;
+
+        const countBadgeText = isDayView
+            ? `${selectedDayLabel} (${dayNum}/${dayMonth}): ${displayedEntries.length} ca`
+            : `Tuần: ${allRobotEntries.length} ca`;
+
+        const badgeClass = displayedEntries.length ? 'robot-badge-active' : 'badge-subtle';
+
+        const renderCardsHtml = () => {
+            if (!displayedEntries.length) {
+                return `
+                <div class="robot-empty-card">
+                    <div class="robot-empty-icon">🏖️</div>
+                    <div class="robot-empty-text">
+                        ${isDayView
+                            ? `Không có ca phụ mổ Robot vào <strong>${selectedDayLabel} (${dayNum}/${dayMonth})</strong>`
+                            : 'Chưa có lịch phụ mổ Robot tuần này'
+                        }
+                    </div>
+                    ${isAdmin ? `
+                    <button class="btn btn-outline btn-sm mt-8" onclick="SchedulePage.openRobotForm(null, '${selectedDateStr}')">
+                        ${Utils.plusIcon()} Thêm ca mổ Robot ${isDayView ? `cho ${selectedDayLabel}` : ''}
+                    </button>` : ''}
+                </div>`;
+            }
+
+            return `
+            <div class="robot-mobile-cards">
+                ${displayedEntries.map((entry) => {
+                    const origIdx = allRobotEntries.indexOf(entry);
+                    const dayDate = new Date(entry.day + 'T00:00:00');
+                    const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
+                    const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
+                    const dNum = String(dayDate.getDate()).padStart(2, '0');
+                    const dMonth = String(dayDate.getMonth() + 1).padStart(2, '0');
+                    const dateFormatted = `${dayLabel}, ${dNum}.${dMonth}.${dayDate.getFullYear()}`;
+
+                    const doc0Name = entry.doctors?.[0] ? this.getShortName(entry.doctors[0]) : '—';
+                    const doc1Name = entry.doctors?.[1] ? this.getShortName(entry.doctors[1]) : '—';
+                    const doc2Name = entry.doctors?.[2] ? this.getShortName(entry.doctors[2]) : '—';
+
+                    return `
+                    <div class="robot-card-item">
+                        <div class="robot-card-top">
+                            <div class="flex items-center gap-8 flex-wrap">
+                                <span class="badge badge-info robot-card-session">Ca ${entry.session}</span>
+                                <span class="robot-card-date">📅 <strong>${dateFormatted}</strong></span>
+                            </div>
+                            ${isAdmin ? `
+                            <div class="robot-card-actions">
+                                <button class="btn-icon robot-card-action-btn" onclick="SchedulePage.openRobotForm(${origIdx})" title="Chỉnh sửa ca mổ">
+                                    ${Utils.editIcon()}
+                                </button>
+                                <button class="btn-icon text-danger robot-card-action-btn" onclick="SchedulePage.removeRobotEntry(${origIdx})" title="Xoá ca mổ">
+                                    ${Utils.deleteIcon()}
+                                </button>
+                            </div>` : ''}
+                        </div>
+                        <div class="robot-team-grid">
+                            <div class="robot-team-slot">
+                                <span class="robot-slot-role">BS Phụ 1</span>
+                                <span class="robot-slot-name">${doc0Name}</span>
+                            </div>
+                            <div class="robot-team-slot">
+                                <span class="robot-slot-role">BS Phụ 2</span>
+                                <span class="robot-slot-name">${doc1Name}</span>
+                            </div>
+                            <div class="robot-team-slot">
+                                <span class="robot-slot-role">BS Phụ 3</span>
+                                <span class="robot-slot-name">${doc2Name}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        };
+
+        const renderTableHtml = () => {
+            return `
+            <div class="robot-table-wrap">
+                <table class="schedule-table robot-table">
+                    <thead>
+                        <tr>
+                            <th class="robot-th-day">Ngày mổ</th>
+                            <th class="robot-th-session" style="text-align:center;width:80px">Ca</th>
+                            <th>BS phụ 1</th>
+                            <th>BS phụ 2</th>
+                            <th>BS phụ 3</th>
+                            ${isAdmin ? '<th class="robot-th-action" style="text-align:center;width:110px">Thao tác</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody id="robot-tbody">
+                        ${displayedEntries.length ? displayedEntries.map((entry) => {
+                            const origIdx = allRobotEntries.indexOf(entry);
+                            const dayDate = new Date(entry.day + 'T00:00:00');
+                            const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
+                            const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
+                            const dNum = String(dayDate.getDate()).padStart(2, '0');
+                            const dMonth = String(dayDate.getMonth() + 1).padStart(2, '0');
+                            const dateFormatted = `${dayLabel}, ${dNum}.${dMonth}.${dayDate.getFullYear()}`;
+
+                            const doc0Name = entry.doctors?.[0] ? this.getShortName(entry.doctors[0]) : '—';
+                            const doc1Name = entry.doctors?.[1] ? this.getShortName(entry.doctors[1]) : '—';
+                            const doc2Name = entry.doctors?.[2] ? this.getShortName(entry.doctors[2]) : '—';
+
+                            return `<tr>
+                                <td><strong>${dateFormatted}</strong></td>
+                                <td style="text-align:center"><span class="badge badge-info">Ca ${entry.session}</span></td>
+                                <td>${doc0Name}</td>
+                                <td>${doc1Name}</td>
+                                <td>${doc2Name}</td>
+                                ${isAdmin ? `<td style="text-align:center">
+                                    <div class="flex items-center justify-center gap-4">
+                                        <button class="btn-icon" onclick="SchedulePage.openRobotForm(${origIdx})" title="Chỉnh sửa ca mổ">${Utils.editIcon()}</button>
+                                        <button class="btn-icon text-danger" onclick="SchedulePage.removeRobotEntry(${origIdx})" title="Xoá ca mổ">${Utils.deleteIcon()}</button>
+                                    </div>
+                                </td>` : ''}
+                            </tr>`;
+                        }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" class="robot-empty-cell" style="text-align:center;padding:24px;color:var(--text-secondary)">${isDayView ? `Không có ca mổ Robot vào ${selectedDayLabel} (${dayNum}/${dayMonth})` : 'Chưa có lịch mổ Robot tuần này'}</td></tr>`}
+                    </tbody>
+                </table>
+            </div>`;
+        };
 
         return `
         <div class="card robot-surgery-card robot-surgery-card--mt">
-            <div class="flex justify-between items-center robot-card-header mb-12">
-                <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
-                ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="SchedulePage.openRobotForm()">
+            <div class="flex justify-between items-center robot-card-header mb-12 flex-wrap gap-8">
+                <div class="flex items-center gap-8 flex-wrap">
+                    <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
+                    <span class="badge robot-card-header-badge ${badgeClass}">${countBadgeText}</span>
+                </div>
+                ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="SchedulePage.openRobotForm(null, '${selectedDateStr}')">
                     ${Utils.plusIcon()} Thêm ca mổ Robot
                 </button>` : ''}
             </div>
-            <table class="schedule-table robot-table">
-                <thead>
-                    <tr>
-                        <th class="robot-th-day">Ngày mổ</th>
-                        <th class="robot-th-session" style="text-align:center;width:80px">Ca</th>
-                        <th>BS phụ 1</th>
-                        <th>BS phụ 2</th>
-                        <th>BS phụ 3</th>
-                        ${isAdmin ? '<th class="robot-th-action" style="text-align:center;width:110px">Thao tác</th>' : ''}
-                    </tr>
-                </thead>
-                <tbody id="robot-tbody">
-                    ${robotEntries.length ? robotEntries.map((entry, idx) => {
-                        const dayDate = new Date(entry.day + 'T00:00:00');
-                        const dayIdx = dates.findIndex(d => SchedulePage._localDateStr(d) === entry.day);
-                        const dayLabel = dayIdx >= 0 ? DAY_LABELS[dayIdx] : '';
-                        const dayNum = String(dayDate.getDate()).padStart(2, '0');
-                        const dayMonth = String(dayDate.getMonth() + 1).padStart(2, '0');
-                        const dateFormatted = `${dayLabel}, ${dayNum}.${dayMonth}.${dayDate.getFullYear()}`;
-
-                        const doc0Name = entry.doctors?.[0] ? this.getShortName(entry.doctors[0]) : '—';
-                        const doc1Name = entry.doctors?.[1] ? this.getShortName(entry.doctors[1]) : '—';
-                        const doc2Name = entry.doctors?.[2] ? this.getShortName(entry.doctors[2]) : '—';
-
-                        return `<tr>
-                            <td><strong>${dateFormatted}</strong></td>
-                            <td style="text-align:center"><span class="badge badge-info">Ca ${entry.session}</span></td>
-                            <td>${doc0Name}</td>
-                            <td>${doc1Name}</td>
-                            <td>${doc2Name}</td>
-                            ${isAdmin ? `<td style="text-align:center">
-                                <div class="flex items-center justify-center gap-4">
-                                    <button class="btn-icon" onclick="SchedulePage.openRobotForm(${idx})" title="Chỉnh sửa ca mổ">${Utils.editIcon()}</button>
-                                    <button class="btn-icon text-danger" onclick="SchedulePage.removeRobotEntry(${idx})" title="Xoá ca mổ">${Utils.deleteIcon()}</button>
-                                </div>
-                            </td>` : ''}
-                        </tr>`;
-                    }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" class="robot-empty-cell" style="text-align:center;padding:24px;color:var(--text-secondary)">Chưa có lịch mổ Robot tuần này</td></tr>`}
-                </tbody>
-            </table>
+            ${renderCardsHtml()}
+            ${renderTableHtml()}
         </div>`;
     },
 
-    openRobotForm(editIdx = null) {
+    openRobotForm(editIdx = null, defaultDayStr = null) {
         if (!this.canEditSchedule()) return;
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
@@ -1138,8 +1244,15 @@ const SchedulePage = {
         const robotEntries = schedule?.robotSurgery ? [...schedule.robotSurgery] : [];
 
         const isEdit = editIdx !== null && editIdx >= 0 && editIdx < robotEntries.length;
+        let initialDay = this._localDateStr(dates[0]);
+        if (defaultDayStr) {
+            initialDay = defaultDayStr;
+        } else if (this._selectedMobileDayIdx !== null && dates[this._selectedMobileDayIdx]) {
+            initialDay = this._localDateStr(dates[this._selectedMobileDayIdx]);
+        }
+
         const entry = isEdit ? robotEntries[editIdx] : {
-            day: this._localDateStr(dates[0]),
+            day: initialDay,
             session: 1,
             doctors: [null, null, null]
         };
