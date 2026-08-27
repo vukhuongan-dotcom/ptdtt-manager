@@ -1,0 +1,94 @@
+{"ts": "2026-08-27T05:23:21.131258", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T05:24:26.692795", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 144, "nextId": null}}
+{"ts": "2026-08-27T05:43:23.011498", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T05:43:40.834406", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 144, "nextId": null}}
+{"ts": "2026-08-27T05:44:06.831399", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T05:44:37.848438", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 144, "nextId": null}}
+{"ts": "2026-08-27T05:45:17.078229", "user": "hkxhang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T06:46:35.580019", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T07:18:44.326972", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T07:32:24.721665", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:00:08.647782", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:02:20.022314", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:16:02.589374", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:16:22.631959", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:20:39.714690", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:21:51.832126", "user": "ndluan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2426, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1787793710074, "label": "Phạm Hạnh Trinh — 1997 — 2026-08-28", "record": {"patientName": "Phạm Hạnh Trinh", "birthYear": 1997, "admissionId": "26055955", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-08-28", "duration": 45, "mainSurgeon": 9, "assistSurgeon1": 11, "diagnosis": "Trĩ ngoại ", "method": "Phẫu thuật cắt trĩ bằng dao siêu âm", "notes": "", "isFirstCase": false, "id": 1787793710074, "createdBy": {"username": "ndluan", "name": "Nguyễn Đức Luân", "at": "2026-08-27T01:21:50.074Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T08:23:13.234296", "user": "nthuyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:23:55.969393", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:26:53.352600", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:29:27.743734", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:30:36.718692", "user": "ndluan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2427, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1787794234922, "label": "Trương Minh Huấn — 2004 — 2026-08-28", "record": {"patientName": "Trương Minh Huấn", "birthYear": 2004, "admissionId": "26055961 ", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-08-28", "duration": 60, "mainSurgeon": 7, "assistSurgeon1": 11, "diagnosis": "Thoát vị bẹn PHẢI", "method": "Phẫu thuật phục hồi thành bẹn PHẢI bằng Mesh", "notes": "", "isFirstCase": false, "id": 1787794234922, "createdBy": {"username": "ndluan", "name": "Nguyễn Đức Luân", "at": "2026-08-27T01:30:34.922Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T08:57:50.529310", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T08:58:35.213922", "user": "ndluan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2428, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1787795913356, "label": "Huỳnh Văn Đào — 1976 — 2026-08-28", "record": {"patientName": "Huỳnh Văn Đào", "birthYear": 1976, "admissionId": "26055959", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-08-28", "duration": 45, "mainSurgeon": 7, "assistSurgeon1": 11, "diagnosis": "Rò hậu môn", "method": "Phẫu thuật cắt mô xơ đường rò", "notes": "", "isFirstCase": false, "id": 1787795913356, "createdBy": {"username": "ndluan", "name": "Nguyễn Đức Luân", "at": "2026-08-27T01:58:33.356Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T09:03:42.929014", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:11:32.318124", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:12:26.853458", "user": "ndluan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2429, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1787796744955, "label": "Trần Văn Ngon — 1976 — 2026-08-28", "record": {"patientName": "Trần Văn Ngon", "birthYear": 1976, "admissionId": "26055962 ", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-08-28", "duration": 45, "mainSurgeon": 9, "assistSurgeon1": 11, "diagnosis": "Bệnh trĩ độ III - Trĩ ngoại ", "method": "Phẫu thuật cắt trĩ bằng  dao siêu âm ", "notes": "", "isFirstCase": false, "id": 1787796744955, "createdBy": {"username": "ndluan", "name": "Nguyễn Đức Luân", "at": "2026-08-27T02:12:24.955Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T09:12:39.834290", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:17:41.598128", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:26:43.897515", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:43:09.608708", "user": "nthuyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:43:19.852598", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:43:23.865708", "user": "nphuu", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 40, "nextId": 119, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T09:44:35.048484", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T09:57:14.160713", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:05:15.503702", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:06:56.188924", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:15:02.935882", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:15:15.162566", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:18:41.891339", "user": "ndluan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2430, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1787800721379, "label": "Nguyễn Phước Đại — 1971 — 2026-08-28", "record": {"patientName": "Nguyễn Phước Đại", "birthYear": 1971, "admissionId": "26056014 ", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-08-28", "duration": 45, "mainSurgeon": 5, "assistSurgeon1": 11, "diagnosis": "Trĩ nội độ IV sa nghẹt ", "method": "Phẫu thuật cắt trĩ bằng dao siêu âm", "notes": "", "isFirstCase": false, "id": 1787800721379, "createdBy": {"username": "ndluan", "name": "Nguyễn Đức Luân", "at": "2026-08-27T03:18:41.379Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T10:29:26.373306", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:30:12.283769", "user": "ndluan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2431, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1787801411715, "label": "Nguyễn Thị Kim Thoa — 1988 — 2026-08-28", "record": {"patientName": "Nguyễn Thị Kim Thoa", "birthYear": 1988, "admissionId": "26056037 ", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-08-28", "duration": 45, "mainSurgeon": 5, "assistSurgeon1": 11, "diagnosis": "Trĩ độ III + Da thừa hậu môn ", "method": "Phẫu thuật cắt trĩ + da thừa hậu môn", "notes": "", "isFirstCase": false, "id": 1787801411715, "createdBy": {"username": "ndluan", "name": "Nguyễn Đức Luân", "at": "2026-08-27T03:30:11.715Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T10:32:07.696405", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:34:27.726694", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:36:42.108451", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:45:40.425924", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T10:48:09.625974", "user": "vnatuan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 40, "nextId": 119, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-08-27T10:58:09.005530", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T11:06:08.182343", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T11:07:27.651014", "user": "ltttrang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T11:21:30.553195", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T11:45:01.859552", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:01:50.729554", "user": "nthuyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:02:53.308910", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:04:42.868875", "user": "tnduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:09:07.172579", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:09:45.182929", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:09:46.892691", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:09:59.912901", "user": "nmnphuong", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2431, "nextId": null, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 1787716461407, "label": "Trần Thị Huệ — 1954 — 2026-08-28", "from": {"notes": ""}, "to": {"notes": "Ca 1"}}]}}}
+{"ts": "2026-08-27T12:33:22.715790", "user": "ptctien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-08-27T12:33:28.451396", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:47:49.701780", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T12:55:39.058934", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T13:06:53.410505", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T14:34:37.509247", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T14:34:41.763494", "user": "lvhoan", "action": "collection.put.surgeriesTrash", "ip": "127.0.0.1", "details": {"count": 13, "nextId": null, "added": 0, "removed": 1, "changed": 0, "diff": {"added": [], "removed": [{"id": 1787197213150, "label": "id=1787197213150", "record": {"admissionId": "26054186", "approachType": "mo", "assistSurgeon1": 10, "birthYear": 1998, "createdBy": {"at": "2026-08-20T03:40:13.150Z", "name": "Nguyễn Đức Luân", "username": "ndluan"}, "date": "2026-08-21", "deletedAt": "2026-08-20T06:20:04.385Z", "deletedBy": {"name": "Phạm Vĩnh Phú", "username": "pvphu"}, "diagnosis": "Trĩ độ III", "duration": 45, "id": 1787197213150, "isFirstCase": false, "mainSurgeon": 7, "method": "Phẫu thuật cắt trĩ bằng dao siêu âm ", "notes": "", "patientName": "Nguyễn Duy Tân", "surgeryType": "yeucau", "updatedBy": {"at": "2026-08-20T04:14:11.374Z", "name": "Vũ Khương An", "username": "vkan"}}}], "changed": []}}}
+{"ts": "2026-08-27T14:38:37.095782", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:02:01.715421", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:20:08.501469", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:23:04.790828", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:26:22.749498", "user": "ntnthuy", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-08-27T15:26:29.915756", "user": "ntnthuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:27:53.015203", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:30:07.860410", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:33:07.854393", "user": "ntnthuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T15:43:47.151916", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T16:09:42.327225", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T16:26:28.981946", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T16:40:40.977421", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T16:46:52.863162", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T16:49:18.988139", "user": "tmtrong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "disabled"}}
+{"ts": "2026-08-27T16:50:23.479636", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T16:55:52.178641", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T17:07:59.474211", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T17:19:23.844996", "user": "lttan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T17:25:16.317461", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T17:34:11.603880", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T17:35:43.803047", "user": "ndluan", "action": "collection.put.reports16h", "ip": "127.0.0.1", "details": {"count": 105, "nextId": null}}
+{"ts": "2026-08-27T17:37:58.216263", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T17:39:04.842004", "user": "ndluan", "action": "collection.put.reports16h", "ip": "127.0.0.1", "details": {"count": 105, "nextId": null}}
+{"ts": "2026-08-27T17:46:07.195246", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T18:35:02.450331", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T20:00:40.092824", "user": "ptctien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "123.21.148.56", "remaining": 4}}
+{"ts": "2026-08-27T20:00:45.965644", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-08-27T20:28:47.968822", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
