@@ -1,0 +1,32 @@
+{"ts": "2026-09-06T06:09:57.393522", "user": "ptttien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T06:11:37.745300", "user": "ptttien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 154, "nextId": null}}
+{"ts": "2026-09-06T06:14:07.225954", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T06:15:05.590938", "user": "ptttien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T06:15:20.483513", "user": "ptttien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 154, "nextId": null}}
+{"ts": "2026-09-06T06:51:11.690775", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T07:56:26.699172", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T08:02:55.365121", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T09:09:06.569343", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T10:04:43.054194", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T10:19:07.245041", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T10:27:31.339224", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T10:38:07.321822", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T10:38:56.954032", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T10:39:49.350586", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T10:41:11.942525", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T10:42:32.673416", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T10:49:46.892704", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T10:50:45.955791", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T10:51:14.812963", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T10:52:27.421658", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T11:25:21.704978", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 19, "label": "2026-09-07", "from": {"notes": ""}, "to": {"notes": "BS Hoan lên phòng KHTH 2 tuần\nBSNT có lịch giao ban nội trú thứ 7"}}]}}}
+{"ts": "2026-09-06T11:46:47.978832", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T11:50:53.905004", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T11:56:19.963792", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T12:16:42.836336", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 19, "label": "2026-09-07", "from": {"notes": "BS Hoan lên phòng KHTH 2 tuần\nBSNT có lịch giao ban nội trú thứ 7"}, "to": {"notes": "BS Hoan lên phòng KHTH 2 tuần\nTS Hữu, BS Vĩnh Phú mổ bệnh viện Bà Rịa thứ 5\nBSNT có lịch giao ban nội trú thứ 7"}}]}}}
+{"ts": "2026-09-06T12:17:35.609822", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T12:18:48.777396", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 25, "nextId": 20, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T12:49:54.793804", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T14:53:35.471495", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-06T14:56:35.825020", "user": "pvphu", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 40, "nextId": 119, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-06T19:20:22.512377", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
