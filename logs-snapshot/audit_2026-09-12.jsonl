@@ -1,0 +1,40 @@
+{"ts": "2026-09-12T00:13:40.781237", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T05:56:15.488782", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T06:19:12.293293", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T06:54:12.710587", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-09-12T06:54:29.562771", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-09-12T06:54:32.416881", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 3}}
+{"ts": "2026-09-12T06:54:38.749269", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 3}}
+{"ts": "2026-09-12T06:54:56.586166", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T06:56:39.381493", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 160, "nextId": null}}
+{"ts": "2026-09-12T06:59:21.488519", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 2}}
+{"ts": "2026-09-12T06:59:27.127086", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-09-12T06:59:29.125717", "user": "nnhien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 1}}
+{"ts": "2026-09-12T06:59:38.841128", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T07:00:10.219207", "user": "nnhien", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 160, "nextId": null}}
+{"ts": "2026-09-12T07:10:32.757586", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T07:47:12.275629", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T07:48:08.472925", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T07:49:00.621141", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T07:49:03.943928", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T07:49:40.881511", "user": "nnhien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T08:05:33.061221", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T08:07:20.906237", "user": "ndtphu", "action": "collection.put.surgeriesTrash", "ip": "127.0.0.1", "details": {"count": 5, "nextId": null, "added": 0, "removed": 1, "changed": 0, "diff": {"added": [], "removed": [{"id": 1788488094997, "label": "id=1788488094997", "record": {"admissionId": "26056608", "approachType": "mo", "assistSurgeon1": 9, "birthYear": 1949, "createdBy": {"at": "2026-09-04T02:14:54.997Z", "name": "Nguyễn Đức Luân", "username": "ndluan"}, "date": "2026-09-07", "deletedAt": "2026-09-05T00:56:53.402Z", "deletedBy": {"name": "Phạm Thị Tuyết Minh", "username": "pttminh"}, "diagnosis": "Thoát vị vết mổ cũ", "duration": 180, "id": 1788488094997, "isFirstCase": false, "mainSurgeon": 4, "method": "mổ mở phục hồi thành bụng", "notes": "", "patientName": "Tạ Xú Há Nủi", "surgeryType": "chuongtrinh"}}], "changed": []}}}
+{"ts": "2026-09-12T08:52:13.224724", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T09:55:19.930597", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T10:16:49.490975", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T10:59:15.529093", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T11:05:13.138312", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T11:13:05.704160", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T12:00:28.136638", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T12:19:04.865062", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T12:20:25.189273", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T14:42:13.044819", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T14:47:12.739719", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T15:48:12.501098", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T17:00:21.070962", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T19:49:03.359155", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T20:20:06.424113", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T20:31:27.233240", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T21:10:07.291448", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-12T22:29:36.321801", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
