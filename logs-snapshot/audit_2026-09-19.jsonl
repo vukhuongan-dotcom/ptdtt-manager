@@ -1,0 +1,11 @@
+{"ts": "2026-09-19T05:51:54.972875", "user": "lhduy", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-09-19T05:51:56.567544", "user": "lhduyduy123", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-09-19T05:52:03.368449", "user": "lhduy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-19T05:53:10.764174", "user": "lhduy", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 167, "nextId": null}}
+{"ts": "2026-09-19T05:54:26.924494", "user": "lhduy", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 167, "nextId": null}}
+{"ts": "2026-09-19T07:42:22.115112", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-19T08:20:52.941541", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-19T11:33:40.628879", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-19T15:53:25.983571", "user": "ttdanh", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "103.199.33.234", "remaining": 4}}
+{"ts": "2026-09-19T15:53:33.186078", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-19T21:49:39.325283", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
