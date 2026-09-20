@@ -9,6 +9,30 @@ const CONF_REGIONS = {
 // Chỉ lưu hội nghị mà khoa có báo cáo
 const CONF_SEED_DATA = [
     {
+        name: "HỘI NGHỊ NGOẠI TIÊU HÓA BV NHÂN DÂN 115 (2026)",
+        nameVi: "Hội nghị Ngoại tiêu hóa Bệnh viện Nhân dân 115: Từ PTNS đến PT bằng Robot Hiện tại và Tương lai",
+        dates: "09/09/2026",
+        startDate: "2026-09-09",
+        endDate: "2026-09-09",
+        location: "TPHCM",
+        venue: "Hội trường Đổi mới, Tầng 4 – Khu CĐ&ĐT Kỹ thuật cao, BV Nhân Dân 115",
+        region: "domestic",
+        organizer: "Bệnh viện Nhân Dân 115",
+        website: "",
+        note: "Chủ tọa: ThS.BS.CKII Cao Hoài Tuấn Anh (PGĐ BV 115), GS. Sherry M. Wren (ĐH Stanford)",
+        presentations: [
+            {
+                date: "2026-09-09",
+                session: "Chương trình Chiều: Phẫu thuật Robot",
+                time: "14:00 - 14:30",
+                title: "Phẫu thuật Robot trong điều trị ung thư trực tràng: Những kinh nghiệm ban đầu tại Bệnh viện Bình Dân",
+                presenter: "TS. BSCKII Nguyễn Phú Hữu",
+                language: "vi",
+                note: "Hội trường Đổi mới, BV Nhân Dân 115"
+            }
+        ]
+    },
+    {
         name: "ELSA 2026",
         nameVi: "Hội nghị Quốc tế Thường niên lần thứ 34 Hội Phẫu thuật Nội soi Châu Á (34th Annual Congress of ELSA)",
         dates: "17–19/09/2026",
