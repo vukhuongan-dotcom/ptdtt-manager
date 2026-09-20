@@ -9,11 +9,35 @@ const CONF_REGIONS = {
 // Chỉ lưu hội nghị mà khoa có báo cáo
 const CONF_SEED_DATA = [
     {
-        name: "VASEL 2026 & ELSA 2026",
-        nameVi: "Hội nghị Phẫu thuật Nội soi và Ngoại khoa Việt Nam kết hợp Hội Phẫu thuật Nội soi Châu Á",
+        name: "ELSA 2026",
+        nameVi: "Hội nghị Quốc tế Thường niên lần thứ 34 Hội Phẫu thuật Nội soi Châu Á (34th Annual Congress of ELSA)",
         dates: "17–19/09/2026",
         startDate: "2026-09-17",
         endDate: "2026-09-19",
+        location: "Huế, Việt Nam",
+        venue: "Trung tâm Hội nghị TP. Huế (Silk Path Grand Huế)",
+        region: "international",
+        organizer: "Endoscopic and Laparoscopic Surgeons of Asia (ELSA) & VASEL",
+        website: "https://www.elsa-congress.com/",
+        note: "Chương trình Báo cáo Khoa học Quốc tế (Main Congress & Video Presentation Schedule)",
+        presentations: [
+            {
+                date: "2026-09-18",
+                session: "Video Session 1: Colorectal, Hernia, Thoracic & Others (ID 018)",
+                time: "15:40–15:44",
+                title: "ROBOTIC LOW ANTERIOR RESECTION WITH SIDE-TO-END ANASTOMOSIS FOR RECTAL CANCER: A STEP-BY-STEP VIDEO DEMONSTRATION",
+                presenter: "TS. BSCKII Nguyễn Phú Hữu",
+                language: "en",
+                note: "Video Presentation Room (Abstract ID: 018)"
+            }
+        ]
+    },
+    {
+        name: "VASEL 2026",
+        nameVi: "Hội nghị Ngoại khoa và Phẫu thuật Nội soi Việt Nam 2026",
+        dates: "17/09/2026",
+        startDate: "2026-09-17",
+        endDate: "2026-09-17",
         location: "Huế, Thừa Thiên Huế",
         venue: "Hội trường Trung ương Huế",
         region: "domestic",
