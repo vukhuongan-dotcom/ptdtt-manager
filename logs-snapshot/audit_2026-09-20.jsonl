@@ -1,0 +1,23 @@
+{"ts": "2026-09-20T06:05:51.893231", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T06:15:39.103250", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T06:16:38.722968", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 168, "nextId": null}}
+{"ts": "2026-09-20T06:20:13.078435", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 168, "nextId": null}}
+{"ts": "2026-09-20T07:29:55.660835", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T09:20:15.145092", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T09:30:16.144709", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 27, "nextId": 22, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-20T09:31:24.447897", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 27, "nextId": 22, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-20T09:43:21.882112", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 27, "nextId": 22, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 21, "label": "2026-09-21", "from": {"notes": ""}, "to": {"notes": "BS Tú có lịch thi chiều thứ 4, sáng thứ 5, chiều thứ 6\nBSNT Thành, Sang có lịch học thứ 2-6 từ 7g tới 16g"}}]}}}
+{"ts": "2026-09-20T09:47:25.594265", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 27, "nextId": 22, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-20T10:36:20.008771", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T10:38:12.722723", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 27, "nextId": 22, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 21, "label": "2026-09-21", "from": {"notes": "BS Tú có lịch thi chiều thứ 4, sáng thứ 5, chiều thứ 6\nBSNT Thành, Sang có lịch học thứ 2-6 từ 7g tới 16g"}, "to": {"notes": "TS HỮU ĐI HỌC CHÍNH TRỊ THỨ 3, THỨ 5 CẢ NGÀY\nBS Nguyện có lịch dạy học sáng thứ 5\nBS Tú có lịch thi chiều thứ 4, sáng thứ 5, chiều thứ 6\nBSNT Thành, Sang có lịch học thứ 2-6 từ 7g tới 16g"}}]}}}
+{"ts": "2026-09-20T10:38:58.959605", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T10:52:42.270644", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T10:55:43.158514", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T10:55:58.545634", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 27, "nextId": 22, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-20T13:02:54.122965", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T14:07:18.154231", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T16:04:03.946506", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T17:04:29.056122", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T17:05:05.119311", "user": "vkan", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 40, "nextId": 119, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-20T17:11:21.277556", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-20T21:50:39.913403", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
