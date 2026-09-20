@@ -9,6 +9,39 @@ const CONF_REGIONS = {
 // Chỉ lưu hội nghị mà khoa có báo cáo
 const CONF_SEED_DATA = [
     {
+        name: "VASEL 2026 & ELSA 2026",
+        nameVi: "Hội nghị Phẫu thuật Nội soi và Ngoại khoa Việt Nam kết hợp Hội Phẫu thuật Nội soi Châu Á",
+        dates: "17–19/09/2026",
+        startDate: "2026-09-17",
+        endDate: "2026-09-19",
+        location: "Huế, Thừa Thiên Huế",
+        venue: "Hội trường Trung ương Huế",
+        region: "domestic",
+        organizer: "Hội Ngoại khoa & Phẫu thuật Nội soi Việt Nam (VASEL) & Bệnh viện Trung ương Huế",
+        website: "https://vasel.vn",
+        note: "Bản duyệt thông qua nội dung báo cáo khoa học TQ1B (Khoa Phẫu thuật Đại trực tràng) — 2 bài báo cáo chính thức",
+        presentations: [
+            {
+                date: "2026-09-17",
+                session: "Phiên A1: Đại Trực Tràng 1 (A1.11)",
+                time: "11:40 - 11:50",
+                title: "Đánh giá kết quả sớm của kỹ thuật làm miệng nối cải tiến trong phẫu thuật nội soi điều trị ung thư trực tràng",
+                presenter: "BSCKII Vũ Ngọc Anh Tuấn",
+                language: "vi",
+                note: "Hội trường Trung ương Huế"
+            },
+            {
+                date: "2026-09-17",
+                session: "Phiên A3: Robot (A3.5)",
+                time: "16:10 - 16:20",
+                title: "Kết quả dài hạn phẫu thuật cắt trước thấp bằng robot trong điều trị ung thư trực tràng tại Bệnh viện Bình Dân",
+                presenter: "TS.BSCKII Nguyễn Phú Hữu",
+                language: "vi",
+                note: "Hội trường Trung ương Huế"
+            }
+        ]
+    },
+    {
         name: "VSCS 2026 & UCSC 2026",
         nameVi: "Hội nghị Phẫu thuật Đại trực tràng Việt Nam: Phẫu thuật Đại trực tràng trong kỉ nguyên hiện đại",
         dates: "05–06/06/2026",
