@@ -426,7 +426,7 @@ const PlansPage = {
                     <div><strong>Địa điểm:</strong> ${p.location || '—'}</div>
                     ${p.note ? `<div><strong>Ghi chú:</strong> ${p.note}</div>` : ''}
                     <div class="plans-shcm-info-box">
-                        ℹ️ Sự kiện này được tạo tự động từ <strong>Lịch SHCM</strong>. Để chỉnh sửa, vui lòng vào trang <a href="#" onclick="Modal.close();App.navigate('research')" class="plans-shcm-link">Nghiên cứu</a>.
+                        ℹ️ Sự kiện này được tạo tự động từ <strong>Lịch SHCM</strong>. Để chỉnh sửa, vui lòng vào trang <a href="#" onclick="Modal.close();App.navigate('research')" class="plans-shcm-link">Sinh hoạt chuyên môn</a>.
                     </div>
                 </div>
                 <div class="modal-footer">

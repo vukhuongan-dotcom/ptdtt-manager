@@ -198,7 +198,7 @@ const GlobalSearch = {
             { name: 'Phân công tuần', detail: 'Lịch phân công', icon: '📆', page: 'schedule' },
             { name: 'Lịch mổ tuần', detail: 'Surgery schedule', icon: '🔪', page: 'surgery' },
             { name: 'Thống kê PT', detail: 'Surgery stats', icon: '📈', page: 'surgery-stats' },
-            { name: 'Nghiên cứu', detail: 'Sinh hoạt chuyên môn', icon: '🔬', page: 'research' },
+            { name: 'Sinh hoạt chuyên môn', detail: 'Lịch SHCM & bài báo cáo', icon: '🔬', page: 'research' },
             { name: 'Hội nghị', detail: 'Hội nghị y khoa', icon: '👥', page: 'conferences' },
             { name: 'Báo cáo', detail: 'Báo cáo khoa', icon: '📄', page: 'reports' },
         ];
