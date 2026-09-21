@@ -72,7 +72,7 @@ const ResearchPage = {
         <div class="page-header">
             <div>
                 <h1 class="page-title">Sinh hoạt Chuyên môn</h1>
-                <p class="page-subtitle">Lịch SHCM & Tài liệu — Khoa PTĐTT · Bệnh viện Bình Dân</p>
+                <p class="page-subtitle">Lịch Sinh hoạt Chuyên môn — Khoa PTĐTT · Bệnh viện Bình Dân</p>
             </div>
             <div class="rsch-header-actions">
                 <button class="btn btn-secondary" id="shcm-export-btn" onclick="ResearchPage.exportImage()" aria-label="Xuất hình ảnh lịch sinh hoạt chuyên môn">
@@ -243,24 +243,10 @@ const ResearchPage = {
                 }).join('')}
             </div>
         </div>
-
-        <!-- Files section -->
-        <div class="card rsch-files-card">
-            <div class="rsch-files-header">
-                <div>
-                    <h3>📁 Kho Tài liệu & Bài Sinh hoạt Chuyên môn</h3>
-                    <div class="rsch-files-note">PDF SHCM được lưu trữ và đồng bộ an toàn từ máy chủ khoa.</div>
-                </div>
-            </div>
-            <div id="shcm-files-list" class="rsch-files-list">
-                <div class="rsch-loading-placeholder">Đang tải danh sách file...</div>
-            </div>
-        </div>
         `;
     },
 
     afterRender() {
-        this.loadFiles();
         this._autoStatusTransition();
         this._autoDedupDates();
         this._syncAllPlans();
