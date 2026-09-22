@@ -122,16 +122,16 @@ const SurgeryStatsPage = {
         }
     },
 
-    // Filter: BCN khoa + Bác sĩ chính + External doctors
+    // Filter: BCN khoa + Bác sĩ chính + Bác sĩ học viên (BSNT) + External doctors
     getEligibleDoctors() {
         const internal = Store.getAll('staff').filter(s =>
-            s.role === 'BS Trưởng khoa' ||
-            s.role === 'BS Phó trưởng khoa' ||
-            s.role === 'Bác sĩ chính'
+            (s.role && (s.role.includes('Bác sĩ') || s.role.includes('BS') || s.role.includes('Trưởng khoa') || s.role.includes('Phó trưởng khoa'))) &&
+            !s.role.includes('Điều dưỡng')
         );
         const external = (Store.getAll('externalDoctors') || []).map(d => ({
             ...d,
-            role: d.position || 'BS ngoài khoa'
+            role: d.position || 'BS ngoài khoa',
+            isExternal: true
         }));
         return [...internal, ...external];
     },
@@ -467,18 +467,59 @@ const SurgeryStatsPage = {
 
         return doctors.map(doc => {
             const cases = surgeries.filter(s => s.mainSurgeon === doc.id);
+            const assistCases = surgeries.filter(s => s.assistSurgeon1 === doc.id || s.assistSurgeon2 === doc.id);
             const byType = {};
             types.forEach(t => {
                 byType[t] = cases.filter(s => s.surgeryType === t).length;
             });
 
+            const isCore = doc.role === 'BS Trưởng khoa' || doc.role === 'BS Phó trưởng khoa' || doc.role === 'Bác sĩ chính';
+
             return {
                 doctor: doc,
                 cases: cases.sort((a, b) => new Date(a.date) - new Date(b.date)),
+                assistCases: assistCases.sort((a, b) => new Date(a.date) - new Date(b.date)),
+                assistTotal: assistCases.length,
                 total: cases.length,
+                isCore,
                 byType
             };
-        }).filter(d => d.total > 0).sort((a, b) => b.total - a.total);
+        }).filter(d => {
+            // Luôn hiển thị đầy đủ 100% BCN và Bác sĩ chính của khoa (dù 0 ca)
+            if (d.isCore) return true;
+            // Với BS học viên và BS ngoài khoa: chỉ hiển thị nếu có tham gia mổ chính hoặc phụ mổ
+            return d.total > 0 || d.assistTotal > 0;
+        }).sort((a, b) => {
+            // Xếp theo tổng ca mổ chính giảm dần
+            if (b.total !== a.total) return b.total - a.total;
+            // Nếu cùng số ca mổ chính: xếp theo số ca phụ mổ giảm dần
+            if (b.assistTotal !== a.assistTotal) return b.assistTotal - a.assistTotal;
+            return (a.doctor.id || 0) - (b.doctor.id || 0);
+        });
+    },
+
+    _renderDoctorOptions(selectedId, allDocs) {
+        const coreDocs = allDocs.filter(d => !d.isExternal && (d.role === 'BS Trưởng khoa' || d.role === 'BS Phó trưởng khoa' || d.role === 'Bác sĩ chính'));
+        const residentDocs = allDocs.filter(d => !d.isExternal && (d.role || '').includes('học viên'));
+        const extDocs = allDocs.filter(d => d.isExternal);
+
+        let html = '';
+        if (coreDocs.length > 0) {
+            html += `<optgroup label="🩺 BCN & Bác sĩ chính">
+                ${coreDocs.map(d => `<option value="${d.id}" ${String(d.id) === String(selectedId) ? 'selected' : ''}>${d.name} (${d.role})</option>`).join('')}
+            </optgroup>`;
+        }
+        if (residentDocs.length > 0) {
+            html += `<optgroup label="👨‍⚕️ Bác sĩ học viên (BSNT)">
+                ${residentDocs.map(d => `<option value="${d.id}" ${String(d.id) === String(selectedId) ? 'selected' : ''}>${d.name} (${d.role})</option>`).join('')}
+            </optgroup>`;
+        }
+        if (extDocs.length > 0) {
+            html += `<optgroup label="🏥 Bác sĩ ngoài khoa">
+                ${extDocs.map(d => `<option value="${d.id}" ${String(d.id) === String(selectedId) ? 'selected' : ''}>${d.name} (${d.role})</option>`).join('')}
+            </optgroup>`;
+        }
+        return html;
     },
 
     // ===== MAIN RENDER =====
@@ -620,11 +661,7 @@ const SurgeryStatsPage = {
                             <option value="dept_total" ${(this.primaryDoctorId === 'dept_total' || this.primaryDoctorId === 'dept_avg') ? 'selected' : ''}>
                                 📊 Toàn Khoa (Tổng số ca)
                             </option>
-                            ${allDocs.map(d => `
-                                <option value="${d.id}" ${String(d.id) === String(this.primaryDoctorId) ? 'selected' : ''}>
-                                    ${d.name} (${d.role})
-                                </option>
-                            `).join('')}
+                            ${this._renderDoctorOptions(this.primaryDoctorId, allDocs)}
                         </select>
                     </div>
                 </div>
@@ -640,11 +677,7 @@ const SurgeryStatsPage = {
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setCompareDoctor(this.value)">
                             <option value="none" ${this.compareDoctorId === 'none' ? 'selected' : ''}>🚫 Để trống (Không so sánh)</option>
                             <option value="dept_total" ${(this.compareDoctorId === 'dept_total' || this.compareDoctorId === 'dept_avg') ? 'selected' : ''}>📊 Toàn Khoa (Tổng số ca)</option>
-                            ${allDocs.map(d => `
-                                <option value="${d.id}" ${String(d.id) === String(this.compareDoctorId) ? 'selected' : ''}>
-                                    ${d.name} (${d.role})
-                                </option>
-                            `).join('')}
+                            ${this._renderDoctorOptions(this.compareDoctorId, allDocs)}
                         </select>
                     </div>
                 </div>
@@ -1262,41 +1295,44 @@ const SurgeryStatsPage = {
             <!-- ===== SUMMARY TABLE ===== -->
             <div class="card sstats-main-table-card">
                 <div class="sstats-main-table-header">
-                    <h3>🩺 Bảng tổng hợp theo BS mổ chính</h3>
-                    <span class="sstats-main-table-hint">Nhấn vào tên BS để xem chi tiết</span>
+                    <h3>🩺 Bảng tổng hợp năng lực phẫu thuật theo Bác sĩ</h3>
+                    <span class="sstats-main-table-hint">Nhấn vào tên BS để xem chi tiết ca mổ chính & phụ mổ</span>
                 </div>
                 <table class="sstats-table">
                     <thead>
                         <tr>
                             <th class="sstats-th-stt">STT</th>
-                            <th class="sstats-th-name">BS mổ chính</th>
+                            <th class="sstats-th-name">Bác sĩ phẫu thuật</th>
                             ${types.map(t => `<th class="sstats-th-num">${SURGERY_TYPES[t].label}</th>`).join('')}
-                            <th class="sstats-th-num sstats-th-total">Tổng</th>
+                            <th class="sstats-th-num" style="color:#6366f1" title="Số ca tham gia phụ mổ">Mổ phụ</th>
+                            <th class="sstats-th-num sstats-th-total">Tổng MC</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${allStats.map((docStat, idx) => {
                             const isExpanded = this.expandedDoctor == docStat.doctor.id;
+                            const extBadge = docStat.doctor.isExternal ? `<span class="badge" style="background:#f1f5f9;color:#64748b;font-size:0.7rem;padding:2px 6px;margin-left:6px;border-radius:4px">Ngoài khoa</span>` : '';
                             return `
                         <tr class="sstats-summary-row ${isExpanded ? 'sstats-row-active' : ''}" 
                             onclick="SurgeryStatsPage.toggleDoctor(${docStat.doctor.id})">
                             <td class="sstats-td-stt">${idx + 1}</td>
                             <td>
                                 <div class="sstats-td-name">
-                                    <div class="sstats-doc-avatar" style="background:${docStat.doctor.color}">${docStat.doctor.name.split(' ').pop().charAt(0)}</div>
+                                    <div class="sstats-doc-avatar" style="background:${docStat.doctor.color || '#0891b2'}">${docStat.doctor.name.split(' ').pop().charAt(0)}</div>
                                     <div>
-                                        <div class="sstats-doc-name">${docStat.doctor.name}</div>
+                                        <div class="sstats-doc-name">${docStat.doctor.name} ${extBadge}</div>
                                         <div class="sstats-doc-role">${docStat.doctor.role}</div>
                                     </div>
                                     <svg class="sstats-expand-icon ${isExpanded ? 'expanded' : ''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                                 </div>
                             </td>
                             ${types.map(t => `<td class="sstats-td-num ${docStat.byType[t] === 0 ? 'zero' : ''}">${docStat.byType[t]}</td>`).join('')}
+                            <td class="sstats-td-num ${docStat.assistTotal === 0 ? 'zero' : ''}" style="color:${docStat.assistTotal > 0 ? '#6366f1;font-weight:600' : 'inherit'}">${docStat.assistTotal}</td>
                             <td class="sstats-td-num sstats-td-total">${docStat.total}</td>
                         </tr>
                         ${isExpanded ? `
                         <tr class="sstats-detail-row">
-                            <td colspan="${types.length + 3}" style="padding:0">
+                            <td colspan="${types.length + 4}" style="padding:0">
                                 ${this._renderDoctorDetail(docStat)}
                             </td>
                         </tr>` : ''}`;
@@ -1306,6 +1342,7 @@ const SurgeryStatsPage = {
                         <tr class="sstats-footer-row">
                             <td colspan="2" class="sstats-td-footer-label">TỔNG CỘNG</td>
                             ${types.map(t => `<td class="sstats-td-num sstats-td-num-bold">${grandByType[t]}</td>`).join('')}
+                            <td class="sstats-td-num sstats-td-num-bold" style="color:#6366f1">${allStats.reduce((sum, d) => sum + d.assistTotal, 0)}</td>
                             <td class="sstats-td-num sstats-td-total sstats-td-total-grand">${totalAll}</td>
                         </tr>
                     </tfoot>
@@ -1317,14 +1354,65 @@ const SurgeryStatsPage = {
 
     // Render expanded detail for a specific doctor
     _renderDoctorDetail(docStat) {
+        if (docStat.total === 0 && docStat.assistTotal === 0) {
+            return `
+            <div class="sstats-detail-panel" style="padding: 20px; text-align: center; color: var(--text-muted);">
+                <p style="margin: 0; font-size: 0.9rem;">Bác sĩ không có ca mổ chính hoặc phụ mổ trong ${this.getPeriodLabel()}</p>
+            </div>`;
+        }
+
+        if (docStat.total === 0 && docStat.assistTotal > 0) {
+            return `
+            <div class="sstats-detail-panel">
+                <div class="sstats-detail-header">
+                    <div class="sstats-detail-title">
+                        <strong>${docStat.doctor.name}</strong> — Không có ca mổ chính · <span style="color:#6366f1;font-weight:700">Phụ mổ: ${docStat.assistTotal} ca</span>
+                    </div>
+                </div>
+                <table class="sstats-detail-table">
+                    <thead>
+                        <tr>
+                            <th class="sstats-detail-th-stt">STT</th>
+                            <th class="sstats-detail-th-name">Họ tên BN</th>
+                            <th>Năm sinh</th>
+                            <th class="sstats-detail-th-diagnosis">Chẩn đoán trước mổ</th>
+                            <th class="sstats-detail-th-method">PP phẫu thuật</th>
+                            <th>Ngày mổ</th>
+                            <th>Loại PT</th>
+                            <th>BS mổ chính</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${docStat.assistCases.map((s, idx) => {
+                            const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                            const mainDoc = Utils.getStaffName(s.mainSurgeon);
+                            const dateStr = Utils.formatDate(s.date);
+                            return `
+                        <tr onclick="SurgeryPage.viewDetail(${s.id})" class="sstats-detail-tr-clickable" title="Xem chi tiết">
+                            <td class="sstats-detail-td-stt">${idx + 1}</td>
+                            <td><strong>${s.patientName}</strong></td>
+                            <td>${s.birthYear || '—'}</td>
+                            <td class="sstats-detail-td-text">${s.diagnosis || '—'}</td>
+                            <td class="sstats-detail-td-text">${s.method || '—'}</td>
+                            <td>${dateStr}</td>
+                            <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
+                            <td><strong style="color:var(--text-primary)">${mainDoc}</strong></td>
+                        </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        }
+
         return `
         <div class="sstats-detail-panel">
             <div class="sstats-detail-header">
                 <div class="sstats-detail-title">
-                    <strong>${docStat.doctor.name}</strong> — ${docStat.total} ca phẫu thuật
+                    <strong>${docStat.doctor.name}</strong> — ${docStat.total} ca mổ chính${docStat.assistTotal > 0 ? ` · <span style="color:#6366f1;font-weight:700">${docStat.assistTotal} ca phụ mổ</span>` : ''}
                 </div>
                 <div class="sstats-detail-chips">
                     ${Object.keys(SURGERY_TYPES).map(t => docStat.byType[t] > 0 ? `<span class="sstats-type-chip" style="background:${SURGERY_TYPES[t].color}20;color:${SURGERY_TYPES[t].color}">${SURGERY_TYPES[t].label}: ${docStat.byType[t]}</span>` : '').join('')}
+                    ${docStat.assistTotal > 0 ? `<span class="sstats-type-chip" style="background:#6366f120;color:#6366f1">Phụ mổ: ${docStat.assistTotal}</span>` : ''}
                 </div>
             </div>
             <table class="sstats-detail-table">
@@ -1356,6 +1444,45 @@ const SurgeryStatsPage = {
                     }).join('')}
                 </tbody>
             </table>
+
+            ${docStat.assistTotal > 0 ? `
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-color, #cbd5e1);">
+                <div style="font-weight: 700; font-size: 0.88rem; color: #6366f1; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span>🤝 Ca tham gia phụ mổ (${docStat.assistTotal} ca)</span>
+                </div>
+                <table class="sstats-detail-table">
+                    <thead>
+                        <tr>
+                            <th class="sstats-detail-th-stt">STT</th>
+                            <th class="sstats-detail-th-name">Họ tên BN</th>
+                            <th>Năm sinh</th>
+                            <th class="sstats-detail-th-diagnosis">Chẩn đoán trước mổ</th>
+                            <th class="sstats-detail-th-method">PP phẫu thuật</th>
+                            <th>Ngày mổ</th>
+                            <th>Loại PT</th>
+                            <th>BS mổ chính</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${docStat.assistCases.map((s, aIdx) => {
+                            const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                            const mainDoc = Utils.getStaffName(s.mainSurgeon);
+                            const dateStr = Utils.formatDate(s.date);
+                            return `
+                        <tr onclick="SurgeryPage.viewDetail(${s.id})" class="sstats-detail-tr-clickable" title="Xem chi tiết">
+                            <td class="sstats-detail-td-stt">${aIdx + 1}</td>
+                            <td><strong>${s.patientName}</strong></td>
+                            <td>${s.birthYear || '—'}</td>
+                            <td class="sstats-detail-td-text">${s.diagnosis || '—'}</td>
+                            <td class="sstats-detail-td-text">${s.method || '—'}</td>
+                            <td>${dateStr}</td>
+                            <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
+                            <td><strong style="color:var(--text-primary)">${mainDoc}</strong></td>
+                        </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>` : ''}
         </div>`;
     },
 
@@ -1423,19 +1550,20 @@ const SurgeryStatsPage = {
             const wb = XLSX.utils.book_new();
 
             // Sheet 1: Summary by doctor
-            const summaryHeaders = ['STT', 'BS mổ chính', 'Chức vụ', ...types.map(t => SURGERY_TYPES[t].label), ...approaches.map(a => approachLabels[a]), 'Tổng'];
+            const summaryHeaders = ['STT', 'Bác sĩ phẫu thuật', 'Chức vụ', ...types.map(t => SURGERY_TYPES[t].label), ...approaches.map(a => approachLabels[a]), 'Mổ phụ', 'Tổng MC'];
             const summaryData = [summaryHeaders];
             allStats.forEach((d, i) => {
                 const approachCounts = approaches.map(a => d.cases.filter(s => s.approachType === a).length);
-                summaryData.push([i+1, d.doctor.name, d.doctor.role, ...types.map(t => d.byType[t]), ...approachCounts, d.total]);
+                summaryData.push([i+1, d.doctor.name, d.doctor.role, ...types.map(t => d.byType[t]), ...approachCounts, d.assistTotal, d.total]);
             });
             const grandByType = {};
             types.forEach(t => { grandByType[t] = surgeries.filter(s => s.surgeryType === t).length; });
             const grandByApproach = approaches.map(a => surgeries.filter(s => s.approachType === a).length);
-            summaryData.push(['', 'TỔNG CỘNG', '', ...types.map(t => grandByType[t]), ...grandByApproach, surgeries.length]);
+            const grandAssist = allStats.reduce((sum, d) => sum + d.assistTotal, 0);
+            summaryData.push(['', 'TỔNG CỘNG', '', ...types.map(t => grandByType[t]), ...grandByApproach, grandAssist, surgeries.length]);
 
             const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
-            ws1['!cols'] = [{wch:5},{wch:25},{wch:20},...types.map(()=>({wch:12})),...approaches.map(()=>({wch:10})),{wch:8}];
+            ws1['!cols'] = [{wch:5},{wch:25},{wch:20},...types.map(()=>({wch:12})),...approaches.map(()=>({wch:10})),{wch:10},{wch:10}];
             XLSX.utils.book_append_sheet(wb, ws1, 'Tong hop');
 
             // Sheet 2: Detail all surgeries
