@@ -18,29 +18,107 @@ const PRIORITY_DOCTOR_BY_DAY = {
 
 const _typePriority = { robot: 0, bankhan: 1, chuongtrinh: 2, yeucau: 3 };
 
-// Sort surgeries: by type > isFirstCase > priority doctor > duration (desc)
+// Sort surgeries:
+// 1. By surgery type priority: robot > bankhan > chuongtrinh > yeucau
+// 2. Within same type: group cases of the same doctor together
+//    - Doctor order: has "Ca đầu tiên" (isFirstCase) > priority doctor of the day (PRIORITY_DOCTOR_BY_DAY) > max duration (desc) > total duration (desc) > doctor ID
+//    - Within each doctor: isFirstCase first > duration (desc)
 function sortSurgeries(surgeries, date) {
-    const dayOfWeek = date instanceof Date ? date.getDay() : new Date(date).getDay();
+    if (!Array.isArray(surgeries) || surgeries.length === 0) return [];
+
+    let dayOfWeek;
+    if (date instanceof Date) {
+        dayOfWeek = date.getDay();
+    } else if (typeof date === 'string' && date.includes('-')) {
+        const parts = date.split('T')[0].split('-');
+        dayOfWeek = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getDay();
+    } else {
+        dayOfWeek = new Date(date).getDay();
+    }
+
     const priorityDocId = PRIORITY_DOCTOR_BY_DAY[dayOfWeek] || null;
-    return surgeries.sort((a, b) => {
-        // 1. Sort by surgery type priority
-        const typeDiff = (_typePriority[a.surgeryType] ?? 9) - (_typePriority[b.surgeryType] ?? 9);
-        if (typeDiff !== 0) return typeDiff;
-        // 2. "Ca đầu tiên" always on top within same type
-        const aFirst = a.isFirstCase ? 0 : 1;
-        const bFirst = b.isFirstCase ? 0 : 1;
-        if (aFirst !== bFirst) return aFirst - bFirst;
-        // 3. Priority doctor's cases first
-        if (priorityDocId) {
-            const aIsPriority = a.mainSurgeon === priorityDocId ? 0 : 1;
-            const bIsPriority = b.mainSurgeon === priorityDocId ? 0 : 1;
-            if (aIsPriority !== bIsPriority) return aIsPriority - bIsPriority;
-        }
-        // 4. Longest duration first
-        const aDur = parseInt(a.duration) || 0;
-        const bDur = parseInt(b.duration) || 0;
-        return bDur - aDur;
+
+    // 1. Group surgeries by surgeryType
+    const typeGroups = {};
+    for (const s of surgeries) {
+        const t = s.surgeryType || 'chuongtrinh';
+        if (!typeGroups[t]) typeGroups[t] = [];
+        typeGroups[t].push(s);
+    }
+
+    const sortedTypes = Object.keys(typeGroups).sort((a, b) => {
+        return (_typePriority[a] ?? 9) - (_typePriority[b] ?? 9);
     });
+
+    const result = [];
+
+    for (const type of sortedTypes) {
+        const typeSurgeries = typeGroups[type];
+
+        // 2. Group by doctor (mainSurgeon)
+        const docGroups = new Map();
+        for (const s of typeSurgeries) {
+            const docId = s.mainSurgeon || 0;
+            if (!docGroups.has(docId)) docGroups.set(docId, []);
+            docGroups.get(docId).push(s);
+        }
+
+        // Sort each doctor's cases: isFirstCase first, then duration desc
+        for (const [docId, cases] of docGroups.entries()) {
+            cases.sort((a, b) => {
+                const aFirst = a.isFirstCase ? 0 : 1;
+                const bFirst = b.isFirstCase ? 0 : 1;
+                if (aFirst !== bFirst) return aFirst - bFirst;
+                const aDur = parseInt(a.duration, 10) || 0;
+                const bDur = parseInt(b.duration, 10) || 0;
+                if (bDur !== aDur) return bDur - aDur;
+                return (a.id || 0) - (b.id || 0);
+            });
+        }
+
+        // 3. Order doctor groups
+        const sortedDocs = [...docGroups.keys()].sort((docA, docB) => {
+            // Unassigned doctor (0) always goes last
+            if (!docA && docB) return 1;
+            if (docA && !docB) return -1;
+
+            const casesA = docGroups.get(docA);
+            const casesB = docGroups.get(docB);
+
+            // A doctor with "Ca đầu tiên" (isFirstCase) goes first
+            const aHasFirst = casesA.some(c => c.isFirstCase) ? 0 : 1;
+            const bHasFirst = casesB.some(c => c.isFirstCase) ? 0 : 1;
+            if (aHasFirst !== bHasFirst) return aHasFirst - bHasFirst;
+
+            // Priority doctor of the day (BS chính kíp mổ ngày đó theo ghi nhớ)
+            if (priorityDocId) {
+                const aIsPriority = docA === priorityDocId ? 0 : 1;
+                const bIsPriority = docB === priorityDocId ? 0 : 1;
+                if (aIsPriority !== bIsPriority) return aIsPriority - bIsPriority;
+            }
+
+            // Doctor with longest single surgery first
+            const aMaxDur = Math.max(...casesA.map(c => parseInt(c.duration, 10) || 0));
+            const bMaxDur = Math.max(...casesB.map(c => parseInt(c.duration, 10) || 0));
+            if (bMaxDur !== aMaxDur) return bMaxDur - aMaxDur;
+
+            // Doctor with larger total duration
+            const aTotalDur = casesA.reduce((sum, c) => sum + (parseInt(c.duration, 10) || 0), 0);
+            const bTotalDur = casesB.reduce((sum, c) => sum + (parseInt(c.duration, 10) || 0), 0);
+            if (bTotalDur !== aTotalDur) return bTotalDur - aTotalDur;
+
+            return (parseInt(docA, 10) || 0) - (parseInt(docB, 10) || 0);
+        });
+
+        // 4. Flatten doctor cases into result
+        for (const docId of sortedDocs) {
+            result.push(...docGroups.get(docId));
+        }
+    }
+
+    surgeries.length = 0;
+    surgeries.push(...result);
+    return surgeries;
 }
 
 // Check if a week is locked (more than 7 days since Monday of that week)
