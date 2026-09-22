@@ -216,9 +216,9 @@ const SurgeryStatsPage = {
 
     getSurgeriesInRange() {
         const all = SurgeryPage.getAllSurgeries();
-        const now = new Date();
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
         if (this.period === 'all') {
+            const now = new Date();
+            const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
             return all.filter(s => {
                 const d = new Date(s.date);
                 return d <= todayEnd;
@@ -227,9 +227,6 @@ const SurgeryStatsPage = {
         const { start, end } = this.getDateRange();
         return all.filter(s => {
             const d = new Date(s.date);
-            if (this.offset <= 0 && d > todayEnd) {
-                return false;
-            }
             return d >= start && d <= end;
         });
     },
