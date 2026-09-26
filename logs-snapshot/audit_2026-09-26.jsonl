@@ -1,0 +1,24 @@
+{"ts": "2026-09-26T05:53:47.108015", "user": "nhdtram", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T06:00:32.935393", "user": "nhdtram", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T06:01:29.159679", "user": "nhdtram", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 174, "nextId": null}}
+{"ts": "2026-09-26T06:14:54.755920", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T07:56:00.126861", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T08:17:25.979288", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T09:07:24.675642", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T09:09:59.657402", "user": "vkan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2621, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1790388597411, "label": "Lê Trần Anh — 1976 — 2026-09-30", "record": {"patientName": "Lê Trần Anh", "birthYear": 1976, "admissionId": "", "surgeryType": "yeucau", "approachType": "noisoi", "date": "2026-09-30", "duration": 60, "mainSurgeon": 2, "assistSurgeon1": 9, "diagnosis": "Polyp túi mật", "method": "PTNS cắt túi mật", "notes": "", "isFirstCase": false, "id": 1790388597411, "createdBy": {"username": "vkan", "name": "Vũ Khương An", "at": "2026-09-26T02:09:57.411Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-09-26T09:11:51.946442", "user": "vkan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2622, "nextId": null, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1790388710146, "label": "Lê Quế Anh — 1979 — 2026-09-30", "record": {"patientName": "Lê Quế Anh", "birthYear": 1979, "admissionId": "", "surgeryType": "yeucau", "approachType": "noisoi", "date": "2026-09-30", "duration": 60, "mainSurgeon": 2, "assistSurgeon1": 9, "diagnosis": "Sỏi túi mật đau", "method": "PTNS cắt túi mật", "notes": "", "isFirstCase": false, "id": 1790388710146, "createdBy": {"username": "vkan", "name": "Vũ Khương An", "at": "2026-09-26T02:11:50.146Z"}}}], "removed": [], "changed": []}}}
+{"ts": "2026-09-26T09:34:05.949697", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T09:56:44.729084", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T10:14:54.131242", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T11:32:11.139307", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T11:39:22.088287", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T11:44:16.658725", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T11:52:54.850462", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T11:55:25.856657", "user": "ghtquy", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 40, "nextId": 119, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-09-26T12:20:46.213150", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T14:10:41.045957", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T16:54:16.957029", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T16:54:59.104546", "user": "nphuu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T19:53:06.349026", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T20:11:46.783402", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-09-26T21:12:36.965851", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
