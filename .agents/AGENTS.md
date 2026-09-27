@@ -64,3 +64,25 @@ Mỗi khi Agent thực hiện bất kỳ điều chỉnh, nâng cấp tính năn
    - Tự động mở Google Chrome: `open -a "Google Chrome" "https://khoaptdtt.info.vn/"`.
    - Báo cáo kết quả hoàn thành trong khung chat kèm đường dẫn trực tiếp có thể bấm được: `👉 https://khoaptdtt.info.vn/`.
 
+---
+
+## Quy tắc Học tập & Quản trị Lỗi liên tục (Continuous Bug Learning Protocol)
+
+### Quy tắc Tự động Ghi nhận Lỗi vào Bảng Tổng hợp (Auto-Bug Registry Mandate)
+
+> 🛑 **NGUYÊN TẮC BẮT BUỘC RIÊNG CHO DỰ ÁN PTDTT MANAGER**
+> - **Ban hành:** 27/09/2026 theo chỉ đạo của User.
+> - **Hồ sơ lưu trữ Single Source of Truth (SSoT):** `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md` (đồng bộ tại `docs/BUG_FIX_REGISTRY.md`).
+
+Sau này, mỗi khi phát sinh bất kỳ lỗi nào (bug) và được điều chỉnh/sửa đổi/khắc phục trong dự án `ptdtt-manager`, Agent **BẮT BUỘC TỰ ĐỘNG GHI NHẬN** lỗi đó vào Bảng tổng hợp lỗi của dự án, bao gồm:
+1. **Mã số lỗi tiếp nối** (`BUG-154`, `BUG-155`...).
+2. **Thời gian ghi nhận** (`YYYY-MM-DD`).
+3. **Commit Hash & Liên kết commit** ([`hash`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/hash)).
+4. **Phân hệ bị ảnh hưởng** (Lịch mổ, Thống kê PT, Lịch trực, Báo cáo 7h/16h, Nhân sự, Auth, Store/Sync, UI/UX...).
+5. **Hiện tượng & Triệu chứng phát hiện (Symptoms)**.
+6. **Nguyên nhân gốc rễ (Root Cause Analysis - RCA)**.
+7. **Giải pháp kỹ thuật đã áp dụng (Resolution)**.
+
+> ⚠️ **Quy chuẩn thực thi:** Thao tác ghi nhận này diễn ra đồng thời với bước commit và auto-deploy, đảm bảo tri thức kỹ thuật được tích lũy liên tục vào Brain của dự án, ngăn chặn triệt để nguy cơ tái diễn lỗi cũ trong tương lai.
+
+
