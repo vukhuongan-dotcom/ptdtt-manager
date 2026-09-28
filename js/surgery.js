@@ -407,6 +407,7 @@ const SurgeryPage = {
                                     <span class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</span>
                                     <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
                                     <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
+                                    ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
                                 <div class="surgery-card-detail" style="max-height:none;padding:0 12px 12px;">
                                     ${s.diagnosis ? `<div class="surgery-card-diagnosis">📋 ${s.diagnosis}</div>` : ''}
@@ -451,6 +452,7 @@ const SurgeryPage = {
                                     <span class="surgery-type-dot" style="background:${typeInfo.color}" title="${typeInfo.label}"></span>
                                     <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
                                     <span class="surgery-card-yob">${s.birthYear || ''}</span>
+                                    ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</div>
@@ -609,7 +611,15 @@ const SurgeryPage = {
                 </div>
                 ${s.notes ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Ghi chú</div>
-                    <div class="surgery-detail-value">${s.notes}</div>
+                    <div class="surgery-detail-value">${Utils.escapeHtml(s.notes)}</div>
+                </div>` : ''}
+                ${s.rescheduledFrom ? `<div class="surgery-detail-row">
+                    <div class="surgery-detail-label">Lịch sử dời ca</div>
+                    <div class="surgery-detail-value"><span style="color:#b45309;font-weight:600">🔄 Dời từ ngày ${Utils.formatDate(s.rescheduledFrom.fromDate)} sang ngày ${Utils.formatDate(s.rescheduledFrom.toDate)}</span> <span style="font-size:0.8rem;color:var(--text-secondary)">(${s.rescheduledFrom.by || 'BS'})</span></div>
+                </div>` : ''}
+                ${s.duplicateOverride ? `<div class="surgery-detail-row">
+                    <div class="surgery-detail-label">Ghi nhận trùng</div>
+                    <div class="surgery-detail-value">${s.duplicateOverride.type === 'same_patient_multicase' ? '<span class="badge-duplicate-patient">⚡ Cùng bệnh nhân (Mổ 2 thì)</span>' : '<span class="badge-different-patient">👥 Khác bệnh nhân (Trùng tên)</span>'} <span style="font-size:0.8rem;color:var(--text-secondary)">(Xác nhận bởi ${s.duplicateOverride.confirmedBy || 'BS'})</span></div>
                 </div>` : ''}
             </div>
             <div class="modal-footer">
@@ -645,6 +655,8 @@ const SurgeryPage = {
                         <input class="form-input" name="birthYear" value="${s?.birthYear || ''}" placeholder="1980" type="number" min="1900" max="2026">
                     </div>
                 </div>
+                <!-- Inline Duplicate Warning Banner -->
+                <div id="surgery-duplicate-banner" class="surgery-duplicate-banner" style="display:none;"></div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Số nhập viện</label>
@@ -730,6 +742,11 @@ const SurgeryPage = {
 
         // Init "Ca đầu tiên" checkbox after modal opens
         this._initFirstCaseCheckbox(s, defaultDate);
+
+        // Init realtime duplicate check
+        this._pendingOverride = null;
+        this._bindRealtimeDuplicateCheck(id);
+        this._checkAndShowInlineBanner(id);
     },
 
     _initFirstCaseCheckbox(s, dateStr) {
@@ -766,6 +783,462 @@ const SurgeryPage = {
         }
     },
 
+    // ── Duplicate Detection & Resolution ──
+    _normalizePatientName(str) {
+        if (!str) return '';
+        return str.trim()
+            .replace(/\s+/g, ' ')
+            .toLowerCase()
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'd')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    },
+
+    _getMondayOfWeek(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('T')[0].split('-');
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const day = d.getDay();
+        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    _getSundayOfWeek(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('T')[0].split('-');
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const day = d.getDay();
+        d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day));
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    _findDuplicateSurgeries(candidate, currentId) {
+        if (!candidate || !candidate.patientName) return [];
+        const candName = this._normalizePatientName(candidate.patientName);
+        if (!candName) return [];
+
+        const candAdm = (candidate.admissionId || '').trim();
+        const candYear = candidate.birthYear ? parseInt(candidate.birthYear, 10) : null;
+        const candDate = candidate.date || '';
+        const monday = this._getMondayOfWeek(candDate);
+        const sunday = this._getSundayOfWeek(candDate);
+
+        const all = this.getAllSurgeries();
+        const matches = [];
+
+        for (const s of all) {
+            if (currentId && String(s.id) === String(currentId)) continue;
+            const existName = this._normalizePatientName(s.patientName);
+            const existAdm = (s.admissionId || '').trim();
+            const existYear = s.birthYear ? parseInt(s.birthYear, 10) : null;
+            const existDate = s.date || '';
+
+            // Cấp 1: Trùng số BA cùng ngày
+            if (candAdm && existAdm && candAdm === existAdm && existDate === candDate) {
+                matches.push({
+                    level: 1,
+                    levelLabel: 'Trùng số BA cùng ngày',
+                    severity: 'danger',
+                    surgery: s,
+                    reason: `Trùng số nhập viện (${existAdm}) trong cùng ngày mổ ${Utils.formatDate(candDate)}.`
+                });
+                continue;
+            }
+
+            // Cấp 2: Trùng số BA khác ngày
+            if (candAdm && existAdm && candAdm === existAdm && existDate !== candDate) {
+                const inSameWeek = existDate >= monday && existDate <= sunday;
+                matches.push({
+                    level: 2,
+                    levelLabel: inSameWeek ? 'Trùng số BA khác ngày trong tuần' : 'Trùng số BA đợt nằm viện',
+                    severity: 'warning',
+                    surgery: s,
+                    inSameWeek: inSameWeek,
+                    reason: `Trùng số nhập viện (${existAdm}) với ca ngày ${Utils.formatDate(existDate)}.`
+                });
+                continue;
+            }
+
+            // Cấp 3: Trùng tên và năm sinh cùng ngày
+            if (candName === existName && candYear && existYear && candYear === existYear && existDate === candDate) {
+                matches.push({
+                    level: 3,
+                    levelLabel: 'Trùng tên và năm sinh cùng ngày',
+                    severity: 'danger',
+                    surgery: s,
+                    reason: `Trùng họ tên và năm sinh (${existYear}) trong cùng ngày mổ ${Utils.formatDate(candDate)}.`
+                });
+                continue;
+            }
+
+            // Cấp 4: Trùng tên và năm sinh khác ngày trong tuần
+            if (candName === existName && candYear && existYear && candYear === existYear && existDate !== candDate && existDate >= monday && existDate <= sunday) {
+                matches.push({
+                    level: 4,
+                    levelLabel: 'Trùng tên và năm sinh khác ngày trong tuần',
+                    severity: 'warning',
+                    surgery: s,
+                    inSameWeek: true,
+                    reason: `Bệnh nhân đã có ca mổ vào ${Utils.formatDate(existDate)} (cùng tuần).`
+                });
+                continue;
+            }
+
+            // Cấp 5: Trùng tên thiếu tuổi cùng ngày
+            if (candName === existName && (!candYear || !existYear) && existDate === candDate) {
+                matches.push({
+                    level: 5,
+                    levelLabel: 'Trùng họ tên (chưa đủ năm sinh)',
+                    severity: 'info',
+                    surgery: s,
+                    reason: `Trùng họ tên với ca ngày ${Utils.formatDate(candDate)} (chưa đủ năm sinh đối chiếu).`
+                });
+                continue;
+            }
+        }
+
+        matches.sort((a, b) => a.level - b.level);
+        return matches;
+    },
+
+    _bindRealtimeDuplicateCheck(currentId) {
+        const formKey = `surgery-${currentId || 'new'}`;
+        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        if (!form) return;
+
+        const checkFn = () => {
+            clearTimeout(form._dupTimer);
+            form._dupTimer = setTimeout(() => {
+                this._checkAndShowInlineBanner(currentId);
+            }, 250);
+        };
+
+        const inputs = form.querySelectorAll('input[name="patientName"], input[name="birthYear"], input[name="admissionId"]');
+        inputs.forEach(input => input.addEventListener('input', checkFn));
+
+        const dateInput = form.querySelector('input[name="date"]');
+        if (dateInput) dateInput.addEventListener('change', checkFn);
+    },
+
+    _checkAndShowInlineBanner(currentId) {
+        const banner = document.getElementById('surgery-duplicate-banner');
+        if (!banner) return;
+        const formKey = `surgery-${currentId || 'new'}`;
+        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const candidate = {
+            patientName: formData.get('patientName'),
+            birthYear: formData.get('birthYear'),
+            admissionId: formData.get('admissionId'),
+            date: formData.get('date')
+        };
+
+        const matches = this._findDuplicateSurgeries(candidate, currentId);
+        if (!matches || matches.length === 0) {
+            banner.style.display = 'none';
+            banner.innerHTML = '';
+            return;
+        }
+
+        const top = matches[0];
+        const s = top.surgery;
+        const safeName = Utils.escapeHtml(s.patientName);
+        const safeDate = Utils.formatDate(s.date);
+        const safeDoc = Utils.escapeHtml(Utils.getStaffName(s.mainSurgeon) || 'Chưa phân công');
+        const safeDiag = Utils.escapeHtml(s.diagnosis || '—');
+        const moreCount = matches.length > 1 ? ` <span style="font-weight:400;color:var(--text-secondary)">(và ${matches.length - 1} ca khác)</span>` : '';
+
+        banner.style.display = 'block';
+        banner.innerHTML = `
+            <div class="dup-banner-title">
+                <span>⚠️ ${top.levelLabel}: <strong>${safeName}</strong>${s.birthYear ? ` (${s.birthYear})` : ''}${moreCount}</span>
+            </div>
+            <div class="dup-banner-details">
+                • <strong>Đã lên lịch:</strong> ${safeDate} — <strong>BS:</strong> ${safeDoc}<br>
+                • <strong>Chẩn đoán:</strong> ${safeDiag}
+            </div>
+            <div class="dup-banner-actions">
+                <span class="dup-banner-link" onclick="SurgeryPage.viewDetail(${s.id})">🔍 Xem chi tiết ca đã có</span>
+            </div>
+        `;
+    },
+
+    _showDuplicateConfirmDialog(matches, candidateData, currentId) {
+        const modal = document.getElementById('modal');
+        if (!modal) return;
+
+        const existingDialog = document.getElementById('surgery-duplicate-dialog');
+        if (existingDialog) existingDialog.remove();
+
+        const topMatch = matches[0];
+        const s = topMatch.surgery;
+        const isNew = !currentId || currentId === 0;
+        const targetDate = candidateData.date;
+
+        const dialog = document.createElement('div');
+        dialog.id = 'surgery-duplicate-dialog';
+        dialog.className = 'surgery-duplicate-dialog';
+
+        const safeCandName = Utils.escapeHtml(candidateData.patientName || '');
+        const safeCandAdm = Utils.escapeHtml(candidateData.admissionId || '—');
+        const safeCandDate = Utils.formatDate(candidateData.date);
+        const safeCandDoc = Utils.escapeHtml(Utils.getStaffName(candidateData.mainSurgeon) || '—');
+        const safeCandDiag = Utils.escapeHtml(candidateData.diagnosis || '—');
+
+        const safeExistName = Utils.escapeHtml(s.patientName || '');
+        const safeExistAdm = Utils.escapeHtml(s.admissionId || '—');
+        const safeExistDate = Utils.formatDate(s.date);
+        const safeExistDoc = Utils.escapeHtml(Utils.getStaffName(s.mainSurgeon) || '—');
+        const safeExistDiag = Utils.escapeHtml(s.diagnosis || '—');
+
+        dialog.innerHTML = `
+            <div class="dup-dialog-header">
+                <div class="dup-dialog-title">
+                    <span>⚠️ Phát hiện ca mổ trùng thông tin (${topMatch.levelLabel})</span>
+                </div>
+                <div class="dup-dialog-desc">
+                    Hệ thống phát hiện thông tin ca mổ bạn đang nhập trùng với ca đã có trong hệ thống. Vui lòng đối chiếu và chọn phương án xử lý:
+                </div>
+            </div>
+
+            <table class="duplicate-compare-table">
+                <thead>
+                    <tr>
+                        <th style="width:25%;">Thông tin</th>
+                        <th style="width:37.5%;" class="dup-col-exist">Ca đã có trên lịch</th>
+                        <th style="width:37.5%;" class="dup-col-new">Ca bạn đang nhập</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Họ tên & Tuổi</strong></td>
+                        <td class="dup-col-exist"><strong>${safeExistName}</strong> ${s.birthYear ? `(${s.birthYear})` : ''}</td>
+                        <td class="dup-col-new"><strong>${safeCandName}</strong> ${candidateData.birthYear ? `(${candidateData.birthYear})` : ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Số nhập viện</strong></td>
+                        <td class="dup-col-exist">${safeExistAdm}</td>
+                        <td class="dup-col-new">${safeCandAdm}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ngày mổ</strong></td>
+                        <td class="dup-col-exist"><span class="badge" style="background:#fef3c7;color:#b45309">${safeExistDate}</span></td>
+                        <td class="dup-col-new"><span class="badge" style="background:#dbeafe;color:#1e40af">${safeCandDate}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>BS mổ chính</strong></td>
+                        <td class="dup-col-exist">${safeExistDoc}</td>
+                        <td class="dup-col-new">${safeCandDoc}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Chẩn đoán</strong></td>
+                        <td class="dup-col-exist">${safeExistDiag}</td>
+                        <td class="dup-col-new">${safeCandDiag}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="dup-options-box">
+                <div style="font-weight:700;font-size:0.88rem;margin-bottom:8px;color:var(--text-primary)">👉 Chọn hướng xử lý:</div>
+
+                ${isNew && topMatch.surgery.date !== targetDate ? `
+                <div style="margin-bottom:12px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
+                    <button type="button" class="btn btn-success" style="width:100%;font-weight:600;" onclick="SurgeryPage._rescheduleSurgery(${s.id}, '${targetDate}')">
+                        🔄 Dời ca cũ sang ngày ${safeCandDate} (Khuyến nghị)
+                    </button>
+                    <div style="font-size:0.78rem;color:#166534;margin-top:4px;">
+                        Chuyển ngày mổ của ca cũ sang ngày ${safeCandDate}, giữ nguyên mã số ca mổ và không tạo ca rác.
+                    </div>
+                </div>
+                ` : ''}
+
+                <div style="margin-bottom:10px;">
+                    <label class="dup-option-item">
+                        <input type="radio" name="dupOverrideType" value="same_patient_multicase" checked>
+                        <div>
+                            <div class="dup-option-title">Cùng bệnh nhân — Ca mổ riêng biệt / Mổ 2 thì</div>
+                            <div class="dup-option-sub">Bệnh nhân thực tế có nhiều lần mổ trong tuần (sẽ hiển thị badge ⚡ trên lịch).</div>
+                        </div>
+                    </label>
+                    <label class="dup-option-item">
+                        <input type="radio" name="dupOverrideType" value="different_patient_same_name">
+                        <div>
+                            <div class="dup-option-title">Khác bệnh nhân — Trùng họ tên / thông tin ngẫu nhiên</div>
+                            <div class="dup-option-sub">Hai người bệnh riêng biệt hoàn toàn (không gắn badge 2 ca/tuần).</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:auto;">
+                <button type="button" class="btn btn-secondary" onclick="SurgeryPage._closeDuplicateConfirmDialog()">
+                    ❌ Hủy / Quay lại chỉnh sửa
+                </button>
+                <button type="button" class="btn btn-primary" onclick="SurgeryPage._confirmDuplicateOverride(${currentId || 0}, ${s.id})">
+                    ${isNew ? '➕ Vẫn tạo ca này' : '💾 Tiếp tục lưu ca này'}
+                </button>
+            </div>
+        `;
+
+        modal.appendChild(dialog);
+    },
+
+    _closeDuplicateConfirmDialog() {
+        const dialog = document.getElementById('surgery-duplicate-dialog');
+        if (dialog) dialog.remove();
+    },
+
+    _rescheduleSurgery(existingSurgeryId, targetDate) {
+        const all = this.getAllSurgeries();
+        const idx = all.findIndex(x => String(x.id) === String(existingSurgeryId));
+        if (idx === -1) {
+            Toast.show('Không tìm thấy ca mổ cũ để dời.', 'error');
+            return;
+        }
+
+        const existing = all[idx];
+        const sourceMonday = this._getMondayOfWeek(existing.date);
+        const targetMonday = this._getMondayOfWeek(targetDate);
+
+        if (!canEditSurgery(sourceMonday)) {
+            Toast.show('🔒 Tuần nguồn của ca mổ cũ đã bị khoá. Không thể dời ca.', 'error');
+            return;
+        }
+        if (!canEditSurgery(targetMonday)) {
+            Toast.show('🔒 Tuần đích đã bị khoá. Không thể dời ca tới tuần này.', 'error');
+            return;
+        }
+
+        const session = Auth.getSession();
+        const actorMeta = session ? {
+            username: session.username,
+            name: session.name || session.username,
+            at: new Date().toISOString()
+        } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
+
+        // Read user inputs from the open form to merge updated fields if entered
+        const form = document.querySelector('form[data-autosave-key="surgery-new"], form[data-autosave-key="surgery-0"]');
+        let formObj = {};
+        if (form) {
+            const f = new FormData(form);
+            formObj = {
+                patientName: f.get('patientName') ? Utils.toProperCase(f.get('patientName')) : null,
+                birthYear: f.get('birthYear') ? parseInt(f.get('birthYear'), 10) : null,
+                admissionId: f.get('admissionId') ? f.get('admissionId').trim() : null,
+                duration: f.get('duration') ? parseInt(f.get('duration'), 10) : null,
+                mainSurgeon: f.get('mainSurgeon') ? parseInt(f.get('mainSurgeon'), 10) : null,
+                assistSurgeon1: f.get('assistSurgeon1') ? parseInt(f.get('assistSurgeon1'), 10) : null,
+                diagnosis: f.get('diagnosis') ? f.get('diagnosis').trim() : null,
+                method: f.get('method') ? f.get('method').trim() : null,
+                notes: f.get('notes') ? f.get('notes').trim() : null,
+                isFirstCase: !!f.get('isFirstCase')
+            };
+        }
+
+        // Check if target date already has another first case
+        const targetHasFirst = all.some(x => x.date === targetDate && x.isFirstCase && String(x.id) !== String(existing.id));
+        let finalIsFirstCase = formObj.isFirstCase !== undefined ? formObj.isFirstCase : existing.isFirstCase;
+        if (targetHasFirst) {
+            finalIsFirstCase = false;
+        }
+
+        const oldDate = existing.date;
+        all[idx] = {
+            ...existing,
+            ...(formObj.patientName ? { patientName: formObj.patientName } : {}),
+            ...(formObj.birthYear ? { birthYear: formObj.birthYear } : {}),
+            ...(formObj.admissionId ? { admissionId: formObj.admissionId } : {}),
+            ...(formObj.duration ? { duration: formObj.duration } : {}),
+            ...(formObj.mainSurgeon ? { mainSurgeon: formObj.mainSurgeon } : {}),
+            ...(formObj.assistSurgeon1 ? { assistSurgeon1: formObj.assistSurgeon1 } : {}),
+            ...(formObj.diagnosis ? { diagnosis: formObj.diagnosis } : {}),
+            ...(formObj.method ? { method: formObj.method } : {}),
+            ...(formObj.notes ? { notes: formObj.notes } : {}),
+            date: targetDate,
+            isFirstCase: finalIsFirstCase,
+            updatedBy: actorMeta,
+            rescheduledFrom: {
+                fromDate: oldDate,
+                toDate: targetDate,
+                at: new Date().toISOString(),
+                by: actorMeta.username
+            }
+        };
+
+        this.saveSurgeries(all);
+        Modal.clearDraft('surgery-new');
+        Modal.clearDraft('surgery-0');
+        this._closeDuplicateConfirmDialog();
+        Modal.close();
+        App.renderCurrentPage();
+
+        if (targetHasFirst && (formObj.isFirstCase || existing.isFirstCase)) {
+            Toast.show(`Đã dời ca sang ngày ${Utils.formatDate(targetDate)}. Lưu ý: Ngày đích đã có ca đầu tiên nên ca dời không gắn ca đầu ngày.`, 'info');
+        } else {
+            Toast.show(`Đã dời ca mổ sang ngày ${Utils.formatDate(targetDate)} thành công.`, 'success');
+        }
+    },
+
+    _confirmDuplicateOverride(currentId, matchedWithId) {
+        const dialog = document.getElementById('surgery-duplicate-dialog');
+        const selectedType = dialog ? dialog.querySelector('input[name="dupOverrideType"]:checked')?.value : 'same_patient_multicase';
+
+        const session = Auth.getSession();
+        const actorMeta = session ? {
+            username: session.username,
+            name: session.name || session.username,
+            at: new Date().toISOString()
+        } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
+
+        this._pendingOverride = {
+            type: selectedType || 'same_patient_multicase',
+            matchedWithId: matchedWithId,
+            confirmedBy: actorMeta.username,
+            confirmedAt: new Date().toISOString()
+        };
+
+        this._closeDuplicateConfirmDialog();
+
+        // Submit form again with override enabled
+        const formKey = `surgery-${currentId || 'new'}`;
+        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        if (form) {
+            const submitEvent = new Event('submit', { cancelable: true });
+            form.dispatchEvent(submitEvent);
+        }
+    },
+
+    _renderPatientWeeklyBadge(s, weekSurgeries) {
+        if (!s || !s.duplicateOverride) return '';
+        if (s.duplicateOverride.type === 'different_patient_same_name') {
+            return `<span class="badge-different-patient" title="Bệnh nhân trùng tên với ca khác trên lịch">👥 Trùng tên</span>`;
+        }
+
+        if (s.duplicateOverride.type === 'same_patient_multicase') {
+            if (!Array.isArray(weekSurgeries)) return `<span class="badge-duplicate-patient" title="Bệnh nhân có nhiều ca mổ trong tuần">⚡ Mổ nhiều thì</span>`;
+            const candName = this._normalizePatientName(s.patientName);
+            const candAdm = (s.admissionId || '').trim();
+            const candYear = s.birthYear ? parseInt(s.birthYear, 10) : null;
+
+            const count = weekSurgeries.filter(x => {
+                const existAdm = (x.admissionId || '').trim();
+                if (candAdm && existAdm && candAdm === existAdm) return true;
+                const existName = this._normalizePatientName(x.patientName);
+                const existYear = x.birthYear ? parseInt(x.birthYear, 10) : null;
+                return candName === existName && candYear && existYear && candYear === existYear;
+            }).length;
+
+            if (count >= 2) {
+                return `<span class="badge-duplicate-patient" title="Bệnh nhân có ${count} ca mổ trong tuần này">⚡ ${count} ca/tuần</span>`;
+            }
+        }
+
+        return '';
+    },
+
     save(e, id) {
         e.preventDefault();
         const f = new FormData(e.target);
@@ -792,10 +1265,10 @@ const SurgeryPage = {
         const rawDuration = f.get('duration');
         const durationVal = rawDuration ? (parseInt(rawDuration, 10) || null) : null;
 
-        const data = {
+        const candidateData = {
             patientName: Utils.toProperCase(f.get('patientName')),
             birthYear: f.get('birthYear') ? parseInt(f.get('birthYear'), 10) : '',
-            admissionId: f.get('admissionId') || '',
+            admissionId: f.get('admissionId') ? f.get('admissionId').trim() : '',
             surgeryType: surgeryType,
             approachType: approachType,
             date: surgeryDate,
@@ -807,6 +1280,24 @@ const SurgeryPage = {
             notes: f.get('notes') || '',
             isFirstCase: !!f.get('isFirstCase')
         };
+
+        // Check for duplicates if not already overridden in this submit cycle
+        if (!this._pendingOverride) {
+            const matches = this._findDuplicateSurgeries(candidateData, id);
+            if (matches && matches.length > 0) {
+                this._showDuplicateConfirmDialog(matches, candidateData, id);
+                return;
+            }
+        }
+
+        const data = {
+            ...candidateData
+        };
+
+        if (this._pendingOverride) {
+            data.duplicateOverride = this._pendingOverride;
+            this._pendingOverride = null;
+        }
 
         const all = this.getAllSurgeries();
         if (id) {

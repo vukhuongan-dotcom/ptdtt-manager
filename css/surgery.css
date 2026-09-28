@@ -694,3 +694,170 @@
     }
     .surg-header-actions button { min-height: 44px; }
 }
+
+/* ── Duplicate Surgery Warning & Resolution Sub-dialog ── */
+.surgery-duplicate-banner {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid var(--state-warning, #f59e0b);
+    border-radius: var(--border-radius-sm, 8px);
+    padding: 10px 14px;
+    margin: 10px 0 14px;
+    font-size: 0.84rem;
+    color: var(--text-primary, #1e293b);
+    line-height: 1.45;
+    animation: dupBannerSlide 0.25s ease-out;
+}
+@keyframes dupBannerSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.dup-banner-title {
+    font-weight: 700;
+    color: var(--state-warning, #b45309);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+.dup-banner-details {
+    color: var(--text-secondary, #475569);
+    margin-bottom: 6px;
+}
+.dup-banner-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.dup-banner-link {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Sub-dialog for Duplicate Confirmation inside Modal */
+.surgery-duplicate-dialog {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg-card, #ffffff);
+    border-radius: var(--border-radius, 12px);
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    animation: dupDialogFade 0.2s ease-out;
+}
+@keyframes dupDialogFade {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+.dup-dialog-header {
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+.dup-dialog-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--state-warning, #b45309);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dup-dialog-desc {
+    font-size: 0.86rem;
+    color: var(--text-secondary, #475569);
+    margin-top: 4px;
+}
+
+/* Comparison Table */
+.duplicate-compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 0.82rem;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.duplicate-compare-table th {
+    background: var(--bg-secondary, #f1f5f9);
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary, #475569);
+    border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.duplicate-compare-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    color: var(--text-primary, #1e293b);
+}
+.duplicate-compare-table tr:last-child td {
+    border-bottom: none;
+}
+.dup-col-exist {
+    background: rgba(245, 158, 11, 0.05);
+}
+.dup-col-new {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Override Options */
+.dup-options-box {
+    background: var(--bg-secondary, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+.dup-option-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+.dup-option-item:last-child { margin-bottom: 0; }
+.dup-option-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-primary, #1e293b);
+}
+.dup-option-sub {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #64748b);
+    margin-top: 2px;
+}
+
+/* Badges on Schedule Grid */
+.badge-duplicate-patient {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 9999px;
+    padding: 1px 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+.badge-different-patient {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bg-secondary, #f1f5f9);
+    color: var(--text-secondary, #475569);
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 9999px;
+    padding: 1px 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+

@@ -112,6 +112,16 @@ const Utils = {
         }[t] || '';
     },
 
+    escapeHtml(str) {
+        if (!str && str !== 0) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    },
+
     /**
      * Normalize a person's name to Title Case.
      * Handles Vietnamese and ALL-CAPS input correctly.
