@@ -8,8 +8,8 @@
 
 ## 📊 TỔNG QUAN THỐNG KÊ LỖI ĐÃ KHẮC PHỤC
 
-- **Tổng số lỗi kỹ thuật đã giải quyết:** **153 lỗi** (100% đã kiểm chứng và deploy production).
-- **Thời gian ghi nhận:** Từ **26/03/2026** đến **27/09/2026** (toàn bộ lịch sử mã nguồn).
+- **Tổng số lỗi kỹ thuật đã giải quyết:** **154 lỗi** (100% đã kiểm chứng và deploy production).
+- **Thời gian ghi nhận:** Từ **26/03/2026** đến **28/09/2026** (toàn bộ lịch sử mã nguồn).
 - **Tỷ lệ phân bổ theo phân hệ:**
   1. **Nghiệp vụ Phẫu thuật & Thống kê lâm sàng:** ~35% (Lọc số liệu, gom nhóm ca mổ, kíp trực, phân loại mổ).
   2. **Dữ liệu, Đồng bộ & Cache Service Worker:** ~22% (Cache buster, SW migration, race condition, data version).
@@ -270,6 +270,7 @@
 | 151 | `BUG-151` | 2026-08-25 | [`771f760`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/771f760) | **Thống kê Phẫu thuật** | giới hạn thống kê phẫu thuật toàn bộ tối đa đến ngày hiện tại v2608252103 |
 | 152 | `BUG-152` | 2026-09-22 | [`254bb04`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/254bb04) | **Thống kê Phẫu thuật** | include projected week surgeries in current period without todayEnd cutoff (v2609221220) |
 | 153 | `BUG-153` | 2026-09-22 | [`d73ee2c`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/d73ee2c) | **Thống kê Phẫu thuật** | include all department doctors, add assist surgery stats, and group radar dropdown (v2609221246) |
+| 154 | `BUG-154` | 2026-09-28 | [`fea1bfe`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/fea1bfe) | **Lịch mổ & Cảnh báo** | Phát hiện trùng ca mổ thông minh 5 cấp độ, hợp đồng dời ca bảo toàn ID/audit/isFirstCase, sub-dialog bảo toàn form/draft, phân biệt mổ nhiều thì vs trùng tên, và bổ sung Utils.escapeHtml (v2609281105) |
 
 ---
 
