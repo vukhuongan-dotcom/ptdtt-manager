@@ -32,16 +32,16 @@ const ROOM_DATA = [
     { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }, { id: 46, role: 'NT' }] },
     { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 45, role: 'NT' }] },
 
-    // POD 2 (Màu Vàng) — Luân chuyển từ POD 1 sang, BS Phương ở lại + hỗ trợ cho thuốc 2 ca P712
-    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 44, role: 'NT' }] },
+    // POD 2 (Màu Vàng) — BS Tú nhận P705, BS Kiệt nhận P706, BS Phương ở lại P712A/P719 + hỗ trợ P712
+    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 50, role: 'HV' }] },
     { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 44, role: 'NT' }] },
     { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
     { room: '712',  pod: 2, doctors: [{ id: 10, role: 'chính' }, { id: 16, role: 'HV' }] },
     { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'HV' }] },
     { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'HV' }] },
 
-    // POD 3 (Màu Xanh lá) — BS Thành nhận P709, BS Tú đổi sang P708 cùng BSNT Phú, BSNT Sang nhận P710
-    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 43, role: 'NT' }, { id: 50, role: 'HV' }] },
+    // POD 3 (Màu Xanh lá) — BSNT Phú nhận P708, BSNT Thành nhận P709, BSNT Sang nhận P710
+    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 43, role: 'NT' }] },
     { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 48, role: 'NT' }] },
     { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 47, role: 'NT' }] },
 ];
