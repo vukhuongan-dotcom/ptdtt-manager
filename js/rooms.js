@@ -32,7 +32,7 @@ const ROOM_DATA = [
     { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }, { id: 46, role: 'NT' }] },
     { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 45, role: 'NT' }] },
 
-    // POD 2 (Màu Vàng) — BS Tú nhận P705, BS Kiệt nhận P706, BS Phương ở lại P712A/P719 + hỗ trợ P712
+    // POD 2 (Màu Vàng) — BS Tú nhận P705, BS Kiệt nhận P706, BS Phương ở lại P712A/P719 + hỗ trợ thêm P712 (2 giường) nếu full bệnh
     { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 50, role: 'HV' }] },
     { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 44, role: 'NT' }] },
     { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
