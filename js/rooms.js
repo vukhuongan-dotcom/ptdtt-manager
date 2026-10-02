@@ -1,5 +1,5 @@
 // ===== ROOM MAP PAGE =====
-// Cập nhật phân công 3 POD: POD1 (Đỏ), POD2 (Vàng), POD3 (Xanh lá) — 31/07/2026
+// Cập nhật phân công 3 POD: POD1 (Đỏ), POD2 (Vàng), POD3 (Xanh lá) — Kỳ luân chuyển 10 tuần (05/10/2026 – 13/12/2026)
 const POD_CONFIG = [
     {
         id: 1,
@@ -28,22 +28,22 @@ const POD_CONFIG = [
 ];
 
 const ROOM_DATA = [
-    // POD 1 (Màu Đỏ)
-    { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }, { id: 48, role: 'NT' }] },
-    { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 44, role: 'NT' }] },
+    // POD 1 (Màu Đỏ) — Luân chuyển từ POD 3 sang
+    { room: '718',  pod: 1, doctors: [{ id: 2,  role: 'chính' }, { id: 12, role: 'chính' }, { id: 46, role: 'NT' }] },
+    { room: '707',  pod: 1, doctors: [{ id: 9,  role: 'chính' }, { id: 45, role: 'NT' }] },
 
-    // POD 2 (Màu Vàng)
-    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 43, role: 'NT' }] },
-    { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 47, role: 'NT' }] },
+    // POD 2 (Màu Vàng) — Luân chuyển từ POD 1 sang, BS Phương ở lại + hỗ trợ cho thuốc 2 ca P712
+    { room: '705',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 44, role: 'NT' }] },
+    { room: '706',  pod: 2, doctors: [{ id: 8,  role: 'chính' }, { id: 44, role: 'NT' }] },
     { room: '711',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
-    { room: '712',  pod: 2, doctors: [{ id: 10, role: 'chính' }] },
+    { room: '712',  pod: 2, doctors: [{ id: 10, role: 'chính' }, { id: 16, role: 'HV' }] },
     { room: '712A', pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'HV' }] },
     { room: '719',  pod: 2, doctors: [{ id: 6,  role: 'chính' }, { id: 16, role: 'HV' }] },
 
-    // POD 3 (Màu Xanh lá)
-    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 46, role: 'NT' }] },
-    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 50, role: 'HV' }] },
-    { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 45, role: 'NT' }] },
+    // POD 3 (Màu Xanh lá) — BS Thành nhận P709, BS Tú đổi sang P708 cùng BSNT Phú, BSNT Sang nhận P710
+    { room: '708',  pod: 3, doctors: [{ id: 4,  role: 'chính' }, { id: 43, role: 'NT' }, { id: 50, role: 'HV' }] },
+    { room: '709',  pod: 3, doctors: [{ id: 11, role: 'chính' }, { id: 48, role: 'NT' }] },
+    { room: '710',  pod: 3, doctors: [{ id: 7,  role: 'chính' }, { id: 47, role: 'NT' }] },
 ];
 
 // Cấu hình tạm ẩn số lượng bệnh nhân (chuyển sang true để bật lại sau này)
