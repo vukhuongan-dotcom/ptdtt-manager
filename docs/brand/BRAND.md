@@ -33,6 +33,18 @@
 
 ## 1. Logo (giữ nguyên, không vẽ lại)
 
+### 1.1 Tệp nguồn gốc chính thức (Canonical Master Source)
+
+- **Tệp nguồn chính thức:** `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg`
+- **Vị trí lưu trữ gốc trên Google Drive:**  
+  `/Users/khuonganvu/Library/CloudStorage/GoogleDrive-vukhuongan@gmail.com/Drive của tôi/AN/01. CÔNG VIỆC/KHOA PTDTT/06. WEB APP /3. LOGO KHOA/z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg`
+- **Định dạng & Thông số:** JPEG (JFIF standard 1.01), `480 × 480 px`, RGB 24-bit, dung lượng 28.738 bytes.
+- **Mã băm MD5 chuẩn:** `db144bb49b076d907881e6b04f96f478` (bảo toàn 100% tính toàn vẹn).
+- **Phê duyệt:** BS. Vũ Khương An phê duyệt và chỉ định làm logo chính thức duy nhất của Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân cho hệ thống Web App và bộ nhận diện thương hiệu (03/10/2026).
+- **Dẫn xuất:** Cả 3 biến thể dùng trên web (`img/logo-khoa.jpg`, `img/logo-mark.png`, `img/logo-symbol.png`), các icon PWA (`icon-192`, `icon-512`, `apple-touch-icon`, `favicon`), và bộ 5 màu thương hiệu (Navy `#1D2357`, Xanh dương `#1878B4`, Xanh lá `#54A83C`, Nõn chuối `#90C03C`) đều được trích xuất trực tiếp từ tệp nguồn gốc này.
+
+### 1.2 Các biến thể hiển thị
+
 Cả ba tệp đều cắt từ đúng các pixel của `logo-khoa.jpg`, không đổi màu hay nét nào.
 
 | Tệp | Nội dung | Dùng ở đâu |
