@@ -775,7 +775,7 @@ const ConferencesPage = {
                 const langBg  = p.language === 'en' ? '#dbeafe' : '#dcfce7';
                 const langClr = p.language === 'en' ? '#1d4ed8' : '#15803d';
                 return `<tr style="background:${bg};border-bottom:1px solid #e2e8f0">
-                    <td style="padding:10px 12px;white-space:nowrap;font-size:13px;font-weight:700;color:#0891b2;width:100px">${p.time || '—'}</td>
+                    <td style="padding:10px 12px;white-space:nowrap;font-size:13px;font-weight:700;color:var(--primary, #1D2357);width:100px">${p.time || '—'}</td>
                     <td style="padding:10px 12px;width:36px;text-align:center">
                         <span style="background:${langBg};color:${langClr};font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px">${p.language.toUpperCase()}</span>
                     </td>
@@ -820,7 +820,6 @@ const ConferencesPage = {
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `
         <div id="conf-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Be Vietnam Pro','Noto Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:#0f172a;">
-            <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
             <!-- Header -->
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
                 <div>
@@ -839,7 +838,7 @@ const ConferencesPage = {
                 <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
                     <span style="font-size:13px;font-weight:600;color:#334155">📅 ${item.dates}</span>
                     <span style="font-size:13px;color:#334155">📍 ${item.location}${item.venue?' — '+item.venue:''}</span>
-                    <span style="margin-left:auto;font-size:13px;font-weight:700;color:#0891b2">Tổng: ${pres.length} bài báo cáo · ${sorted.length} báo cáo viên</span>
+                    <span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--primary, #1D2357)">Tổng: ${pres.length} bài báo cáo · ${sorted.length} báo cáo viên</span>
                 </div>
             </div>
 

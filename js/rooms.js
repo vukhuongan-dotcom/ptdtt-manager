@@ -184,7 +184,7 @@ const RoomsPage = {
                         width: 100%;
                         border-collapse: collapse;
                         margin-bottom: 20px;
-                        border-bottom: 2px solid #0891b2;
+                        border-bottom: 2px solid var(--primary);
                         padding-bottom: 14px;
                     }
                     .header-left {
@@ -207,7 +207,7 @@ const RoomsPage = {
                     .dept-name {
                         font-size: 15px;
                         font-weight: 800;
-                        color: #0891b2;
+                        color: var(--primary);
                         text-transform: uppercase;
                         margin-top: 3px;
                     }
@@ -237,7 +237,7 @@ const RoomsPage = {
                         font-family: 'Be Vietnam Pro', sans-serif;
                         font-size: 22px;
                         font-weight: 800;
-                        color: #0891b2;
+                        color: var(--primary);
                         text-transform: uppercase;
                         letter-spacing: normal;
                     }
@@ -362,7 +362,7 @@ const RoomsPage = {
                         width: fit-content;
                         margin-top: 3px;
                     }
-                    .room-role-bs { background: #e0f2fe; color: #0369a1; }
+                    .room-role-bs { background: var(--primary-soft); color: var(--accent); }
                     .room-role-nt { background: #fef3c7; color: #b45309; }
                     .room-role-hv { background: #ffedd5; color: #c2410c; }
                     .room-role-ch { background: #f3e8ff; color: #6b21a8; }
@@ -482,7 +482,7 @@ const RoomsPage = {
                             <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span> 🟢 <strong>POD 3 (Xanh lá):</strong> P708, P709, P710</div>
                         </div>
                         <div class="legend-items" style="margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:10px">
-                            <div class="legend-item"><span class="legend-dot" style="background:#0369a1"></span> BS điều trị (chính)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> BS điều trị (chính)</div>
                             <div class="legend-item"><span class="legend-dot" style="background:#b45309"></span> BS nội trú (phụ)</div>
                             <div class="legend-item"><span class="legend-dot" style="background:#f97316"></span> BS học viên (phụ)</div>
                         </div>

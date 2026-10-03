@@ -724,7 +724,7 @@ const ResearchPage = {
 
                 <div style="display:flex;gap:12px;margin-bottom:16px;justify-content:center">
                     <div style="padding:8px 16px;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd;text-align:center">
-                        <div style="font-size:20px;font-weight:800;color:#0891b2">${items.length}</div>
+                        <div style="font-size:20px;font-weight:800;color:var(--primary)">${items.length}</div>
                         <div style="font-size:11px;color:#64748b;font-weight:600">TỔNG BÀI</div>
                     </div>
                     <div style="padding:8px 16px;border-radius:8px;background:#dcfce7;border:1px solid #86efac;text-align:center">

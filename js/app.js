@@ -34,7 +34,7 @@ const App = {
                 title: 'BSCKII',
                 isAdmin: true,
                 isSuperAdmin: true,
-                color: '#06b6d4',
+                color: '#1878B4',
                 loginTime: new Date().toISOString()
             };
             localStorage.setItem(Auth.SESSION_KEY, JSON.stringify(localSession));
@@ -672,7 +672,7 @@ const App = {
 
     _updateMetaThemeColor(theme) {
         const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0d1117' : '#0891b2');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0C1022' : '#1D2357');
     }
 };
 

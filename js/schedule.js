@@ -1,6 +1,6 @@
 // ===== WEEKLY SCHEDULE PAGE =====
 const SCHEDULE_POSITIONS = [
-    { key: 'trucKhoa', label: 'Trực khoa', slots: 4, staffFilter: 'bs', color: '#06b6d4' },
+    { key: 'trucKhoa', label: 'Trực khoa', slots: 4, staffFilter: 'bs', color: '#1878B4' },
     { key: 'sieuAm', label: 'Siêu âm', slots: 1, staffFilter: 'bs', color: '#8b5cf6' },
     { key: 'pkB023', label: 'P. Khám B023', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#f59e0b' },
     { key: 'pkB020', label: 'P. Khám B020', slots: 2, slotLabels: ['Sáng', 'Chiều'], staffFilter: 'bs', color: '#ec4899' },

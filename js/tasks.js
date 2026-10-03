@@ -3,7 +3,7 @@ const TASK_CATEGORIES = {
     'surgery':      { label: 'Phẫu thuật', icon: '🔪', color: '#ef4444' },
     'clinic':       { label: 'Khám & Điều trị', icon: '🩺', color: '#3b82f6' },
     'duty':         { label: 'Trực', icon: '🏥', color: '#8b5cf6' },
-    'meeting':      { label: 'Họp', icon: '📋', color: '#06b6d4' },
+    'meeting':      { label: 'Họp', icon: '📋', color: '#1878B4' },
     'report':       { label: 'Báo cáo', icon: '📊', color: '#f59e0b' },
     'hr':           { label: 'Nhân sự', icon: '👥', color: '#ec4899' },
     'training':     { label: 'Đào tạo', icon: '📚', color: '#10b981' },

@@ -146,7 +146,7 @@ const ReportsPage = {
             <!-- Stats: 5 high contrast colored cards in one row -->
             <div class="rpt-body-padding">
                 <div class="rpt-stat-grid">
-                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                    <div style="background:#1878B4;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
                         <div class="rpt-stat-label">TỔNG BN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
@@ -373,7 +373,7 @@ const ReportsPage = {
                     <div style="font-size:0.72rem;font-weight:700;color:#1d4ed8;margin-bottom:5px">🔪 Bệnh mổ ${nextDayLabel}</div>
                     <div class="rpt-form-4col-surgery" oninput="${autoSumSurgery('surgery')}">
                         ${readonlyTotal('surgeryTotal', (e.surgeryCT || 0) + (e.surgeryYC || 0) + (e.surgeryRobot || 0), '#1d4ed8', 'Tổng')}
-                        ${stepper16('surgeryCT', e.surgeryCT || 0, '#0369a1', 'CT')}
+                        ${stepper16('surgeryCT', e.surgeryCT || 0, '#1878B4', 'CT')}
                         ${stepper16('surgeryYC', e.surgeryYC || 0, '#6366f1', 'Yêu cầu')}
                         ${stepper16('surgeryRobot', e.surgeryRobot || 0, '#0d9488', 'Robot')}
                     </div>
@@ -516,15 +516,15 @@ const ReportsPage = {
         // Header text — NO EMOJI to prevent tainted canvas, but Vietnamese diacritics are safe
         ctx.textAlign = 'left';
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '500 10px Inter, system-ui, sans-serif';
+        ctx.font = '500 10px "Noto Sans", sans-serif';
         ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG  —  BỆNH VIỆN BÌNH DÂN', 24, 30);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 20px Inter, system-ui, sans-serif';
+        ctx.font = 'bold 20px "Noto Sans", sans-serif';
         ctx.fillText('BÁO CÁO TRỰC KHOA LÚC 16G', 24, 58);
 
         ctx.fillStyle = '#e2e8f0';
-        ctx.font = '500 14px Inter, system-ui, sans-serif';
+        ctx.font = '500 14px "Noto Sans", sans-serif';
         ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}`, 24, 82);
 
         // ===== Stat Boxes =====
@@ -534,7 +534,7 @@ const ReportsPage = {
         const boxW = (W - 24 * 2 - gap * 4) / 5;
 
         const stats = [
-            { label: 'TỔNG BN', value: r.totalPatients || '—', bg: '#0284c7' },
+            { label: 'TỔNG BN', value: r.totalPatients || '—', bg: '#1878B4' },
             { label: 'MỔ CHƯA VỀ', value: r.postOpNotReturned || '0', bg: '#e11d48' },
             { label: 'NHẬP VIỆN', value: r.admissions || '0', bg: '#059669' },
             { label: 'XUẤT VIỆN', value: r.discharges || '0', bg: '#d97706' },
@@ -548,12 +548,12 @@ const ReportsPage = {
             ctx.fill();
 
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.font = 'bold 9px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 9px "Noto Sans", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(s.label, x + boxW / 2, boxY + 24);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 34px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 34px "Noto Sans", sans-serif';
             ctx.fillText(String(s.value), x + boxW / 2, boxY + 62);
         });
 
@@ -574,10 +574,10 @@ const ReportsPage = {
             ctx.fillRect(24, curY, 4, blockH);
 
             ctx.fillStyle = '#1d4ed8';
-            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 11px "Noto Sans", sans-serif';
             ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(nextDay).toUpperCase()} (${this.formatDateShort(nextDay)})`, 38, curY + 18);
             ctx.fillStyle = '#1e3a8a';
-            ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 14px "Noto Sans", sans-serif';
             ctx.fillText(`${r.surgeryTotal || 0} ca  (${r.surgeryCT || 0} CT, ${r.surgeryYC || 0} YC${r.surgeryRobot ? ', ' + r.surgeryRobot + ' Robot' : ''})`, 38, curY + 37);
             curY += blockH + 10;
         }
@@ -593,10 +593,10 @@ const ReportsPage = {
             ctx.fillRect(24, curY, 4, blockH);
 
             ctx.fillStyle = '#15803d';
-            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 11px "Noto Sans", sans-serif';
             ctx.fillText(`BỆNH MỔ ${this.getDayOfWeek(monDay).toUpperCase()} (${this.formatDateShort(monDay)})`, 38, curY + 18);
             ctx.fillStyle = '#166534';
-            ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 14px "Noto Sans", sans-serif';
             ctx.fillText(`${r.surgery2Total || 0} ca  (${r.surgery2CT || 0} CT, ${r.surgery2YC || 0} YC${r.surgery2Robot ? ', ' + r.surgery2Robot + ' Robot' : ''})`, 38, curY + 37);
             curY += blockH + 10;
         }
@@ -611,10 +611,10 @@ const ReportsPage = {
             ctx.fillRect(24, curY, 4, blockH);
 
             ctx.fillStyle = '#475569';
-            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 11px "Noto Sans", sans-serif';
             ctx.fillText('GHI CHÚ', 38, curY + 18);
             ctx.fillStyle = '#334155';
-            ctx.font = '13px Inter, system-ui, sans-serif';
+            ctx.font = '13px "Noto Sans", sans-serif';
             const noteText = r.notes.length > 80 ? r.notes.substring(0, 77) + '...' : r.notes;
             ctx.fillText(noteText, 38, curY + 37);
             curY += blockH + 10;
@@ -632,7 +632,7 @@ const ReportsPage = {
         ctx.stroke();
 
         ctx.fillStyle = '#475569';
-        ctx.font = '12px Inter, system-ui, sans-serif';
+        ctx.font = '12px "Noto Sans", sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(`BS trực khoa: ${r.reporterName || ''}`, 24, footY + 22);
         ctx.textAlign = 'right';
@@ -645,12 +645,12 @@ const ReportsPage = {
         const wmH = footY + 100;
         ctx.translate(wmW / 2, wmH / 2);
         ctx.rotate(-Math.atan2(wmH, wmW));
-        ctx.font = 'bold 42px Inter, system-ui, sans-serif';
+        ctx.font = 'bold 42px "Noto Sans", sans-serif';
         ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -10);
-        ctx.font = '20px Inter, system-ui, sans-serif';
+        ctx.font = '20px "Noto Sans", sans-serif';
         ctx.fillText('Bệnh viện Bình Dân', 0, 30);
         ctx.restore();
 
@@ -780,12 +780,12 @@ const ReportsPage = {
         return `
         <div id="report7h-export-area">
         <div class="card rpt-report-card">
-            <div style="background:linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0369a1 100%);padding:18px 22px;color:#fff;position:relative">
+            <div style="background:linear-gradient(135deg,#1D2357 0%,#1878B4 100%);padding:18px 22px;color:#fff;position:relative">
                 <div class="rpt-card-inner-header">
                     <div>
-                        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2.5px;color:#7dd3fc;margin-bottom:6px;font-weight:500">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
+                        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:2.5px;color:rgba(255,255,255,0.85);margin-bottom:6px;font-weight:500">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN</div>
                         <h2 style="font-size:1.25rem;font-weight:800;margin:0;letter-spacing:0.5px;color:#fff">👩‍⚕️ BÁO CÁO TÌNH HÌNH KHOA LÚC 7G SÁNG</h2>
-                        <div style="font-size:0.9rem;margin-top:5px;color:#bae6fd;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
+                        <div style="font-size:0.9rem;margin-top:5px;color:rgba(255,255,255,0.9);font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
                     </div>
                     <div class="report-no-export">
                         ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport7hForm('${r.date}')"><span class="pencil-flip">✏️</span> Sửa</button>` : ''}
@@ -796,7 +796,7 @@ const ReportsPage = {
             <!-- Stats: 2 main cards -->
             <div class="rpt-body-padding">
                 <div class="rpt-stat-grid-2">
-                    <div style="background:#0284c7;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
+                    <div style="background:#1878B4;border-radius:10px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between">
                         <div class="rpt-stat-label">TỔNG BN</div>
                         <div style="font-size:2rem;font-weight:800;color:#fff">${r.totalPatients || '—'}</div>
                     </div>
@@ -841,8 +841,8 @@ const ReportsPage = {
             </div>
 
             <!-- Footer -->
-            <div style="padding:10px 22px;background:#f0f9ff;border-top:1px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#0369a1">
-                <span>👩‍⚕️ ĐD báo cáo: <strong style="color:#0c4a6e">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
+            <div style="padding:10px 22px;background:var(--navy-50,#EBF0F9);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--accent,#1878B4)">
+                <span>👩‍⚕️ ĐD báo cáo: <strong style="color:var(--primary,#1D2357)">${r.reporterName || r.createdBy || 'Chưa rõ'}</strong></span>
                 <span>🕐 Báo cáo lúc: <strong>${(r.updatedAt || r.createdAt) ? new Date(r.updatedAt || r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '07:00'}</strong></span>
             </div>
         </div>
@@ -889,18 +889,18 @@ const ReportsPage = {
 
         // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
-            return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#0284c7';this.style.color='#fff';this.style.borderColor='#0284c7'"
-                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? 'var(--primary)' : 'var(--border-light,#bae6fd)'};background:${n.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary,#f0f9ff)'};color:${n.name === defaultReporter ? '#fff' : 'var(--primary-dark,#0369a1)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
+            return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#1878B4';this.style.color='#fff';this.style.borderColor='#1878B4'"
+                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? 'var(--primary)' : 'var(--border)'};background:${n.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary)'};color:${n.name === defaultReporter ? '#fff' : 'var(--text-primary)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
             <form onsubmit="ReportsPage.saveReport7h(event, '${date}')">
 
                 <!-- Row 1: Tổng BN -->
-                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#0c4a6e,#0369a1);border-radius:10px;margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#1D2357,#1878B4);border-radius:10px;margin-bottom:10px">
                     <div style="flex:1;color:#fff">
-                        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
-                        <div style="font-size:0.85rem;color:#bae6fd;margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
+                        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.85);font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
+                        <div style="font-size:0.85rem;color:rgba(255,255,255,0.9);margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
                     </div>
                     <input type="number" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
                         style="width:72px;text-align:center;font-size:1.6rem;font-weight:800;border:none;border-radius:10px;padding:6px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(4px)">
@@ -1065,20 +1065,20 @@ const ReportsPage = {
         // Header
         const headerH = 80;
         const hGrad = ctx.createLinearGradient(0, 0, W, headerH);
-        hGrad.addColorStop(0, '#0c4a6e');
-        hGrad.addColorStop(1, '#0369a1');
+        hGrad.addColorStop(0, '#1D2357');
+        hGrad.addColorStop(1, '#1878B4');
         ctx.fillStyle = hGrad;
         ctx.fillRect(0, 0, W, headerH);
 
-        ctx.fillStyle = '#7dd3fc';
-        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#96CBF5';
+        ctx.font = '600 8px "Noto Sans", sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG — BỆNH VIỆN BÌNH DÂN', 22, 24);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Inter, system-ui, sans-serif';
+        ctx.font = 'bold 16px "Noto Sans", sans-serif';
         ctx.fillText('👩‍⚕️ BÁO CÁO TÌNH HÌNH KHOA LÚC 7G SÁNG', 22, 46);
-        ctx.fillStyle = '#bae6fd';
-        ctx.font = '500 12px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#D0E8FA';
+        ctx.font = '500 12px "Noto Sans", sans-serif';
         ctx.fillText(`${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}`, 22, 66);
 
         // Stat boxes
@@ -1086,15 +1086,15 @@ const ReportsPage = {
         const boxW = (W - 48 - 10) / 2;
 
         // Total patients
-        ctx.fillStyle = '#0284c7';
+        ctx.fillStyle = '#1878B4';
         this._roundRect(ctx, 24, curY, boxW, 55, 8);
         ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.font = '600 8px "Noto Sans", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('TỔNG BN', 24 + boxW / 2, curY + 18);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+        ctx.font = 'bold 24px "Noto Sans", sans-serif';
         ctx.fillText(`${r.totalPatients || '—'}`, 24 + boxW / 2, curY + 45);
 
         // Total received
@@ -1103,10 +1103,10 @@ const ReportsPage = {
         this._roundRect(ctx, 24 + boxW + 10, curY, boxW, 55, 8);
         ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.font = '600 8px "Noto Sans", sans-serif';
         ctx.fillText('NHẬN BN ĐÊM QUA', 24 + boxW + 10 + boxW / 2, curY + 18);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+        ctx.font = 'bold 24px "Noto Sans", sans-serif';
         ctx.fillText(`${totalReceived}`, 24 + boxW + 10 + boxW / 2, curY + 45);
 
         curY += 65;
@@ -1122,11 +1122,11 @@ const ReportsPage = {
             ctx.fillStyle = borderColor;
             ctx.fillRect(24, curY, 4, blockH);
             ctx.fillStyle = textColor;
-            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 11px "Noto Sans", sans-serif';
             ctx.fillText(`${label}: ${count} ca`, 38, curY + 16);
             if (detail) {
                 ctx.fillStyle = textColor;
-                ctx.font = '10px Inter, system-ui, sans-serif';
+                ctx.font = '10px "Noto Sans", sans-serif';
                 const txt = detail.length > 60 ? detail.substring(0, 57) + '...' : detail;
                 ctx.fillText(txt, 38, curY + 32);
             }
@@ -1146,9 +1146,9 @@ const ReportsPage = {
             ctx.fillStyle = '#94a3b8';
             ctx.fillRect(24, curY, 4, blockH);
             ctx.fillStyle = '#475569';
-            ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+            ctx.font = 'bold 11px "Noto Sans", sans-serif';
             ctx.fillText('GHI CHÚ', 38, curY + 16);
-            ctx.font = '10px Inter, system-ui, sans-serif';
+            ctx.font = '10px "Noto Sans", sans-serif';
             ctx.fillStyle = '#334155';
             ctx.fillText(r.notes.length > 60 ? r.notes.substring(0, 57) + '...' : r.notes, 38, curY + 32);
             curY += blockH + 10;
@@ -1156,12 +1156,12 @@ const ReportsPage = {
 
         // Footer
         const footY = curY + 5;
-        ctx.fillStyle = '#f0f9ff';
+        ctx.fillStyle = '#EBF0F9';
         ctx.fillRect(0, footY, W, 35);
-        ctx.fillStyle = '#bae6fd';
+        ctx.fillStyle = '#C8D5EC';
         ctx.fillRect(0, footY, W, 1);
-        ctx.fillStyle = '#0369a1';
-        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#1D2357';
+        ctx.font = '11px "Noto Sans", sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(`ĐD báo cáo: ${r.reporterName || ''}`, 24, footY + 22);
         ctx.textAlign = 'right';
@@ -1174,12 +1174,12 @@ const ReportsPage = {
         const wmH7 = footY + 100;
         ctx.translate(wmW7 / 2, wmH7 / 2);
         ctx.rotate(-Math.atan2(wmH7, wmW7));
-        ctx.font = 'bold 42px Inter, system-ui, sans-serif';
+        ctx.font = 'bold 42px "Noto Sans", sans-serif';
         ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG', 0, -10);
-        ctx.font = '20px Inter, system-ui, sans-serif';
+        ctx.font = '20px "Noto Sans", sans-serif';
         ctx.fillText('Bệnh viện Bình Dân', 0, 30);
         ctx.restore();
 
@@ -1275,28 +1275,28 @@ const ReportsPage = {
     showGuide() {
         const guideHTML = `
         <div class="rpt-guide-content">
-            <div style="text-align:center;padding-bottom:12px;border-bottom:3px solid #0c4a6e;margin-bottom:18px">
-                <div style="font-size:1.3rem;font-weight:800;color:#0c4a6e;margin-bottom:4px">📋 HƯỚNG DẪN SỬ DỤNG MODULE BÁO CÁO</div>
+            <div style="text-align:center;padding-bottom:12px;border-bottom:3px solid #1D2357;margin-bottom:18px">
+                <div style="font-size:1.3rem;font-weight:800;color:#1D2357;margin-bottom:4px">📋 HƯỚNG DẪN SỬ DỤNG MODULE BÁO CÁO</div>
                 <div style="font-size:0.85rem;color:#475569;font-weight:600">Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân</div>
                 <div style="font-size:0.75rem;color:#94a3b8;margin-top:4px">Phiên bản v02042353 · Cập nhật: 02/04/2026</div>
             </div>
 
-            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">1. Tổng quan</h2>
+            <h2 style="font-size:1.1rem;font-weight:800;color:#1D2357;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">1. Tổng quan</h2>
             <p>Module Báo cáo giúp nhân viên Khoa PTĐTT nhập liệu nhanh chóng, chính xác. Hệ thống có <strong>2 loại báo cáo</strong>:</p>
             <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:8px 0 14px">
-                <tr style="background:#0c4a6e;color:#fff"><th style="padding:8px;text-align:left">Loại</th><th style="padding:8px">Đối tượng</th><th style="padding:8px">Thời điểm</th><th style="padding:8px">Tab</th></tr>
+                <tr style="background:#1D2357;color:#fff"><th style="padding:8px;text-align:left">Loại</th><th style="padding:8px">Đối tượng</th><th style="padding:8px">Thời điểm</th><th style="padding:8px">Tab</th></tr>
                 <tr><td style="padding:7px;border-bottom:1px solid #e2e8f0"><strong>Báo cáo 16g</strong></td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">BS trực khoa</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">16:00</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">🩺 BS trực khoa</td></tr>
                 <tr style="background:#f8fafc"><td style="padding:7px;border-bottom:1px solid #e2e8f0"><strong>Báo cáo 7g</strong></td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">ĐD trực BV</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">07:00</td><td style="padding:7px;border-bottom:1px solid #e2e8f0;text-align:center">👩‍⚕️ ĐD trực BV</td></tr>
             </table>
 
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #0284c7;border-radius:6px;padding:10px 14px;margin:8px 0">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #1878B4;border-radius:6px;padding:10px 14px;margin:8px 0">
                 <strong>Cách truy cập:</strong><br>
                 ① Đăng nhập tại <strong>khoaptdtt.info.vn</strong> →
                 ② Nhấn <strong>"📊 Báo cáo"</strong> ở menu bên trái →
                 ③ Chọn tab tương ứng
             </div>
 
-            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">2. Báo cáo trực khoa lúc 16g (Bác sĩ)</h2>
+            <h2 style="font-size:1.1rem;font-weight:800;color:#1D2357;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">2. Báo cáo trực khoa lúc 16g (Bác sĩ)</h2>
             <p>Vào tab <strong>"BS trực khoa"</strong> → Nhấn <strong>"+ Tạo báo cáo 16h"</strong></p>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 1: Tổng BN & Mổ chưa về</h3>
@@ -1318,7 +1318,7 @@ const ReportsPage = {
             <div class="rpt-guide-box-white">
                 <strong>4 stepper</strong> cho ca mổ dự kiến ngày hôm sau:
                 <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:6px 0">
-                    <tr style="background:#0c4a6e;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th></tr>
+                    <tr style="background:#1D2357;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th></tr>
                     <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>Tổng</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Tổng ca mổ (<strong>tự động cộng</strong> = CT + YC + Robot)</td></tr>
                     <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>CT</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Ca mổ chương trình</td></tr>
                     <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><strong>Yêu cầu</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Ca mổ yêu cầu</td></tr>
@@ -1346,7 +1346,7 @@ const ReportsPage = {
                 • <strong>Lưu:</strong> Nhấn <strong>"💾 Lưu báo cáo"</strong>. Giờ lưu = thời điểm nhấn nút.
             </div>
 
-            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">3. Báo cáo 7g sáng (Điều dưỡng)</h2>
+            <h2 style="font-size:1.1rem;font-weight:800;color:#1D2357;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">3. Báo cáo 7g sáng (Điều dưỡng)</h2>
             <p>Vào tab <strong>"ĐD trực BV"</strong> → Nhấn <strong>"+ Tạo báo cáo 7h"</strong></p>
 
             <h3 style="font-size:0.95rem;font-weight:700;color:#1e40af;margin:12px 0 6px">🔹 Khu vực 1: Tổng số bệnh nhân</h3>
@@ -1358,7 +1358,7 @@ const ReportsPage = {
             <div class="rpt-guide-box-white">
                 <strong>4 stepper</strong> nằm ngang:
                 <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:6px 0">
-                    <tr style="background:#0c4a6e;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th><th style="padding:6px 8px">Màu</th></tr>
+                    <tr style="background:#1D2357;color:#fff"><th style="padding:6px 8px;text-align:left">Ô</th><th style="padding:6px 8px;text-align:left">Ý nghĩa</th><th style="padding:6px 8px">Màu</th></tr>
                     <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🚑 <strong>HSCC</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ Hồi sức cấp cứu</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#dc2626">Đỏ</td></tr>
                     <tr style="background:#f8fafc"><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🏥 <strong>Hồi tỉnh</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ phòng Hồi tỉnh</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#2563eb">Xanh dương</td></tr>
                     <tr><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">🏨 <strong>ICU</strong></td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0">BN từ khoa ICU</td><td style="padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;color:#7c3aed">Tím</td></tr>
@@ -1377,31 +1377,31 @@ const ReportsPage = {
                 • Nhấn <strong>"💾 Lưu báo cáo"</strong> để hoàn tất.
             </div>
 
-            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">4. Xuất hình ảnh (JPEG)</h2>
+            <h2 style="font-size:1.1rem;font-weight:800;color:#1D2357;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">4. Xuất hình ảnh (JPEG)</h2>
             <div class="rpt-guide-box-white">
                 Trên thẻ báo cáo đã lưu → nhấn <strong>"📸 Xuất ảnh"</strong> → Hệ thống tạo file ảnh và <strong>tải về thiết bị</strong>.<br>
                 Ảnh bao gồm: Header khoa · Dữ liệu đầy đủ · Watermark chống giả mạo · Thời gian xuất.
             </div>
 
-            <h2 style="font-size:1.1rem;font-weight:800;color:#0c4a6e;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">5. Câu hỏi thường gặp</h2>
+            <h2 style="font-size:1.1rem;font-weight:800;color:#1D2357;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e8f0">5. Câu hỏi thường gặp</h2>
             <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
-                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Không thấy tên mình trong danh sách?</div>
+                <div style="font-weight:700;color:#1D2357;font-size:0.88rem">❓ Không thấy tên mình trong danh sách?</div>
                 <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Liên hệ quản trị viên để bổ sung vào module "Nhân viên".</div>
             </div>
             <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
-                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Sửa báo cáo ngày hôm qua được không?</div>
+                <div style="font-weight:700;color:#1D2357;font-size:0.88rem">❓ Sửa báo cáo ngày hôm qua được không?</div>
                 <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Chỉ cho phép sửa <strong>trong ngày</strong>. Cần sửa cũ → liên hệ quản trị viên.</div>
             </div>
             <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
-                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Nút [+]/[−] và nhập trực tiếp khác gì?</div>
+                <div style="font-weight:700;color:#1D2357;font-size:0.88rem">❓ Nút [+]/[−] và nhập trực tiếp khác gì?</div>
                 <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Kết quả giống nhau. [+]/[−] tiện trên điện thoại, nhập trực tiếp phù hợp máy tính.</div>
             </div>
             <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
-                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Tại sao Thứ Sáu form dài hơn?</div>
+                <div style="font-weight:700;color:#1D2357;font-size:0.88rem">❓ Tại sao Thứ Sáu form dài hơn?</div>
                 <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Cần báo cáo thêm bệnh mổ <strong>Thứ Hai</strong> tuần sau (T7-CN không mổ chương trình).</div>
             </div>
             <div style="margin:6px 0;padding:8px 0;border-bottom:1px solid #f1f5f9">
-                <div style="font-weight:700;color:#0c4a6e;font-size:0.88rem">❓ Tổng BN tự động điền từ đâu?</div>
+                <div style="font-weight:700;color:#1D2357;font-size:0.88rem">❓ Tổng BN tự động điền từ đâu?</div>
                 <div style="color:#475569;font-size:0.85rem;padding-left:20px">→ Từ hệ thống EMR (nếu đã tích hợp). Có thể chỉnh sửa nếu chưa đúng.</div>
             </div>
 

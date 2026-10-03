@@ -25,8 +25,8 @@
 }
 .rsch-stat-card.active-stat {
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(8,145,178,0.25);
-    background: rgba(8,145,178,0.06);
+    box-shadow: 0 0 0 2px var(--primary-a20);
+    background: var(--primary-a10);
 }
 .rsch-stat-val { font-size: 1.6rem; font-weight: 800; color: var(--text); }
 .rsch-stat-lbl { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
@@ -106,7 +106,7 @@
     background: var(--primary-fill);
     color: var(--on-primary);
     border-color: var(--primary);
-    box-shadow: 0 2px 6px rgba(8,145,178,0.3);
+    box-shadow: 0 2px 6px var(--primary-a20);
 }
 
 /* Search Box */
@@ -142,7 +142,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0284c7, #0369a1);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     color: white;
     font-size: 0.72rem;
     font-weight: 700;
@@ -337,7 +337,7 @@
     align-items: center;
     padding: 14px 18px;
     border-bottom: 1px solid var(--border);
-    background: linear-gradient(135deg, rgba(8,145,178,0.06), rgba(34,197,94,0.04));
+    background: linear-gradient(135deg, var(--primary-a10), rgba(34,197,94,0.04));
 }
 .rsch-desktop-view {
     display: block;

@@ -76,7 +76,7 @@ const SurgeryStatsPage = {
             id: 'colon',
             label: '1. Đại tràng',
             sublabel: 'Colectomy',
-            color: '#0284c7',
+            get color() { return Utils.cssVar('--chart-2') || '#3492D3'; },
             icon: '🩺',
             desc: 'Cắt đại tràng phải, trái, sigma, toàn phần, CME/D3'
         },
@@ -84,7 +84,7 @@ const SurgeryStatsPage = {
             id: 'rectal',
             label: '2. Trực tràng & TME',
             sublabel: 'Rectal / TME / LAR',
-            color: '#0891b2',
+            get color() { return Utils.cssVar('--chart-1') || '#333C83'; },
             icon: '🎯',
             desc: 'Cắt trước thấp LAR, TME, ICG, Miles, TaTME, ISR'
         },
@@ -92,7 +92,7 @@ const SurgeryStatsPage = {
             id: 'proctology',
             label: '3. Hậu môn - Trực tràng',
             sublabel: 'Proctology',
-            color: '#10b981',
+            get color() { return Utils.cssVar('--chart-3') || '#41822E'; },
             icon: '🩹',
             desc: 'Trĩ dao siêu âm, Longo, Rò hậu môn / LIFT, Nứt kẽ, Áp xe'
         },
@@ -100,7 +100,7 @@ const SurgeryStatsPage = {
             id: 'stoma',
             label: '4. Đóng/Mở HMNT',
             sublabel: 'Stoma / Hartmann',
-            color: '#8b5cf6',
+            get color() { return Utils.cssVar('--chart-5') || '#EC3E6D'; },
             icon: '🔄',
             desc: 'Đóng hồi tràng ra da, Hartmann Reversal, Đóng đại tràng'
         },
@@ -108,7 +108,7 @@ const SurgeryStatsPage = {
             id: 'biliary_gi',
             label: '5. Gan mật & Phối hợp',
             sublabel: 'Biliary & General GI',
-            color: '#f59e0b',
+            get color() { return Utils.cssVar('--chart-4') || '#613B00'; },
             icon: '🔬',
             desc: 'PTNS cắt túi mật, ruột non, nối tắt, thoát vị'
         },
@@ -116,7 +116,7 @@ const SurgeryStatsPage = {
             id: 'emergency',
             label: '6. Cấp cứu & Bán khẩn',
             sublabel: 'Acute Care & Emergency',
-            color: '#ef4444',
+            get color() { return Utils.cssVar('--state-danger') || '#CB242D'; },
             icon: '⚡',
             desc: 'Khâu thủng tạng, tắc ruột, viêm phúc mạc, ruột thừa'
         }
@@ -387,12 +387,12 @@ const SurgeryStatsPage = {
                 name: 'Toàn Khoa', 
                 role: 'Tổng khối lượng toàn khoa', 
                 shortName: 'Toàn Khoa',
-                color: '#0891b2',
+                color: Utils.cssVar('--primary-fill') || '#1D2357',
                 totalRawCases: cases.length
             };
         } else {
             const allDocs = this.getEligibleDoctors();
-            docInfo = allDocs.find(d => String(d.id) === String(doctorId)) || { id: doctorId, name: 'Bác sĩ ' + doctorId, role: 'Phẫu thuật viên', color: '#0891b2' };
+            docInfo = allDocs.find(d => String(d.id) === String(doctorId)) || { id: doctorId, name: 'Bác sĩ ' + doctorId, role: 'Phẫu thuật viên', color: Utils.cssVar('--primary-fill') || '#1D2357' };
             const docName = (docInfo && docInfo.name) ? docInfo.name : 'Bác sĩ';
             docInfo.shortName = docName.split(' ').pop();
             cases = (surgeries || []).filter(s => s && String(s.mainSurgeon) === String(doctorId));
@@ -653,9 +653,9 @@ const SurgeryStatsPage = {
             </div>
             
             <div class="sstats-selector-row">
-                <!-- DOCTOR 1 SELECTOR (CYAN) -->
+                <!-- DOCTOR 1 SELECTOR (NAVY) -->
                 <div class="sstats-doc-box sstats-doc-box-primary">
-                    <div class="sstats-doc-box-badge" style="background:#0891b2">Bác sĩ 1 (Màu Xanh Cyan)</div>
+                    <div class="sstats-doc-box-badge" style="background:var(--primary-fill)">Bác sĩ 1 (Màu Xanh Navy)</div>
                     <div class="sstats-doc-box-controls">
                         <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setPrimaryDoctor(this.value)">
                             <option value="dept_total" ${(this.primaryDoctorId === 'dept_total' || this.primaryDoctorId === 'dept_avg') ? 'selected' : ''}>
@@ -668,9 +668,9 @@ const SurgeryStatsPage = {
 
                 <div class="sstats-vs-badge ${hasCompare ? '' : 'disabled'}">${hasCompare ? 'VS' : '—'}</div>
 
-                <!-- DOCTOR 2 SELECTOR (CRIMSON / ROSE) -->
+                <!-- DOCTOR 2 SELECTOR (CRIMSON / DANGER) -->
                 <div class="sstats-doc-box sstats-doc-box-compare ${hasCompare ? '' : 'is-none'}">
-                    <div class="sstats-doc-box-badge" style="background:${hasCompare ? '#e11d48' : 'var(--text-muted)'}">
+                    <div class="sstats-doc-box-badge" style="background:${hasCompare ? 'var(--state-danger)' : 'var(--text-muted)'}">
                         ${hasCompare ? 'Bác sĩ 2 (Màu Đỏ Rose)' : 'Bác sĩ 2 (Để trống)'}
                     </div>
                     <div class="sstats-doc-box-controls">
@@ -838,12 +838,12 @@ const SurgeryStatsPage = {
 
                 <div class="sstats-radar-legend">
                     <div class="sstats-legend-item">
-                        <span class="sstats-legend-dot" style="background:#0891b2"></span>
+                        <span class="sstats-legend-dot" style="background:var(--primary-fill)"></span>
                         <span class="sstats-legend-text"><strong>${name1}</strong> (${p1.total} ca)</span>
                     </div>
                     ${hasCompare ? `
                     <div class="sstats-legend-item">
-                        <span class="sstats-legend-dot" style="background:#e11d48"></span>
+                        <span class="sstats-legend-dot" style="background:var(--state-danger)"></span>
                         <span class="sstats-legend-text"><strong>${name2}</strong> (${p2.total} ca)</span>
                     </div>
                     ` : ''}
@@ -873,12 +873,12 @@ const SurgeryStatsPage = {
                             <tr>
                                 <th>Trục Năng Lực</th>
                                 ${hasCompare ? `
-                                    <th style="color:#0891b2;text-align:right">${shortName1}</th>
-                                    <th style="color:#e11d48;text-align:right">${shortName2}</th>
+                                    <th style="color:var(--primary);text-align:right">${shortName1}</th>
+                                    <th style="color:var(--state-danger);text-align:right">${shortName2}</th>
                                     <th style="text-align:center">Chênh lệch</th>
                                 ` : `
-                                    <th style="color:#0891b2;text-align:right">Số ca (${shortName1})</th>
-                                    <th style="color:#0891b2;text-align:right">Tỷ trọng cơ cấu</th>
+                                    <th style="color:var(--primary);text-align:right">Số ca (${shortName1})</th>
+                                    <th style="color:var(--primary);text-align:right">Tỷ trọng cơ cấu</th>
                                 `}
                             </tr>
                         </thead>
@@ -905,11 +905,11 @@ const SurgeryStatsPage = {
                                         </div>
                                     </td>
                                     ${hasCompare ? `
-                                    <td class="sstats-matrix-num" style="color:#0891b2">
+                                    <td class="sstats-matrix-num" style="color:var(--primary)">
                                         <strong>${c1}</strong> ca
                                         <div class="sstats-matrix-pct">${pct1.toFixed(1)}%</div>
                                     </td>
-                                    <td class="sstats-matrix-num" style="color:#e11d48">
+                                    <td class="sstats-matrix-num" style="color:var(--state-danger)">
                                         <strong>${c2}</strong> ca
                                         <div class="sstats-matrix-pct">${pct2.toFixed(1)}%</div>
                                     </td>
@@ -919,10 +919,10 @@ const SurgeryStatsPage = {
                                         </span>
                                     </td>
                                     ` : `
-                                    <td class="sstats-matrix-num" style="color:#0891b2">
+                                    <td class="sstats-matrix-num" style="color:var(--primary)">
                                         <strong>${c1}</strong> ca
                                     </td>
-                                    <td class="sstats-matrix-num" style="color:#0891b2">
+                                    <td class="sstats-matrix-num" style="color:var(--primary)">
                                         <strong>${pct1.toFixed(1)}%</strong>
                                     </td>
                                     `}
@@ -933,16 +933,16 @@ const SurgeryStatsPage = {
                             <tr class="sstats-matrix-total-row">
                                 <td><strong>TỔNG CỘNG</strong></td>
                                 ${hasCompare ? `
-                                <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
-                                <td style="text-align:right;color:#e11d48"><strong>${p2.total} ca</strong></td>
+                                <td style="text-align:right;color:var(--primary)"><strong>${p1.total} ca</strong></td>
+                                <td style="text-align:right;color:var(--state-danger)"><strong>${p2.total} ca</strong></td>
                                 <td style="text-align:center">
                                     <span class="sstats-delta-badge ${totalDiff >= 0 ? 'pos' : 'neg'}" title="${totalDiff >= 0 ? `+${totalDiff}` : totalDiff} ca">
                                         ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
                                     </span>
                                 </td>
                                 ` : `
-                                <td style="text-align:right;color:#0891b2"><strong>${p1.total} ca</strong></td>
-                                <td style="text-align:right;color:#0891b2"><strong>100%</strong></td>
+                                <td style="text-align:right;color:var(--primary)"><strong>${p1.total} ca</strong></td>
+                                <td style="text-align:right;color:var(--primary)"><strong>100%</strong></td>
                                 `}
                             </tr>
                         </tfoot>
@@ -1177,23 +1177,26 @@ const SurgeryStatsPage = {
                 </text>
                 <text x="${lx}" y="${ly + 8}" text-anchor="${anchor}" class="sstats-radar-axis-values" font-size="10">
                     ${hasCompare 
-                        ? `<tspan fill="#0891b2" font-weight="700">${c1}</tspan> <tspan fill="#64748b">vs</tspan> <tspan fill="#e11d48" font-weight="700">${c2}</tspan>`
-                        : `<tspan fill="#0891b2" font-weight="700">${c1} ca</tspan> <tspan fill="#64748b">(${pct1.toFixed(0)}%)</tspan>`}
+                        ? `<tspan fill="${Utils.cssVar('--primary') || '#1D2357'}" font-weight="700">${c1}</tspan> <tspan fill="#64748b">vs</tspan> <tspan fill="${Utils.cssVar('--state-danger') || '#CB242D'}" font-weight="700">${c2}</tspan>`
+                        : `<tspan fill="${Utils.cssVar('--primary') || '#1D2357'}" font-weight="700">${c1} ca</tspan> <tspan fill="#64748b">(${pct1.toFixed(0)}%)</tspan>`}
                 </text>
             </g>`;
         });
 
-        // Polygon 1 (Doctor 1 - Cyan)
+        // Polygon 1 (Doctor 1 - Navy)
         const poly1Pts = [];
         const poly1Dots = [];
+        const p1Color = Utils.cssVar('--primary') || '#1D2357';
+        const p2Color = Utils.cssVar('--state-danger') || '#CB242D';
+        const p1Accent = Utils.cssVar('--accent') || '#1878B4';
         axisKeys.forEach((k, i) => {
             const val = p1.axisCounts[k] || 0;
             const pt = getCoord(val, i, maxScale);
             poly1Pts.push(`${pt.x},${pt.y}`);
-            poly1Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4.5" fill="#0891b2" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="1" />`);
+            poly1Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4.5" fill="${p1Color}" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="1" />`);
         });
 
-        // Polygon 2 (Doctor 2 - Crimson / Rose - Only if hasCompare)
+        // Polygon 2 (Doctor 2 - Crimson / Danger - Only if hasCompare)
         const poly2Pts = [];
         const poly2Dots = [];
         if (hasCompare) {
@@ -1201,7 +1204,7 @@ const SurgeryStatsPage = {
                 const val = p2.axisCounts[k] || 0;
                 const pt = getCoord(val, i, maxScale);
                 poly2Pts.push(`${pt.x},${pt.y}`);
-                poly2Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4" fill="#e11d48" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="2" />`);
+                poly2Dots.push(`<circle cx="${pt.x}" cy="${pt.y}" r="4" fill="${p2Color}" stroke="#ffffff" stroke-width="1.5" class="sstats-radar-dot" data-axis="${k}" data-doc="2" />`);
             });
         }
 
@@ -1209,12 +1212,12 @@ const SurgeryStatsPage = {
         <svg viewBox="0 0 ${width} ${height}" class="sstats-radar-svg" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <linearGradient id="p1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#0891b2" stop-opacity="0.35" />
-                    <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.15" />
+                    <stop offset="0%" stop-color="${p1Color}" stop-opacity="0.35" />
+                    <stop offset="100%" stop-color="${p1Accent}" stop-opacity="0.15" />
                 </linearGradient>
                 ${hasCompare ? `
                 <linearGradient id="p2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#e11d48" stop-opacity="0.30" />
+                    <stop offset="0%" stop-color="${p2Color}" stop-opacity="0.30" />
                     <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.12" />
                 </linearGradient>
                 ` : ''}
@@ -1227,14 +1230,14 @@ const SurgeryStatsPage = {
             ${gridSVG}
             ${spokesSVG}
 
-            <!-- Doctor 2 Polygon (Crimson / Rose - Underneath) -->
+            <!-- Doctor 2 Polygon (Crimson / Danger - Underneath) -->
             ${hasCompare ? `
-            <polygon points="${poly2Pts.join(' ')}" fill="url(#p2Grad)" stroke="#e11d48" stroke-width="2.2" stroke-dasharray="4,3" class="sstats-polygon-p2" filter="url(#radarGlow)" />
+            <polygon points="${poly2Pts.join(' ')}" fill="url(#p2Grad)" stroke="${p2Color}" stroke-width="2.2" stroke-dasharray="4,3" class="sstats-polygon-p2" filter="url(#radarGlow)" />
             ${poly2Dots.join('')}
             ` : ''}
 
-            <!-- Doctor 1 Polygon (Cyan - On Top) -->
-            <polygon points="${poly1Pts.join(' ')}" fill="url(#p1Grad)" stroke="#0891b2" stroke-width="2.5" class="sstats-polygon-p1" filter="url(#radarGlow)" />
+            <!-- Doctor 1 Polygon (Navy - On Top) -->
+            <polygon points="${poly1Pts.join(' ')}" fill="url(#p1Grad)" stroke="${p1Color}" stroke-width="2.5" class="sstats-polygon-p1" filter="url(#radarGlow)" />
             ${poly1Dots.join('')}
 
             <!-- Axis Labels -->
@@ -1254,11 +1257,27 @@ const SurgeryStatsPage = {
             grandByType[t] = surgeries.filter(s => s.surgeryType === t).length;
         });
 
-        // Grand totals by approach
         const APPROACH_TYPES = {
-            mo: { label: 'Mổ mở', color: '#e11d48' },
-            noisoi: { label: 'Nội soi', color: '#16a34a' },
-            nsth: { label: 'NSTH', color: '#8b5cf6' },
+            mo: {
+                label: 'Mổ mở',
+                get color() { return Utils.cssVar('--surgery-mo') || '#A90042'; },
+                get onColor() { return Utils.cssVar('--surgery-mo-on') || '#FFFFFF'; }
+            },
+            noisoi: {
+                label: 'Nội soi',
+                get color() { return Utils.cssVar('--surgery-noisoi') || '#34A357'; },
+                get onColor() { return Utils.cssVar('--surgery-noisoi-on') || '#111542'; }
+            },
+            nsth: {
+                label: 'NSTH',
+                get color() { return Utils.cssVar('--surgery-nsth') || '#7C4CD5'; },
+                get onColor() { return Utils.cssVar('--surgery-nsth-on') || '#FFFFFF'; }
+            },
+            robot: {
+                label: 'Robot',
+                get color() { return Utils.cssVar('--surgery-robot') || '#333C83'; },
+                get onColor() { return Utils.cssVar('--surgery-robot-on') || '#FFFFFF'; }
+            }
         };
         const grandByApproach = {};
         Object.keys(APPROACH_TYPES).forEach(a => {
@@ -1318,7 +1337,7 @@ const SurgeryStatsPage = {
                             <td class="sstats-td-stt">${idx + 1}</td>
                             <td>
                                 <div class="sstats-td-name">
-                                    <div class="sstats-doc-avatar" style="background:${docStat.doctor.color || '#0891b2'}">${docStat.doctor.name.split(' ').pop().charAt(0)}</div>
+                                    <div class="sstats-doc-avatar" style="background:${docStat.doctor.color || 'var(--primary-fill)'}">${docStat.doctor.name.split(' ').pop().charAt(0)}</div>
                                     <div>
                                         <div class="sstats-doc-name">${docStat.doctor.name} ${extBadge}</div>
                                         <div class="sstats-doc-role">${docStat.doctor.role}</div>
@@ -1661,24 +1680,24 @@ const SurgeryStatsPage = {
                         </div>
                     </td>
                     ${hasCompare ? `
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #0891b2; font-weight: 700; font-size: 13px;">
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: var(--primary, #1D2357); font-weight: 700; font-size: 13px;">
                         ${c1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                        <div style="font-size: 11px; font-weight: 600; color: #0891b2;">${pct1.toFixed(1)}%</div>
+                        <div style="font-size: 11px; font-weight: 600; color: var(--primary, #1D2357);">${pct1.toFixed(1)}%</div>
                     </td>
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #e11d48; font-weight: 700; font-size: 13px;">
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: var(--state-danger, #CB242D); font-weight: 700; font-size: 13px;">
                         ${c2} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                        <div style="font-size: 11px; font-weight: 600; color: #e11d48;">${pct2.toFixed(1)}%</div>
+                        <div style="font-size: 11px; font-weight: 600; color: var(--state-danger, #CB242D);">${pct2.toFixed(1)}%</div>
                     </td>
                     <td style="padding: 11px 12px; text-align: center; vertical-align: middle;">
-                        <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${delta > 0 ? '#ecfdf5' : delta < 0 ? '#fff1f2' : '#f1f5f9'}; color: ${delta > 0 ? '#059669' : delta < 0 ? '#e11d48' : '#64748b'};">
+                        <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${delta > 0 ? '#ecfdf5' : delta < 0 ? '#fff1f2' : '#f1f5f9'}; color: ${delta > 0 ? '#059669' : delta < 0 ? 'var(--state-danger, #CB242D)' : '#64748b'};">
                             ${delta > 0 ? `+${delta.toFixed(1)}%` : delta < 0 ? `${delta.toFixed(1)}%` : '0.0%'}
                         </span>
                     </td>
                     ` : `
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #0891b2; font-weight: 800; font-size: 14px;">
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: var(--primary, #1D2357); font-weight: 800; font-size: 14px;">
                         ${c1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
                     </td>
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #0891b2; font-weight: 800; font-size: 14px;">
+                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: var(--primary, #1D2357); font-weight: 800; font-size: 14px;">
                         ${pct1.toFixed(1)}%
                     </td>
                     `}
@@ -1738,7 +1757,7 @@ const SurgeryStatsPage = {
         .kpi-val {
             font-size: 25px;
             font-weight: 800;
-            color: #0891b2;
+            color: var(--primary, #1D2357);
             line-height: 1.1;
         }
         .kpi-sub {
@@ -1755,7 +1774,7 @@ const SurgeryStatsPage = {
             font-size: 10px;
             font-weight: 600;
             background: #ecfeff;
-            color: #0891b2;
+            color: var(--primary, #1D2357);
             border: 1px solid #cffafe;
         }
         .main-split {
@@ -1797,7 +1816,7 @@ const SurgeryStatsPage = {
             border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
-            color: #0891b2;
+            color: var(--primary, #1D2357);
             margin-bottom: 8px;
         }
         .radar-box {
@@ -1835,7 +1854,7 @@ const SurgeryStatsPage = {
             font-size: 12.5px;
             font-weight: 800;
             color: #0f172a;
-            border-top: 2px solid #0891b2;
+            border-top: 2px solid var(--primary, #1D2357);
             background: #f8fafc;
         }
         .export-footer {
@@ -1867,11 +1886,11 @@ const SurgeryStatsPage = {
         <!-- SUB-HEADER / METADATA INFO BAR -->
         <div style="padding:12px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div style="font-size:13.5px;color:#0f172a;">
-                Phẫu thuật viên: <strong style="color:#0891b2;font-size:15px;">${name1}</strong> <span style="font-size:12px;color:#64748b;">(${p1.doctor.role})</span>
-                ${hasCompare ? ` <span style="margin:0 6px;padding:2px 7px;background:#e2e8f0;border-radius:10px;font-size:11px;font-weight:700;color:#475569;">VS</span> Đối chuẩn: <strong style="color:#e11d48;font-size:15px;">${name2}</strong> <span style="font-size:12px;color:#64748b;">(${p2.doctor.role})</span>` : ''}
+                Phẫu thuật viên: <strong style="color:var(--primary, #1D2357);font-size:15px;">${name1}</strong> <span style="font-size:12px;color:#64748b;">(${p1.doctor.role})</span>
+                ${hasCompare ? ` <span style="margin:0 6px;padding:2px 7px;background:#e2e8f0;border-radius:10px;font-size:11px;font-weight:700;color:#475569;">VS</span> Đối chuẩn: <strong style="color:var(--state-danger, #CB242D);font-size:15px;">${name2}</strong> <span style="font-size:12px;color:#64748b;">(${p2.doctor.role})</span>` : ''}
             </div>
             <div style="font-size:13px;color:#334155;font-weight:600;">
-                📅 Kỳ thống kê: <span style="color:#0891b2;">${periodLabel}</span> · Tổng: <strong style="color:#0f172a;font-size:14px;">${p1.total} ca</strong>
+                📅 Kỳ thống kê: <span style="color:var(--primary, #1D2357);">${periodLabel}</span> · Tổng: <strong style="color:#0f172a;font-size:14px;">${p1.total} ca</strong>
             </div>
         </div>
 
@@ -1921,9 +1940,9 @@ const SurgeryStatsPage = {
                         </div>
                         <div class="sub-card-desc">Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên</div>
                         <div class="legend-pill">
-                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0891b2;"></span>
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary, #1D2357);"></span>
                             <span>${name1} (${p1.total} ca)</span>
-                            ${hasCompare ? ` · <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e11d48;margin-left:4px;"></span> ${name2} (${p2.total} ca)` : ''}
+                            ${hasCompare ? ` · <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--state-danger, #CB242D);margin-left:4px;"></span> ${name2} (${p2.total} ca)` : ''}
                         </div>
                     </div>
 
@@ -1951,12 +1970,12 @@ const SurgeryStatsPage = {
                             <tr>
                                 <th style="text-align:left;">TRỤC NĂNG LỰC</th>
                                 ${hasCompare ? `
-                                    <th style="text-align:right;color:#0891b2;">${shortName1}</th>
-                                    <th style="text-align:right;color:#e11d48;">${shortName2}</th>
+                                    <th style="text-align:right;color:var(--primary, #1D2357);">${shortName1}</th>
+                                    <th style="text-align:right;color:var(--state-danger, #CB242D);">${shortName2}</th>
                                     <th style="text-align:center;">Chênh lệch</th>
                                 ` : `
-                                    <th style="text-align:right;color:#0891b2;">Số ca (${shortName1})</th>
-                                    <th style="text-align:right;color:#0891b2;">Tỷ trọng cơ cấu</th>
+                                    <th style="text-align:right;color:var(--primary, #1D2357);">Số ca (${shortName1})</th>
+                                    <th style="text-align:right;color:var(--primary, #1D2357);">Tỷ trọng cơ cấu</th>
                                 `}
                             </tr>
                         </thead>
@@ -1967,16 +1986,16 @@ const SurgeryStatsPage = {
                             <tr class="matrix-total-row">
                                 <td>TỔNG CỘNG</td>
                                 ${hasCompare ? `
-                                    <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
-                                    <td style="text-align:right;color:#e11d48;">${p2.total} ca</td>
+                                    <td style="text-align:right;color:var(--primary, #1D2357);">${p1.total} ca</td>
+                                    <td style="text-align:right;color:var(--state-danger, #CB242D);">${p2.total} ca</td>
                                     <td style="text-align:center;">
-                                        <span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;background:${totalDiff >= 0 ? '#ecfdf5' : '#fff1f2'};color:${totalDiff >= 0 ? '#059669' : '#e11d48'};">
+                                        <span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;background:${totalDiff >= 0 ? '#ecfdf5' : '#fff1f2'};color:${totalDiff >= 0 ? '#059669' : 'var(--state-danger, #CB242D)'};">
                                             ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
                                         </span>
                                     </td>
                                 ` : `
-                                    <td style="text-align:right;color:#0891b2;">${p1.total} ca</td>
-                                    <td style="text-align:right;color:#0891b2;">100%</td>
+                                    <td style="text-align:right;color:var(--primary, #1D2357);">${p1.total} ca</td>
+                                    <td style="text-align:right;color:var(--primary, #1D2357);">100%</td>
                                 `}
                             </tr>
                         </tfoot>

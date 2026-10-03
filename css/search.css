@@ -120,7 +120,7 @@
     text-overflow: ellipsis;
 }
 .search-result-name mark {
-    background: rgba(6,182,212,0.2);
+    background: var(--primary-a20);
     color: var(--primary);
     border-radius: 2px;
     padding: 0 1px;

@@ -357,7 +357,7 @@ const DashboardPage = {
         <div class="duty-grid">
             <div class="widget-card slide-up" style="animation-delay:0.25s">
                 <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
-                ${todayDutyKhoa.length > 0 ? (() => { const _c = ['#06b6d4','#8b5cf6','#f59e0b','#ec4899']; return todayDutyKhoa.map((item, i) => {
+                ${todayDutyKhoa.length > 0 ? (() => { const _c = [Utils.cssVar('--primary-fill') || '#1D2357', Utils.cssVar('--accent') || '#1878B4', '#8b5cf6', '#f59e0b']; return todayDutyKhoa.map((item, i) => {
                     const eff = StaffPage.getEffectiveStatus(item.staff, today);
                     const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
                     return `
@@ -557,12 +557,12 @@ const DashboardPage = {
             ctx.restore();
         }
 
-        // 3. Draw Stacked Bars (Exact colors from Lịch Mổ Tuần)
+        // 3. Draw Stacked Bars (Colors from CSS tokens)
         const seriesColors = {
-            yeucau: isDark ? '#fbbf24' : '#f59e0b',      // Vàng cam (Lịch mổ tuần)
-            chuongtrinh: isDark ? '#60a5fa' : '#3b82f6', // Xanh dương (Lịch mổ tuần)
-            robot: isDark ? '#818cf8' : '#1e3a5f',       // Xanh Navy (Lịch mổ tuần)
-            bankhan: isDark ? '#f87171' : '#ef4444'      // Đỏ (Lịch mổ tuần)
+            yeucau: Utils.cssVar('--stype-yeucau') || '#BF7900',
+            chuongtrinh: Utils.cssVar('--stype-chuongtrinh') || '#1878B4',
+            robot: Utils.cssVar('--stype-robot') || (isDark ? '#B2C1FD' : '#333C83'),
+            bankhan: Utils.cssVar('--stype-bankhan') || (isDark ? '#CB242D' : '#AC011A')
         };
 
         const barCoordinates = [];
@@ -655,7 +655,7 @@ const DashboardPage = {
             // X-axis label
             ctx.font = m.isCurrentMonth ? 'bold 11px "Noto Sans", sans-serif' : '11px "Noto Sans", sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillStyle = m.isCurrentMonth ? (isDark ? '#38bdf8' : '#0284c7') : textMuted;
+            ctx.fillStyle = m.isCurrentMonth ? (Utils.cssVar('--accent') || '#1878B4') : textMuted;
             ctx.fillText(m.shortLabel + (m.isCurrentMonth ? '*' : ''), xCenter, h - pad.bottom + 16);
 
             if (m.isCurrentMonth) {
@@ -670,7 +670,7 @@ const DashboardPage = {
             const points = data.map((m, i) => ({ x: xOf(i), y: yOf(m.total), val: m.total, isCur: m.isCurrentMonth }));
 
             ctx.save();
-            ctx.strokeStyle = isDark ? '#38bdf8' : '#0f172a';
+            ctx.strokeStyle = Utils.cssVar('--primary') || (isDark ? '#8EA5FA' : '#1D2357');
             ctx.lineWidth = 2.5;
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
@@ -690,9 +690,9 @@ const DashboardPage = {
             points.forEach(pt => {
                 ctx.beginPath();
                 ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
-                ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
+                ctx.fillStyle = Utils.cssVar('--bg-primary') || (isDark ? '#0F172A' : '#ffffff');
                 ctx.fill();
-                ctx.strokeStyle = isDark ? '#38bdf8' : '#0f172a';
+                ctx.strokeStyle = Utils.cssVar('--primary') || (isDark ? '#8EA5FA' : '#1D2357');
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
 
@@ -1048,14 +1048,14 @@ const DashboardPage = {
         if (!ctx) return;
 
         let particleCount = 65;
-        let colors = ['#ec4899', '#f43f5e', '#a855f7', '#06b6d4', '#fbbf24', '#10b981'];
+        let colors = ['#ec4899', '#f43f5e', '#a855f7', '#1878B4', '#fbbf24', '#10b981'];
 
         if (tier === 'chief') {
             particleCount = 125;
             colors = ['#fbbf24', '#f59e0b', '#d97706', '#6366f1', '#8b5cf6', '#ffffff', '#e0e7ff'];
         } else if (tier === 'bcn') {
             particleCount = 90;
-            colors = ['#38bdf8', '#0284c7', '#fbbf24', '#f59e0b', '#ec4899', '#ffffff'];
+            colors = ['#1878B4', '#54A83C', '#fbbf24', '#f59e0b', '#ec4899', '#ffffff'];
         }
 
         const particles = [];

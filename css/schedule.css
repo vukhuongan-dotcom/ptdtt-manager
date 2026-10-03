@@ -61,7 +61,7 @@
 }
 .schedule-day-header.today {
     color: var(--text-link) !important;
-    background: rgba(8, 145, 178, 0.08) !important;
+    background: var(--primary-a10) !important;
 }
 .schedule-day-header.weekend {
     color: var(--state-danger) !important;
@@ -145,7 +145,7 @@
 }
 .schedule-select:focus {
     border-color: var(--primary);
-    background: rgba(8, 145, 178, 0.06);
+    background: var(--primary-a10);
     color: var(--text-primary);
 }
 .schedule-select.has-value {
@@ -157,10 +157,10 @@
 .schedule-lead-slot .schedule-select.has-value,
 .schedule-lead-slot .schedule-name {
     font-weight: 700;
-    color: var(--primary);   /* light: #0891b2 | dark: #38bdf8 */
+    color: var(--primary);
 }
 .schedule-lead-slot .schedule-select.has-value {
-    background: rgba(8, 145, 178, 0.06);
+    background: var(--primary-a10);
 }
 /* Dark: dùng primary-light (#7dd3fc) — tương phản cao hơn trên nền #161b22 */
 [data-theme="dark"] .schedule-lead-slot .schedule-select.has-value,
@@ -191,7 +191,7 @@
 }
 
 /* ===== Group pastel row backgrounds ===== */
-tr[data-group="trucKhoa"] td { background-color: rgba(6, 182, 212, 0.06); }
+tr[data-group="trucKhoa"] td { background-color: var(--primary-a10); }
 tr[data-group="sieuAm"] td { background-color: rgba(139, 92, 246, 0.06); }
 tr[data-group="pkB023"] td { background-color: rgba(245, 158, 11, 0.06); }
 tr[data-group="pkB020"] td { background-color: rgba(236, 72, 153, 0.06); }
@@ -390,13 +390,13 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: rgba(248,113,113,0.06);
 }
 
-/* Today header — primary-light thay primary cho sáng hơn */
+/* Today header — primary-a20 */
 [data-theme="dark"] .schedule-day-header.today {
-    background: rgba(56,189,248,0.1) !important;
+    background: var(--primary-a20) !important;
 }
 
 /* Group row backgrounds — tăng opacity cho dark bg */
-[data-theme="dark"] tr[data-group="trucKhoa"] td { background-color: rgba(6,182,212,0.1); }
+[data-theme="dark"] tr[data-group="trucKhoa"] td { background-color: var(--primary-a20); }
 [data-theme="dark"] tr[data-group="sieuAm"] td  { background-color: rgba(139,92,246,0.1); }
 [data-theme="dark"] tr[data-group="pkB023"] td  { background-color: rgba(245,158,11,0.1); }
 [data-theme="dark"] tr[data-group="pkB020"] td  { background-color: rgba(236,72,153,0.1); }
@@ -633,7 +633,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 .schedule-day-pill.active {
     border-color: var(--primary);
-    background: rgba(8,145,178,0.12);
+    background: var(--primary-a10);
     box-shadow: 0 0 0 1px var(--primary);
 }
 .schedule-day-pill.today .sched-pill-name {

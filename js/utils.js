@@ -34,6 +34,11 @@ const Utils = {
         return this._loadingPromises[name];
     },
 
+    cssVar(name) {
+        if (typeof document === 'undefined') return '';
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    },
+
     getInitials(name) {
         return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
     },
@@ -152,7 +157,7 @@ const Utils = {
     },
 
     randomColor() {
-        const colors = ['#06b6d4','#8b5cf6','#10b981','#f59e0b','#ec4899','#3b82f6','#14b8a6','#f97316','#a855f7'];
+        const colors = ['#1878B4','#8b5cf6','#10b981','#f59e0b','#ec4899','#3b82f6','#14b8a6','#f97316','#a855f7'];
         return colors[Math.floor(Math.random() * colors.length)];
     },
 

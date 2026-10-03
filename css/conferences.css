@@ -20,8 +20,8 @@
 .cp-stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 
 .cp-stat-card.cp-stat-highlight {
-    background: linear-gradient(135deg, rgba(8,145,178,0.08), rgba(8,145,178,0.03));
-    border-color: rgba(8,145,178,0.3);
+    background: var(--primary-a10);
+    border-color: var(--primary-a20);
 }
 
 .cp-stat-card.cp-stat-upcoming {
@@ -71,7 +71,7 @@
     background: var(--primary-fill);
     border-color: var(--primary);
     color: var(--on-primary);
-    box-shadow: 0 2px 8px rgba(8,145,178,0.25);
+    box-shadow: 0 2px 8px var(--primary-a20);
 }
 
 /* ── Cards container ── */
@@ -98,7 +98,7 @@
     left: 0; top: 0; bottom: 0;
     width: 5px;
     border-radius: 5px 0 0 5px;
-    background: linear-gradient(180deg, var(--primary), #0e7490);
+    background: linear-gradient(180deg, var(--primary), var(--accent));
 }
 
 .cp-card:hover { box-shadow: var(--shadow-md); }
@@ -142,7 +142,7 @@
 }
 
 .cp-cd-past     { background: #f1f5f9; color: #94a3b8; }
-.cp-cd-upcoming { background: rgba(8,145,178,0.08); color: var(--primary); }
+.cp-cd-upcoming { background: var(--primary-a10); color: var(--primary); }
 .cp-cd-soon     { background: #fef3c7; color: #d97706; }
 .cp-cd-now      { background: #ecfdf5; color: #059669; animation: pulse-badge 2s infinite; }
 
@@ -182,7 +182,7 @@
     font-size: 0.8rem;
 }
 
-.cp-stat-pres    { background: rgba(8,145,178,0.08); border: 1px solid rgba(8,145,178,0.2); }
+.cp-stat-pres    { background: var(--primary-a10); border: 1px solid var(--primary-a20); }
 .cp-stat-person  { background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.2); }
 .cp-stat-lang    { background: rgba(37,99,235,0.07);  border: 1px solid rgba(37,99,235,0.2); }
 .cp-stat-lang-vi { background: rgba(5,150,105,0.07);  border: 1px solid rgba(5,150,105,0.2); }
@@ -414,7 +414,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), #0e7490);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     color: #fff;
     display: flex;
     align-items: center;

@@ -59,7 +59,7 @@
     background: var(--primary-fill);
     color: var(--on-primary);
     border-color: var(--primary);
-    box-shadow: 0 2px 6px rgba(8,145,178,0.3);
+    box-shadow: 0 2px 6px var(--primary-a20);
 }
 
 /* ===== AGENDA / TIMELINE VIEW ===== */
@@ -110,7 +110,7 @@
 }
 .cal-mini-day-cell.today {
     border-color: var(--primary);
-    background: rgba(8,145,178,0.08);
+    background: var(--primary-a10);
 }
 .cal-mini-day-cell.selected {
     background: var(--primary-fill);
@@ -144,7 +144,7 @@
     height: 5px;
     border-radius: 50%;
 }
-.cal-dot-meeting { background: #0284c7; }
+.cal-dot-meeting { background: var(--accent); }
 .cal-dot-consultation { background: #7c3aed; }
 .cal-dot-training { background: #16a34a; }
 .cal-dot-conference { background: #d97706; }
@@ -171,7 +171,7 @@
     border: 1px solid var(--border);
 }
 .cal-agenda-group-header.today-header {
-    background: linear-gradient(135deg, rgba(8,145,178,0.12), rgba(34,197,94,0.08));
+    background: linear-gradient(135deg, var(--primary-a10), rgba(34,197,94,0.08));
     border-color: var(--primary);
 }
 .cal-agenda-date-badge {
@@ -307,20 +307,20 @@
 }
 
 /* Event Type Borders & Badges (WCAG 2.1 AA) */
-.cal-card-meeting { border-left: 4px solid #0284c7; }
+.cal-card-meeting { border-left: 4px solid var(--accent); }
 .cal-card-consultation { border-left: 4px solid #7c3aed; }
 .cal-card-training { border-left: 4px solid #16a34a; }
 .cal-card-conference { border-left: 4px solid #d97706; }
 .cal-card-other { border-left: 4px solid #64748b; }
 .cal-card-shcm { border-left: 4px solid #059669; }
 
-.cal-badge-meeting { background: #e0f2fe; color: #0369a1; border: 1px solid rgba(2,132,199,0.3); }
+.cal-badge-meeting { background: var(--primary-soft); color: var(--accent); border: 1px solid var(--primary-a20); }
 .cal-badge-consultation { background: #f3e8ff; color: #6d28d9; border: 1px solid rgba(124,58,237,0.3); }
 .cal-badge-training { background: #dcfce7; color: #15803d; border: 1px solid rgba(22,163,74,0.3); }
 .cal-badge-conference { background: #fef3c7; color: #b45309; border: 1px solid rgba(217,119,6,0.3); }
 .cal-badge-other { background: #f1f5f9; color: #475569; border: 1px solid rgba(100,116,139,0.3); }
 
-[data-theme="dark"] .cal-badge-meeting { background: rgba(2,132,199,0.2); color: #38bdf8; border-color: rgba(56,189,248,0.4); }
+[data-theme="dark"] .cal-badge-meeting { background: var(--primary-a20); color: var(--accent); border-color: var(--accent); }
 [data-theme="dark"] .cal-badge-consultation { background: rgba(124,58,237,0.2); color: #c084fc; border-color: rgba(192,132,252,0.4); }
 [data-theme="dark"] .cal-badge-training { background: rgba(22,163,74,0.2); color: #4ade80; border-color: rgba(74,222,128,0.4); }
 [data-theme="dark"] .cal-badge-conference { background: rgba(217,119,6,0.2); color: #fbbf24; border-color: rgba(251,191,36,0.4); }
@@ -367,7 +367,7 @@
 }
 .calendar-day:hover { background: var(--bg-hover); }
 .calendar-day.other-month { opacity: 0.3; }
-.calendar-day.today { background: rgba(8,145,178,0.06); }
+.calendar-day.today { background: var(--primary-a10); }
 .calendar-day.today .day-number {
     background: var(--primary-fill);
     color: var(--on-primary);
@@ -389,7 +389,7 @@
     cursor: pointer;
     font-weight: 500;
 }
-.calendar-event.meeting { background: rgba(8,145,178,0.15); color: var(--primary-dark); }
+.calendar-event.meeting { background: var(--primary-a10); color: var(--primary); }
 .calendar-event.consultation { background: rgba(124,58,237,0.15); color: var(--accent); }
 .calendar-event.training { background: rgba(5,150,105,0.15); color: var(--success); }
 .calendar-event.conference { background: rgba(217,119,6,0.15); color: var(--warning); }
@@ -420,7 +420,7 @@
     border-right: 1px solid var(--border);
 }
 .cal-col-header:last-child { border-right: none; }
-.cal-col-header.today { background: rgba(8,145,178,0.06); }
+.cal-col-header.today { background: var(--primary-a10); }
 
 .cal-col-day {
     display: block;
@@ -478,7 +478,7 @@
     cursor: pointer;
 }
 .cal-day-col:last-child { border-right: none; }
-.cal-day-col.today-col { background: rgba(8,145,178,0.03); }
+.cal-day-col.today-col { background: var(--primary-soft); }
 
 .cal-hour-cell {
     height: 52px;
@@ -508,7 +508,7 @@
     box-shadow: var(--shadow-md);
     z-index: 5;
 }
-.cal-event.meeting { background: rgba(8,145,178,0.2); color: var(--primary-dark); border-left: 3px solid var(--primary); }
+.cal-event.meeting { background: var(--primary-a20); color: var(--primary); border-left: 3px solid var(--primary); }
 .cal-event.consultation { background: rgba(124,58,237,0.2); color: var(--accent); border-left: 3px solid var(--accent); }
 .cal-event.training { background: rgba(5,150,105,0.2); color: var(--success); border-left: 3px solid var(--success); }
 .cal-event.conference { background: rgba(217,119,6,0.2); color: var(--warning); border-left: 3px solid var(--warning); }
@@ -566,7 +566,7 @@
     cursor: pointer;
     z-index: 2;
 }
-.cal-event-allday.meeting { background: rgba(8,145,178,0.25); color: var(--primary-dark); }
+.cal-event-allday.meeting { background: var(--primary-a20); color: var(--primary); }
 .cal-event-allday.consultation { background: rgba(124,58,237,0.25); color: var(--accent); }
 .cal-event-allday.training { background: rgba(5,150,105,0.25); color: var(--success); }
 .cal-event-allday.conference { background: rgba(217,119,6,0.25); color: var(--warning); }
@@ -635,21 +635,21 @@
 */
 
 /* Monthly grid events */
-[data-theme="dark"] .calendar-event.meeting     { background: rgba(8,145,178,0.4);   color: #67e8f9; }
+[data-theme="dark"] .calendar-event.meeting     { background: var(--primary-a20);   color: var(--accent); }
 [data-theme="dark"] .calendar-event.consultation { background: rgba(124,58,237,0.4); color: #c4b5fd; }
 [data-theme="dark"] .calendar-event.training    { background: rgba(5,150,105,0.4);   color: #6ee7b7; }
 [data-theme="dark"] .calendar-event.conference  { background: rgba(217,119,6,0.45);  color: #fcd34d; }
 [data-theme="dark"] .calendar-event.other       { background: rgba(100,116,139,0.35); color: #cbd5e1; }
 
 /* Week/column view events */
-[data-theme="dark"] .cal-event.meeting     { background: rgba(8,145,178,0.35);   color: #67e8f9; }
+[data-theme="dark"] .cal-event.meeting     { background: var(--primary-a20);   color: var(--accent); }
 [data-theme="dark"] .cal-event.consultation { background: rgba(124,58,237,0.35); color: #c4b5fd; }
 [data-theme="dark"] .cal-event.training    { background: rgba(5,150,105,0.35);   color: #6ee7b7; }
 [data-theme="dark"] .cal-event.conference  { background: rgba(217,119,6,0.4);    color: #fcd34d; }
 [data-theme="dark"] .cal-event.other       { background: rgba(100,116,139,0.3);  color: #cbd5e1; }
 
 /* All-day events */
-[data-theme="dark"] .cal-event-allday.meeting     { background: rgba(8,145,178,0.4);   color: #67e8f9; }
+[data-theme="dark"] .cal-event-allday.meeting     { background: var(--primary-a20);   color: var(--accent); }
 [data-theme="dark"] .cal-event-allday.consultation { background: rgba(124,58,237,0.4); color: #c4b5fd; }
 [data-theme="dark"] .cal-event-allday.training    { background: rgba(5,150,105,0.4);   color: #6ee7b7; }
 [data-theme="dark"] .cal-event-allday.conference  { background: rgba(217,119,6,0.45);  color: #fcd34d; }

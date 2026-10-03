@@ -225,7 +225,7 @@
 
 /* ── Guide button (header) ── */
 .rpt-guide-btn {
-    background: #0284c7;
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -237,10 +237,10 @@
     align-items: center;
     gap: 6px;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(2,132,199,0.3);
+    box-shadow: 0 2px 8px var(--primary-a20);
     transition: background-color .2s ease, box-shadow .2s ease;
 }
-.rpt-guide-btn:hover { background: #0369a1; }
+.rpt-guide-btn:hover { background: var(--primary-fill); }
 
 /* ── Export orange btn (inside export area) ── */
 .rpt-export-orange {
@@ -353,7 +353,7 @@
 
 /* ── Card 7h header: blue gradient ── */
 .rpt-card-header-7h {
-    background: linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0369a1 100%);
+    background: var(--gradient-primary);
     padding: 18px 22px;
     color: #fff;
     position: relative;
@@ -363,7 +363,7 @@
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 2.5px;
-    color: #7dd3fc;
+    color: var(--accent-light, #7dd3fc);
     margin-bottom: 6px;
     font-weight: 500;
 }
@@ -398,7 +398,7 @@
     justify-content: space-between;
 }
 
-.rpt-box-blue  { background: #0284c7; }
+.rpt-box-blue  { background: var(--accent); }
 .rpt-box-red   { background: #e11d48; }
 .rpt-box-green { background: #059669; }
 .rpt-box-amber { background: #d97706; }
@@ -450,7 +450,7 @@
     justify-content: space-between;
     align-items: center;
     font-size: 0.8rem;
-    color: #0369a1;
+    color: var(--accent);
 }
 
 /* ── Form 7h: total patient row ── */
@@ -459,7 +459,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    background: linear-gradient(135deg,#0c4a6e,#0369a1);
+    background: var(--gradient-primary);
     border-radius: 10px;
     margin-bottom: 10px;
 }
@@ -557,8 +557,8 @@
     color: var(--text-secondary);
 }
 [data-theme="dark"] .rpt-card-footer-7h {
-    background: rgba(8,145,178,0.12);
-    border-top-color: rgba(8,145,178,0.3);
+    background: var(--primary-a10);
+    border-top-color: var(--primary-a20);
     color: var(--primary-light);
 }
 

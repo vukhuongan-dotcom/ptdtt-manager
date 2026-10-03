@@ -76,7 +76,7 @@
     background: rgba(0,0,0,0.01);
 }
 .surgery-day.today .surgery-day-header {
-    background: rgba(8,145,178,0.06);
+    background: var(--primary-a10);
 }
 
 .surgery-day-name {
@@ -266,7 +266,7 @@
 .surgery-add-btn:hover {
     border-color: var(--primary);
     color: var(--primary);
-    background: rgba(8,145,178,0.04);
+    background: var(--primary-a10);
 }
 
 /* Detail modal */
@@ -382,22 +382,22 @@
 /* ===== PHASE 5: Flat Surgery Badges & KPI Bullet Chart ===== */
 .badge-robot {
     background: var(--surgery-robot) !important;
-    color: #FFFFFF !important;
+    color: var(--surgery-robot-on) !important;
     font-weight: 600;
 }
 .badge-noisoi {
     background: var(--surgery-noisoi) !important;
-    color: #FFFFFF !important;
+    color: var(--surgery-noisoi-on) !important;
     font-weight: 600;
 }
 .badge-mo {
     background: var(--surgery-mo) !important;
-    color: #FFFFFF !important;
+    color: var(--surgery-mo-on) !important;
     font-weight: 600;
 }
 .badge-nsth {
     background: var(--surgery-nsth) !important;
-    color: #FFFFFF !important;
+    color: var(--surgery-nsth-on) !important;
     font-weight: 600;
 }
 
@@ -565,7 +565,7 @@
 }
 .surgery-day-pill.active {
     border-color: var(--primary);
-    background: rgba(8,145,178,0.12);
+    background: var(--primary-a10);
     box-shadow: 0 0 0 1px var(--primary);
 }
 .surgery-day-pill.today .surg-pill-name {

@@ -16,7 +16,7 @@
     white-space: nowrap;
     line-height: 1.5;
 }
-.badge-primary { background: rgba(8,145,178,0.12);    color: var(--primary); }
+.badge-primary { background: var(--primary-a10);    color: var(--primary); }
 .badge-accent  { background: rgba(124,58,237,0.12);   color: var(--accent); }
 .badge-success { background: rgba(5,150,105,0.12);    color: var(--success); }
 .badge-warning { background: rgba(217,119,6,0.12);    color: var(--warning); }
@@ -96,7 +96,7 @@
 }
 .chip:hover { border-color: var(--primary); color: var(--primary); }
 .chip.active {
-    background: rgba(8,145,178,0.12);
+    background: var(--primary-a10);
     border-color: var(--primary);
     color: var(--primary);
     font-weight: 600;

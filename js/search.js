@@ -105,11 +105,11 @@ const GlobalSearch = {
         staff.forEach(s => {
             if (this.normalize(s.name).includes(nq) || this.normalize(s.role).includes(nq) || this.normalize(s.title).includes(nq)) {
                 results.push({
-                    type: 'staff', icon: '👤', iconBg: '#06b6d420',
+                    type: 'staff', icon: '👤', iconBg: 'var(--primary-a10)',
                     name: s.name,
                     detail: `${s.title} — ${s.role}`,
                     badge: s.cơHữu ? 'Cơ hữu' : 'Biên chế',
-                    badgeBg: '#06b6d420', badgeColor: '#0891b2',
+                    badgeBg: 'var(--primary-a10)', badgeColor: 'var(--primary)',
                     action: () => { App.navigateTo('staff'); }
                 });
             }
@@ -165,10 +165,10 @@ const GlobalSearch = {
         shcm.forEach(s => {
             if (this.normalize(s.title || '').includes(nq) || this.normalize(s.doctorName || '').includes(nq)) {
                 results.push({
-                    type: 'research', icon: '🔬', iconBg: '#0891b220',
+                    type: 'research', icon: '🔬', iconBg: 'var(--primary-a10)',
                     name: s.title,
                     detail: `${s.doctorName || 'BS'} · ${s.presentDate || 'Chưa định ngày'}`,
-                    badge: s.status === 'done' ? 'Đã trình' : 'SHCM', badgeBg: '#0891b220', badgeColor: '#0891b2',
+                    badge: s.status === 'done' ? 'Đã trình' : 'SHCM', badgeBg: 'var(--primary-a10)', badgeColor: 'var(--primary)',
                     action: () => { App.navigateTo('research'); }
                 });
             }

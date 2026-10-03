@@ -26,7 +26,7 @@
     --primary-light: var(--navy-700);
     --primary-dark: var(--navy-950);
     --primary-soft: var(--navy-50);          /* nền mục menu đang chọn, chip */
-    --primary-a10: rgba(29, 35, 87, 0.10);   /* thay rgba(8,145,178,0.1x) cũ */
+    --primary-a10: rgba(29, 35, 87, 0.10);
     --primary-a20: rgba(29, 35, 87, 0.20);
     --accent: var(--ocean-700);              /* 6,76:1 — liên kết, nhấn phụ */
     --accent-light: var(--ocean-500);

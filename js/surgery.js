@@ -1,9 +1,25 @@
 // ===== SURGERY SCHEDULE PAGE =====
 const SURGERY_TYPES = {
-    'chuongtrinh': { label: 'Chương trình', color: '#3b82f6' },
-    'yeucau': { label: 'Yêu cầu', color: '#f59e0b' },
-    'bankhan': { label: 'Bán khẩn', color: '#ef4444' },
-    'robot': { label: 'Robot', color: '#1e3a5f' }
+    'chuongtrinh': {
+        label: 'Chương trình',
+        get color() { return Utils.cssVar('--stype-chuongtrinh') || '#1878B4'; },
+        get onColor() { return Utils.cssVar('--stype-chuongtrinh-on') || '#FFFFFF'; }
+    },
+    'yeucau': {
+        label: 'Yêu cầu',
+        get color() { return Utils.cssVar('--stype-yeucau') || '#BF7900'; },
+        get onColor() { return Utils.cssVar('--stype-yeucau-on') || '#111542'; }
+    },
+    'bankhan': {
+        label: 'Bán khẩn',
+        get color() { return Utils.cssVar('--stype-bankhan') || '#AC011A'; },
+        get onColor() { return Utils.cssVar('--stype-bankhan-on') || '#FFFFFF'; }
+    },
+    'robot': {
+        label: 'Robot',
+        get color() { return Utils.cssVar('--stype-robot') || '#333C83'; },
+        get onColor() { return Utils.cssVar('--stype-robot-on') || '#FFFFFF'; }
+    }
 };
 
 // Priority doctor per day of week (getDay(): 0=Sun, 1=Mon...6=Sat)
@@ -366,7 +382,12 @@ const SurgeryPage = {
                                 <span class="surgery-summary-count">${cnt}</span>
                             </div>`;
                 }).join('')}
-                ${[{ key: 'mo', label: 'Mổ mở', color: '#e11d48' }, { key: 'noisoi', label: 'Nội soi', color: '#16a34a' }, { key: 'nsth', label: 'NSTH', color: '#8b5cf6' }].map(a => {
+                ${[
+                    { key: 'mo', label: 'Mổ mở', color: Utils.cssVar('--surgery-mo') || '#A90042' },
+                    { key: 'noisoi', label: 'Nội soi', color: Utils.cssVar('--surgery-noisoi') || '#34A357' },
+                    { key: 'nsth', label: 'NSTH', color: Utils.cssVar('--surgery-nsth') || '#7C4CD5' },
+                    { key: 'robot', label: 'Robot', color: Utils.cssVar('--surgery-robot') || '#333C83' }
+                ].map(a => {
                     const cnt = filteredSurgeries.filter(s => s.approachType === a.key).length;
                     return `<div class="surgery-summary-chip">
                                 <span class="surgery-summary-dot" style="background:${a.color}"></span>
@@ -404,7 +425,7 @@ const SurgeryPage = {
                             <div class="surgery-card surgery-expanded surg-mobile-full-card" data-surgery-id="${s.id}">
                                 <div class="surgery-card-compact-row">
                                     <span class="surgery-card-order">${idx + 1}</span>
-                                    <span class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</span>
+                                    <span class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</span>
                                     <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
                                     <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
@@ -455,7 +476,7 @@ const SurgeryPage = {
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
                                 <div class="surgery-card-detail">
-                                    <div class="surgery-card-type-tag" style="background:${typeInfo.color}">${typeInfo.label}</div>
+                                    <div class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</div>
                                     ${s.duration ? `<div class="surg-card-duration">⏱ ${s.duration} phút</div>` : ''}
                                     ${s.diagnosis ? `<div class="surgery-card-diagnosis">${s.diagnosis}</div>` : ''}
                                     ${s.method ? `<div class="surgery-card-method">${s.method}</div>` : ''}
@@ -603,7 +624,7 @@ const SurgeryPage = {
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Loại phẫu thuật</div>
-                    <div class="surgery-detail-value"><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></div>
+                    <div class="surgery-detail-value"><span class="surgery-type-badge" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</span></div>
                 </div>
                 <div class="surgery-detail-row">
                     <div class="surgery-detail-label">Đường mổ</div>
@@ -1566,7 +1587,7 @@ const SurgeryPage = {
                     <td style="padding:12px 10px;font-size:13px;color:#111">${s.admissionId || '—'}</td>
                     <td style="padding:12px 10px;font-size:13px;color:#0a1628;font-weight:600">${s.diagnosis || '—'}</td>
                     <td style="padding:12px 10px;font-size:13px;color:#111;font-style:italic">${s.method || '—'}</td>
-                    <td style="padding:12px 10px;text-align:center"><span style="background:${typeInfo.color};color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap">${typeInfo.label}</span></td>
+                    <td style="padding:12px 10px;text-align:center"><span style="background:${typeInfo.color};color:${typeInfo.onColor};padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap">${typeInfo.label}</span></td>
                     <td style="padding:12px 10px;font-size:13px;color:#111">${Utils.getStaffName(s.mainSurgeon) || '—'}${s.assistSurgeon1 ? '<br><span style="color:#333;font-size:12px">Phụ: ' + Utils.getStaffName(s.assistSurgeon1) + '</span>' : ''}</td>
                     <td style="padding:12px 10px;text-align:center;font-size:13px;color:#000;font-weight:600">${s.duration ? s.duration + 'p' : '—'}</td>
                 </tr>`;

@@ -18,7 +18,7 @@ const SAMPLE_STAFF = [
         "gender": "Nam"
     },
     {
-        "color": "#06b6d4",
+        "color": "#1878B4",
         "cơHữu": true,
         "email": "vukhuongan@gmail.com",
         "id": 2,
@@ -149,7 +149,7 @@ const SAMPLE_STAFF = [
         "gender": "Nam"
     },
     {
-        "color": "#06b6d4",
+        "color": "#1878B4",
         "cơHữu": true,
         "email": "trannhuduc97@gmail.com",
         "id": 10,
@@ -277,7 +277,7 @@ const SAMPLE_STAFF = [
         "gender": "Nữ"
     },
     {
-        "color": "#06b6d4",
+        "color": "#1878B4",
         "cơHữu": true,
         "email": "tranthanhdanh9191@gmail.com",
         "id": 28,
@@ -428,7 +428,7 @@ const SAMPLE_STAFF = [
         "gender": "Nam"
     },
     {
-        "color": "#06b6d4",
+        "color": "#1878B4",
         "cơHữu": true,
         "email": "buithitran070291@gmail.com",
         "id": 37,

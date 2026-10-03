@@ -207,7 +207,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.12);
+    box-shadow: 0 0 0 3px var(--primary-a10);
 }
 .form-select { cursor: pointer; }
 .form-textarea { resize: vertical; min-height: 80px; }
@@ -259,7 +259,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
     font-weight: 600;
     letter-spacing: 0.3px;
 }
-.badge-primary { background: rgba(6,182,212,0.15); color: var(--primary-light); }
+.badge-primary { background: var(--primary-a10); color: var(--primary); }
 .badge-success { background: rgba(16,185,129,0.15); color: var(--success-light); }
 .badge-warning { background: rgba(245,158,11,0.15); color: var(--warning-light); }
 .badge-danger { background: rgba(239,68,68,0.15); color: var(--danger-light); }
@@ -482,7 +482,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .auth-td-badge { padding: 6px 8px; }
 .auth-td-actions { padding: 6px 8px; text-align: center; white-space: nowrap; }
 .auth-badge-superadmin { background: #7c3aed; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
-.auth-badge-admin { background: #0891b2; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
+.auth-badge-admin { background: var(--primary-fill); color: var(--on-primary); padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
 .auth-badge-user { background: #94a3b8; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
 .auth-badge-disabled { background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
 .auth-btn-mk { font-size: var(--text-xxs, 0.6667rem); }

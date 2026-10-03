@@ -38,11 +38,14 @@ def capture(output_dir):
                 page.wait_for_selector("#app", state="visible")
                 time.sleep(1.5) # wait for local db and charts
                 
-                # Set theme explicitly
+                # Set theme explicitly & dismiss onboarding
                 page.evaluate(f"""
                     document.documentElement.setAttribute('data-theme', '{theme}');
                     localStorage.setItem('ptdtt_theme', '{theme}');
-                    if (window.App && App._updateThemeToggleUI) App._updateThemeToggleUI('{theme}');
+                    localStorage.setItem('ptdtt_onboarding_done', 'true');
+                    const ob = document.getElementById('onboarding-overlay');
+                    if (ob) ob.remove();
+                    if (typeof App !== 'undefined' && App._updateThemeToggleUI) App._updateThemeToggleUI('{theme}');
                 """)
                 time.sleep(0.5)
                 
@@ -58,6 +61,22 @@ def capture(output_dir):
                         # Restore app
                         page.evaluate("App.showApp('dashboard')")
                         time.sleep(0.6)
+                    elif page_id == "surgery":
+                        page.evaluate("""
+                            App.navigate('surgery');
+                            if (typeof App !== 'undefined' && App.pages && App.pages['surgery']) {
+                                App.pages['surgery'].currentWeekStart = new Date(2026, 6, 27);
+                                App.renderCurrentPage();
+                            }
+                        """)
+                        time.sleep(0.8)
+                        page.screenshot(path=filepath, full_page=False)
+                        print(f"Captured: {filepath}")
+                    elif page_id == "surgery-stats":
+                        page.evaluate("App.navigate('surgery-stats')")
+                        time.sleep(1.0)
+                        page.screenshot(path=filepath, full_page=False)
+                        print(f"Captured: {filepath}")
                     else:
                         page.evaluate(f"App.navigate('{page_id}')")
                         time.sleep(0.8)

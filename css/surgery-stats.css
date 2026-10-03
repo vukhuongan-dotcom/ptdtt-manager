@@ -69,7 +69,7 @@
     background: var(--primary-fill);
     color: var(--on-primary);
     font-weight: 600;
-    box-shadow: 0 2px 6px rgba(8,145,178,0.25);
+    box-shadow: var(--shadow-glow-primary);
 }
 
 /* Summary cards */
@@ -89,7 +89,7 @@
     text-align: center;
 }
 .sstats-summary-card.sstats-total {
-    background: linear-gradient(135deg, var(--primary), #0e7490);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     border-color: transparent;
     color: white;
     flex: 1.15;
@@ -163,7 +163,7 @@
 .sstats-th-stt { width: 50px; text-align: center; }
 .sstats-th-name { min-width: 200px; }
 .sstats-th-num { text-align: center !important; width: 90px; }
-.sstats-th-total { background: rgba(8,145,178,0.06); }
+.sstats-th-total { background: var(--primary-a10); }
 
 .sstats-table td {
     padding: 12px 14px;
@@ -176,10 +176,10 @@
     transition: background 0.15s ease;
 }
 .sstats-summary-row:hover {
-    background: rgba(8,145,178,0.04);
+    background: var(--hover-bg);
 }
 .sstats-summary-row.sstats-row-active {
-    background: rgba(8,145,178,0.08);
+    background: var(--primary-a10);
     border-left: 3px solid var(--primary);
 }
 .sstats-summary-row.sstats-row-active td:first-child {
@@ -234,7 +234,7 @@
     opacity: 0.3;
 }
 .sstats-td-total {
-    background: rgba(8,145,178,0.04);
+    background: var(--primary-a10);
     color: var(--primary-dark);
     font-weight: 800;
 }
@@ -261,8 +261,8 @@
     border-bottom: 2px solid var(--primary) !important;
 }
 .sstats-detail-panel {
-    background: linear-gradient(to bottom, rgba(8,145,178,0.03), var(--bg-secondary));
-    border-top: 1px solid rgba(8,145,178,0.15);
+    background: linear-gradient(to bottom, var(--primary-a10), var(--bg-secondary));
+    border-top: 1px solid var(--border);
     padding: 16px 20px 20px;
 }
 .sstats-detail-header {
@@ -320,7 +320,7 @@
     color: var(--text-primary);
 }
 .sstats-detail-table tbody tr:hover {
-    background: rgba(8,145,178,0.04);
+    background: var(--hover-bg);
 }
 .sstats-detail-table tbody tr:last-child td {
     border-bottom: none;
@@ -385,7 +385,7 @@
 
 /* U5: Clickable detail rows */
 .sstats-detail-tr-clickable { cursor: pointer; }
-.sstats-detail-tr-clickable:hover { background: rgba(8,145,178,0.04); }
+.sstats-detail-tr-clickable:hover { background: var(--hover-bg); }
 
 /* U5: Summary row cursor (supplement to existing transition rule) */
 .sstats-summary-row { cursor: pointer; }
@@ -427,7 +427,7 @@
 .sstats-view-tab.active {
     background: var(--primary-fill);
     color: var(--on-primary);
-    box-shadow: 0 2px 8px rgba(8,145,178,0.28);
+    box-shadow: var(--shadow-glow-primary);
 }
 .sstats-tab-icon {
     font-size: 1rem;
@@ -500,7 +500,7 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .sstats-doc-box-primary {
-    border-color: rgba(8, 145, 178, 0.4);
+    border-color: var(--primary-a20);
 }
 .sstats-doc-box-compare {
     border-color: rgba(225, 29, 72, 0.4);
@@ -596,7 +596,7 @@
 }
 .sstats-val-primary {
     text-align: left;
-    color: #0891b2;
+    color: var(--primary);
 }
 .sstats-val-compare {
     text-align: right;
@@ -630,8 +630,8 @@
     text-align: center;
 }
 .sstats-kpi-delta.positive {
-    background: rgba(8, 145, 178, 0.12);
-    color: #0891b2;
+    background: var(--primary-a10);
+    color: var(--primary);
 }
 .sstats-kpi-delta.negative {
     background: rgba(225, 29, 72, 0.12);
@@ -803,8 +803,8 @@
     font-family: var(--font-mono, monospace);
 }
 .sstats-delta-badge.pos {
-    background: rgba(8, 145, 178, 0.14);
-    color: #0891b2;
+    background: var(--primary-a10);
+    color: var(--primary);
 }
 .sstats-delta-badge.neg {
     background: rgba(225, 29, 72, 0.14);
@@ -883,58 +883,54 @@
     font-weight: 600;
 }
 .approach-tag.approach-noisoi {
-    background: rgba(16, 185, 129, 0.12);
-    color: #10b981;
+    background: var(--surgery-noisoi-bg);
+    color: var(--surgery-noisoi-fg);
 }
 .approach-tag.approach-mo {
-    background: rgba(225, 29, 72, 0.12);
-    color: #e11d48;
+    background: var(--surgery-mo-bg);
+    color: var(--surgery-mo-fg);
 }
 .approach-tag.approach-robot {
-    background: rgba(30, 58, 95, 0.15);
-    color: #1e3a5f;
+    background: var(--surgery-robot-bg);
+    color: var(--surgery-robot-fg);
 }
 .approach-tag.approach-nsth {
-    background: rgba(139, 92, 246, 0.12);
-    color: #8b5cf6;
+    background: var(--surgery-nsth-bg);
+    color: var(--surgery-nsth-fg);
 }
 
 /* Dark Mode Overrides */
 [data-theme="dark"] .sstats-view-tabs {
-    background: #0f172a;
-    border-color: #334155;
+    background: var(--bg-primary);
+    border-color: var(--border);
 }
 [data-theme="dark"] .sstats-doctor-selector-card,
 [data-theme="dark"] .sstats-compare-kpi-card,
 [data-theme="dark"] .sstats-radar-card,
 [data-theme="dark"] .sstats-matrix-card,
 [data-theme="dark"] .sstats-logbook-card {
-    background: #1e293b;
-    border-color: #334155;
+    background: var(--bg-secondary);
+    border-color: var(--border);
 }
 [data-theme="dark"] .sstats-doc-box {
-    background: #0f172a;
-    border-color: #334155;
+    background: var(--bg-primary);
+    border-color: var(--border);
 }
 [data-theme="dark"] .sstats-doc-box-primary {
-    border-color: rgba(6, 182, 212, 0.5);
+    border-color: var(--primary-a20);
 }
 [data-theme="dark"] .sstats-doc-box-compare {
     border-color: rgba(225, 29, 72, 0.5);
 }
 [data-theme="dark"] .sstats-doc-select {
-    background: #1e293b;
-    border-color: #475569;
-    color: #f8fafc;
+    background: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-primary);
 }
 [data-theme="dark"] .sstats-radar-legend,
 [data-theme="dark"] .sstats-clinical-disclaimer {
-    background: #0f172a;
-    border-color: #334155;
-}
-[data-theme="dark"] .approach-tag.approach-robot {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
+    background: var(--bg-primary);
+    border-color: var(--border);
 }
 
 /* Logbook Filter Toolbar */
@@ -1031,28 +1027,28 @@
     transition: background 0.15s ease;
 }
 .sstats-matrix-tr-clickable:hover {
-    background: rgba(8, 145, 178, 0.08);
+    background: var(--primary-a10);
 }
 .sstats-matrix-tr-clickable.is-active-axis {
-    background: rgba(8, 145, 178, 0.14) !important;
+    background: var(--primary-a20) !important;
 }
 
 /* Dark Mode Overrides for Filters */
 [data-theme="dark"] .sstats-filter-search-input,
 [data-theme="dark"] .sstats-filter-select {
-    background: #0f172a;
-    border-color: #475569;
-    color: #f8fafc;
+    background: var(--bg-primary);
+    border-color: var(--border);
+    color: var(--text-primary);
 }
 [data-theme="dark"] .sstats-empty-filter-state {
-    background: #0f172a;
-    border-color: #334155;
+    background: var(--bg-primary);
+    border-color: var(--border);
 }
 [data-theme="dark"] .sstats-matrix-tr-clickable:hover {
-    background: rgba(6, 182, 212, 0.12);
+    background: var(--primary-a10);
 }
 [data-theme="dark"] .sstats-matrix-tr-clickable.is-active-axis {
-    background: rgba(6, 182, 212, 0.2) !important;
+    background: var(--primary-a20) !important;
 }
 
 /* Responsive Breakpoints */

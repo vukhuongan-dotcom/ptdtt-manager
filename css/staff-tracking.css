@@ -276,7 +276,7 @@
 }
 
 .st-cell.st-today {
-    background: rgba(6, 182, 212, 0.06);
+    background: var(--primary-a10);
 }
 
 .st-cell.st-weekend {
@@ -434,7 +434,7 @@
 .st-quick-status-btn:hover { border-color: var(--primary); }
 .st-quick-status-btn.active {
     border-color: var(--primary);
-    background: rgba(8,145,178,0.12);
+    background: var(--primary-a10);
     box-shadow: 0 0 0 1px var(--primary);
 }
 .st-quick-status-btn.st-btn-active.active { border-color: #22c55e; background: rgba(34,197,94,0.12); color: #16a34a; }
