@@ -32,6 +32,40 @@ ESD, ERCP, "nội soi tiêu hóa", "nội soi nong", "cắt polyp qua ngã hậu
 
 ---
 
+## Bộ Nhận Diện Thương Hiệu (Brand Identity Standards v1)
+
+> 🎨 **NGUỒN SỰ THẬT DUY NHẤT (SSoT):** Ban hành ngày 03/10/2026 bởi BS. Vũ Khương An. Chi tiết xem tại `docs/brand/BRAND.md` và `DESIGN.md`.
+
+### 1. Logo Khoa — Nguyên Bản & Đầy Đủ
+- **Tệp nguồn chính thức:** `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` (Google Drive: `.../06. WEB APP /3. LOGO KHOA/`)
+- **Tệp phân phối trên Web:** `img/logo-khoa.jpg` (MD5: `db144bb49b076d907881e6b04f96f478`).
+- 🛑 **Quy tắc bất biến:**
+  - Luôn sử dụng **Logo gốc đầy đủ** có chữ *"BINH DAN HOSPITAL"* và *"COLORECTAL SURGERY DEPARTMENT"* (`img/logo-khoa.jpg`) trên cả **Sidebar desktop** và **Mobile header**.
+  - **TUYỆT ĐỐI KHÔNG** dùng bản cắt xén `logo-mark.png` hay `logo-symbol.png` thay thế logo trên sidebar/header.
+  - Logo luôn đặt trong ô nền trắng (`#FFFFFF`), bo góc `10px`, có viền `1px solid var(--border)` trên cả nền sáng và dark mode.
+  - Không vẽ lại SVG, không đổi màu pixel gốc, không cắt tròn sát viền.
+
+### 2. Hệ Màu Thương Hiệu Rút Từ Logo
+- **Navy `#1D2357` (Chủ đạo):** Nút chính (`var(--primary-fill)`), tiêu đề, menu active, header mobile dark mode.
+- **Ocean `#1878B4` (Nhấn phụ):** Biểu tượng, box Tổng BN trong báo cáo, link nhấn.
+- **Leaf `#54A83C` (Xanh lá):** Vạch chỉ thị menu active (`3px`), trạng thái thành công.
+- **Lime `#90C03C` (Nõn chuối):** Vòng cung nhận diện, dải gradient trang trí.
+- **Nền & Bề mặt:** Sáng `#F4F7FD` (trang) / `#FFFFFF` (card) · Tối `#0C1022` (trang) / `#141A30` (card). Tuyệt đối không dùng đen tuyền `#000000`.
+- ❌ **CẤM:** Không dùng mã màu teal cũ (`#0891b2`, `#06b6d4`, `#0e7490`, `#155e75`). Tất cả phải dùng CSS variables (`var(--primary)`, `var(--primary-fill)`, `var(--accent)`).
+
+### 3. Typography Cục Bộ (Zero External CDN)
+- ❌ **KHÔNG nạp Google Fonts qua mạng:** Không dùng `fonts.googleapis.com` hay `fonts.gstatic.com`.
+- **Phông Display / Tiêu đề:** `Be Vietnam Pro` (WOFF2 cục bộ tại `/fonts/`) cho `h1–h6`, `.page-title`, `.btn`, `.nav-item`, `.logo-title`, `.modal-title`.
+- **Phông Body / Số liệu / Canvas:** `Noto Sans` (WOFF2 cục bộ tại `/fonts/`) cho nội dung văn bản, bảng dữ liệu, KPI tabular-nums, biểu đồ Chart.js/Canvas, và xuất báo cáo 16h / 7h.
+
+### 4. Quy Chuẩn 4 Cách Mổ (Sắc Độ Lâm Sàng Chuẩn)
+- **Mổ mở:** Đỏ Rose `#A90042` (`--surgery-mo-bg` / `--surgery-mo-fg`) — Chữ trắng.
+- **Nội soi:** Xanh lá Green `#34A357` (`--surgery-noisoi-bg` / `--surgery-noisoi-fg`) — ⚠️ **Chữ Navy `#111542`** (`--surgery-noisoi-on`) để đạt chuẩn tương phản.
+- **Nội soi tiêu hóa (NSTH):** Tím Violet `#7C4CD5` (`--surgery-nsth-bg` / `--surgery-nsth-fg`) — Chữ trắng.
+- **Robot:** Navy đậm `#333C83` (`--surgery-robot-bg` / `--surgery-robot-fg`) — Chữ trắng.
+
+---
+
 ## Quy tắc Vận hành & Triển khai (Deployment Protocol)
 
 ### Quy tắc Auto-Deploy sau khi điều chỉnh xong (Auto-Deploy on Adjustment Done)
