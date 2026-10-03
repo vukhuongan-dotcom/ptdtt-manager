@@ -1,0 +1,210 @@
+/* =====================================================================
+   PTDTT MANAGER — BRAND TOKENS v1 (03/10/2026)
+   Bảng màu rút từ logo Khoa (img/logo-khoa.jpg — GIỮ NGUYÊN, không vẽ lại).
+   Sinh tự động bởi build_tokens.py — tương phản đã đo: 110/110 cặp đạt.
+   Thay thế toàn bộ css/tokens.css cũ (teal). Tên biến ngữ nghĩa cũ được giữ.
+   ===================================================================== */
+
+/* 1. LỚP THÔ — không dùng trực tiếp trong component, chỉ tham chiếu qua lớp 2 */
+:root {
+  /* Navy chữ logo (#1D2357 = 900) — màu chủ đạo */
+  --navy-50: #F4F6FF; --navy-100: #E7ECFF; --navy-200: #D1DBFF; --navy-300: #B2C1FD; --navy-400: #8FA0F1; --navy-500: #7182DF;
+  --navy-600: #5867C0; --navy-700: #4551A4; --navy-800: #333C83; --navy-900: #1D2357; --navy-950: #111542;
+  /* Xanh dương logo (#1878B4 = 600) — nhấn, liên kết, thông tin */
+  --ocean-50: #F0F8FF; --ocean-100: #DDF0FF; --ocean-200: #C0E1FD; --ocean-300: #96CBF5; --ocean-400: #64AEE6; --ocean-500: #3492D3;
+  --ocean-600: #1878B4; --ocean-700: #006095; --ocean-800: #004973; --ocean-900: #00314F; --ocean-950: #001E33;
+  /* Xanh lá logo (#54A83C = 500) — thành công, điểm nhấn */
+  --leaf-50: #F0FAED; --leaf-100: #E0F3DC; --leaf-200: #C6E8BD; --leaf-300: #A0D593; --leaf-400: #73BC61; --leaf-500: #54A83C;
+  --leaf-600: #41822E; --leaf-700: #316A20; --leaf-800: #1F520E; --leaf-900: #0D3800; --leaf-950: #062300;
+  /* Xanh nõn chuối logo (#90C03C = 400) — trang trí, KHÔNG làm chữ */
+  --lime-50: #F3FAEB; --lime-100: #E6F2D7; --lime-200: #D0E5B5; --lime-300: #B1D186; --lime-400: #90C03C; --lime-500: #6F9C00;
+  --lime-600: #597E00; --lime-700: #476600; --lime-800: #364E00; --lime-900: #233400; --lime-950: #142000;
+  /* Trung tính ngả navy — nền, viền, chữ */
+  --slate-50: #F4F7FD; --slate-100: #E9EDF5; --slate-200: #D8DCE7; --slate-300: #BFC4D1; --slate-400: #A0A6B5; --slate-500: #848A9B;
+  --slate-600: #697082; --slate-700: #535A6E; --slate-800: #3D4558; --slate-900: #262D40; --slate-950: #151B2C;
+  /* Cảnh báo / Mổ yêu cầu */
+  --amber-50: #FFF5EA; --amber-100: #FDE9D4; --amber-200: #F8D6AF; --amber-300: #EEB97C; --amber-400: #DC9536; --amber-500: #BF7900;
+  --amber-600: #9B6200; --amber-700: #7E4F00; --amber-800: #613B00; --amber-900: #422700; --amber-950: #2A1700;
+  /* Nguy hiểm / Bán khẩn */
+  --red-50: #FFF4F3; --red-100: #FFE6E4; --red-200: #FFCFCA; --red-300: #FFABA3; --red-400: #FF756E; --red-500: #EB4848;
+  --red-600: #CB242D; --red-700: #AC011A; --red-800: #860011; --red-900: #5C0009; --red-950: #3C0004;
+  /* Mổ mở */
+  --rose-50: #FFF4F5; --rose-100: #FFE6E8; --rose-200: #FFCED4; --rose-300: #FFA8B5; --rose-400: #FF708D; --rose-500: #EC3E6D;
+  --rose-600: #CC1354; --rose-700: #A90042; --rose-800: #830031; --rose-900: #5A0020; --rose-950: #3B0012;
+  /* Nội soi tiêu hoá */
+  --violet-50: #F7F5FF; --violet-100: #EEE9FF; --violet-200: #DED6FF; --violet-300: #C8B7FF; --violet-400: #AE8FFF; --violet-500: #9669F4;
+  --violet-600: #7C4CD5; --violet-700: #6737B7; --violet-800: #4F2494; --violet-900: #370C6F; --violet-950: #23024C;
+  /* Nội soi */
+  --green-50: #EFFAF0; --green-100: #DEF4E1; --green-200: #C1E8C8; --green-300: #98D6A4; --green-400: #66BC7B; --green-500: #34A357;
+  --green-600: #00873C; --green-700: #006E30; --green-800: #005423; --green-900: #003915; --green-950: #00230B;
+
+  /* Bí danh tương thích ngược — mã cũ còn gọi --teal-* / --gray-*  */
+  --teal-50: var(--navy-50); --teal-100: var(--navy-100); --teal-200: var(--navy-200); --teal-300: var(--navy-300);
+  --teal-400: var(--navy-400); --teal-500: var(--navy-900); --teal-600: var(--navy-700); --teal-700: var(--navy-800);
+  --teal-800: var(--navy-900); --teal-900: var(--navy-950); --teal-950: var(--navy-950);
+  --gray-50: var(--slate-50); --gray-100: var(--slate-100); --gray-200: var(--slate-200); --gray-300: var(--slate-300);
+  --gray-400: var(--slate-400); --gray-500: var(--slate-500); --gray-600: var(--slate-600); --gray-700: var(--slate-700);
+  --gray-800: var(--slate-800); --gray-900: var(--slate-900);
+
+  /* Chữ */
+  --font-display: 'Be Vietnam Pro', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Noto Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* 2. LỚP NGỮ NGHĨA — LIGHT MODE */
+:root, [data-theme="light"] {
+  /* Nền */
+  --surface-1: #FFFFFF;
+  --surface-2: #F4F7FD;
+  --surface-3: #E9EDF5;
+  --surface-card: #FFFFFF;
+  /* Chữ */
+  --text-primary: #262D40;
+  --text-heading: #1D2357;
+  --text-secondary: #535A6E;
+  --text-muted: #697082;
+  --text-link: #006095;
+  --text-on-brand: #FFFFFF;
+  /* Thương hiệu */
+  --brand: #1D2357;
+  --brand-fill: #1D2357;
+  --brand-hover: #333C83;
+  --brand-soft: #F4F6FF;
+  --brand-soft-strong: #E7ECFF;
+  --brand-accent: #006095;
+  --brand-leaf: #54A83C;
+  --brand-lime: #90C03C;
+  --gradient-brand: linear-gradient(135deg, #1878B4 0%, #54A83C 100%);
+  /* Viền & focus */
+  --border-default: #D8DCE7;
+  --border-subtle: #E9EDF5;
+  --border-strong: #848A9B;
+  --focus-ring: #1878B4;
+  /* Trạng thái */
+  --state-success: #316A20;
+  --state-success-bg: #F0FAED;
+  --state-warning: #7E4F00;
+  --state-warning-fill: #BF7900;
+  --state-warning-bg: #FFF5EA;
+  --state-danger: #CB242D;
+  --state-danger-bg: #FFF4F3;
+  --state-info: #006095;
+  --state-info-bg: #F0F8FF;
+  /* Cách mổ (approachType) */
+  --surgery-mo: #A90042;
+  --surgery-noisoi: #34A357;
+  --surgery-nsth: #7C4CD5;
+  --surgery-robot: #333C83;
+  --surgery-mo-on: #FFFFFF;
+  --surgery-noisoi-on: #111542;
+  --surgery-nsth-on: #FFFFFF;
+  --surgery-robot-on: #FFFFFF;
+  --surgery-mo-bg: #FFE6E8;
+  --surgery-mo-fg: #830031;
+  --surgery-noisoi-bg: #DEF4E1;
+  --surgery-noisoi-fg: #005423;
+  --surgery-nsth-bg: #EEE9FF;
+  --surgery-nsth-fg: #4F2494;
+  --surgery-robot-bg: #E7ECFF;
+  --surgery-robot-fg: #333C83;
+  /* Loại mổ (surgeryType) */
+  --stype-chuongtrinh: #1878B4;
+  --stype-yeucau: #BF7900;
+  --stype-bankhan: #AC011A;
+  --stype-robot: #333C83;
+  --stype-chuongtrinh-on: #FFFFFF;
+  --stype-yeucau-on: #111542;
+  --stype-bankhan-on: #FFFFFF;
+  --stype-robot-on: #FFFFFF;
+  /* Biểu đồ — thứ tự series */
+  --chart-1: #333C83;
+  --chart-2: #3492D3;
+  --chart-3: #41822E;
+  --chart-4: #613B00;
+  --chart-5: #EC3E6D;
+  --chart-6: #848A9B;
+  --shadow-sm: 0 1px 2px 0 rgba(17, 21, 66, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(17, 21, 66, 0.08), 0 2px 4px -2px rgba(17, 21, 66, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(17, 21, 66, 0.10), 0 4px 6px -4px rgba(17, 21, 66, 0.05);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* 3. LỚP NGỮ NGHĨA — DARK MODE (nền navy đậm, KHÔNG dùng đen tuyền) */
+[data-theme="dark"] {
+  /* Nền */
+  --surface-1: #141A30;
+  --surface-2: #0C1022;
+  --surface-3: #1D2440;
+  --surface-card: #141A30;
+  /* Chữ */
+  --text-primary: #EEF1FB;
+  --text-heading: #FFFFFF;
+  --text-secondary: #C3C9DA;
+  --text-muted: #97A0B7;
+  --text-link: #96CBF5;
+  --text-on-brand: #FFFFFF;
+  /* Thương hiệu */
+  --brand: #5867C0;
+  --brand-fill: #5867C0;
+  --brand-hover: #4551A4;
+  --brand-soft: #1E2547;
+  --brand-soft-strong: #28315E;
+  --brand-accent: #96CBF5;
+  --brand-leaf: #73BC61;
+  --brand-lime: #90C03C;
+  --gradient-brand: linear-gradient(135deg, #3492D3 0%, #54A83C 100%);
+  /* Viền & focus */
+  --border-default: #2A3250;
+  --border-subtle: #1D2440;
+  --border-strong: #6C7593;
+  --focus-ring: #96CBF5;
+  /* Trạng thái */
+  --state-success: #A0D593;
+  --state-success-bg: #13261A;
+  --state-warning: #EEB97C;
+  --state-warning-fill: #DC9536;
+  --state-warning-bg: #2B200F;
+  --state-danger: #FFABA3;
+  --state-danger-bg: #33141A;
+  --state-info: #96CBF5;
+  --state-info-bg: #0F2236;
+  /* Cách mổ (approachType) */
+  --surgery-mo: #CC1354;
+  --surgery-noisoi: #34A357;
+  --surgery-nsth: #7C4CD5;
+  --surgery-robot: #B2C1FD;
+  --surgery-mo-on: #FFFFFF;
+  --surgery-noisoi-on: #111542;
+  --surgery-nsth-on: #FFFFFF;
+  --surgery-robot-on: #111542;
+  --surgery-mo-bg: #3A1424;
+  --surgery-mo-fg: #FFA8B5;
+  --surgery-noisoi-bg: #10291A;
+  --surgery-noisoi-fg: #98D6A4;
+  --surgery-nsth-bg: #271A47;
+  --surgery-nsth-fg: #C8B7FF;
+  --surgery-robot-bg: #1E2547;
+  --surgery-robot-fg: #B2C1FD;
+  /* Loại mổ (surgeryType) */
+  --stype-chuongtrinh: #1878B4;
+  --stype-yeucau: #BF7900;
+  --stype-bankhan: #CB242D;
+  --stype-robot: #B2C1FD;
+  --stype-chuongtrinh-on: #FFFFFF;
+  --stype-yeucau-on: #111542;
+  --stype-bankhan-on: #FFFFFF;
+  --stype-robot-on: #111542;
+  /* Biểu đồ — thứ tự series */
+  --chart-1: #7182DF;
+  --chart-2: #96CBF5;
+  --chart-3: #C6E8BD;
+  --chart-4: #BF7900;
+  --chart-5: #FF708D;
+  --chart-6: #A0A6B5;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+}
