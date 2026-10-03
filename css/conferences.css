@@ -68,9 +68,9 @@
 .conf-time-tab:hover { border-color: var(--primary); color: var(--primary); }
 
 .conf-time-tab.active {
-    background: var(--primary);
+    background: var(--primary-fill);
     border-color: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     box-shadow: 0 2px 8px rgba(8,145,178,0.25);
 }
 

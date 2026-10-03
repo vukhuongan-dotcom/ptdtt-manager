@@ -591,8 +591,8 @@
     margin-top: 2px;
 }
 .surg-pill-badge.has-cases {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 
 /* ===== MOBILE DAY FOCUS VIEW ===== */

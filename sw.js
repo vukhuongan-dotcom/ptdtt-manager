@@ -1,9 +1,9 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2610031248';
+const CACHE_NAME = 'ptdtt-v2610031440';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/css/app.bundle.css',  // P2.1: 24 CSS files bundled → 1 request
+    '/css/app.bundle.css',  // P2.1: 25 CSS files bundled → 1 request
     '/js/data.js',
     '/js/store.js',
     '/js/auth.js',
@@ -28,9 +28,34 @@ const STATIC_ASSETS = [
     '/js/audit-log.js',
     '/js/app.js',
     '/img/logo-khoa.jpg',
+    '/img/logo-mark.png',
+    '/img/logo-symbol.png',
     '/img/icon-192.png',
     '/img/icon-512.png',
-    '/manifest.json'
+    '/img/icon-maskable-192.png',
+    '/img/icon-maskable-512.png',
+    '/img/apple-touch-icon.png',
+    '/img/favicon.ico',
+    '/img/favicon-16.png',
+    '/img/favicon-32.png',
+    '/img/favicon-48.png',
+    '/manifest.json',
+    '/fonts/be-vietnam-pro-latin-400-normal.woff2',
+    '/fonts/be-vietnam-pro-latin-500-normal.woff2',
+    '/fonts/be-vietnam-pro-latin-600-normal.woff2',
+    '/fonts/be-vietnam-pro-latin-700-normal.woff2',
+    '/fonts/be-vietnam-pro-vietnamese-400-normal.woff2',
+    '/fonts/be-vietnam-pro-vietnamese-500-normal.woff2',
+    '/fonts/be-vietnam-pro-vietnamese-600-normal.woff2',
+    '/fonts/be-vietnam-pro-vietnamese-700-normal.woff2',
+    '/fonts/noto-sans-latin-400-normal.woff2',
+    '/fonts/noto-sans-latin-500-normal.woff2',
+    '/fonts/noto-sans-latin-600-normal.woff2',
+    '/fonts/noto-sans-latin-700-normal.woff2',
+    '/fonts/noto-sans-vietnamese-400-normal.woff2',
+    '/fonts/noto-sans-vietnamese-500-normal.woff2',
+    '/fonts/noto-sans-vietnamese-600-normal.woff2',
+    '/fonts/noto-sans-vietnamese-700-normal.woff2'
 ];
 const STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
 

@@ -27,8 +27,8 @@
 .view-mode-btn:last-child { border-right: none; }
 .view-mode-btn:hover { background: var(--bg-hover); color: var(--text); }
 .view-mode-btn.active {
-    background: var(--primary);
-    color: #ffffff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 
 /* ===== TYPE FILTER PILLS ===== */
@@ -56,8 +56,8 @@
     color: var(--text);
 }
 .cal-filter-pill.active {
-    background: var(--primary);
-    color: #ffffff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     border-color: var(--primary);
     box-shadow: 0 2px 6px rgba(8,145,178,0.3);
 }
@@ -113,13 +113,13 @@
     background: rgba(8,145,178,0.08);
 }
 .cal-mini-day-cell.selected {
-    background: var(--primary);
-    color: #ffffff !important;
+    background: var(--primary-fill);
+    color: var(--on-primary) !important;
     border-color: var(--primary);
 }
 .cal-mini-day-cell.selected .cal-mini-day-name,
 .cal-mini-day-cell.selected .cal-mini-day-num {
-    color: #ffffff !important;
+    color: var(--on-primary) !important;
 }
 .cal-mini-day-name {
     font-size: 0.68rem;
@@ -191,8 +191,8 @@
 }
 .cal-today-pill {
     padding: 2px 8px;
-    background: var(--primary);
-    color: #ffffff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     font-size: 0.68rem;
     font-weight: 700;
     border-radius: 12px;
@@ -369,8 +369,8 @@
 .calendar-day.other-month { opacity: 0.3; }
 .calendar-day.today { background: rgba(8,145,178,0.06); }
 .calendar-day.today .day-number {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     border-radius: 50%;
     width: 26px; height: 26px;
     display: flex; align-items: center; justify-content: center;
@@ -438,8 +438,8 @@
     margin-top: 2px;
 }
 .cal-col-date.today-num {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     border-radius: 50%;
     width: 28px;
     height: 28px;

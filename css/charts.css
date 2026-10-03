@@ -101,8 +101,8 @@
     font-family: inherit;
 }
 .export-btn:hover {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     border-color: var(--primary);
 }
 .export-btn svg {

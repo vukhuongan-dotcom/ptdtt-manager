@@ -265,7 +265,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 0.85rem;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Noto Sans', system-ui, sans-serif;
     background: var(--bg-card);
     color: var(--text-primary);
 }
@@ -279,7 +279,7 @@
 /* ── Guide modal content ── */
 .rpt-guide-content {
     max-width: 100%;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Noto Sans', sans-serif;
     color: #1e293b;
     line-height: 1.65;
     font-size: 0.92rem;

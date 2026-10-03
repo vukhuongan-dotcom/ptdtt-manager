@@ -217,7 +217,7 @@ const Utils = {
         for (let y = -stripeLimit; y <= stripeLimit; y += stripeStep) {
             const x = stripeIndex % 2 === 0 ? -xOffset : xOffset;
 
-            ctx.font = `800 ${mainSize}px Inter, Arial, sans-serif`;
+            ctx.font = `800 ${mainSize}px "Noto Sans", Arial, sans-serif`;
             if (strokeOpacity > 0) {
                 ctx.strokeStyle = `rgba(${color}, ${strokeOpacity})`;
                 ctx.lineWidth = Math.max(1.25, Math.round(mainSize * 0.018));
@@ -226,7 +226,7 @@ const Utils = {
             ctx.fillStyle = `rgba(${color}, ${mainOpacity})`;
             ctx.fillText(mainText, x, y);
 
-            ctx.font = `600 ${subSize}px Inter, Arial, sans-serif`;
+            ctx.font = `600 ${subSize}px "Noto Sans", Arial, sans-serif`;
             if (strokeOpacity > 0) {
                 ctx.strokeStyle = `rgba(${color}, ${Math.max(0.02, strokeOpacity * 0.55)})`;
                 ctx.lineWidth = Math.max(1, Math.round(subSize * 0.025));

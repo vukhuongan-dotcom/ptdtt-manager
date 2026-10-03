@@ -522,7 +522,7 @@ const DashboardPage = {
         // 1. Draw Horizontal Grid Lines
         ctx.strokeStyle = gridColor;
         ctx.lineWidth = 1;
-        ctx.font = '11px Inter, system-ui, sans-serif';
+        ctx.font = '11px "Noto Sans", sans-serif';
         ctx.textAlign = 'right';
         ctx.fillStyle = textMuted;
 
@@ -550,7 +550,7 @@ const DashboardPage = {
             ctx.stroke();
 
             // Benchmark label on right
-            ctx.font = '10px Inter, system-ui, sans-serif';
+            ctx.font = '10px "Noto Sans", sans-serif';
             ctx.textAlign = 'right';
             ctx.fillStyle = isDark ? '#fbbf24' : '#d97706';
             ctx.fillText(`Mốc TB: ${Math.round(avgValue)} ca`, w - pad.right, yAvg - 6);
@@ -635,7 +635,7 @@ const DashboardPage = {
                 ctx.stroke();
 
                 // Projection badge on top
-                ctx.font = 'bold 9.5px Inter, system-ui, sans-serif';
+                ctx.font = 'bold 9.5px "Noto Sans", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = isDark ? '#c084fc' : '#7c3aed';
                 ctx.fillText(`~${m.runRateProjected}*`, xCenter, yProjTop - 6);
@@ -653,13 +653,13 @@ const DashboardPage = {
             });
 
             // X-axis label
-            ctx.font = m.isCurrentMonth ? 'bold 11px Inter, system-ui, sans-serif' : '11px Inter, system-ui, sans-serif';
+            ctx.font = m.isCurrentMonth ? 'bold 11px "Noto Sans", sans-serif' : '11px "Noto Sans", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = m.isCurrentMonth ? (isDark ? '#38bdf8' : '#0284c7') : textMuted;
             ctx.fillText(m.shortLabel + (m.isCurrentMonth ? '*' : ''), xCenter, h - pad.bottom + 16);
 
             if (m.isCurrentMonth) {
-                ctx.font = '9px Inter, system-ui, sans-serif';
+                ctx.font = '9px "Noto Sans", sans-serif';
                 ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
                 ctx.fillText('(đến 21/8)', xCenter, h - pad.bottom + 28);
             }
@@ -698,7 +698,7 @@ const DashboardPage = {
 
                 // Number label on top
                 if (!pt.isCur) {
-                    ctx.font = 'bold 10px Inter, system-ui, sans-serif';
+                    ctx.font = 'bold 10px "Noto Sans", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
                     ctx.fillText(pt.val, pt.x, pt.y - 8);

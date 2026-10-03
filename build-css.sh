@@ -12,6 +12,7 @@ echo "=== Building CSS bundle (version: $VER) ==="
 
 # Thứ tự cứng: variables PHẢI đầu tiên (các file khác dùng CSS vars)
 cat \
+  css/fonts.css \
   css/tokens.css \
   css/variables.css \
   css/base.css \

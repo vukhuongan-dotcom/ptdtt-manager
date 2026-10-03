@@ -73,7 +73,7 @@
     transition: background 0.2s;
 }
 .onb-progress-dot.active {
-    background: var(--primary);
+    background: var(--primary-fill);
 }
 .onb-progress-dot.done {
     background: #10b981;
@@ -99,8 +99,8 @@
 }
 .onb-btn-skip:hover { color: var(--text-primary); }
 .onb-btn-next {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 .onb-btn-next:hover { filter: brightness(1.1); }
 .onb-btn-prev {

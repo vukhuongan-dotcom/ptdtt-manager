@@ -29,8 +29,8 @@
     color: var(--text-primary);
 }
 .staff-subtab.active {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(8,145,178,0.3);
 }
@@ -351,8 +351,8 @@
     background: rgba(8,145,178,0.06);
 }
 .staff-card-action-pill.phone:hover {
-    background: var(--primary);
-    color: #fff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 .staff-card-action-pill.email {
     color: var(--text-secondary);

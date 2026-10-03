@@ -19,7 +19,7 @@
 }
 .kanban-column-title .dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot-warning { background: var(--warning); }
-.dot-primary { background: var(--primary); }
+.dot-primary { background: var(--primary-fill); }
 .dot-success { background: var(--success); }
 
 .kanban-cards { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
@@ -75,8 +75,8 @@
     background: var(--bg-hover);
 }
 .filter-chip.active {
-    background: var(--primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     border-color: var(--primary);
 }
 .chip-count {

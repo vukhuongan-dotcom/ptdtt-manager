@@ -1,174 +1,164 @@
+/* =====================================================================
+   PTDTT MANAGER — VARIABLES v2 (bộ nhận diện 03/10/2026)
+   Thay thế toàn bộ css/variables.css cũ. GIỮ NGUYÊN mọi tên biến cũ
+   (--primary, --bg-*, --text-*, --border*, --gradient-*, --shadow-*…)
+   để 1.000+ chỗ var(--…) trong CSS không phải sửa.
+   Biến MỚI: --primary-fill, --on-primary, --primary-soft, --primary-a10/a20,
+             --focus-ring, --font-display, --font-body.
+   Quy tắc:  --primary       = màu CHỮ / ICON / VIỀN thương hiệu
+             --primary-fill  = màu NỀN thương hiệu (nút, chấm, thanh) — chữ trên nó dùng --on-primary
+   ===================================================================== */
 @import "tokens.css";
 
 :root {
-    /* Background - Light Theme (mapped to tokens.css) */
-    --bg-primary: var(--surface-2);
-    --bg-secondary: var(--surface-1);
-    --bg-tertiary: var(--surface-3);
-    --bg-hover: var(--teal-100);
+    /* Nền */
+    --bg-primary: var(--surface-2);          /* nền trang  #F4F7FD */
+    --bg-secondary: var(--surface-1);        /* thẻ, sidebar #FFFFFF */
+    --bg-tertiary: var(--surface-3);         /* ô xám, tab nền #E9EDF5 */
+    --bg-hover: var(--navy-50);
+    --card-bg: var(--surface-card);
+    --hover-bg: var(--navy-50);
 
-    /* Colors mapped to tokens.css */
-    --primary: var(--brand-fill);
-    --primary-light: var(--teal-600);
-    --primary-dark: var(--teal-800);
-    --accent: var(--teal-700);
-    --accent-light: var(--teal-500);
+    /* Thương hiệu */
+    --primary: var(--navy-900);              /* 14,68:1 trên trắng — dùng làm chữ được */
+    --primary-fill: var(--navy-900);
+    --on-primary: #FFFFFF;
+    --primary-light: var(--navy-700);
+    --primary-dark: var(--navy-950);
+    --primary-soft: var(--navy-50);          /* nền mục menu đang chọn, chip */
+    --primary-a10: rgba(29, 35, 87, 0.10);   /* thay rgba(8,145,178,0.1x) cũ */
+    --primary-a20: rgba(29, 35, 87, 0.20);
+    --accent: var(--ocean-700);              /* 6,76:1 — liên kết, nhấn phụ */
+    --accent-light: var(--ocean-500);
     --success: var(--state-success);
-    --success-light: var(--surgery-noisoi);
+    --success-light: var(--leaf-500);
     --warning: var(--state-warning);
-    --warning-light: var(--surgery-nsth);
+    --warning-light: var(--amber-400);
     --danger: var(--state-danger);
-    --danger-light: #EF4444;
+    --danger-light: var(--red-500);
     --info: var(--state-info);
 
-    /* Text mapped to tokens.css */
-    --text-primary: var(--text-primary);
-    --text-secondary: var(--text-secondary);
-    --text-muted: var(--text-muted);
+    /* Chữ: --text-primary/-secondary/-muted lấy từ tokens.css */
     --text-dark: var(--text-muted);
     --text-subtle: var(--text-muted);
 
-    /* Border */
+    /* Viền */
     --border: var(--border-default);
     --border-light: var(--border-subtle);
 
-    /* Glass - Light */
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(0, 0, 0, 0.08);
-    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+    /* Kính mờ */
+    --glass-bg: rgba(255, 255, 255, 0.88);
+    --glass-border: rgba(29, 35, 87, 0.08);
+    --glass-shadow: 0 1px 3px rgba(17, 21, 66, 0.08), 0 4px 12px rgba(17, 21, 66, 0.04);
 
-    /* Gradient — Clinical Oceanic System (Thay thế AI purple cliché) */
-    --gradient-primary: linear-gradient(135deg, #0891b2, #0e7490);
-    --gradient-success: linear-gradient(135deg, #059669, #0891b2);
-    --gradient-warning: linear-gradient(135deg, #d97706, #dc2626);
-    --gradient-accent: linear-gradient(135deg, #0284c7, #0369a1);
+    /* Gradient — nút/chữ dùng navy đặc (giữ tên biến cho tương thích).
+       Gradient xanh dương→xanh lá của logo chỉ để TRANG TRÍ, không đặt chữ lên. */
+    --gradient-primary: linear-gradient(135deg, var(--navy-900), var(--navy-800));
+    --gradient-success: linear-gradient(135deg, var(--leaf-600), var(--leaf-700));
+    --gradient-warning: linear-gradient(135deg, var(--amber-600), var(--red-700));
+    --gradient-accent: linear-gradient(135deg, var(--ocean-700), var(--ocean-800));
 
-    /* Sizes */
+    /* Kích thước */
     --sidebar-width: 260px;
     --sidebar-collapsed: 72px;
     --border-radius: 12px;
     --border-radius-sm: 8px;
     --border-radius-lg: 16px;
 
-    /* Transitions */
+    /* Chuyển động */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s ease;
     --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    /* U1: thêm expressive (ease-out-quad) — phù hợp UI y tế, không dùng spring bounce */
     --transition-expressive: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
-    /* U1: thêm shadow-xl cho modal, dropdown nổi bật */
-    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
-    --shadow-glow-primary: 0 0 20px rgba(8, 145, 178, 0.2);
-    --shadow-glow-accent: 0 0 20px rgba(2, 132, 199, 0.2);
+    /* Bóng */
+    --shadow-xl: 0 20px 60px rgba(17, 21, 66, 0.15), 0 8px 16px rgba(17, 21, 66, 0.08);
+    --shadow-glow-primary: 0 2px 8px rgba(29, 35, 87, 0.18);
+    --shadow-glow-accent: 0 2px 8px rgba(0, 96, 149, 0.18);
 
-    /* P3.1 — Typography scale (base: 15px từ U2) */
-    /* U1: thêm --text-xxs cho badge micro, label cực nhỏ */
-    --text-xxs:  0.6667rem; /* 10px @ 15px base */
-    --text-xs:   0.7333rem; /* 11px @ 15px base */
-    --text-sm:   0.8667rem; /* 13px @ 15px base */
-    --text-base: 0.9333rem; /* 14px @ 15px base */
-    --text-lg:   1.0667rem; /* 16px @ 15px base */
-    --text-xl:   1.3333rem; /* 20px @ 15px base */
-    --text-2xl:  1.6rem;    /* 24px @ 15px base */
-    --text-3xl:  2rem;      /* 30px @ 15px base */
+    /* Thang chữ (base 15px) — tối thiểu 11px; 10px chỉ cho nhãn IN HOA */
+    --text-xxs:  0.6667rem; /* 10px */
+    --text-xs:   0.7333rem; /* 11px */
+    --text-sm:   0.8667rem; /* 13px */
+    --text-base: 0.9333rem; /* 14px */
+    --text-lg:   1.0667rem; /* 16px */
+    --text-xl:   1.3333rem; /* 20px */
+    --text-2xl:  1.6rem;    /* 24px */
+    --text-3xl:  2rem;      /* 30px */
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semi:   600;
     --font-weight-bold:   700;
-    --font-weight-black:  800;
+    --font-weight-black:  700;   /* chỉ tự host tới 700 */
     --line-height-tight:  1.25;
     --line-height-normal: 1.5;
     --line-height-loose:  1.75;
 
-    /* P3.1 — Spacing scale (4px base) */
-    --space-1:  4px;
-    --space-2:  8px;
-    --space-3:  12px;
-    --space-4:  16px;
-    --space-5:  20px;
-    --space-6:  24px;
-    --space-8:  32px;
-    --space-10: 40px;
-    --space-12: 48px;
-    --space-16: 64px;
+    /* Khoảng cách (4px) */
+    --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+    --space-12: 48px; --space-16: 64px;
 
-    /* P3.1 — Z-index scale */
-    --z-dropdown: 100;
-    --z-sidebar:  200;
-    --z-overlay:  300;
-    --z-modal:    400;
-    --z-toast:    500;
+    /* Z-index */
+    --z-dropdown: 100; --z-sidebar: 200; --z-overlay: 300; --z-modal: 400; --z-toast: 500;
 
-    /* U1 — Surface tokens (Material Design 3 inspired) */
-    --surface:           #ffffff;
-    --surface-variant:   #f1f5f9;
-    --surface-container: #f8fafc;
+    /* Surface (MD3) */
+    --surface:           #FFFFFF;
+    --surface-variant:   var(--slate-100);
+    --surface-container: var(--slate-50);
     --on-surface:        var(--text-primary);
     --on-surface-muted:  var(--text-muted);
 }
 
-/* ===== DARK MODE — [data-theme="dark"] ===== */
-/* Áp dụng khi user chọn toggle hoặc OS preference (set bởi anti-flash script trong <head>) */
+/* ===== DARK MODE ===== */
 [data-theme="dark"] {
-    /* Backgrounds — deep navy (không dùng pure black, dễ mắt hơn) */
-    --bg-primary:    #0d1117;
-    --bg-secondary:  #161b22;
-    --bg-tertiary:   #21262d;
-    --bg-hover:      #30363d;
+    --bg-primary:    var(--surface-2);   /* #0C1022 */
+    --bg-secondary:  var(--surface-1);   /* #141A30 */
+    --bg-tertiary:   var(--surface-3);   /* #1D2440 */
+    --bg-hover:      #262F4F;
+    --card-bg:       var(--surface-card);
+    --hover-bg:      #262F4F;
 
-    /* Border */
-    --border:        rgba(255, 255, 255, 0.08);
-    --border-light:  rgba(255, 255, 255, 0.12);
+    --border:        var(--border-default);
+    --border-light:  var(--border-subtle);
 
-    /* Glass — dark variant */
-    --glass-bg:     rgba(22, 27, 34, 0.85);
+    --glass-bg:     rgba(20, 26, 48, 0.88);
     --glass-border: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
 
-    /* Text — đảm bảo contrast ≥ 4.5:1 trên bg-primary (#0d1117) */
-    --text-primary:   #f0f6fc;   /* contrast ~14:1 ✅ */
-    --text-secondary: #c9d1d9;   /* contrast ~8:1  ✅ */
-    --text-muted:     #8b949e;   /* contrast ~4.6:1 ✅ AA */
-    --text-dark:      #6e7681;   /* giữ nguyên cho backward compat */
-    --text-subtle:    #6e7681;   /* decorative only */
+    --text-dark:      #6E7791;   /* chỉ trang trí */
+    --text-subtle:    #6E7791;
 
-    /* Brand — làm sáng hơn để readable trên dark bg */
-    --primary:        #38bdf8;   /* contrast ~5.2:1 ✅ AA */
-    --primary-light:  #7dd3fc;
-    --primary-dark:   #0369a1;
-    --accent:         #a78bfa;   /* contrast ~5.8:1 ✅ AA */
-    --accent-light:   #c4b5fd;
-    --success:        #34d399;   /* contrast ~6.1:1 ✅ AA */
-    --success-light:  #6ee7b7;
-    --warning:        #fbbf24;   /* contrast ~7.3:1 ✅ AA */
-    --warning-light:  #fcd34d;
-    --danger:         #f87171;   /* contrast ~5.5:1 ✅ AA */
-    --danger-light:   #fca5a5;
-    --info:           #60a5fa;
+    --primary:        var(--navy-300);   /* chữ/icon: 9,78:1 trên #141A30 */
+    --primary-fill:   var(--navy-600);   /* nền nút: chữ trắng 5,10:1 */
+    --on-primary:     #FFFFFF;
+    --primary-light:  var(--navy-200);
+    --primary-dark:   var(--navy-700);
+    --primary-soft:   #1E2547;
+    --primary-a10:    rgba(178, 193, 253, 0.10);
+    --primary-a20:    rgba(178, 193, 253, 0.20);
+    --accent:         var(--ocean-300);
+    --accent-light:   var(--ocean-200);
+    --success:        var(--state-success);
+    --success-light:  var(--leaf-200);
+    --warning:        var(--state-warning);
+    --warning-light:  var(--amber-200);
+    --danger:         var(--state-danger);
+    --danger-light:   var(--red-200);
+    --info:           var(--state-info);
 
-    /* Shadows — đậm hơn trên dark background */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
-    --shadow-glow-primary: 0 0 20px rgba(56, 189, 248, 0.25);
-    --shadow-glow-accent:  0 0 20px rgba(2, 132, 199, 0.25);
+    --shadow-glow-primary: 0 2px 10px rgba(88, 103, 192, 0.35);
+    --shadow-glow-accent:  0 2px 10px rgba(150, 203, 245, 0.25);
 
-    /* Gradients — Clinical Oceanic dark mode */
-    --gradient-primary: linear-gradient(135deg, #38bdf8, #0ea5e9);
-    --gradient-success: linear-gradient(135deg, #34d399, #38bdf8);
-    --gradient-warning: linear-gradient(135deg, #fbbf24, #f87171);
-    --gradient-accent:  linear-gradient(135deg, #0284c7, #38bdf8);
+    --gradient-primary: linear-gradient(135deg, var(--navy-600), var(--navy-700));
+    --gradient-success: linear-gradient(135deg, var(--leaf-600), var(--leaf-700));
+    --gradient-warning: linear-gradient(135deg, var(--amber-600), var(--red-700));
+    --gradient-accent:  linear-gradient(135deg, var(--ocean-600), var(--ocean-700));
 
-    /* Surface tokens */
-    --surface:           #161b22;
-    --surface-variant:   #21262d;
-    --surface-container: #0d1117;
+    --surface:           var(--surface-1);
+    --surface-variant:   var(--surface-3);
+    --surface-container: var(--surface-2);
     --on-surface:        var(--text-primary);
     --on-surface-muted:  var(--text-muted);
 }

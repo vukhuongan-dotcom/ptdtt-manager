@@ -23,7 +23,7 @@
 .badge-danger  { background: rgba(220,38,38,0.12);    color: var(--danger); }
 .badge-neutral { background: var(--bg-tertiary);       color: var(--text-muted); }
 /* Solid variants */
-.badge-solid-primary { background: var(--primary); color: #fff; }
+.badge-solid-primary { background: var(--primary-fill); color: var(--on-primary); }
 .badge-solid-success { background: var(--success); color: #fff; }
 .badge-solid-danger  { background: var(--danger);  color: #fff; }
 

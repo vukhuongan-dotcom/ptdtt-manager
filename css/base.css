@@ -14,17 +14,15 @@ select:focus-visible,
 textarea:focus-visible,
 [role="button"]:focus-visible,
 [tabindex]:focus-visible {
-    outline: 2.5px solid var(--primary) !important;
-    outline-offset: 2px !important;
-    box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.18) !important;
-    border-radius: var(--border-radius-sm, 6px);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 /* U2: 14px → 15px — cải thiện readability, WCAG 1.4.4 */
 html { font-size: 15px; }
 
 body {
-    font-family: 'Noto Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-body);
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
@@ -32,8 +30,8 @@ body {
     height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6, .page-title, .brand-name, .btn, .nav-item, th {
-    font-family: 'Be Vietnam Pro', 'Noto Sans', sans-serif;
+h1, h2, h3, h4, h5, h6, .page-title, .brand-name, .btn, .nav-item, .logo-title, .modal-title {
+    font-family: var(--font-display);
 }
 
 table, .stat-value, .kpi-value, .schedule-table, .surgery-table, .badge, .number, td, th {
@@ -42,12 +40,12 @@ table, .stat-value, .kpi-value, .schedule-table, .surgery-table, .badge, .number
 
 /* U2: Selection color — brand-aware */
 ::selection {
-    background: var(--primary);
-    color: #fff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 ::-moz-selection {
-    background: var(--primary);
-    color: #fff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 
 #app {
@@ -112,13 +110,13 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 }
 
 .btn-primary {
-    background: var(--gradient-primary);
-    color: white;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     box-shadow: var(--shadow-glow-primary);
 }
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(8, 145, 178, 0.3);
+    background: var(--brand-hover);
 }
 
 .btn-secondary {
@@ -395,7 +393,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     height: 100vh;
     background: var(--bg-primary);
     color: var(--text-muted);
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Noto Sans', system-ui, sans-serif;
     font-size: var(--text-base, 0.9333rem);
     gap: 10px;
 }
@@ -418,7 +416,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     padding: 10px 16px;
     font-size: var(--text-sm, 0.8667rem);
     font-weight: 600;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Noto Sans', system-ui, sans-serif;
     animation: slideDown 0.3s ease;
     cursor: pointer;
 }

@@ -30,8 +30,8 @@
 }
 
 .st-tab.active {
-    background: var(--primary);
-    color: #fff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 
 .st-tab:hover:not(.active) {
@@ -171,8 +171,8 @@
 }
 
 .st-day-header.st-today {
-    background: var(--primary);
-    color: #fff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
     border-radius: 0;
 }
 
@@ -182,8 +182,8 @@
 }
 
 .st-day-header.st-weekend.st-today {
-    background: var(--primary);
-    color: #fff;
+    background: var(--primary-fill);
+    color: var(--on-primary);
 }
 
 .st-day-name {
