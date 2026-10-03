@@ -138,7 +138,7 @@ const ReportsPage = {
                         <div class="rpt-card-date">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
                     </div>
                     <div class="report-no-export">
-                        ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport16hForm('${r.date}')">✏️ Sửa</button>` : ''}
+                        ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport16hForm('${r.date}')"><span class="pencil-flip">✏️</span> Sửa</button>` : ''}
                     </div>
                 </div>
             </div>
@@ -788,7 +788,7 @@ const ReportsPage = {
                         <div style="font-size:0.9rem;margin-top:5px;color:#bae6fd;font-weight:500">${this.getDayOfWeek(r.date)} — Ngày ${this.formatDateVN(r.date)}</div>
                     </div>
                     <div class="report-no-export">
-                        ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport7hForm('${r.date}')">✏️ Sửa</button>` : ''}
+                        ${canEdit ? `<button class="btn btn-sm rpt-edit-btn" onclick="ReportsPage.openReport7hForm('${r.date}')"><span class="pencil-flip">✏️</span> Sửa</button>` : ''}
                     </div>
                 </div>
             </div>

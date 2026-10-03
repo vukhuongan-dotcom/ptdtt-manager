@@ -186,7 +186,7 @@ const ResearchPage = {
                                         ${(isDone && !isSuperAdmin) ? `
                                             <span class="rsch-locked-pill" title="Bài đã trình đã khoá — Chỉ Super Admin mới được sửa/xoá">🔒 Đã khoá</span>
                                         ` : `
-                                            <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">✏️</button>
+                                            <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span></button>
                                             <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
                                         `}
                                     </td>` : ''}
@@ -232,7 +232,7 @@ const ResearchPage = {
                                 ${(isDone && !isSuperAdmin) ? `
                                     <span class="rsch-locked-pill" title="Bài đã trình đã khoá — Chỉ Super Admin mới được sửa/xoá">🔒 Đã khoá</span>
                                 ` : `
-                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}">✏️</button>
+                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}"><span class="pencil-flip">✏️</span></button>
                                     <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}">🗑️</button>
                                 `}
                             </div>

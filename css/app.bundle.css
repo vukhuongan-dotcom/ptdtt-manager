@@ -443,6 +443,12 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 }
 .btn-icon:hover { color: var(--primary); border-color: var(--primary); }
 
+.pencil-flip {
+    display: inline-block;
+    transform: scaleX(-1);
+    line-height: 1;
+}
+
 /* Cards */
 .card {
     background: var(--glass-bg);

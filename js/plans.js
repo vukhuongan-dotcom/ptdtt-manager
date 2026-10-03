@@ -199,7 +199,7 @@ const PlansPage = {
                                     </div>
                                     ${isAdmin ? `
                                     <div class="cal-agenda-card-actions" onclick="event.stopPropagation()">
-                                        <button class="btn-icon" onclick="PlansPage.viewOrEdit(${p.id})" title="Xem / Sửa">✏️</button>
+                                        <button class="btn-icon" onclick="PlansPage.viewOrEdit(${p.id})" title="Xem / Sửa"><span class="pencil-flip">✏️</span></button>
                                         ${!isSHCM ? `<button class="btn-icon" onclick="PlansPage.deletePlan(${p.id})" title="Xoá">🗑️</button>` : ''}
                                     </div>
                                     ` : ''}

@@ -369,7 +369,7 @@ const ConferencesPage = {
                         <span class="cp-pres-title">${p.title}</span>
                         <span class="cp-pres-who">— ${p.presenter}</span>
                         ${canEdit ? `<div class="cp-pres-actions">
-                            <button class="btn-icon-sm" onclick="ConferencesPage.openPresentationForm(${item.id}, ${actualIdx})" title="Sửa bài báo cáo" aria-label="Sửa bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}">✏️</button>
+                            <button class="btn-icon-sm" onclick="ConferencesPage.openPresentationForm(${item.id}, ${actualIdx})" title="Sửa bài báo cáo" aria-label="Sửa bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span></button>
                             <button class="btn-icon-sm" onclick="ConferencesPage.deletePresentation(${item.id}, ${actualIdx})" title="Xoá bài báo cáo" aria-label="Xoá bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}">🗑️</button>
                         </div>` : ''}
                     </div>`;
@@ -429,7 +429,7 @@ const ConferencesPage = {
                     </div>
                     ${canEdit ? `<div class="cp-footer-actions">
                         <button class="btn btn-primary btn-sm" onclick="ConferencesPage.openPresentationForm(${item.id})" aria-label="Thêm bài báo cáo mới cho hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">➕ Bài báo cáo</button>
-                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})" aria-label="Sửa thông tin hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">✏️ Sửa</button>
+                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})" aria-label="Sửa thông tin hội nghị ${(item.name || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span> Sửa</button>
                         <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})" aria-label="Xoá hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">🗑️</button>
                     </div>` : ''}
                 </div>
