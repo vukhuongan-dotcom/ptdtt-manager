@@ -1,7 +1,7 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2610020957;
+const CLIENT_BUILD = 2610031227;
 
 const Store = {
     _data: null,
@@ -211,7 +211,7 @@ const Store = {
 
     _mergeShcmSchedule(localItems, serverItems) {
         const merged = new Map();
-        [...(serverItems || []), ...(localItems || [])].forEach(item => {
+        [...(localItems || []), ...(serverItems || [])].forEach(item => {
             const key = this._normalizeShcmKey(item);
             if (!key) return;
             merged.set(key, item);
