@@ -1,0 +1,29 @@
+{"ts": "2026-10-04T06:01:55.485089", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T06:06:51.803984", "user": "tpquan", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 182, "nextId": null}}
+{"ts": "2026-10-04T07:55:13.545898", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T08:36:20.571180", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T10:23:23.434550", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T10:37:32.412060", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T12:53:35.535126", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T13:15:36.313382", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T13:24:50.823920", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 29, "nextId": 24, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 23, "label": "2026-10-05", "from": {"notes": ""}, "to": {"notes": "BS Quy thi tốt nghiệp thứ 5\nBS Khôi thi tốt nghiệp thứ 4,5\nBS Phú nghỉ phép thứ 4\nBS Tuấn về trường sáng thứ 3"}}]}}}
+{"ts": "2026-10-04T13:29:30.189967", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 29, "nextId": 24, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-04T13:30:16.487419", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 29, "nextId": 24, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-04T13:38:34.434489", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 29, "nextId": 24, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-04T13:39:28.534622", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 29, "nextId": 24, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 23, "label": "2026-10-05", "from": {"notes": "BS Quy thi tốt nghiệp thứ 5\nBS Khôi thi tốt nghiệp thứ 4,5\nBS Phú nghỉ phép thứ 4\nBS Tuấn về trường sáng thứ 3"}, "to": {"notes": "BS Quy thi tốt nghiệp thứ 5\nBS Khôi thi tốt nghiệp thứ 4,5\nBS Vĩnh Phú nghỉ phép thứ 4\nBS Tuấn về trường sáng thứ 3"}}]}}}
+{"ts": "2026-10-04T14:53:47.084006", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T15:38:01.433011", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T15:54:21.820459", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T15:54:52.981861", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T16:00:47.810476", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T16:09:37.298055", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T16:51:36.195855", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T16:55:17.395386", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T17:59:14.328872", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T19:22:50.772779", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T20:18:24.584399", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T20:53:51.325176", "user": "vnatuan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T21:17:08.510283", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T21:19:00.787663", "user": "vcnguyen", "action": "collection.put.plans", "ip": "127.0.0.1", "details": {"count": 41, "nextId": 120, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-04T21:33:22.155971", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-04T22:19:36.215066", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
