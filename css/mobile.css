@@ -78,6 +78,7 @@
         width: 28px;
         height: 28px;
         border-radius: 50%;
+        background: var(--primary-fill, #1D2357);
         display: flex;
         align-items: center;
         justify-content: center;

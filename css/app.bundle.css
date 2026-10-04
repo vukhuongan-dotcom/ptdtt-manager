@@ -106,6 +106,7 @@
   --brand-soft: #F4F6FF;
   --brand-soft-strong: #E7ECFF;
   --brand-accent: #006095;
+  --accent-hover: var(--ocean-800);
   --brand-leaf: #54A83C;
   --brand-lime: #90C03C;
   --gradient-brand: linear-gradient(135deg, #1878B4 0%, #54A83C 100%);
@@ -186,6 +187,7 @@
   --brand-soft: #1E2547;
   --brand-soft-strong: #28315E;
   --brand-accent: #96CBF5;
+  --accent-hover: var(--ocean-400);
   --brand-leaf: #73BC61;
   --brand-lime: #90C03C;
   --gradient-brand: linear-gradient(135deg, #3492D3 0%, #54A83C 100%);
@@ -273,6 +275,11 @@
     --primary-a20: rgba(29, 35, 87, 0.20);
     --accent: var(--ocean-700);              /* 6,76:1 — liên kết, nhấn phụ */
     --accent-light: var(--ocean-500);
+    --accent-hover: var(--ocean-800);
+    --bg-card: var(--surface-card);
+    --text: var(--text-primary);
+    --primary-color: var(--primary);
+    --border-color: var(--border);
     --success: var(--state-success);
     --success-light: var(--leaf-500);
     --warning: var(--state-warning);
@@ -382,6 +389,11 @@
     --primary-a20:    rgba(178, 193, 253, 0.20);
     --accent:         var(--ocean-300);
     --accent-light:   var(--ocean-200);
+    --accent-hover:   var(--ocean-400);
+    --bg-card:        var(--surface-card);
+    --text:           var(--text-primary);
+    --primary-color:  var(--primary);
+    --border-color:   var(--border);
     --success:        var(--state-success);
     --success-light:  var(--leaf-200);
     --warning:        var(--state-warning);
@@ -890,7 +902,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .auth-td-actions { padding: 6px 8px; text-align: center; white-space: nowrap; }
 .auth-badge-superadmin { background: #7c3aed; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
 .auth-badge-admin { background: var(--primary-fill); color: var(--on-primary); padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
-.auth-badge-user { background: #94a3b8; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
+.auth-badge-user { background: var(--slate-600, #535A6E); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
 .auth-badge-disabled { background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
 .auth-btn-mk { font-size: var(--text-xxs, 0.6667rem); }
 .auth-td-self { color: var(--text-secondary); font-size: var(--text-xs, 0.7333rem); }
@@ -2475,6 +2487,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .duty-avatar {
     width: 36px; height: 36px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex; align-items: center; justify-content: center;
     font-weight: 600; font-size: 0.8rem; color: white;
     flex-shrink: 0;
@@ -2759,6 +2772,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     width: 26px;
     height: 26px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3289,7 +3303,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 .mis-row-green .mis-stat-name { color: #15803d; }
 .mis-stat-badge.green {
-    background: #16a34a;
+    background: #15803d;
     color: #ffffff;
 }
 .mis-stat-pct.green { color: #15803d; }
@@ -3630,13 +3644,14 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 
 /* ===== Tiered Badges ===== */
 .badge-chief {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
+    background: linear-gradient(135deg, #d97706, #b45309);
     color: #ffffff;
     font-weight: 700;
-    box-shadow: 0 1px 4px rgba(245,158,11,0.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 4px rgba(217,119,6,0.35);
 }
 .badge-deputy {
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, var(--ocean-700, #006095), var(--ocean-800, #004973));
     color: #ffffff;
     font-weight: 700;
     box-shadow: 0 1px 4px var(--primary-a20);
@@ -3647,15 +3662,28 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-weight: 700;
     box-shadow: 0 1px 4px rgba(13,148,136,0.3);
 }
-.badge-indigo { background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); }
-.badge-teal   { background: rgba(20,184,166,0.15); color: #0d9488; border: 1px solid rgba(20,184,166,0.3); }
-.badge-amber  { background: rgba(245,158,11,0.15); color: #d97706; border: 1px solid rgba(245,158,11,0.3); }
-.badge-purple { background: rgba(168,85,247,0.15); color: #9333ea; border: 1px solid rgba(168,85,247,0.3); }
+.badge-indigo { background: rgba(99,102,241,0.15); color: #4f46e5; border: 1px solid rgba(99,102,241,0.3); font-weight: 600; }
+.badge-teal   { background: rgba(20,184,166,0.15); color: #0f766e; border: 1px solid rgba(20,184,166,0.3); font-weight: 600; }
+.badge-amber  { background: rgba(245,158,11,0.15); color: #b45309; border: 1px solid rgba(245,158,11,0.3); font-weight: 600; }
+.badge-purple { background: rgba(168,85,247,0.15); color: #7e22ce; border: 1px solid rgba(168,85,247,0.3); font-weight: 600; }
 
-[data-theme="dark"] .badge-indigo { color: #818cf8; }
-[data-theme="dark"] .badge-teal   { color: #2dd4bf; }
-[data-theme="dark"] .badge-amber  { color: #fbbf24; }
-[data-theme="dark"] .badge-purple { color: #c084fc; }
+[data-theme="dark"] .badge-chief {
+    background: linear-gradient(135deg, #b45309, #92400e);
+    color: #ffffff;
+}
+[data-theme="dark"] .badge-deputy {
+    background: linear-gradient(135deg, var(--ocean-800, #004973), var(--ocean-900, #00314F));
+    color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .badge-nurse-lead {
+    background: linear-gradient(135deg, #0f766e, #115e59);
+    color: #ffffff;
+}
+[data-theme="dark"] .badge-indigo { color: #a5b4fc; background: rgba(99,102,241,0.22); }
+[data-theme="dark"] .badge-teal   { color: #5eead4; background: rgba(20,184,166,0.22); }
+[data-theme="dark"] .badge-amber  { color: #fde047; background: rgba(245,158,11,0.22); }
+[data-theme="dark"] .badge-purple { color: #d8b4fe; background: rgba(168,85,247,0.22); }
 
 /* Status tags */
 .staff-status-inline-tag {
@@ -3666,9 +3694,14 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     margin-left: 6px;
 }
 .staff-status-inline-tag.leave { background: #fef9c3; color: #a16207; }
-.staff-status-inline-tag.sick { background: #fee2e2; color: #dc2626; }
-.staff-status-inline-tag.business { background: #ede9fe; color: #7c3aed; }
-.staff-status-inline-tag.dayoff { background: #dbeafe; color: #2563eb; }
+.staff-status-inline-tag.sick { background: #fee2e2; color: #b91c1c; }
+.staff-status-inline-tag.business { background: #ede9fe; color: #6d28d9; }
+.staff-status-inline-tag.dayoff { background: #dbeafe; color: #1d4ed8; }
+
+[data-theme="dark"] .staff-status-inline-tag.leave { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+[data-theme="dark"] .staff-status-inline-tag.sick { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+[data-theme="dark"] .staff-status-inline-tag.business { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+[data-theme="dark"] .staff-status-inline-tag.dayoff { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
 /* ===== Desktop Table Styling ===== */
 .staff-desktop-view { display: block; }
@@ -3699,12 +3732,14 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .staff-name-cell { display: flex; align-items: center; gap: 10px; }
 .staff-avatar-sm {
     width: 34px; height: 34px; border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 0.72rem; color: white; flex-shrink: 0;
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 .staff-avatar-md {
     width: 42px; height: 42px; border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 0.85rem; color: white; flex-shrink: 0;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -3799,9 +3834,14 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     border-radius: 4px;
 }
 .staff-card-status-badge.leave { background: #fef9c3; color: #a16207; }
-.staff-card-status-badge.sick { background: #fee2e2; color: #dc2626; }
-.staff-card-status-badge.business { background: #ede9fe; color: #7c3aed; }
-.staff-card-status-badge.dayoff { background: #dbeafe; color: #2563eb; }
+.staff-card-status-badge.sick { background: #fee2e2; color: #b91c1c; }
+.staff-card-status-badge.business { background: #ede9fe; color: #6d28d9; }
+.staff-card-status-badge.dayoff { background: #dbeafe; color: #1d4ed8; }
+
+[data-theme="dark"] .staff-card-status-badge.leave { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+[data-theme="dark"] .staff-card-status-badge.sick { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+[data-theme="dark"] .staff-card-status-badge.business { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+[data-theme="dark"] .staff-card-status-badge.dayoff { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
 .staff-card-sub-info {
     display: flex;
@@ -3969,7 +4009,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     cursor: pointer;
 }
 /* Departed badge */
-.badge-departed { background: #94a3b8; color: #fff; }
+.badge-departed { background: var(--slate-600, #535A6E); color: #ffffff; }
 
 /* ===== CÁC TỔ ĐẶC TRÁCH ===== */
 .team-page-header {
@@ -4055,6 +4095,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     width: 36px;
     height: 36px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4171,7 +4212,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 
 .st-chip-active {
     background: #dcfce7;
-    color: #16a34a;
+    color: #15803d;
     border: 1.5px solid #86efac;
 }
 
@@ -4183,19 +4224,19 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 
 .st-chip-sick {
     background: #fee2e2;
-    color: #dc2626;
+    color: #b91c1c;
     border: 1.5px solid #fca5a5;
 }
 
 .st-chip-business {
     background: #ede9fe;
-    color: #7c3aed;
+    color: #6d28d9;
     border: 1.5px solid #c4b5fd;
 }
 
 .st-chip-dayoff {
     background: #dbeafe;
-    color: #2563eb;
+    color: #1d4ed8;
     border: 1.5px solid #93c5fd;
 }
 
@@ -4320,6 +4361,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     width: 28px;
     height: 28px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4389,7 +4431,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 /* Active — subtle green check */
 .st-cell.st-status-active .st-status-label {
     background: #dcfce7;
-    color: #16a34a;
+    color: #15803d;
     border: 1px solid #86efac;
     font-size: 0.75rem;
 }
@@ -4410,7 +4452,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 .st-cell.st-status-sick .st-status-label {
     background: #fecaca;
-    color: #dc2626;
+    color: #991b1b;
     border: 1.5px solid #f87171;
 }
 
@@ -4863,7 +4905,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     border-right: 1px solid var(--border);
 }
 .view-mode-btn:last-child { border-right: none; }
-.view-mode-btn:hover { background: var(--bg-hover); color: var(--text); }
+.view-mode-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .view-mode-btn.active {
     background: var(--primary-fill);
     color: var(--on-primary);
@@ -4891,7 +4933,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 }
 .cal-filter-pill:hover {
     background: var(--bg-hover);
-    color: var(--text);
+    color: var(--text-primary);
 }
 .cal-filter-pill.active {
     background: var(--primary-fill);
@@ -4921,7 +4963,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .cal-mini-title {
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
 }
 .cal-mini-strip-days {
     display: flex;
@@ -4968,7 +5010,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .cal-mini-day-num {
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
     margin-top: 2px;
 }
 .cal-mini-dots {
@@ -5020,7 +5062,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .cal-group-day {
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
 }
 .cal-group-date {
     font-size: 0.78rem;
@@ -5077,7 +5119,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .cal-card-time {
     font-size: 0.82rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
     white-space: nowrap;
 }
 .cal-card-duration {
@@ -5111,7 +5153,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .cal-card-title {
     font-size: 0.9rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
     line-height: 1.35;
     word-break: break-word;
 }
@@ -6496,7 +6538,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 0.62rem;
     padding: 2px 7px;
     border-radius: 10px;
-    color: white;
+    background: var(--primary-fill, #1D2357);
+    color: var(--on-primary, #ffffff);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -6506,7 +6549,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 0.62rem;
     padding: 2px 7px;
     border-radius: 10px;
-    color: white;
+    background: var(--primary-fill, #1D2357);
+    color: var(--on-primary, #ffffff);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -7374,6 +7418,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     width: 34px;
     height: 34px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -7692,7 +7737,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     display: inline-block;
     padding: 2px 8px;
     border-radius: 4px;
-    color: #ffffff;
+    background: var(--primary-fill, #1D2357);
+    color: var(--on-primary, #ffffff);
     font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -8336,6 +8382,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     width: 34px;
     height: 34px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -8510,7 +8557,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     box-shadow: 0 0 0 2px var(--primary-a20);
     background: var(--primary-a10);
 }
-.rsch-stat-val { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+.rsch-stat-val { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
 .rsch-stat-lbl { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
 .rsch-done .rsch-stat-val { color: #16a34a; }
 .rsch-pending .rsch-stat-val { color: #ea580c; }
@@ -8582,7 +8629,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 .rsch-pill-btn:hover {
     background: var(--bg-hover);
-    color: var(--text);
+    color: var(--text-primary);
 }
 .rsch-pill-btn.active {
     background: var(--primary-fill);
@@ -8771,7 +8818,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .rsch-doc-name {
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
 }
 .rsch-card-idx {
     font-size: 0.72rem;
@@ -8781,7 +8828,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .rsch-card-title {
     font-size: 0.88rem;
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-primary);
     line-height: 1.45;
     word-break: break-word;
 }
@@ -8802,7 +8849,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 .rsch-card-date {
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-primary);
 }
 .rsch-card-time {
     color: var(--text-muted);
@@ -9084,10 +9131,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     flex-shrink: 0;
 }
 
-.cp-cd-past     { background: #f1f5f9; color: #94a3b8; }
+.cp-cd-past     { background: #f1f5f9; color: #475569; }
 .cp-cd-upcoming { background: var(--primary-a10); color: var(--primary); }
-.cp-cd-soon     { background: #fef3c7; color: #d97706; }
-.cp-cd-now      { background: #ecfdf5; color: #059669; animation: pulse-badge 2s infinite; }
+.cp-cd-soon     { background: #fef3c7; color: #92400e; }
+.cp-cd-now      { background: #ecfdf5; color: #047857; animation: pulse-badge 2s infinite; }
 
 @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.7} }
 
@@ -9220,8 +9267,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     letter-spacing: 0.3px;
 }
 
-.cp-lang-en { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-.cp-lang-vi { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.cp-lang-en { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.cp-lang-vi { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 
 .cp-pres-title {
     flex: 1;
@@ -9368,7 +9415,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .cp-pm-leader .cp-pm-avatar {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
+    background: linear-gradient(135deg, #d97706, #b45309);
 }
 
 .cp-pm-info { flex: 1; min-width: 0; }
@@ -9387,7 +9434,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .cp-pm-badge {
     font-size: 0.65rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
+    background: linear-gradient(135deg, #d97706, #b45309);
     color: #fff;
     padding: 2px 8px;
     border-radius: 10px;
@@ -9599,7 +9646,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     right: -2px;
     min-width: 16px;
     height: 16px;
-    background: #ef4444;
+    background: var(--state-danger, #dc2626);
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -10305,7 +10352,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 /* ── Export orange btn (inside export area) ── */
 .rpt-export-orange {
-    background: #f97316;
+    background: #c2410c;
     color: #fff;
     border: none;
     font-size: 0.78rem;
@@ -10327,7 +10374,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-radius: 8px;
     font-size: 0.85rem;
     font-family: 'Noto Sans', system-ui, sans-serif;
-    background: var(--bg-card);
+    background: var(--bg-secondary);
     color: var(--text-primary);
 }
 
@@ -10834,6 +10881,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         width: 28px;
         height: 28px;
         border-radius: 50%;
+        background: var(--primary-fill, #1D2357);
         display: flex;
         align-items: center;
         justify-content: center;

@@ -235,6 +235,7 @@
 .duty-avatar {
     width: 36px; height: 36px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex; align-items: center; justify-content: center;
     font-weight: 600; font-size: 0.8rem; color: white;
     flex-shrink: 0;
@@ -519,6 +520,7 @@
     width: 26px;
     height: 26px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1049,7 +1051,7 @@
 }
 .mis-row-green .mis-stat-name { color: #15803d; }
 .mis-stat-badge.green {
-    background: #16a34a;
+    background: #15803d;
     color: #ffffff;
 }
 .mis-stat-pct.green { color: #15803d; }

@@ -28,7 +28,7 @@
     box-shadow: 0 0 0 2px var(--primary-a20);
     background: var(--primary-a10);
 }
-.rsch-stat-val { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+.rsch-stat-val { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
 .rsch-stat-lbl { font-size: 0.76rem; color: var(--text-muted); font-weight: 600; }
 .rsch-done .rsch-stat-val { color: #16a34a; }
 .rsch-pending .rsch-stat-val { color: #ea580c; }
@@ -100,7 +100,7 @@
 }
 .rsch-pill-btn:hover {
     background: var(--bg-hover);
-    color: var(--text);
+    color: var(--text-primary);
 }
 .rsch-pill-btn.active {
     background: var(--primary-fill);
@@ -289,7 +289,7 @@
 .rsch-doc-name {
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
 }
 .rsch-card-idx {
     font-size: 0.72rem;
@@ -299,7 +299,7 @@
 .rsch-card-title {
     font-size: 0.88rem;
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-primary);
     line-height: 1.45;
     word-break: break-word;
 }
@@ -320,7 +320,7 @@
 }
 .rsch-card-date {
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-primary);
 }
 .rsch-card-time {
     color: var(--text-muted);

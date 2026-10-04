@@ -30,6 +30,11 @@
     --primary-a20: rgba(29, 35, 87, 0.20);
     --accent: var(--ocean-700);              /* 6,76:1 — liên kết, nhấn phụ */
     --accent-light: var(--ocean-500);
+    --accent-hover: var(--ocean-800);
+    --bg-card: var(--surface-card);
+    --text: var(--text-primary);
+    --primary-color: var(--primary);
+    --border-color: var(--border);
     --success: var(--state-success);
     --success-light: var(--leaf-500);
     --warning: var(--state-warning);
@@ -139,6 +144,11 @@
     --primary-a20:    rgba(178, 193, 253, 0.20);
     --accent:         var(--ocean-300);
     --accent-light:   var(--ocean-200);
+    --accent-hover:   var(--ocean-400);
+    --bg-card:        var(--surface-card);
+    --text:           var(--text-primary);
+    --primary-color:  var(--primary);
+    --border-color:   var(--border);
     --success:        var(--state-success);
     --success-light:  var(--leaf-200);
     --warning:        var(--state-warning);

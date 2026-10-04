@@ -244,7 +244,7 @@
 
 /* ── Export orange btn (inside export area) ── */
 .rpt-export-orange {
-    background: #f97316;
+    background: #c2410c;
     color: #fff;
     border: none;
     font-size: 0.78rem;
@@ -266,7 +266,7 @@
     border-radius: 8px;
     font-size: 0.85rem;
     font-family: 'Noto Sans', system-ui, sans-serif;
-    background: var(--bg-card);
+    background: var(--bg-secondary);
     color: var(--text-primary);
 }
 

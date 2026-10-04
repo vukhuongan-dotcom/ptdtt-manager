@@ -97,13 +97,14 @@
 
 /* ===== Tiered Badges ===== */
 .badge-chief {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
+    background: linear-gradient(135deg, #d97706, #b45309);
     color: #ffffff;
     font-weight: 700;
-    box-shadow: 0 1px 4px rgba(245,158,11,0.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 4px rgba(217,119,6,0.35);
 }
 .badge-deputy {
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: linear-gradient(135deg, var(--ocean-700, #006095), var(--ocean-800, #004973));
     color: #ffffff;
     font-weight: 700;
     box-shadow: 0 1px 4px var(--primary-a20);
@@ -114,15 +115,28 @@
     font-weight: 700;
     box-shadow: 0 1px 4px rgba(13,148,136,0.3);
 }
-.badge-indigo { background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); }
-.badge-teal   { background: rgba(20,184,166,0.15); color: #0d9488; border: 1px solid rgba(20,184,166,0.3); }
-.badge-amber  { background: rgba(245,158,11,0.15); color: #d97706; border: 1px solid rgba(245,158,11,0.3); }
-.badge-purple { background: rgba(168,85,247,0.15); color: #9333ea; border: 1px solid rgba(168,85,247,0.3); }
+.badge-indigo { background: rgba(99,102,241,0.15); color: #4f46e5; border: 1px solid rgba(99,102,241,0.3); font-weight: 600; }
+.badge-teal   { background: rgba(20,184,166,0.15); color: #0f766e; border: 1px solid rgba(20,184,166,0.3); font-weight: 600; }
+.badge-amber  { background: rgba(245,158,11,0.15); color: #b45309; border: 1px solid rgba(245,158,11,0.3); font-weight: 600; }
+.badge-purple { background: rgba(168,85,247,0.15); color: #7e22ce; border: 1px solid rgba(168,85,247,0.3); font-weight: 600; }
 
-[data-theme="dark"] .badge-indigo { color: #818cf8; }
-[data-theme="dark"] .badge-teal   { color: #2dd4bf; }
-[data-theme="dark"] .badge-amber  { color: #fbbf24; }
-[data-theme="dark"] .badge-purple { color: #c084fc; }
+[data-theme="dark"] .badge-chief {
+    background: linear-gradient(135deg, #b45309, #92400e);
+    color: #ffffff;
+}
+[data-theme="dark"] .badge-deputy {
+    background: linear-gradient(135deg, var(--ocean-800, #004973), var(--ocean-900, #00314F));
+    color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .badge-nurse-lead {
+    background: linear-gradient(135deg, #0f766e, #115e59);
+    color: #ffffff;
+}
+[data-theme="dark"] .badge-indigo { color: #a5b4fc; background: rgba(99,102,241,0.22); }
+[data-theme="dark"] .badge-teal   { color: #5eead4; background: rgba(20,184,166,0.22); }
+[data-theme="dark"] .badge-amber  { color: #fde047; background: rgba(245,158,11,0.22); }
+[data-theme="dark"] .badge-purple { color: #d8b4fe; background: rgba(168,85,247,0.22); }
 
 /* Status tags */
 .staff-status-inline-tag {
@@ -133,9 +147,14 @@
     margin-left: 6px;
 }
 .staff-status-inline-tag.leave { background: #fef9c3; color: #a16207; }
-.staff-status-inline-tag.sick { background: #fee2e2; color: #dc2626; }
-.staff-status-inline-tag.business { background: #ede9fe; color: #7c3aed; }
-.staff-status-inline-tag.dayoff { background: #dbeafe; color: #2563eb; }
+.staff-status-inline-tag.sick { background: #fee2e2; color: #b91c1c; }
+.staff-status-inline-tag.business { background: #ede9fe; color: #6d28d9; }
+.staff-status-inline-tag.dayoff { background: #dbeafe; color: #1d4ed8; }
+
+[data-theme="dark"] .staff-status-inline-tag.leave { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+[data-theme="dark"] .staff-status-inline-tag.sick { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+[data-theme="dark"] .staff-status-inline-tag.business { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+[data-theme="dark"] .staff-status-inline-tag.dayoff { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
 /* ===== Desktop Table Styling ===== */
 .staff-desktop-view { display: block; }
@@ -166,12 +185,14 @@
 .staff-name-cell { display: flex; align-items: center; gap: 10px; }
 .staff-avatar-sm {
     width: 34px; height: 34px; border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 0.72rem; color: white; flex-shrink: 0;
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 .staff-avatar-md {
     width: 42px; height: 42px; border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 0.85rem; color: white; flex-shrink: 0;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -266,9 +287,14 @@
     border-radius: 4px;
 }
 .staff-card-status-badge.leave { background: #fef9c3; color: #a16207; }
-.staff-card-status-badge.sick { background: #fee2e2; color: #dc2626; }
-.staff-card-status-badge.business { background: #ede9fe; color: #7c3aed; }
-.staff-card-status-badge.dayoff { background: #dbeafe; color: #2563eb; }
+.staff-card-status-badge.sick { background: #fee2e2; color: #b91c1c; }
+.staff-card-status-badge.business { background: #ede9fe; color: #6d28d9; }
+.staff-card-status-badge.dayoff { background: #dbeafe; color: #1d4ed8; }
+
+[data-theme="dark"] .staff-card-status-badge.leave { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+[data-theme="dark"] .staff-card-status-badge.sick { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+[data-theme="dark"] .staff-card-status-badge.business { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+[data-theme="dark"] .staff-card-status-badge.dayoff { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
 .staff-card-sub-info {
     display: flex;
@@ -436,7 +462,7 @@
     cursor: pointer;
 }
 /* Departed badge */
-.badge-departed { background: #94a3b8; color: #fff; }
+.badge-departed { background: var(--slate-600, #535A6E); color: #ffffff; }
 
 /* ===== CÁC TỔ ĐẶC TRÁCH ===== */
 .team-page-header {
@@ -522,6 +548,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;

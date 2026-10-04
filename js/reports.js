@@ -1489,7 +1489,7 @@ const ReportsPage = {
     },
 
     _statCard(value, label, annotation, color) {
-        return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:6px 4px 8px;text-align:center">
+        return `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:6px 4px 8px;text-align:center">
             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:500;letter-spacing:0.02em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${annotation}</div>
             <div style="font-size:1.25rem;font-weight:800;color:${color};line-height:1.1">${value}</div>
             <div style="font-size:0.64rem;color:var(--text-secondary);font-weight:700;margin-top:1px">${label}</div>

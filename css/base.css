@@ -483,7 +483,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .auth-td-actions { padding: 6px 8px; text-align: center; white-space: nowrap; }
 .auth-badge-superadmin { background: #7c3aed; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
 .auth-badge-admin { background: var(--primary-fill); color: var(--on-primary); padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
-.auth-badge-user { background: #94a3b8; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
+.auth-badge-user { background: var(--slate-600, #535A6E); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: var(--text-xxs, 0.6667rem); }
 .auth-badge-disabled { background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
 .auth-btn-mk { font-size: var(--text-xxs, 0.6667rem); }
 .auth-td-self { color: var(--text-secondary); font-size: var(--text-xs, 0.7333rem); }

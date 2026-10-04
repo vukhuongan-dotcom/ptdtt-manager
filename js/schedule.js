@@ -1298,8 +1298,8 @@ const SchedulePage = {
                     </div>
                 </div>
 
-                <div class="card p-12 bg-subtle mb-16" style="border:1px solid var(--border-color);border-radius:10px">
-                    <div class="form-section-title mb-10" style="font-weight:700;font-size:0.88rem;color:var(--primary-color)">👨‍⚕️ Ê-kíp Bác sĩ Phụ mổ Robot</div>
+                <div class="card p-12 bg-subtle mb-16" style="border:1px solid var(--border);border-radius:10px">
+                    <div class="form-section-title mb-10" style="font-weight:700;font-size:0.88rem;color:var(--primary)">👨‍⚕️ Ê-kíp Bác sĩ Phụ mổ Robot</div>
                     ${renderDocSelect(0, 'Bác sĩ phụ 1')}
                     ${renderDocSelect(1, 'Bác sĩ phụ 2')}
                     ${renderDocSelect(2, 'Bác sĩ phụ 3')}

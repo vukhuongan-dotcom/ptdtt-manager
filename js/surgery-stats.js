@@ -670,7 +670,7 @@ const SurgeryStatsPage = {
 
                 <!-- DOCTOR 2 SELECTOR (CRIMSON / DANGER) -->
                 <div class="sstats-doc-box sstats-doc-box-compare ${hasCompare ? '' : 'is-none'}">
-                    <div class="sstats-doc-box-badge" style="background:${hasCompare ? 'var(--state-danger)' : 'var(--text-muted)'}">
+                    <div class="sstats-doc-box-badge" style="background:${hasCompare ? 'var(--state-danger)' : 'var(--slate-700)'};color:#ffffff">
                         ${hasCompare ? 'Bác sĩ 2 (Màu Đỏ Rose)' : 'Bác sĩ 2 (Để trống)'}
                     </div>
                     <div class="sstats-doc-box-controls">
@@ -1080,7 +1080,7 @@ const SurgeryStatsPage = {
                                         <td class="sstats-td-text">${s.method || '—'}</td>
                                         <td><span class="sstats-radar-tag" style="background:${axisInfo.color}18;color:${axisInfo.color};border:1px solid ${axisInfo.color}40">${axisInfo.icon} ${axisInfo.label}</span></td>
                                         <td><span class="approach-tag approach-${s.approachType}">${approachMap[s.approachType] || s.approachType}</span></td>
-                                        <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
+                                        <td><span class="surgery-type-badge" style="background:${typeInfo.color};color:${typeInfo.onColor || 'var(--on-primary, #fff)'}">${typeInfo.label}</span></td>
                                     </tr>`;
                                 }).join('')}
                             </tbody>
@@ -1414,7 +1414,7 @@ const SurgeryStatsPage = {
                             <td class="sstats-detail-td-text">${s.diagnosis || '—'}</td>
                             <td class="sstats-detail-td-text">${s.method || '—'}</td>
                             <td>${dateStr}</td>
-                            <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
+                            <td><span class="surgery-type-badge" style="background:${typeInfo.color};color:${typeInfo.onColor || 'var(--on-primary, #fff)'}">${typeInfo.label}</span></td>
                             <td><strong style="color:var(--text-primary)">${mainDoc}</strong></td>
                         </tr>`;
                         }).join('')}
@@ -1458,14 +1458,14 @@ const SurgeryStatsPage = {
                         <td class="sstats-detail-td-text">${s.diagnosis || '—'}</td>
                         <td class="sstats-detail-td-text">${s.method || '—'}</td>
                         <td>${dateStr}</td>
-                        <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
+                        <td><span class="surgery-type-badge" style="background:${typeInfo.color};color:${typeInfo.onColor || 'var(--on-primary, #fff)'}">${typeInfo.label}</span></td>
                     </tr>`;
                     }).join('')}
                 </tbody>
             </table>
 
             ${docStat.assistTotal > 0 ? `
-            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-color, #cbd5e1);">
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border);">
                 <div style="font-weight: 700; font-size: 0.88rem; color: #6366f1; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                     <span>🤝 Ca tham gia phụ mổ (${docStat.assistTotal} ca)</span>
                 </div>
@@ -1495,7 +1495,7 @@ const SurgeryStatsPage = {
                             <td class="sstats-detail-td-text">${s.diagnosis || '—'}</td>
                             <td class="sstats-detail-td-text">${s.method || '—'}</td>
                             <td>${dateStr}</td>
-                            <td><span class="surgery-type-badge" style="background:${typeInfo.color}">${typeInfo.label}</span></td>
+                            <td><span class="surgery-type-badge" style="background:${typeInfo.color};color:${typeInfo.onColor || 'var(--on-primary, #fff)'}">${typeInfo.label}</span></td>
                             <td><strong style="color:var(--text-primary)">${mainDoc}</strong></td>
                         </tr>`;
                         }).join('')}

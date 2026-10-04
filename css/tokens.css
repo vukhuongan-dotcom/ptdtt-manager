@@ -73,6 +73,7 @@
   --brand-soft: #F4F6FF;
   --brand-soft-strong: #E7ECFF;
   --brand-accent: #006095;
+  --accent-hover: var(--ocean-800);
   --brand-leaf: #54A83C;
   --brand-lime: #90C03C;
   --gradient-brand: linear-gradient(135deg, #1878B4 0%, #54A83C 100%);
@@ -153,6 +154,7 @@
   --brand-soft: #1E2547;
   --brand-soft-strong: #28315E;
   --brand-accent: #96CBF5;
+  --accent-hover: var(--ocean-400);
   --brand-leaf: #73BC61;
   --brand-lime: #90C03C;
   --gradient-brand: linear-gradient(135deg, #3492D3 0%, #54A83C 100%);

@@ -181,7 +181,8 @@
     font-size: 0.62rem;
     padding: 2px 7px;
     border-radius: 10px;
-    color: white;
+    background: var(--primary-fill, #1D2357);
+    color: var(--on-primary, #ffffff);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -191,7 +192,8 @@
     font-size: 0.62rem;
     padding: 2px 7px;
     border-radius: 10px;
-    color: white;
+    background: var(--primary-fill, #1D2357);
+    color: var(--on-primary, #ffffff);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;

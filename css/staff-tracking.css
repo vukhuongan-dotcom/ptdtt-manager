@@ -70,7 +70,7 @@
 
 .st-chip-active {
     background: #dcfce7;
-    color: #16a34a;
+    color: #15803d;
     border: 1.5px solid #86efac;
 }
 
@@ -82,19 +82,19 @@
 
 .st-chip-sick {
     background: #fee2e2;
-    color: #dc2626;
+    color: #b91c1c;
     border: 1.5px solid #fca5a5;
 }
 
 .st-chip-business {
     background: #ede9fe;
-    color: #7c3aed;
+    color: #6d28d9;
     border: 1.5px solid #c4b5fd;
 }
 
 .st-chip-dayoff {
     background: #dbeafe;
-    color: #2563eb;
+    color: #1d4ed8;
     border: 1.5px solid #93c5fd;
 }
 
@@ -219,6 +219,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
+    background: var(--primary-fill, #1D2357);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -288,7 +289,7 @@
 /* Active — subtle green check */
 .st-cell.st-status-active .st-status-label {
     background: #dcfce7;
-    color: #16a34a;
+    color: #15803d;
     border: 1px solid #86efac;
     font-size: 0.75rem;
 }
@@ -309,7 +310,7 @@
 }
 .st-cell.st-status-sick .st-status-label {
     background: #fecaca;
-    color: #dc2626;
+    color: #991b1b;
     border: 1.5px solid #f87171;
 }
 
