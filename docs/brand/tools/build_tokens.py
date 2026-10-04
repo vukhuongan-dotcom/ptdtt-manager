@@ -22,7 +22,7 @@ light={
  '--surgery-mo-bg':RO[100],'--surgery-mo-fg':RO[800],'--surgery-noisoi-bg':G[100],'--surgery-noisoi-fg':G[800],
  '--surgery-nsth-bg':V[100],'--surgery-nsth-fg':V[800],'--surgery-robot-bg':N[100],'--surgery-robot-fg':N[800],
  # surgery type (loại mổ)
- '--stype-chuongtrinh':O[600],'--stype-yeucau':A[500],'--stype-bankhan':R[700],'--stype-robot':N[800],
+ '--stype-chuongtrinh':O[600],'--stype-yeucau':'#FFC107','--stype-bankhan':R[700],'--stype-robot':N[800],
  '--stype-chuongtrinh-on':'#FFFFFF','--stype-yeucau-on':N[950],'--stype-bankhan-on':'#FFFFFF','--stype-robot-on':'#FFFFFF',
  # charts
  '--chart-1':N[800],'--chart-2':O[500],'--chart-3':L[600],'--chart-4':A[800],'--chart-5':RO[500],'--chart-6':S[500],
@@ -40,7 +40,7 @@ dark={
  '--surgery-mo-on':'#FFFFFF','--surgery-noisoi-on':N[950],'--surgery-nsth-on':'#FFFFFF','--surgery-robot-on':N[950],
  '--surgery-mo-bg':'#3A1424','--surgery-mo-fg':RO[300],'--surgery-noisoi-bg':'#10291A','--surgery-noisoi-fg':G[300],
  '--surgery-nsth-bg':'#271A47','--surgery-nsth-fg':V[300],'--surgery-robot-bg':'#1E2547','--surgery-robot-fg':N[300],
- '--stype-chuongtrinh':O[600],'--stype-yeucau':A[500],'--stype-bankhan':R[600],'--stype-robot':N[300],
+ '--stype-chuongtrinh':O[600],'--stype-yeucau':'#FFC107','--stype-bankhan':R[600],'--stype-robot':N[300],
  '--stype-chuongtrinh-on':'#FFFFFF','--stype-yeucau-on':N[950],'--stype-bankhan-on':'#FFFFFF','--stype-robot-on':N[950],
  '--chart-1':N[500],'--chart-2':O[300],'--chart-3':L[200],'--chart-4':A[500],'--chart-5':RO[400],'--chart-6':S[400],
 }

@@ -112,7 +112,7 @@ Giữ sắc độ cũ và luôn kèm chữ. Mỗi màu có biến `-on` cho màu
 | Loại mổ (surgeryType) | Cũ (chữ trắng) | Mới | Chữ trên nền |
 | :--- | :--- | :--- | :--- |
 | Chương trình | `#3b82f6` (3,68 ❌) | `#1878B4` ocean-600 | trắng 4,79 |
-| Yêu cầu | `#f59e0b` (2,15 ❌) | `#BF7900` amber-500 | **navy** 4,92 |
+| Yêu cầu | `#f59e0b` (2,15 ❌) | `#FFC107` vàng tươi (Material Yellow) | **navy** 10,65 (WCAG AAA) |
 | Bán khẩn | `#ef4444` (3,76 ❌) | `#AC011A` red-700 | trắng 7,57 |
 | Robot | `#1e3a5f` | `#333C83` navy-800 | trắng 9,93 |
 

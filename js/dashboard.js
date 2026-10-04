@@ -559,7 +559,7 @@ const DashboardPage = {
 
         // 3. Draw Stacked Bars (Colors from CSS tokens)
         const seriesColors = {
-            yeucau: Utils.cssVar('--stype-yeucau') || '#BF7900',
+            yeucau: Utils.cssVar('--stype-yeucau') || '#FFC107',
             chuongtrinh: Utils.cssVar('--stype-chuongtrinh') || '#1878B4',
             robot: Utils.cssVar('--stype-robot') || (isDark ? '#B2C1FD' : '#333C83'),
             bankhan: Utils.cssVar('--stype-bankhan') || (isDark ? '#CB242D' : '#AC011A')
@@ -748,19 +748,19 @@ const DashboardPage = {
                     </div>
                     <div class="trend-tooltip-breakdown">
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#f59e0b"></span> PT Yêu cầu</span>
+                            <span><span class="trend-legend-dot" style="background:var(--stype-yeucau)"></span> PT Yêu cầu</span>
                             <strong>${m.byType.yeucau} <small>(${m.total > 0 ? (m.byType.yeucau/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#3b82f6"></span> PT Chương trình</span>
+                            <span><span class="trend-legend-dot" style="background:var(--stype-chuongtrinh)"></span> PT Chương trình</span>
                             <strong>${m.byType.chuongtrinh} <small>(${m.total > 0 ? (m.byType.chuongtrinh/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#1e3a5f"></span> PT Robot</span>
+                            <span><span class="trend-legend-dot" style="background:var(--stype-robot)"></span> PT Robot</span>
                             <strong>${m.byType.robot} <small>(${m.total > 0 ? (m.byType.robot/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                         <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:#ef4444"></span> Bán khẩn</span>
+                            <span><span class="trend-legend-dot" style="background:var(--stype-bankhan)"></span> Bán khẩn</span>
                             <strong>${m.byType.bankhan} <small>(${m.total > 0 ? (m.byType.bankhan/m.total*100).toFixed(1) : 0}%)</small></strong>
                         </div>
                     </div>

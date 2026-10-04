@@ -7,7 +7,7 @@ const SURGERY_TYPES = {
     },
     'yeucau': {
         label: 'Yêu cầu',
-        get color() { return Utils.cssVar('--stype-yeucau') || '#BF7900'; },
+        get color() { return Utils.cssVar('--stype-yeucau') || '#FFC107'; },
         get onColor() { return Utils.cssVar('--stype-yeucau-on') || '#111542'; }
     },
     'bankhan': {

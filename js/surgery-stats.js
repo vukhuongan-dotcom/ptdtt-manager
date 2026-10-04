@@ -1292,8 +1292,10 @@ const SurgeryStatsPage = {
             </div>
             ${types.map(t => {
                 const info = SURGERY_TYPES[t];
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const valColor = (t === 'yeucau' && !isDark) ? '#9B6200' : info.color;
                 return `<div class="sstats-summary-card">
-                    <div class="sstats-summary-value" style="color:${info.color}">${grandByType[t]}</div>
+                    <div class="sstats-summary-value" style="color:${valColor}">${grandByType[t]}</div>
                     <div class="sstats-summary-label">${info.label}</div>
                 </div>`;
             }).join('')}
@@ -1430,7 +1432,13 @@ const SurgeryStatsPage = {
                     <strong>${docStat.doctor.name}</strong> — ${docStat.total} ca mổ chính${docStat.assistTotal > 0 ? ` · <span style="color:#6366f1;font-weight:700">${docStat.assistTotal} ca phụ mổ</span>` : ''}
                 </div>
                 <div class="sstats-detail-chips">
-                    ${Object.keys(SURGERY_TYPES).map(t => docStat.byType[t] > 0 ? `<span class="sstats-type-chip" style="background:${SURGERY_TYPES[t].color}20;color:${SURGERY_TYPES[t].color}">${SURGERY_TYPES[t].label}: ${docStat.byType[t]}</span>` : '').join('')}
+                    ${Object.keys(SURGERY_TYPES).map(t => {
+                        if (docStat.byType[t] <= 0) return '';
+                        const st = SURGERY_TYPES[t];
+                        const bg = t === 'yeucau' ? st.color : `${st.color}20`;
+                        const fg = t === 'yeucau' ? st.onColor : st.color;
+                        return `<span class="sstats-type-chip" style="background:${bg};color:${fg};font-weight:600">${st.label}: ${docStat.byType[t]}</span>`;
+                    }).join('')}
                     ${docStat.assistTotal > 0 ? `<span class="sstats-type-chip" style="background:#6366f120;color:#6366f1">Phụ mổ: ${docStat.assistTotal}</span>` : ''}
                 </div>
             </div>
