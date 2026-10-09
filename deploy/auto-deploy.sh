@@ -31,8 +31,9 @@ if git diff "$LOCAL" "$REMOTE" --name-only | grep -q "requirements.txt"; then
     "$APP_DIR/venv/bin/pip" install -r requirements.txt --quiet
 fi
 
-# Fix permissions
-chown -R www-data:www-data "$APP_DIR"
+# Fix permissions: ptdtt owns application and data files, www-data has read access for nginx
+chown -R ptdtt:www-data "$APP_DIR"
+chmod -R 775 "$APP_DIR"
 
 # Restart service
 systemctl restart ptdtt

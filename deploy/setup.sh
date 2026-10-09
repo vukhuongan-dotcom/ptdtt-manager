@@ -50,8 +50,12 @@ echo "   ✅ Installed: flask, gunicorn"
 
 # ─── 5. Permissions ───
 echo "🔐 [5/7] Cấu hình quyền..."
-chown -R www-data:www-data "$APP_DIR"
-chown -R www-data:www-data /var/log/ptdtt
+id -u ptdtt &>/dev/null || useradd -r -s /bin/false ptdtt
+usermod -a -G www-data ptdtt
+usermod -a -G ptdtt www-data
+chown -R ptdtt:www-data "$APP_DIR"
+chmod -R 775 "$APP_DIR"
+chown -R ptdtt:www-data /var/log/ptdtt
 chmod +x "$APP_DIR/deploy/auto-deploy.sh"
 chmod +x "$APP_DIR/deploy/ssl-setup.sh"
 
