@@ -283,11 +283,13 @@
 
 ---
 
-## 🛡️ PHẦN III: QUY CHUẨN TỰ ĐỘNG GHI NHẬN LỖI (SOP CONTINUOUS LEARNING)
+## 🛡️ PHẦN III: QUY CHUẨN TỰ ĐỘNG GHI NHẬN 100% LỖI & TÍNH NĂNG MỚI (SOP CONTINUOUS LEARNING & FEATURE REGISTRY)
 
-Để đảm bảo hệ thống không bao giờ lặp lại các sai lầm cũ:
-1. **Kích hoạt tự động:** Mỗi khi Agent hoàn tất điều chỉnh một lỗi (bug fix) trong dự án `ptdtt-manager`, Agent **BẮT BUỘC** tự động mở file này và chèn thêm 1 hàng mới vào cuối Bảng Ma Trận.
-2. **Định dạng chuẩn:** Gồm STT tiếp theo (`BUG-154`, `BUG-155`...), Ngày, Commit Hash, Phân hệ, Triệu chứng, Nguyên nhân gốc rễ và Giải pháp xử lý.
-3. **Đồng bộ song hành:** Cập nhật đồng thời tại:
-   - `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`
+Để đảm bảo hệ thống không bao giờ lặp lại các sai lầm cũ và lưu trữ trọn vẹn lịch sử tiến hóa của sản phẩm:
+1. **Kích hoạt tự động 100%:** Mỗi khi Agent hoàn tất điều chỉnh một **LỖI (BUG)** hoặc triển khai một **TÍNH NĂNG MỚI (FEAT)** trong dự án `ptdtt-manager`, Agent **BẮT BUỘC 100%** tự động mở bảng này và chèn thêm 1 hàng mới vào cuối Bảng Ma Trận ngay trong đợt commit/deploy tương ứng, tuyệt đối không được bỏ sót.
+2. **Định dạng chuẩn:**
+   - **Mã số tiếp nối liên tục:** `BUG-xxx` (cho sửa lỗi) hoặc `FEAT-xxx` (cho tính năng mới) dùng chung chuỗi số tăng dần (`161`, `162`, `163`, `164`...).
+   - **Thông tin bắt buộc:** STT, Mã số, Ngày (`YYYY-MM-DD`), Commit Hash kèm link GitHub, Phân hệ, Triệu chứng/Mục tiêu tính năng, Nguyên nhân gốc rễ/Bối cảnh kỹ thuật, và Giải pháp/Kiến trúc xử lý chi tiết (kèm version build `vYYMMDDHHMM`).
+3. **Đồng bộ song hành 100%:** Cập nhật đồng thời tại 2 văn bản Single Source of Truth:
    - `docs/BUG_FIX_REGISTRY.md`
+   - `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`
