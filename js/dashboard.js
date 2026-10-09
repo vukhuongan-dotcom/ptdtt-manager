@@ -362,7 +362,7 @@ const DashboardPage = {
                     const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
                     return `
                 <div class="duty-item">
-                    <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
+                    ${Utils.renderAvatar(item.staff, 'sm', { extraClass: 'duty-avatar', extraStyle: `background:${_c[i % _c.length]}` })}
                     <div class="duty-info">
                         <div class="duty-name">${item.staff.title ? item.staff.title + ' ' : ''}${item.staff.name}</div>
                         <div class="duty-role">${item.dutyType}</div>
@@ -379,7 +379,7 @@ const DashboardPage = {
                     const statusInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
                     return `
                 <div class="duty-item">
-                    <div class="duty-avatar" style="background:${_c[i % _c.length]}">${Utils.getInitials(item.staff.name)}</div>
+                    ${Utils.renderAvatar(item.staff, 'sm', { extraClass: 'duty-avatar', extraStyle: `background:${_c[i % _c.length]}` })}
                     <div class="duty-info">
                         <div class="duty-name">${item.staff.title ? item.staff.title + ' ' : ''}${item.staff.name}</div>
                         <div class="duty-role">${item.dutyType}</div>
@@ -1019,7 +1019,7 @@ const DashboardPage = {
                 <div class="birthday-avatars-wrap">
                     ${staff.map(s => `
                         <div class="birthday-person-pill" onclick="DashboardPage.triggerConfetti('${tier}')" title="Sinh nhật ${s.name} (${dateStr}) 🎉">
-                            <div class="birthday-avatar-sm" style="background:${s.color || (tier === 'chief' ? '#d97706' : '#ec4899')}">${Utils.getInitials(s.name)}</div>
+                            ${Utils.renderAvatar(s, 'sm', { extraClass: 'birthday-avatar-sm', color: s.color || (tier === 'chief' ? '#d97706' : '#ec4899') })}
                             <span class="birthday-person-name">${s.name} <small style="color:var(--text-muted);font-weight:normal">(${dateStr})</small></span>
                             <span class="birthday-crown">${tier === 'chief' ? '👑✨' : '👑'}</span>
                         </div>

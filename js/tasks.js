@@ -129,7 +129,7 @@ const TasksPage = {
             </div>
             <div class="task-card-meta">
                 <div class="task-card-assignee">
-                    <div class="task-card-assignee-avatar" style="background:${Utils.getStaffColor(t.assignee)}">${Utils.getInitials(Utils.getStaffName(t.assignee))}</div>
+                    ${Utils.renderAvatar(t.assignee, 'xs', { extraClass: 'task-card-assignee-avatar', name: Utils.getStaffName(t.assignee), color: Utils.getStaffColor(t.assignee) })}
                     ${Utils.getStaffName(t.assignee)}
                 </div>
                 <span class="task-card-deadline" style="${t.status === 'done' ? 'color:var(--success)' : deadlineClass}">${t.status === 'done' && t.completedAt ? '✅ ' + Utils.formatDateShort(t.completedAt) : deadlineText}</span>

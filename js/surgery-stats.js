@@ -1339,7 +1339,7 @@ const SurgeryStatsPage = {
                             <td class="sstats-td-stt">${idx + 1}</td>
                             <td>
                                 <div class="sstats-td-name">
-                                    <div class="sstats-doc-avatar" style="background:${docStat.doctor.color || 'var(--primary-fill)'}">${docStat.doctor.name.split(' ').pop().charAt(0)}</div>
+                                    ${Utils.renderAvatar(docStat.doctor, 'sm', { extraClass: 'sstats-doc-avatar' })}
                                     <div>
                                         <div class="sstats-doc-name">${docStat.doctor.name} ${extBadge}</div>
                                         <div class="sstats-doc-role">${docStat.doctor.role}</div>

@@ -71,7 +71,7 @@ const StaffTrackingPage = {
 
         const absentCards = absent.length ? absent.map(a => `
             <div class="st-absent-item" style="background:${this._statusColor(a.status)}12;border:1px solid ${this._statusColor(a.status)}30">
-                <div class="st-staff-avatar st-absent-avatar-wrapper" style="background:${a.color}">${Utils.getInitials(a.name)}</div>
+                ${Utils.renderAvatar(a, 'sm', { extraClass: 'st-staff-avatar st-absent-avatar-wrapper' })}
                 <div class="st-absent-info">
                     <div class="st-absent-name">${a.name}</div>
                     <div class="st-absent-role">${a.role}</div>
@@ -165,7 +165,7 @@ const StaffTrackingPage = {
             return `<tr${isAbsentToday ? ' class="st-absent-today"' : ''}>
                 <td class="st-staff-cell">
                     <div class="st-staff-info">
-                        <div class="st-staff-avatar" style="background:${s.color}">${Utils.getInitials(s.name)}</div>
+                        ${Utils.renderAvatar(s, 'sm', { extraClass: 'st-staff-avatar' })}
                         <div>
                             <div class="st-staff-name">${s.name}</div>
                             <div class="st-staff-role">${s.role}</div>

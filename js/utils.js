@@ -43,6 +43,41 @@ const Utils = {
         return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
     },
 
+    renderAvatar(staffOrId, size = 'sm', options = {}) {
+        const isDeparted = Boolean(options.departed);
+        let staff = staffOrId;
+        if (typeof staffOrId === 'number' || (typeof staffOrId === 'string' && !isNaN(Number(staffOrId)))) {
+            const sid = Number(staffOrId);
+            staff = (typeof Store !== 'undefined' && Store.getById)
+                ? (Store.getById('staff', sid) || { id: sid, name: Utils.getStaffName(sid), color: Utils.getStaffColor(sid) })
+                : { id: sid };
+        } else if (!staff && options.name) {
+            staff = { name: options.name, color: options.color || '#1D2357' };
+        }
+
+        const sid = staff ? (staff.id || staff.staffId) : null;
+        const hasPhoto = !isDeparted && sid && (typeof STAFF_PHOTO_IDS !== 'undefined') && STAFF_PHOTO_IDS.has(Number(sid));
+        const name = (staff && staff.name) || options.name || '';
+        const initials = Utils.getInitials(name || 'NV');
+        const color = (staff && staff.color) || options.color || '#1D2357';
+        const extraClass = options.extraClass ? ' ' + options.extraClass : '';
+        const extraStyle = options.extraStyle ? options.extraStyle : '';
+
+        const pixelSizes = { xs: 24, sm: 34, md: 42, lg: 56 };
+        const px = pixelSizes[size] || 34;
+        const filterStyle = isDeparted ? 'filter:grayscale(50%);' : '';
+        const combinedStyle = extraStyle + (filterStyle ? (extraStyle ? ';' : '') + filterStyle : '');
+
+        const fallbackHtml = `<div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}${extraClass}" style="background:${color}${combinedStyle ? ';' + combinedStyle : ''}">${initials}</div>`;
+
+        if (!hasPhoto) {
+            return fallbackHtml;
+        }
+
+        const safeName = (name || '').replace(/"/g, '&quot;');
+        return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();if(window.StaffPage&&StaffPage.showPhotoModal){StaffPage.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
+    },
+
     formatDate(dateStr) {
         if (!dateStr) return '—';
         const parts = String(dateStr).split('T')[0].split('-');

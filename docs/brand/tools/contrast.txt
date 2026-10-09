@@ -41,8 +41,8 @@ light --surgery-robot-on       #FFFFFF on --surgery-robot      #333C83  9.93  OK
 light --surgery-robot-fg       #333C83 on --surgery-robot-bg   #E7ECFF  8.44  OK
 light --stype-chuongtrinh-on   #FFFFFF on --stype-chuongtrinh  #1878B4  4.79  OK
 light --stype-chuongtrinh      #1878B4 on --surface-1          #FFFFFF  4.79  OK
-light --stype-yeucau-on        #111542 on --stype-yeucau       #BF7900  4.92  OK
-light --stype-yeucau           #BF7900 on --surface-1          #FFFFFF  3.53  OK
+light --stype-yeucau-on        #111542 on --stype-yeucau       #FFC107  10.65  OK
+light --stype-yeucau           #FFC107 on --surface-1          #FFFFFF  1.63  FAIL<3.0
 light --stype-bankhan-on       #FFFFFF on --stype-bankhan      #AC011A  7.57  OK
 light --stype-bankhan          #AC011A on --surface-1          #FFFFFF  7.57  OK
 light --stype-robot-on         #FFFFFF on --stype-robot        #333C83  9.93  OK
@@ -96,8 +96,8 @@ dark  --surgery-robot-on       #111542 on --surgery-robot      #B2C1FD  9.87  OK
 dark  --surgery-robot-fg       #B2C1FD on --surgery-robot-bg   #1E2547  8.46  OK
 dark  --stype-chuongtrinh-on   #FFFFFF on --stype-chuongtrinh  #1878B4  4.79  OK
 dark  --stype-chuongtrinh      #1878B4 on --surface-1          #141A30  3.59  OK
-dark  --stype-yeucau-on        #111542 on --stype-yeucau       #BF7900  4.92  OK
-dark  --stype-yeucau           #BF7900 on --surface-1          #141A30  4.88  OK
+dark  --stype-yeucau-on        #111542 on --stype-yeucau       #FFC107  10.65  OK
+dark  --stype-yeucau           #FFC107 on --surface-1          #141A30  10.56  OK
 dark  --stype-bankhan-on       #FFFFFF on --stype-bankhan      #CB242D  5.48  OK
 dark  --stype-bankhan          #CB242D on --surface-1          #141A30  3.14  OK
 dark  --stype-robot-on         #111542 on --stype-robot        #B2C1FD  9.87  OK
@@ -108,4 +108,4 @@ dark  --chart-3                #C6E8BD on --surface-1          #141A30  12.85  O
 dark  --chart-4                #BF7900 on --surface-1          #141A30  4.88  OK
 dark  --chart-5                #FF708D on --surface-1          #141A30  6.52  OK
 dark  --chart-6                #A0A6B5 on --surface-1          #141A30  7.06  OK
-FAILS 0 / 110
+FAILS 1 / 110

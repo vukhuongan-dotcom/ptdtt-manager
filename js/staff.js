@@ -158,7 +158,7 @@ const StaffPage = {
                         <tr>
                             <td>
                                 <div class="staff-name-cell">
-                                    <div class="staff-avatar-sm" style="background:${s.color}">${Utils.getInitials(s.name)}</div>
+                                    ${Utils.renderAvatar(s, 'sm')}
                                     <div class="staff-name-col">
                                         <span class="staff-fullname">${s.name}</span>
                                         ${eff.status !== 'active' ? `<span class="staff-status-inline-tag ${eff.status}">${STAFF_STATUSES[eff.status]?.abbr || ''}</span>` : ''}
@@ -203,9 +203,7 @@ const StaffPage = {
                 return `
                 <div class="staff-card-item">
                     <div class="staff-card-top">
-                        <div class="staff-avatar-md" style="background:${s.color}">
-                            ${Utils.getInitials(s.name)}
-                        </div>
+                        ${Utils.renderAvatar(s, 'md')}
                         <div class="staff-card-main-info">
                             <div class="staff-card-name-row">
                                 <span class="staff-card-fullname">${s.name}</span>
@@ -302,7 +300,7 @@ const StaffPage = {
                         <td class="td-center-muted">${idx + 1}</td>
                         <td>
                             <div class="staff-name-cell">
-                                <div class="staff-avatar-sm" style="background:${d.color || '#6366f1'}">${Utils.getInitials(d.name)}</div>
+                                ${Utils.renderAvatar(d, 'sm', { departed: true })}
                                 <span class="staff-fullname">${d.name}</span>
                             </div>
                         </td>
@@ -326,7 +324,7 @@ const StaffPage = {
             ${filtered.length ? filtered.map(d => `
             <div class="staff-card-item">
                 <div class="staff-card-top">
-                    <div class="staff-avatar-md" style="background:${d.color || '#6366f1'}">${Utils.getInitials(d.name)}</div>
+                    ${Utils.renderAvatar(d, 'md', { departed: true })}
                     <div class="staff-card-main-info">
                         <div class="staff-card-name-row">
                             <span class="staff-card-fullname">${d.name}</span>
@@ -821,7 +819,7 @@ const StaffPage = {
                         <td class="departed-td-center">${idx + 1}</td>
                         <td>
                             <div class="staff-name-cell">
-                                <div class="staff-avatar-sm" style="background:${s.color || '#94a3b8'};filter:grayscale(50%)">${Utils.getInitials(s.name)}</div>
+                                ${Utils.renderAvatar(s, 'sm', { departed: true })}
                                 <span class="staff-fullname">${s.name}</span>
                             </div>
                         </td>
@@ -844,7 +842,7 @@ const StaffPage = {
             ${departed.length ? departed.map((s, idx) => `
             <div class="staff-card-item departed-card">
                 <div class="staff-card-top">
-                    <div class="staff-avatar-md" style="background:${s.color || '#94a3b8'};filter:grayscale(50%)">${Utils.getInitials(s.name)}</div>
+                    ${Utils.renderAvatar(s, 'md', { departed: true })}
                     <div class="staff-card-main-info">
                         <div class="staff-card-name-row">
                             <span class="staff-card-fullname">${s.name}</span>
@@ -1062,7 +1060,7 @@ const StaffPage = {
                 const s = allStaff.find(x => x.id === sid);
                 if (!s) return '';
                 return `<div class="team-member-item">
-                    <div class="team-member-avatar" style="background:${s.color || '#6366f1'}">${Utils.getInitials(s.name)}</div>
+                    ${Utils.renderAvatar(s, 'sm')}
                     <div class="team-member-info">
                         <span class="team-member-name">${s.name}</span>
                         <span class="team-member-title">${s.title || ''}</span>
@@ -1309,5 +1307,79 @@ const StaffPage = {
             App.renderCurrentPage();
             Toast.success(`Đã xoá tổ ${t.name}`);
         }
+    },
+
+    showPhotoModal(staffId, triggerEl) {
+        const id = Number(staffId);
+        const s = (typeof Store !== 'undefined' && Store.getById ? Store.getById('staff', id) : null)
+               || (typeof DATA !== 'undefined' && DATA.staff ? DATA.staff.find(x => x.id === id) : null);
+        const name = s ? s.name : 'Nhân sự #' + id;
+        const title = (s && s.title) ? s.title : '';
+        const role = (s && s.role) ? s.role : '';
+        const phone = (s && s.phone) ? s.phone : '';
+        const email = (s && s.email) ? s.email : '';
+        
+        const existing = document.getElementById('staff-photo-modal');
+        if (existing) existing.remove();
+
+        const safeName = (name || '').replace(/"/g, '&quot;');
+        const modalHtml = `
+        <div class="staff-photo-modal-backdrop" id="staff-photo-modal" role="dialog" aria-modal="true" aria-labelledby="staff-modal-name">
+            <div class="staff-photo-modal-box">
+                <button type="button" class="staff-photo-modal-close" id="staff-modal-close" aria-label="Đóng (Esc)">✕</button>
+                <div class="staff-photo-modal-img-wrap">
+                    <img src="img/staff/${id}-lg.webp" alt="Ảnh chân dung ${safeName}" class="staff-photo-modal-img" loading="eager" onerror="this.onerror=null;this.src='img/staff/${id}.webp'">
+                </div>
+                <div class="staff-photo-modal-info">
+                    <h3 class="staff-photo-modal-name" id="staff-modal-name">${title ? title + ' ' : ''}${safeName}</h3>
+                    <p class="staff-photo-modal-role">${role}</p>
+                    ${phone ? `<p class="staff-photo-modal-contact">📞 <a href="tel:${phone}">${phone}</a></p>` : ''}
+                    ${email ? `<p class="staff-photo-modal-contact">✉️ <a href="mailto:${email}">${email}</a></p>` : ''}
+                </div>
+            </div>
+        </div>`;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = document.getElementById('staff-photo-modal');
+        const closeBtn = document.getElementById('staff-modal-close');
+        
+        const previousActive = triggerEl || document.activeElement;
+        closeBtn.focus();
+
+        const closeModal = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            modal.classList.add('closing');
+            setTimeout(() => {
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+                if (previousActive && typeof previousActive.focus === 'function') {
+                    previousActive.focus();
+                }
+            }, 150);
+        };
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                e.preventDefault();
+                closeModal();
+            } else if (e.key === 'Tab') {
+                const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                if (!focusable.length) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
     }
 };

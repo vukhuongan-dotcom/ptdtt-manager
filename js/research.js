@@ -175,7 +175,7 @@ const ResearchPage = {
                                     <td class="rsch-stt">${idx + 1}</td>
                                     <td class="rsch-doctor">
                                         <div class="rsch-doc-cell">
-                                            <span class="rsch-doc-avatar">${initials}</span>
+                                            ${Utils.renderAvatar({ id: item.doctorId, name: item.doctorName }, 'xs', { extraClass: 'rsch-doc-avatar' })}
                                             <span>${item.doctorName}</span>
                                         </div>
                                     </td>
@@ -213,7 +213,7 @@ const ResearchPage = {
                     <div class="rsch-card-item rsch-card-${item.status}">
                         <div class="rsch-card-header">
                             <div class="rsch-card-doc-info">
-                                <span class="rsch-doc-avatar">${initials}</span>
+                                ${Utils.renderAvatar({ id: item.doctorId, name: item.doctorName }, 'xs', { extraClass: 'rsch-doc-avatar' })}
                                 <div class="rsch-doc-text">
                                     <span class="rsch-doc-name">${item.doctorName}</span>
                                     <span class="rsch-card-idx">#${idx + 1}</span>

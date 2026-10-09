@@ -111,7 +111,7 @@ const RoomsPage = {
                                         const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'HV' ? 'room-role-hv' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
                                         return `
                                         <div class="room-doctor">
-                                            <div class="room-doc-avatar" style="background:${staff.color}">${staff.name.split(' ').pop().charAt(0)}</div>
+                                            ${Utils.renderAvatar(staff, 'sm', { extraClass: 'room-doc-avatar' })}
                                             <div class="room-doc-info">
                                                 <div class="room-doc-name">${fullName}</div>
                                                 <div class="room-doc-role ${roleBadge}">${roleLabel}</div>
@@ -459,7 +459,7 @@ const RoomsPage = {
                                                 const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'HV' ? 'room-role-hv' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
                                                 return `
                                                 <div class="room-doctor">
-                                                    <div class="room-doc-avatar" style="background:${staff.color}">${staff.name.split(' ').pop().charAt(0)}</div>
+                                                    ${Utils.renderAvatar(staff, 'sm', { extraClass: 'room-doc-avatar' })}
                                                     <div class="room-doc-info">
                                                         <div class="room-doc-name">${fullName}</div>
                                                         <div class="room-doc-role ${roleBadge}">${roleLabel}</div>

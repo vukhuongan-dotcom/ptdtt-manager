@@ -410,7 +410,7 @@ const App = {
                 }
             </button>
             ${Notifications.renderBellButton('mobile')}
-            <div class="mobile-user-avatar" style="background:${session.color || 'var(--gradient-accent)'}">${Utils.getInitials(session.name)}</div>
+            ${Utils.renderAvatar({ id: session.staffId, name: session.name, color: session.color || 'var(--gradient-accent)' }, 'sm', { extraClass: 'mobile-user-avatar' })}
             <span class="mobile-user-name">${session.name}</span>
             <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đăng xuất">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -450,7 +450,7 @@ const App = {
                 <span class="notif-bell-label">Thông báo</span>
             </div>
             <div class="user-info" id="user-info-toggle">
-                <div class="user-avatar" style="background:${session.color || 'var(--gradient-accent)'}">${Utils.getInitials(session.name)}</div>
+                ${Utils.renderAvatar({ id: session.staffId, name: session.name, color: session.color || 'var(--gradient-accent)' }, 'sm', { extraClass: 'user-avatar' })}
                 <div class="user-details">
                     <span class="user-name">${session.title} ${session.name}</span>
                     <span class="user-role">${session.role}</span>
