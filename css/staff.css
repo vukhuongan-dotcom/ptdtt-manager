@@ -795,6 +795,8 @@
     color: var(--text-secondary);
     border-top: 1px dashed var(--border);
     background: rgba(0,0,0,0.015);
+    white-space: pre-line;
+    line-height: 1.5;
 }
 [data-theme="dark"] .team-card-note { background: rgba(255,255,255,0.02); }
 

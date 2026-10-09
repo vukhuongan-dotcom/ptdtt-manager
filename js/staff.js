@@ -1140,7 +1140,7 @@ const StaffPage = {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
-                    <input class="form-input" name="note" value="${t?.note || ''}" placeholder="Ghi chú thêm nếu có...">
+                    <textarea class="form-input" name="note" rows="4" placeholder="Ghi chú thêm nếu có..." style="resize:vertical">${t?.note || ''}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Thứ tự hiển thị</label>
@@ -1213,7 +1213,7 @@ const StaffPage = {
                 </div>
                 <div style="padding:12px 16px">
                     ${memberRows || '<div style="font-size:12px;color:#94a3b8;font-style:italic">Chưa có thành viên</div>'}
-                    ${t.note ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:11px;color:#64748b">📝 ${t.note}</div>` : ''}
+                    ${t.note ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:11px;color:#64748b;white-space:pre-line;line-height:1.4">📝 ${t.note}</div>` : ''}
                 </div>
             </div>`;
         }).join('');
