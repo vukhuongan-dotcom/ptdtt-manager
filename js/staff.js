@@ -1311,43 +1311,170 @@ const StaffPage = {
 
     showPhotoModal(staffId, triggerEl) {
         const id = Number(staffId);
-        const s = (typeof Store !== 'undefined' && Store.getById ? Store.getById('staff', id) : null)
-               || (typeof DATA !== 'undefined' && DATA.staff ? DATA.staff.find(x => x.id === id) : null);
-        const name = s ? s.name : 'Nhân sự #' + id;
-        const title = (s && s.title) ? s.title : '';
-        const role = (s && s.role) ? s.role : '';
-        const phone = (s && s.phone) ? s.phone : '';
-        const email = (s && s.email) ? s.email : '';
+        const isAlbumMode = (typeof App !== 'undefined' && App.currentPage === 'staff');
+        
+        let albumList = [];
+        if (isAlbumMode) {
+            const domButtons = Array.from(document.querySelectorAll('#main-content .avatar-btn[data-staff-id]'));
+            const seen = new Set();
+            domButtons.forEach(btn => {
+                const sid = Number(btn.getAttribute('data-staff-id'));
+                if (sid && !seen.has(sid)) {
+                    seen.add(sid);
+                    albumList.push(sid);
+                }
+            });
+        }
+        
+        let currentIndex = albumList.indexOf(id);
+        if (currentIndex === -1) {
+            if (isAlbumMode && albumList.length > 0) {
+                albumList.unshift(id);
+                currentIndex = 0;
+            } else {
+                albumList = [id];
+                currentIndex = 0;
+            }
+        }
         
         const existing = document.getElementById('staff-photo-modal');
         if (existing) existing.remove();
 
-        const safeName = (name || '').replace(/"/g, '&quot;');
+        const hasNav = isAlbumMode && albumList.length > 1;
+
         const modalHtml = `
         <div class="staff-photo-modal-backdrop" id="staff-photo-modal" role="dialog" aria-modal="true" aria-labelledby="staff-modal-name">
-            <div class="staff-photo-modal-box">
+            <div class="staff-photo-modal-box" id="staff-modal-box">
+                <span class="staff-photo-modal-counter" id="staff-modal-counter" aria-live="polite" style="${hasNav ? '' : 'display:none;'}"></span>
                 <button type="button" class="staff-photo-modal-close" id="staff-modal-close" aria-label="Đóng (Esc)">✕</button>
-                <div class="staff-photo-modal-img-wrap">
-                    <img src="img/staff/${id}-lg.webp" alt="Ảnh chân dung ${safeName}" class="staff-photo-modal-img" loading="eager" onerror="this.onerror=null;this.src='img/staff/${id}.webp'">
+                <div class="staff-photo-modal-img-wrap" id="staff-modal-img-wrap">
+                    ${hasNav ? `<button type="button" class="staff-photo-modal-nav staff-photo-modal-prev" id="staff-modal-prev" aria-label="Người trước">‹</button>` : ''}
+                    <img id="staff-modal-img" alt="" class="staff-photo-modal-img" loading="eager">
+                    ${hasNav ? `<button type="button" class="staff-photo-modal-nav staff-photo-modal-next" id="staff-modal-next" aria-label="Người sau">›</button>` : ''}
                 </div>
                 <div class="staff-photo-modal-info">
-                    <h3 class="staff-photo-modal-name" id="staff-modal-name">${title ? title + ' ' : ''}${safeName}</h3>
-                    <p class="staff-photo-modal-role">${role}</p>
-                    ${phone ? `<p class="staff-photo-modal-contact">📞 <a href="tel:${phone}">${phone}</a></p>` : ''}
-                    ${email ? `<p class="staff-photo-modal-contact">✉️ <a href="mailto:${email}">${email}</a></p>` : ''}
+                    <h3 class="staff-photo-modal-name" id="staff-modal-name"></h3>
+                    <p class="staff-photo-modal-role" id="staff-modal-role"></p>
+                    <p class="staff-photo-modal-contact" id="staff-modal-phone" style="display:none;">
+                        <span class="staff-contact-icon">📞</span> <a id="staff-modal-phone-link" href=""></a>
+                    </p>
+                    <p class="staff-photo-modal-contact" id="staff-modal-email" style="display:none;">
+                        <span class="staff-contact-icon">✉️</span> <a id="staff-modal-email-link" href=""></a>
+                    </p>
                 </div>
             </div>
         </div>`;
         
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         const modal = document.getElementById('staff-photo-modal');
+        const modalBox = document.getElementById('staff-modal-box');
         const closeBtn = document.getElementById('staff-modal-close');
-        
+        const prevBtn = document.getElementById('staff-modal-prev');
+        const nextBtn = document.getElementById('staff-modal-next');
+        const imgWrap = document.getElementById('staff-modal-img-wrap');
+        const imgEl = document.getElementById('staff-modal-img');
+        const counterEl = document.getElementById('staff-modal-counter');
+        const nameEl = document.getElementById('staff-modal-name');
+        const roleEl = document.getElementById('staff-modal-role');
+        const phoneEl = document.getElementById('staff-modal-phone');
+        const phoneLink = document.getElementById('staff-modal-phone-link');
+        const emailEl = document.getElementById('staff-modal-email');
+        const emailLink = document.getElementById('staff-modal-email-link');
+
         const previousActive = triggerEl || document.activeElement;
         closeBtn.focus();
 
+        const updateContent = (index) => {
+            const sid = albumList[index];
+            const s = (typeof Store !== 'undefined' && Store.getById ? Store.getById('staff', sid) : null)
+                   || (typeof DATA !== 'undefined' && DATA.staff ? DATA.staff.find(x => x.id === sid) : null);
+            const title = (s && s.title) ? s.title.trim() : '';
+            const rawName = (s && s.name) ? s.name.trim() : ('Nhân sự #' + sid);
+            const fullName = title ? (title + ' ' + rawName) : rawName;
+            const role = (s && s.role) ? s.role.trim() : '';
+            const phone = (s && s.phone) ? s.phone.trim() : '';
+            const email = (s && s.email) ? s.email.trim() : '';
+
+            nameEl.textContent = fullName;
+            roleEl.textContent = role;
+
+            if (phone) {
+                phoneLink.textContent = phone;
+                phoneLink.setAttribute('href', 'tel:' + phone);
+                phoneEl.style.display = 'block';
+            } else {
+                phoneEl.style.display = 'none';
+            }
+
+            if (email) {
+                emailLink.textContent = email;
+                emailLink.setAttribute('href', 'mailto:' + email);
+                emailEl.style.display = 'block';
+            } else {
+                emailEl.style.display = 'none';
+            }
+
+            if (hasNav && counterEl) {
+                counterEl.textContent = (index + 1) + ' / ' + albumList.length;
+            }
+
+            const dims = (typeof STAFF_PHOTO_DIMS !== 'undefined' && STAFF_PHOTO_DIMS[sid]) ? STAFF_PHOTO_DIMS[sid] : null;
+            const fallbackW = dims ? dims.w : 213;
+            const fallbackH = dims ? dims.h : 266;
+
+            imgEl.setAttribute('width', fallbackW);
+            imgEl.setAttribute('height', fallbackH);
+            imgEl.style.maxHeight = `min(70vh, ${fallbackH}px)`;
+            imgEl.setAttribute('alt', 'Ảnh chân dung ' + fullName);
+
+            imgEl.onload = () => {
+                const nw = imgEl.naturalWidth || fallbackW;
+                const nh = imgEl.naturalHeight || fallbackH;
+                imgEl.setAttribute('width', nw);
+                imgEl.setAttribute('height', nh);
+                imgEl.style.maxHeight = `min(70vh, ${nh}px)`;
+            };
+            imgEl.onerror = () => {
+                imgEl.onerror = null;
+                imgEl.src = `img/staff/${sid}.webp`;
+            };
+            imgEl.src = `img/staff/${sid}-lg.webp`;
+
+            if (hasNav) {
+                const pIdx = (index - 1 + albumList.length) % albumList.length;
+                const nIdx = (index + 1) % albumList.length;
+                new Image().src = `img/staff/${albumList[pIdx]}-lg.webp`;
+                new Image().src = `img/staff/${albumList[nIdx]}-lg.webp`;
+            }
+        };
+
+        updateContent(currentIndex);
+
+        const goTo = (newIndex) => {
+            currentIndex = (newIndex + albumList.length) % albumList.length;
+            if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches && imgWrap) {
+                imgWrap.classList.add('fading');
+                setTimeout(() => {
+                    updateContent(currentIndex);
+                    imgWrap.classList.remove('fading');
+                }, 120);
+            } else {
+                updateContent(currentIndex);
+            }
+        };
+
+        const goToPrev = () => goTo(currentIndex - 1);
+        const goToNext = () => goTo(currentIndex + 1);
+
+        if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); goToPrev(); });
+        if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); goToNext(); });
+
         const closeModal = () => {
             document.removeEventListener('keydown', handleKeyDown);
+            if (modalBox) {
+                modalBox.removeEventListener('touchstart', onTouchStart);
+                modalBox.removeEventListener('touchend', onTouchEnd);
+            }
             modal.classList.add('closing');
             setTimeout(() => {
                 if (modal.parentNode) modal.parentNode.removeChild(modal);
@@ -1361,6 +1488,12 @@ const StaffPage = {
             if (e.key === 'Escape' || e.key === 'Esc') {
                 e.preventDefault();
                 closeModal();
+            } else if (hasNav && (e.key === 'ArrowLeft' || e.key === 'Left')) {
+                e.preventDefault();
+                goToPrev();
+            } else if (hasNav && (e.key === 'ArrowRight' || e.key === 'Right')) {
+                e.preventDefault();
+                goToNext();
             } else if (e.key === 'Tab') {
                 const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
                 if (!focusable.length) return;
@@ -1376,10 +1509,42 @@ const StaffPage = {
             }
         };
 
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const onTouchStart = (e) => {
+            if (e.touches && e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        };
+        const onTouchEnd = (e) => {
+            if (!hasNav) return;
+            if (e.changedTouches && e.changedTouches.length === 1) {
+                const dx = e.changedTouches[0].clientX - touchStartX;
+                const dy = e.changedTouches[0].clientY - touchStartY;
+                if (Math.abs(dx) > 50 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
+                    if (dx > 0) {
+                        goToPrev();
+                    } else {
+                        goToNext();
+                    }
+                }
+            }
+        };
+
         document.addEventListener('keydown', handleKeyDown);
+        if (modalBox) {
+            modalBox.addEventListener('touchstart', onTouchStart, { passive: true });
+            modalBox.addEventListener('touchend', onTouchEnd, { passive: true });
+        }
         closeBtn.addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
     }
 };
+
+if (typeof window !== 'undefined') {
+    window.StaffPage = StaffPage;
+}
+

@@ -21,6 +21,7 @@ const MIME = {
     '.json': 'application/json; charset=utf-8',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
+    '.webp': 'image/webp',
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.woff2': 'font/woff2',
@@ -74,14 +75,18 @@ const server = http.createServer((req, res) => {
 
         proxyReq.on('error', (err) => {
             console.error(`[${new Date().toLocaleTimeString('vi-VN')}] Proxy error:`, err.message);
-            res.writeHead(502, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: err.message }));
+            if (!res.headersSent) {
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: err.message }));
+            }
         });
 
         proxyReq.setTimeout(15000, () => {
             proxyReq.destroy();
-            res.writeHead(504, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Timeout' }));
+            if (!res.headersSent) {
+                res.writeHead(504, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Timeout' }));
+            }
         });
 
         proxyReq.end();

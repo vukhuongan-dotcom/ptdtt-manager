@@ -75,7 +75,7 @@ const Utils = {
         }
 
         const safeName = (name || '').replace(/"/g, '&quot;');
-        return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();if(window.StaffPage&&StaffPage.showPhotoModal){StaffPage.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
+        return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" data-staff-id="${sid}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();var sp=(typeof StaffPage!=='undefined'?StaffPage:window.StaffPage);if(sp&&sp.showPhotoModal){sp.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
     },
 
     formatDate(dateStr) {
