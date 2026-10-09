@@ -92,7 +92,7 @@ const StaffPage = {
 
     // ===== INTERNAL STAFF TAB =====
     renderInternal() {
-        const allStaff = Store.getAll('staff');
+        const allStaff = Utils.sortStaffByRole(Store.getAll('staff'));
         const staff = this.getFiltered();
         const session = Auth.getSession();
         const isAdmin = session?.isAdmin;
@@ -418,7 +418,7 @@ const StaffPage = {
             const q = this._normalize(this.searchQuery);
             staff = staff.filter(s => this._normalize(s.name).includes(q) || this._normalize(s.role).includes(q));
         }
-        return staff;
+        return Utils.sortStaffByRole(staff);
     },
 
     setFilter(f) { this.currentFilter = f; App.renderCurrentPage(); },
@@ -1006,7 +1006,7 @@ const StaffPage = {
     _doExportExcel() {
         try {
             const wb = XLSX.utils.book_new();
-            const staff = Store.getAll('staff');
+            const staff = Utils.sortStaffByRole(Store.getAll('staff'));
             const external = Store.getAll('externalDoctors') || [];
 
             // Sheet 1: Internal staff
@@ -1108,7 +1108,7 @@ const StaffPage = {
         if (!Auth.getSession()?.isAdmin) return;
         const teams = Store.getAll('specialTeams') || [];
         const t = id ? teams.find(x => x.id === id) : null;
-        const allStaff = Store.getAll('staff');
+        const allStaff = Utils.sortStaffByRole(Store.getAll('staff'));
         const memberIds = t?.members || [];
 
         const staffOptions = allStaff.map(s =>
@@ -1180,7 +1180,7 @@ const StaffPage = {
 
     async exportTeamImage() {
         const teams = (Store.getAll('specialTeams') || []).sort((a, b) => (a.order || 0) - (b.order || 0));
-        const allStaff = Store.getAll('staff');
+        const allStaff = Utils.sortStaffByRole(Store.getAll('staff'));
         const session = Auth.getSession();
         const now = new Date();
         const dateLabel = now.toLocaleDateString('vi-VN');

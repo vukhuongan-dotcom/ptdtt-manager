@@ -78,6 +78,37 @@ const Utils = {
         return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" data-staff-id="${sid}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();var sp=(typeof StaffPage!=='undefined'?StaffPage:window.StaffPage);if(sp&&sp.showPhotoModal){sp.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
     },
 
+    getStaffRoleRank(s) {
+        if (!s) return 99;
+        const role = s.role || '';
+        const title = s.title || '';
+        // 1. BCN Khoa (Trưởng khoa -> Phó trưởng khoa -> Điều dưỡng trưởng)
+        if (role.includes('Trưởng khoa') && !role.includes('Phó')) return 1;
+        if (role.includes('Phó trưởng khoa')) return 2;
+        if (role.includes('Điều dưỡng trưởng') || role === 'Điều dưỡng trưởng') return 3;
+        // 2. Bác sĩ chính
+        if (role.includes('Bác sĩ chính') || role.includes('BS chính')) return 4;
+        // 3. BS học viên & BSNT
+        if (role.includes('học viên') || role.includes('BSNT') || title === 'BSNT' || title === 'BS. Học viên') return 5;
+        // 4. Điều dưỡng
+        if ((role.includes('Điều dưỡng') || role.includes('ĐD')) && !role.includes('trưởng')) return 6;
+        // 5. Hộ lý
+        if (role.includes('Hộ lý') || title === 'HL') return 7;
+        // 6. Thư ký y khoa
+        if (role.includes('Thư ký') || title === 'TK') return 8;
+        return 99;
+    },
+
+    sortStaffByRole(list) {
+        if (!Array.isArray(list)) return [];
+        return [...list].sort((a, b) => {
+            const rankA = Utils.getStaffRoleRank(a);
+            const rankB = Utils.getStaffRoleRank(b);
+            if (rankA !== rankB) return rankA - rankB;
+            return (a.id || 0) - (b.id || 0);
+        });
+    },
+
     formatDate(dateStr) {
         if (!dateStr) return '—';
         const parts = String(dateStr).split('T')[0].split('-');
