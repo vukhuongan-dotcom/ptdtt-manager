@@ -1,0 +1,18 @@
+{"ts": "2026-10-10T05:27:10.015674", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T06:16:25.764817", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T06:18:39.003333", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 187, "nextId": null}}
+{"ts": "2026-10-10T08:49:48.003974", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T10:24:06.967164", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T10:40:08.018957", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T10:44:32.123186", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T10:54:42.922384", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T10:54:49.219246", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T13:34:19.916609", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T14:31:21.602660", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T14:31:22.671746", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T14:31:23.200242", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T14:33:13.872308", "user": "nmnphuong", "action": "collection.put.staff", "ip": "127.0.0.1", "details": {"count": 38, "nextId": 52, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 16, "label": "Nguyễn Minh Nguyên Phương — Bác sĩ học viên — BS. Học viên", "from": {"email": "nmnp252@gmail.com"}, "to": {"email": "nguyenphuongnguyenminh@gmail.com"}}]}}}
+{"ts": "2026-10-10T15:37:42.579038", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T18:59:52.203482", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T18:59:54.672168", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-10T20:06:03.958241", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
