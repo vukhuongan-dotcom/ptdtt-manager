@@ -1,0 +1,24 @@
+{"ts": "2026-10-11T06:00:41.226238", "user": "hkxhang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T06:10:53.203590", "user": "hkxhang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T06:15:06.058130", "user": "hkxhang", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 188, "nextId": null}}
+{"ts": "2026-10-11T07:54:26.984011", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T12:48:53.257886", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T13:30:02.599266", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T14:33:24.157375", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T14:36:05.963901", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T14:44:56.034694", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 25, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 24, "label": "2026-10-12", "from": {"notes": ""}, "to": {"notes": "BS Khương An nghỉ phép T2-3-4\nBS Tú sáng thứ 2 về trường\nBSNT Thành, Sang có lịch học trường sáng chiều"}}]}}}
+{"ts": "2026-10-11T14:59:12.239657", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 25, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-11T15:02:14.220723", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 25, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-11T15:06:59.152921", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T15:09:01.448280", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T15:10:03.052921", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 25, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-11T15:10:45.646752", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T15:21:35.154844", "user": "nthuyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T15:39:58.674255", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T15:41:52.797387", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 30, "nextId": 25, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-11T15:54:59.744511", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T16:36:14.088946", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T16:43:16.013011", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T17:37:12.750116", "user": "upmoanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T19:44:43.993707", "user": "nthuyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-11T22:26:04.034532", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
