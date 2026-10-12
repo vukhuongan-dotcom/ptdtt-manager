@@ -23,6 +23,11 @@ venv/
 
 # Data (server-side database)
 data/
+data_backups/
+data/snapshots/
+*.sqlite
+*.db
+*.dump
 
 # Logs
 *.log

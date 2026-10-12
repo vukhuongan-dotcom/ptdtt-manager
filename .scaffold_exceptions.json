@@ -1,0 +1,13 @@
+{
+  "project": "ptdtt-manager",
+  "rule": "v2:R47 [T3-DEV]",
+  "approved_by": "BSCKII. Vũ Khương An",
+  "approval_date": "2026-10-12",
+  "allowed_root_files": [
+    {
+      "filename": "Huong_dan_bao_cao_Khoa_PTDTT.pdf",
+      "sha256": "cecc586f07119cb47699dd94ab3550551414eeae0c1ddcd021f3bff7777fa271",
+      "reason": "Required for PWA offline documentation download route in server_flask.py (@app.route('/<path:path>'))"
+    }
+  ]
+}
