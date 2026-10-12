@@ -123,4 +123,13 @@ Mỗi khi Agent thực hiện bất kỳ việc **SỬA LỖI (BUG)** hoặc **P
 
 > ⚠️ **Quy chuẩn thực thi:** Thao tác ghi nhận này diễn ra đồng thời với bước commit và auto-deploy, đảm bảo tri thức kỹ thuật được tích lũy liên tục vào Brain của dự án, ngăn chặn triệt để nguy cơ tái diễn lỗi cũ trong tương lai.
 
+---
+
+## Cam kết Bảo vệ Dữ liệu Cá nhân & An ninh Y tế (Strict Zero-PHI Protocol)
+
+> 🔒 **NGUYÊN TẮC BẢO MẬT & ZERO-PHI BẮT BUỘC (LUẬT 91/2025/QH15)**
+1. **Tuân thủ pháp luật:** Nghiêm ngặt tuân thủ Luật Khám bệnh, chữa bệnh số 15/2023/QH15, Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 và Nghị định số 356/2025/NĐ-CP.
+2. **Chế độ Strict Zero-PHI:** Toàn bộ dữ liệu phẫu thuật lưu trữ trong `data/db.json` và các bản sao lưu `data/snapshots/`, `data_backups/` phải được khử định danh (De-identified); tuyệt đối cấm đưa thông tin định danh cá nhân nhạy cảm của người bệnh (số CCCD/CMND, địa chỉ nhà riêng, số điện thoại) vào kho lưu trữ mã nguồn Git công khai.
+
+
 
