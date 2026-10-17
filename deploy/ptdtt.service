@@ -11,6 +11,7 @@ EnvironmentFile=/etc/default/ptdtt
 ExecStart=/var/www/ptdtt-manager/venv/bin/gunicorn \
     --bind 127.0.0.1:5000 \
     --workers 1 \
+    --threads 4 \
     --timeout 120 \
     --access-logfile /var/log/ptdtt/access.log \
     --error-logfile /var/log/ptdtt/error.log \
