@@ -447,8 +447,29 @@ runTest('TC-11', 'Đồng nhất số liệu giữa DOM UI, Xuất Excel (3 Shee
         assert.strictEqual(sheet2.length - 1, 2749, 'Sheet 2 Chi tiet phải có đúng 2.749 dòng dữ liệu');
         const sheet2SubAxes = sheet2.slice(1).map(r => r[7]);
         assert(sheet2SubAxes.includes('Cắt ĐT Sigma'), 'Sheet 2 cột Phân nhóm con phải có nhãn tiếng Việt chuẩn');
+
+        // Check 2-page Doctor Profile Export & KPI 1 for BS. Phạm Vĩnh Phú (id = 7)
+        SurgeryStatsPage.primaryDoctorId = 7;
+        SurgeryStatsPage.compareDoctorId = 'none';
+        SurgeryStatsPage.roleScope = 'main';
+        const doc7DomHtml = SurgeryStatsPage._renderRadarDashboard(inRangeSurgeries, eligibleDocs);
+        assert(!doc7DomHtml.includes('Mổ chính: 240 · Phụ: 95'), 'DOM KPI 1 không được hiển thị dòng chi tiết Mổ chính: 240 · Phụ: 95');
+        assert(doc7DomHtml.includes('Khối lượng phẫu thuật hoàn thành'), 'DOM KPI 1 phải hiển thị nhãn Khối lượng phẫu thuật hoàn thành');
+
+        const builtExport = SurgeryStatsPage._buildProfileExportHtml(inRangeSurgeries);
+        assert(builtExport && builtExport.isTwoPage === true, 'Xuất hồ sơ bác sĩ cá nhân phải tạo đúng 2 trang (isTwoPage = true)');
+        assert(builtExport.fullHtml.includes('data-page="1" data-scope="main"'), 'Ảnh xuất phải có Trang 1 (Mổ chính)');
+        assert(builtExport.fullHtml.includes('TRANG 1/2 · PHẪU THUẬT VIÊN MỔ CHÍNH'), 'Trang 1 phải có tiêu đề TRANG 1/2 · PHẪU THUẬT VIÊN MỔ CHÍNH');
+        assert(builtExport.fullHtml.includes('🎯 Tổng ca mổ chính'), 'Trang 1 KPI 1 phải là Tổng ca mổ chính');
+        assert(builtExport.fullHtml.includes('>240</div>'), 'Trang 1 KPI 1 phải hiển thị tổng số 240');
+        assert(builtExport.fullHtml.includes('data-page="2" data-scope="assist"'), 'Ảnh xuất phải có Trang 2 (Phụ mổ)');
+        assert(builtExport.fullHtml.includes('TRANG 2/2 · PHẪU THUẬT VIÊN PHỤ MỔ'), 'Trang 2 phải có tiêu đề TRANG 2/2 · PHẪU THUẬT VIÊN PHỤ MỔ');
+        assert(builtExport.fullHtml.includes('🎯 Tổng ca phụ mổ'), 'Trang 2 KPI 1 phải là Tổng ca phụ mổ');
+        assert(builtExport.fullHtml.includes('>95</div>'), 'Trang 2 KPI 1 phải hiển thị tổng số 95');
+        assert(!builtExport.fullHtml.includes('Mổ chính: 240 · Phụ: 95'), 'Ảnh xuất KPI 1 không được chứa dòng Mổ chính: 240 · Phụ: 95');
     } finally {
         SurgeryStatsPage.getTodayStr = origGetTodayStr;
+        SurgeryStatsPage.primaryDoctorId = 'dept_total';
     }
 });
 
@@ -518,10 +539,10 @@ runTest('TC-15', '100% Tiếng Việt thuần túy trên 6 trục và 19 phân n
 });
 
 // =========================================================================
-// TC-16: CSS Bundle & Synchronous Versioning (2610171435)
+// TC-16: CSS Bundle & Synchronous Versioning (2610171645)
 // =========================================================================
-runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css) và phiên bản 2610171435 trên toàn hệ thống', () => {
-    const EXPECTED_VER = '2610171435';
+runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css) và phiên bản 2610171645 trên toàn hệ thống', () => {
+    const EXPECTED_VER = '2610171645';
     const bundlePath = path.join(ROOT_DIR, 'css/app.bundle.css');
     assert(fs.existsSync(bundlePath), 'css/app.bundle.css phải tồn tại');
     const bundleContent = fs.readFileSync(bundlePath, 'utf8');

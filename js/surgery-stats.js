@@ -1281,11 +1281,11 @@ const SurgeryStatsPage = {
                 <div class="sstats-kpi-values single-val">
                     <div class="sstats-kpi-val sstats-val-primary">
                         <span class="sstats-kpi-num">${p1.doctor.id === 'dept_avg' ? p1.total.toFixed(1) : p1.total}</span>
-                        <span class="sstats-kpi-sub">${p1.doctor.id === 'dept_avg' ? `Trung bình ${p1.benchmarkDocCount || 0} BS cơ hữu mổ chính` : (p1.doctor.id === 'dept_total' ? `Toàn Khoa (${p1.total} ca)` : `${name1} (${this.roleScope === 'assist' ? 'Phụ mổ' : (this.roleScope === 'all' ? 'Tất cả tham gia' : 'Mổ chính')})`)}</span>
+                        ${(p1.doctor.id === 'dept_avg' || p1.doctor.id === 'dept_total') ? `<span class="sstats-kpi-sub">${p1.doctor.id === 'dept_avg' ? `Trung bình ${p1.benchmarkDocCount || 0} BS cơ hữu mổ chính` : `Toàn Khoa (${p1.total} ca)`}</span>` : ''}
                     </div>
                 </div>
                 <div class="sstats-kpi-delta neutral">
-                    ${p1.doctor.id === 'dept_avg' ? 'Đối chuẩn trung bình năng lực nội bộ' : (p1.doctor.id === 'dept_total' ? 'Tổng khối lượng mổ toàn khoa' : `Mổ chính: ${p1.mainCount || p1.total} · Phụ: ${p1.assistOnlyCount || 0} · Tham gia: ${p1.participatedCount || p1.total}`)}
+                    ${p1.doctor.id === 'dept_avg' ? 'Đối chuẩn trung bình năng lực nội bộ' : (p1.doctor.id === 'dept_total' ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng phẫu thuật hoàn thành')}
                 </div>
                 `}
             </div>
@@ -1823,7 +1823,7 @@ const SurgeryStatsPage = {
 
     // ===== SVG RADAR CHART GENERATOR =====
     _renderRadarSVG(p1, p2, options = {}) {
-        const width = 480;
+        const width = 540;
         const height = 390;
         const cx = width / 2;
         const cy = height / 2 + 2;
@@ -1873,6 +1873,8 @@ const SurgeryStatsPage = {
         // 4 concentric hexagonal rings [25%, 50%, 75%, 100% of maxScale]
         const levels = [0.25, 0.50, 0.75, 1.00];
         let gridSVG = '';
+        let scaleLabelsSVG = '';
+        const haloColor = exportMode ? '#ffffff' : 'var(--bg-secondary, #ffffff)';
         levels.forEach((lvl, lvlIdx) => {
             const pts = [];
             for (let i = 0; i < numAxes; i++) {
@@ -1881,24 +1883,24 @@ const SurgeryStatsPage = {
                 pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
             }
             gridSVG += `<polygon points="${pts.join(' ')}" class="sstats-radar-grid" stroke="${borderColor}" stroke-dasharray="${lvlIdx === levels.length - 1 ? 'none' : '2,3'}" fill="none" stroke-width="1.2" />`;
-            // Scale label
+            // Scale label rendered above polygon with clean halo
             const rawRingVal = lvl * maxScale;
             const labelVal = isPct
                 ? `${Number.isInteger(rawRingVal) ? rawRingVal : rawRingVal.toFixed(1)}%`
                 : Math.round(rawRingVal);
-            gridSVG += `<text x="${cx + 5}" y="${cy - lvl * radius + 11}" class="sstats-radar-grid-label" fill="${textMutedColor}" font-size="11" font-weight="600">${labelVal}</text>`;
+            scaleLabelsSVG += `<text x="${cx + 7}" y="${cy - lvl * radius + 11}" class="sstats-radar-grid-label" fill="${textMutedColor}" font-size="10.5" font-weight="700" style="paint-order:stroke;stroke:${haloColor};stroke-width:3px;stroke-linejoin:round;">${labelVal}</text>`;
         });
 
-        // Axis spokes & labels (smart non-clipping positions outside the r=102 hexagon)
+        // Axis spokes & labels (smart non-clipping positions inside 540x390 viewBox)
         let spokesSVG = '';
         let labelsSVG = '';
         const labelPositions = [
             { lx: cx,       ly: 34,  anchor: 'middle' }, // 0: Top (Đại tràng)
-            { lx: cx + 136, ly: 82,  anchor: 'middle' }, // 1: Top-Right (Trực tràng)
-            { lx: cx + 136, ly: 312, anchor: 'middle' }, // 2: Bottom-Right (Hậu môn – Sàn chậu)
+            { lx: cx + 132, ly: 82,  anchor: 'middle' }, // 1: Top-Right (Trực tràng)
+            { lx: cx + 132, ly: 312, anchor: 'middle' }, // 2: Bottom-Right (Hậu môn – Sàn chậu)
             { lx: cx,       ly: 360, anchor: 'middle' }, // 3: Bottom (Đóng & Mở HMNT)
-            { lx: cx - 126, ly: 312, anchor: 'middle' }, // 4: Bottom-Left (Thoát vị & Phục hồi Thành bụng)
-            { lx: cx - 124, ly: 82,  anchor: 'middle' }  // 5: Top-Left (Tiêu hóa trên, Gan mật & Phối hợp)
+            { lx: cx - 128, ly: 312, anchor: 'middle' }, // 4: Bottom-Left (Thoát vị & Phục hồi Thành bụng)
+            { lx: cx - 128, ly: 82,  anchor: 'middle' }  // 5: Top-Left (Tiêu hóa trên, Gan mật & Phối hợp)
         ];
 
         axisKeys.forEach((k, i) => {
@@ -1987,7 +1989,8 @@ const SurgeryStatsPage = {
             <polygon points="${poly1Pts.join(' ')}" fill="url(#p1Grad)" stroke="${p1Color}" stroke-width="2.5" class="sstats-polygon-p1" filter="url(#radarGlow)" />
             ${poly1Dots.join('')}
 
-            <!-- Axis Labels -->
+            <!-- Scale Ring Labels & Axis Labels -->
+            ${scaleLabelsSVG}
             ${labelsSVG}
         </svg>`;
     },
@@ -2436,47 +2439,65 @@ const SurgeryStatsPage = {
         }
     },
 
-    // ===== EXPORT DOCTOR PROFILE AS HIGH-RES 2K IMAGE (RETINA QUALITY) =====
-    async exportProfileImage() {
-        const btns = document.querySelectorAll('.btn-export-profile');
-        btns.forEach(b => { b.disabled = true; b.innerHTML = '⏳ Đang tạo ảnh...'; });
+    // ===== BUILD 2-PAGE STACKED HTML FOR DOCTOR PROFILE EXPORT =====
+    _buildProfileExportHtml(surgeries) {
+        const isIndividualDoctor = this.primaryDoctorId !== 'dept_total' && this.primaryDoctorId !== 'dept_avg';
+        const scopesToRender = isIndividualDoctor ? ['main', 'assist'] : [this.roleScope || 'main'];
+        const isTwoPage = scopesToRender.length === 2;
 
-        try {
-            Toast.info('🖼️ Đang tạo hình ảnh hồ sơ bác sĩ độ phân giải cao...');
+        const p1Main = this.computeSurgeonProfile(this.primaryDoctorId, surgeries, scopesToRender[0]);
+        if (!p1Main) return null;
 
-            const surgeries = this.getSurgeriesInRange();
-            const p1 = this.computeSurgeonProfile(this.primaryDoctorId, surgeries, this.roleScope);
-            const p2 = this.compareDoctorId !== 'none' ? this.computeSurgeonProfile(this.compareDoctorId, surgeries, this.roleScope) : null;
+        const periodLabel = this.getPeriodLabel();
+        const session = (typeof Auth !== 'undefined' && Auth.getSession && Auth.getSession()) ? Auth.getSession() : null;
+        const user = (session && (session.name || session.username)) ? (session.name || session.username) : 'BS. Quản trị';
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+        const axisKeys = Object.keys(this.CLINICAL_AXES);
+
+        const pagesHtml = scopesToRender.map((scope, pageIdx) => {
+            const p1 = this.computeSurgeonProfile(this.primaryDoctorId, surgeries, scope);
+            const p2 = this.compareDoctorId !== 'none' ? this.computeSurgeonProfile(this.compareDoctorId, surgeries, scope) : null;
             const hasCompare = !!p2;
-
-            if (!p1) {
-                Toast.error('Không tìm thấy dữ liệu hồ sơ bác sĩ.');
-                btns.forEach(b => { b.disabled = false; b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất hồ sơ bác sĩ'; });
-                return;
-            }
 
             const name1 = (p1.doctor && p1.doctor.name) || 'Bác sĩ';
             const name2 = (p2 && p2.doctor && p2.doctor.name) || 'Bác sĩ so sánh';
             const shortName1 = name1.split(' ').pop();
             const shortName2 = name2.split(' ').pop();
-            const periodLabel = this.getPeriodLabel();
-
-            const session = (typeof Auth !== 'undefined' && Auth.getSession()) ? Auth.getSession() : null;
-            const user = (session && (session.name || session.username)) ? (session.name || session.username) : 'BS. Quản trị';
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
 
             const totalDiff = hasCompare ? (p1.total - p2.total) : 0;
             const totalPctDiff = (hasCompare && p2.total > 0) ? Math.round(((totalDiff / p2.total) * 100) * 10) / 10 : 0;
 
-            // Generate clean SVG string for radar with exportMode = true
+            const scopeRoleLabel = scope === 'assist' ? 'Phẫu thuật viên Phụ mổ' : (scope === 'all' ? 'Tất cả ca tham gia' : 'Phẫu thuật viên Mổ chính');
+            const scopeShortBadge = scope === 'assist' ? 'Vai trò: Phụ mổ' : (scope === 'all' ? 'Vai trò: Tham gia' : 'Vai trò: Mổ chính');
+            const kpi1Title = p1.doctor.id === 'dept_avg'
+                ? 'Trung bình ca / BS cơ hữu'
+                : (p1.doctor.id === 'dept_total'
+                    ? 'Tổng ca mổ toàn khoa'
+                    : (scope === 'assist' ? 'Tổng ca phụ mổ' : (scope === 'all' ? 'Tổng ca tham gia' : 'Tổng ca mổ chính')));
+
             const radarSVGString = this._renderRadarSVG(p1, p2, { mode: this.radarScaleMode, exportMode: true });
 
-            // Table rows for Matrix
-            const axisKeys = Object.keys(this.CLINICAL_AXES);
-            let tableRowsHTML = axisKeys.map(k => {
+            // Left Radar Summary Grid (6 axes compact 3x2 cards)
+            const radarSummaryGridHtml = axisKeys.map(k => {
+                const ax = this.CLINICAL_AXES[k];
+                const c1 = p1.axisCounts[k] || 0;
+                const pct1 = p1.axisPct[k] || 0;
+                const shortTitle = ax.label.replace(/^\d+\.\s*/, '').replace(/^Phẫu thuật\s+/i, '');
+                return `
+                <div class="radar-sum-item">
+                    <div class="radar-sum-top">
+                        <span class="radar-sum-name">${ax.icon} ${shortTitle}</span>
+                        <span class="radar-sum-pct" style="color:${ax.color || '#1D2357'};">${pct1.toFixed(1)}%</span>
+                    </div>
+                    <div class="radar-sum-val">${c1} ca</div>
+                </div>`;
+            }).join('');
+
+            // Right Full-Width Axis Blocks
+            let axisBlocksHtml = axisKeys.map(k => {
                 const ax = this.CLINICAL_AXES[k];
                 const c1 = p1.axisCounts[k] || 0;
                 const pct1 = p1.axisPct[k] || 0;
@@ -2486,87 +2507,229 @@ const SurgeryStatsPage = {
                 const subBreakdown = this.SUB_AXIS_MAP[k] || {};
                 const subEntries = Object.entries(subBreakdown);
 
+                const subChipsHtml = subEntries.map(([subKey, subLabel]) => {
+                    const sc1 = p1.subAxisCounts[subKey] || 0;
+                    const sc2 = p2 ? (p2.subAxisCounts[subKey] || 0) : 0;
+                    return `
+                    <div class="sub-chip ${sc1 > 0 ? 'has-val' : 'is-zero'}">
+                        <span class="sub-chip-label">${subLabel}</span>
+                        <span class="sub-chip-val">${sc1}${hasCompare ? ` <small style="color:#64748b;font-weight:600;">vs ${sc2}</small>` : ''}</span>
+                    </div>`;
+                }).join('');
+
                 return `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 11px 12px; vertical-align: middle;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px;">${ax.icon}</span>
-                            <div>
-                                <div style="font-weight: 700; font-size: 13px; color: #1e293b;">${ax.label}</div>
-                                <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">${subEntries.map(([subKey, subLabel]) => `${subLabel}: <strong>${p1.subAxisCounts[subKey] || 0}</strong>`).join(' · ')}</div>
-                            </div>
+                <div class="axis-block">
+                    <div class="axis-block-top">
+                        <div class="axis-title-wrap">
+                            <span class="axis-icon">${ax.icon}</span>
+                            <span class="axis-title">${ax.label}</span>
                         </div>
-                    </td>
-                    ${hasCompare ? `
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #1D2357; font-weight: 700; font-size: 13px;">
-                        ${c1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                        <div style="font-size: 11px; font-weight: 600; color: #1D2357;">${pct1.toFixed(1)}%</div>
-                    </td>
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #CB242D; font-weight: 700; font-size: 13px;">
-                        ${c2} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                        <div style="font-size: 11px; font-weight: 600; color: #CB242D;">${pct2.toFixed(1)}%</div>
-                    </td>
-                    <td style="padding: 11px 12px; text-align: center; vertical-align: middle;">
-                        <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${delta > 0 ? '#ecfdf5' : delta < 0 ? '#fff1f2' : '#f1f5f9'}; color: ${delta > 0 ? '#059669' : delta < 0 ? '#CB242D' : '#64748b'};">
-                            ${delta > 0 ? `+${delta.toFixed(1)}%` : delta < 0 ? `${delta.toFixed(1)}%` : '0.0%'}
-                        </span>
-                    </td>
-                    ` : `
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #1D2357; font-weight: 800; font-size: 14px;">
-                        ${c1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                    </td>
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #1D2357; font-weight: 800; font-size: 14px;">
-                        ${pct1.toFixed(1)}%
-                    </td>
-                    `}
-                </tr>`;
+                        <div class="axis-metrics">
+                            ${hasCompare ? `
+                                <span class="axis-count-p1">${c1} ca (${pct1.toFixed(1)}%)</span>
+                                <span class="axis-vs">vs</span>
+                                <span class="axis-count-p2">${c2} ca (${pct2.toFixed(1)}%)</span>
+                                <span class="axis-delta-pill" style="background:${delta > 0 ? '#ecfdf5' : delta < 0 ? '#fff1f2' : '#f1f5f9'};color:${delta > 0 ? '#059669' : delta < 0 ? '#CB242D' : '#64748b'};">
+                                    ${delta > 0 ? `+${delta.toFixed(1)}%` : `${delta.toFixed(1)}%`}
+                                </span>
+                            ` : `
+                                <span class="axis-count-single">${c1} <small>ca</small></span>
+                                <span class="axis-pct-badge" style="color:${ax.color || '#1D2357'};border-color:${ax.color || '#1D2357'}33;background:${ax.color || '#1D2357'}12;">${pct1.toFixed(1)}%</span>
+                            `}
+                        </div>
+                    </div>
+                    <div class="axis-bar-track">
+                        <div class="axis-bar-fill" style="width:${Math.min(100, pct1)}%;background:${ax.color || '#1D2357'};"></div>
+                    </div>
+                    <div class="sub-grid">
+                        ${subChipsHtml}
+                    </div>
+                </div>`;
             }).join('');
 
-            // Unclassified row if any
             if (p1.unclassifiedCount > 0 || (p2 && p2.unclassifiedCount > 0)) {
                 const u1 = p1.unclassifiedCount || 0;
                 const upct1 = p1.unclassifiedPct || 0;
-                const u2 = p2 ? (p2.unclassifiedCount || 0) : 0;
-                const upct2 = p2 ? (p2.unclassifiedPct || 0) : 0;
-                const udelta = Math.round((upct1 - upct2) * 10) / 10;
-                tableRowsHTML += `
-                <tr style="border-bottom: 1px solid #fde68a; background: #fffbeb;">
-                    <td style="padding: 11px 12px; vertical-align: middle;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px;">⚠️</span>
-                            <div>
-                                <div style="font-weight: 700; font-size: 13px; color: #b45309;">Chưa phân loại / Ngoại khoa khác</div>
-                                <div style="font-size: 11px; color: #92400e; margin-top: 1px;">Cần rà soát chẩn đoán và phương pháp mổ</div>
-                            </div>
+                axisBlocksHtml += `
+                <div class="axis-block" style="background:#fffbeb;border-color:#fde68a;">
+                    <div class="axis-block-top">
+                        <div class="axis-title-wrap">
+                            <span class="axis-icon">⚠️</span>
+                            <span class="axis-title" style="color:#b45309;">Chưa phân loại / Ngoại khoa khác</span>
                         </div>
-                    </td>
-                    ${hasCompare ? `
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #1D2357; font-weight: 700; font-size: 13px;">
-                        ${u1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                        <div style="font-size: 11px; font-weight: 600; color: #1D2357;">${upct1.toFixed(1)}%</div>
-                    </td>
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #CB242D; font-weight: 700; font-size: 13px;">
-                        ${u2} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                        <div style="font-size: 11px; font-weight: 600; color: #CB242D;">${upct2.toFixed(1)}%</div>
-                    </td>
-                    <td style="padding: 11px 12px; text-align: center; vertical-align: middle;">
-                        <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #b45309;">
-                            ${udelta > 0 ? `+${udelta.toFixed(1)}%` : `${udelta.toFixed(1)}%`}
-                        </span>
-                    </td>
-                    ` : `
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #b45309; font-weight: 800; font-size: 14px;">
-                        ${u1} <span style="font-size: 11px; font-weight: 500; color: #64748b;">ca</span>
-                    </td>
-                    <td style="padding: 11px 12px; text-align: right; vertical-align: middle; color: #b45309; font-weight: 800; font-size: 14px;">
-                        ${upct1.toFixed(1)}%
-                    </td>
-                    `}
-                </tr>`;
+                        <div class="axis-metrics">
+                            <span class="axis-count-single" style="color:#b45309;">${u1} <small>ca</small></span>
+                            <span class="axis-pct-badge" style="color:#b45309;border-color:#fde68a;background:#fef3c7;">${upct1.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>`;
             }
 
-            // Full isolated HTML export template
-            const fullHtml = `<!DOCTYPE html>
+            const totalCases = Math.max(1, p1.totalRaw || p1.total || 1);
+            const noisoiPct = ((p1.noisoiCases || 0) / totalCases) * 100;
+            const robotPct = ((p1.robotCases || 0) / totalCases) * 100;
+            const openPct = ((p1.openCases || 0) / totalCases) * 100;
+            const nsthPct = ((p1.nsthCases || 0) / totalCases) * 100;
+
+            return `
+            <div class="profile-export-page" data-page="${pageIdx + 1}" data-scope="${scope}">
+                <!-- HEADER WITH DARK NAVY GRADIENT -->
+                <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:20px 30px;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-size:19px;font-weight:800;color:#ffffff;letter-spacing:normal;">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                        <div style="font-size:12.5px;color:#cbd5e1;margin-top:3px;">Bệnh viện Bình Dân · TP. Hồ Chí Minh</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:19px;font-weight:800;color:#ffffff;letter-spacing:normal;">HỒ SƠ NĂNG LỰC PHẪU THUẬT</div>
+                        <div style="font-size:12.5px;color:#67e8f9;font-weight:700;margin-top:3px;">
+                            ${isTwoPage ? `TRANG ${pageIdx + 1}/2 · ${scopeRoleLabel.toUpperCase()}` : `Cơ cấu &amp; Đối chuẩn 6 Trục Lâm sàng (${scopeRoleLabel})`}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-HEADER / METADATA INFO BAR -->
+                <div style="padding:11px 30px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                    <div style="font-size:13.5px;color:#0f172a;">
+                        Phẫu thuật viên: <strong style="color:#1D2357;font-size:15px;">${name1}</strong> <span style="font-size:12px;color:#64748b;">(${p1.doctor.role})</span>
+                        <span style="display:inline-block;margin-left:8px;padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:700;background:${scope === 'assist' ? '#eff6ff' : '#ecfdf5'};color:${scope === 'assist' ? '#1d4ed8' : '#047857'};border:1px solid ${scope === 'assist' ? '#bfdbfe' : '#a7f3d0'};">${scopeShortBadge}</span>
+                        ${hasCompare ? ` <span style="margin:0 6px;padding:2px 7px;background:#e2e8f0;border-radius:10px;font-size:11px;font-weight:700;color:#475569;">VS</span> Đối chuẩn: <strong style="color:#CB242D;font-size:15px;">${name2}</strong> <span style="font-size:12px;color:#64748b;">(${p2.doctor.role})</span>` : ''}
+                    </div>
+                    <div style="font-size:13px;color:#334155;font-weight:600;">
+                        📅 Kỳ thống kê: <span style="color:#1D2357;">${periodLabel}</span> · Tổng (${scope === 'assist' ? 'Phụ mổ' : 'Mổ chính'}): <strong style="color:#0f172a;font-size:14px;">${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</strong>
+                    </div>
+                </div>
+
+                <div style="padding: 20px 26px;">
+                    <!-- 4 KPI CARDS -->
+                    <div class="kpi-grid">
+                        <!-- KPI 1: Only shows big total number + footer tag for individual doctors -->
+                        <div class="kpi-card">
+                            <div class="kpi-card-header">🎯 ${kpi1Title}</div>
+                            <div class="kpi-val" style="font-size:28px;margin:4px 0 2px;">${p1.doctor.id === 'dept_avg' ? p1.total.toFixed(1) : p1.total}</div>
+                            ${hasCompare
+                                ? `<div class="kpi-sub">${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}</div>`
+                                : (p1.doctor.id === 'dept_avg'
+                                    ? `<div class="kpi-sub">Trung bình ${p1.benchmarkDocCount || 0} BS cơ hữu mổ chính</div>`
+                                    : (p1.doctor.id === 'dept_total'
+                                        ? `<div class="kpi-sub">Toàn Khoa (${p1.total} ca)</div>`
+                                        : ''))}
+                            <div class="kpi-tag">${p1.doctor.id === 'dept_avg' ? 'Chuẩn đối sánh nội bộ khoa' : (p1.doctor.id === 'dept_total' ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng phẫu thuật hoàn thành')}</div>
+                        </div>
+
+                        <!-- KPI 2 -->
+                        <div class="kpi-card">
+                            <div class="kpi-card-header">🔬 Tỷ lệ Xâm lấn tối thiểu (MIS)</div>
+                            <div class="kpi-val">${p1.misPct.toFixed(1)}%</div>
+                            <div class="kpi-sub">${p1.misCases} ca (Nội soi: ${p1.noisoiCases} · Robot: ${p1.robotCases})</div>
+                            <div class="kpi-tag">Mổ mở: ${p1.openCases} ca (${p1.openPct.toFixed(1)}%) · NSTH: ${p1.nsthCases} ca</div>
+                        </div>
+
+                        <!-- KPI 3 -->
+                        <div class="kpi-card">
+                            <div class="kpi-card-header">⏱️ Thời lượng phẫu thuật ghi nhận</div>
+                            <div class="kpi-val">${p1.validDurCount > 0 ? `${p1.medianDur || p1.meanDur}p` : '—'}</div>
+                            <div class="kpi-sub">${p1.validDurCount > 0 ? `Trung vị [IQR: ${p1.iqrDur.q1}–${p1.iqrDur.q3}p] · Mẫu: ${p1.validDurCount}/${p1.totalRaw} (${p1.validDurCoveragePct}%)` : `Mẫu: 0/${p1.totalRaw} (0%)`}</div>
+                            <div class="kpi-tag">ĐT-TT: ${p1.colorectalMeanDur > 0 ? `${p1.colorectalMeanDur}p` : '—'} · HM-Sàn chậu: ${p1.proctoMeanDur > 0 ? `${p1.proctoMeanDur}p` : '—'}</div>
+                        </div>
+
+                        <!-- KPI 4 -->
+                        <div class="kpi-card">
+                            <div class="kpi-card-header">📋 Cơ cấu Phân loại &amp; Robot</div>
+                            <div class="kpi-val">${p1.yeucauPct.toFixed(0)}%</div>
+                            <div class="kpi-sub">Yêu cầu: ${p1.electiveReq} ca · Chương trình: ${p1.electiveRoutine} ca</div>
+                            <div class="kpi-tag">Loại Robot: ${p1.typeRobot || 0} ca · Bán khẩn: ${p1.urgent} ca · K ĐT-TT: ${p1.oncologyResections || 0} ca</div>
+                        </div>
+                    </div>
+
+                    <!-- 2 COLUMNS: RADAR (LEFT) + FULL-WIDTH AXIS MATRIX (RIGHT) -->
+                    <div class="main-split">
+                        <!-- LEFT: RADAR + BREAKDOWN PANEL -->
+                        <div class="sub-card">
+                            <div>
+                                <div class="sub-card-title">
+                                    <span>🎯 Biểu Đồ Radar 6 Trục (${scope === 'assist' ? 'Phụ mổ' : 'Mổ chính'})</span>
+                                </div>
+                                <div class="sub-card-desc">Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên</div>
+                                <div class="legend-pill">
+                                    <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#1D2357;vertical-align:middle;margin-right:5px;"></span><span style="vertical-align:middle;">${name1} (${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca/BS` : `${p1.total} ca`})</span>${hasCompare ? ` · <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#CB242D;vertical-align:middle;margin:0 5px;"></span><span style="vertical-align:middle;">${name2} (${p2.doctor.id === 'dept_avg' ? `${p2.total.toFixed(1)} ca/BS` : `${p2.total} ca`})</span>` : ''}
+                                </div>
+                            </div>
+
+                            <div class="radar-box">
+                                ${radarSVGString}
+                            </div>
+
+                            <!-- 6-Axis Summary Grid & Method Breakdown -->
+                            <div class="radar-breakdown-panel">
+                                <div class="radar-summary-grid">
+                                    ${radarSummaryGridHtml}
+                                </div>
+                                <div class="radar-method-box">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:700;color:#1e293b;margin-bottom:5px;">
+                                        <span>🔬 Cơ cấu phương pháp tiếp cận</span>
+                                        <span style="color:#1D2357;">MIS: ${(noisoiPct + robotPct).toFixed(1)}%</span>
+                                    </div>
+                                    <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#e2e8f0;margin-bottom:6px;">
+                                        <span style="width:${noisoiPct}%;background:#0284c7;"></span>
+                                        <span style="width:${robotPct}%;background:#7c3aed;"></span>
+                                        <span style="width:${openPct}%;background:#d97706;"></span>
+                                        <span style="width:${nsthPct}%;background:#059669;"></span>
+                                    </div>
+                                    <div style="display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11px;color:#334155;margin-bottom:6px;">
+                                        <span><b style="color:#0284c7;">●</b> Nội soi: <strong>${p1.noisoiCases || 0}</strong></span>
+                                        <span><b style="color:#7c3aed;">●</b> Robot: <strong>${p1.robotCases || 0}</strong></span>
+                                        <span><b style="color:#d97706;">●</b> Mổ mở: <strong>${p1.openCases || 0}</strong></span>
+                                        <span><b style="color:#059669;">●</b> NSTH: <strong>${p1.nsthCases || 0}</strong></span>
+                                    </div>
+                                    <div style="display:flex;flex-wrap:wrap;gap:5px;padding-top:6px;border-top:1px dashed #cbd5e1;font-size:11px;color:#334155;">
+                                        <span style="background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;padding:2px 7px;">Yêu cầu: <strong>${p1.electiveReq || 0}</strong></span>
+                                        <span style="background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;padding:2px 7px;">Chương trình: <strong>${p1.electiveRoutine || 0}</strong></span>
+                                        <span style="background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;padding:2px 7px;">Bán khẩn: <strong>${p1.urgent || 0}</strong></span>
+                                        <span style="background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;padding:2px 7px;">Khẩn cấp: <strong>${p1.emergency || 0}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="disclaimer-box">
+                                ⚠️ <em>Chỉ số số lượng ca mổ và thời gian phẫu thuật phụ thuộc vào phân công lịch mổ, cơ cấu ca khó/phức tạp và tính chất cấp cứu; dùng phục vụ tự đánh giá chuyên môn và quản lý chất lượng.</em>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT: FULL-WIDTH AXIS MATRIX -->
+                        <div class="sub-card">
+                            <div>
+                                <div class="sub-card-title">
+                                    <span>📊 Bảng Phân Tích Cơ Cấu 6 Trục</span>
+                                    <span style="font-size:11px;font-weight:600;color:#64748b;">Khoa PTĐTT — BV Bình Dân</span>
+                                </div>
+                                <div class="sub-card-desc">Chi tiết số lượng &amp; Tỷ trọng từng nhóm phẫu thuật (${scope === 'assist' ? 'Vai trò Phụ mổ' : 'Vai trò Mổ chính'})</div>
+                                <div class="axis-list">
+                                    ${axisBlocksHtml}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="matrix-total-banner">
+                                    <span>TỔNG CỘNG (${scope === 'assist' ? 'PHỤ MỔ' : 'MỔ CHÍNH'})</span>
+                                    <span>${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`} (100%)</span>
+                                </div>
+                                <div style="font-size: 10.5px; color: #64748b; margin-top: 8px; text-align: right;">
+                                    Phân loại năng lực lâm sàng chuyên sâu Khoa Phẫu thuật Đại trực tràng (Chuẩn Cleveland Clinic DDSI / ASCRS)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div class="export-footer">
+                        <span>Hệ thống Quản trị Lâm sàng Khoa Phẫu Thuật Đại Trực Tràng — Bệnh viện Bình Dân${isTwoPage ? ` · Trang ${pageIdx + 1}/2 (${scope === 'assist' ? 'Hồ sơ Phụ mổ' : 'Hồ sơ Mổ chính'})` : ''}</span>
+                        <span>Xuất bởi: <strong>${user}</strong> · Lúc ${timeStr} — ${dateStr}</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('<div class="page-break-divider"><span>✂️ TRANG 2/2 — HỒ SƠ NĂNG LỰC PHẪU THUẬT VIÊN PHỤ MỔ</span></div>');
+
+        const fullHtml = `<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
@@ -2579,42 +2742,58 @@ const SurgeryStatsPage = {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Be Vietnam Pro', 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #ffffff;
+            background: #f1f5f9;
             color: #0f172a;
             padding: 0;
             margin: 0;
-            width: 1120px;
+            width: 1140px;
             -webkit-font-smoothing: antialiased;
         }
         .capture-card {
-            background: #ffffff;
-            width: 1120px;
+            background: #f1f5f9;
+            width: 1140px;
             margin: 0 auto;
+        }
+        .profile-export-page {
+            background: #ffffff;
+            width: 1140px;
             border: 1px solid #cbd5e1;
             overflow: hidden;
+        }
+        .page-break-divider {
+            height: 34px;
+            background: #e2e8f0;
+            border-top: 2px dashed #94a3b8;
+            border-bottom: 2px dashed #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            color: #475569;
+            letter-spacing: 0.06em;
         }
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
         .kpi-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 12px;
-            padding: 14px 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            padding: 13px 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .kpi-card-header {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #475569;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #334155;
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .kpi-val {
             font-size: 25px;
@@ -2631,100 +2810,255 @@ const SurgeryStatsPage = {
         .kpi-tag {
             display: inline-block;
             margin-top: 6px;
-            padding: 2px 7px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 10px;
-            font-weight: 600;
+            font-size: 10.5px;
+            font-weight: 700;
             background: #ecfeff;
             color: #1D2357;
-            border: 1px solid #cffafe;
+            border: 1px solid #a5f3fc;
         }
         .main-split {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 49% 51%;
             gap: 16px;
             align-items: stretch;
         }
         .sub-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 12px;
-            padding: 16px;
+            padding: 15px 16px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
         .sub-card-title {
-            font-size: 13.5px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 800;
             color: #0f172a;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .sub-card-desc {
-            font-size: 11px;
+            font-size: 11.5px;
             color: #64748b;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .legend-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 3px 10px;
+            display: inline-block;
+            padding: 4px 12px;
             background: #ecfeff;
-            border: 1px solid #cffafe;
-            border-radius: 20px;
-            font-size: 11px;
+            border: 1px solid #a5f3fc;
+            border-radius: 16px;
+            font-size: 11.5px;
             font-weight: 700;
             color: #1D2357;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .radar-box {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 4px 0;
+            margin: 2px 0;
+        }
+        .radar-box svg {
+            width: 100%;
+            max-width: 510px;
+            height: auto;
+        }
+        .radar-breakdown-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 6px;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+        }
+        .radar-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .radar-sum-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            padding: 5px 9px;
+            min-width: 0;
+        }
+        .radar-sum-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #334155;
+        }
+        .radar-sum-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .radar-sum-pct {
+            font-weight: 800;
+            font-size: 11.5px;
+            flex-shrink: 0;
+        }
+        .radar-sum-val {
+            font-size: 12px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 1px;
+        }
+        .radar-method-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
         }
         .disclaimer-box {
             background: #fffbeb;
-            border: 1px solid #fef3c7;
+            border: 1px solid #fde68a;
             border-radius: 8px;
-            padding: 7px 10px;
+            padding: 6px 10px;
             font-size: 10px;
             color: #b45309;
             line-height: 1.35;
             margin-top: 8px;
         }
-        .matrix-table {
-            width: 100%;
-            border-collapse: collapse;
+        .axis-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
         }
-        .matrix-table th {
-            padding: 8px 10px;
-            font-size: 10.5px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #475569;
-            border-bottom: 2px solid #cbd5e1;
+        .axis-block {
             background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            padding: 7px 10px;
         }
-        .matrix-total-row td {
-            padding: 10px 12px;
+        .axis-block-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .axis-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .axis-icon {
+            font-size: 15px;
+        }
+        .axis-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .axis-metrics {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .axis-count-single {
+            font-size: 14px;
+            font-weight: 800;
+            color: #1D2357;
+        }
+        .axis-count-single small {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .axis-pct-badge {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            font-weight: 800;
+            border: 1px solid #cbd5e1;
+        }
+        .axis-count-p1 { font-size: 12px; font-weight: 800; color: #1D2357; }
+        .axis-vs { font-size: 10.5px; color: #64748b; }
+        .axis-count-p2 { font-size: 12px; font-weight: 800; color: #CB242D; }
+        .axis-delta-pill {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 10.5px;
+            font-weight: 800;
+        }
+        .axis-bar-track {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 4px 0 5px;
+        }
+        .axis-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+        }
+        .sub-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 6px;
+        }
+        .sub-chip {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 3px 7px;
+            font-size: 11px;
+            color: #334155;
+        }
+        .sub-chip.has-val {
+            border-color: #cbd5e1;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .sub-chip.is-zero {
+            opacity: 0.68;
+        }
+        .sub-chip-val {
+            font-size: 12px;
+            font-weight: 800;
+            color: #1D2357;
+            margin-left: 6px;
+        }
+        .sub-chip.is-zero .sub-chip-val {
+            color: #64748b;
+            font-weight: 600;
+        }
+        .matrix-total-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border-top: 2px solid #1D2357;
             font-size: 12.5px;
             font-weight: 800;
             color: #0f172a;
-            border-top: 2px solid #1D2357;
-            background: #f8fafc;
         }
         .export-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 18px;
-            padding-top: 10px;
+            margin-top: 14px;
+            padding-top: 8px;
             border-top: 1px solid #e2e8f0;
             font-size: 10.5px;
             color: #64748b;
@@ -2733,163 +3067,45 @@ const SurgeryStatsPage = {
 </head>
 <body>
     <div id="capture" class="capture-card">
-        <!-- HEADER WITH DARK NAVY GRADIENT STANDARD ACROSS PTDTT-MANAGER -->
-        <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:22px 32px;display:flex;justify-content:space-between;align-items:center;">
-            <div>
-                <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:normal;">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
-                <div style="font-size:13px;color:#cbd5e1;margin-top:3px;">Bệnh viện Bình Dân · TP. Hồ Chí Minh</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:normal;">HỒ SƠ NĂNG LỰC PHẪU THUẬT</div>
-                <div style="font-size:13px;color:#67e8f9;font-weight:600;margin-top:3px;">Cơ cấu &amp; Đối chuẩn 6 Trục Lâm sàng</div>
-            </div>
-        </div>
-
-        <!-- SUB-HEADER / METADATA INFO BAR -->
-        <div style="padding:12px 32px;background:#f0f9ff;border-bottom:2px solid #bae6fd;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <div style="font-size:13.5px;color:#0f172a;">
-                Phẫu thuật viên: <strong style="color:#1D2357;font-size:15px;">${name1}</strong> <span style="font-size:12px;color:#64748b;">(${p1.doctor.role})</span>
-                ${hasCompare ? ` <span style="margin:0 6px;padding:2px 7px;background:#e2e8f0;border-radius:10px;font-size:11px;font-weight:700;color:#475569;">VS</span> Đối chuẩn: <strong style="color:#CB242D;font-size:15px;">${name2}</strong> <span style="font-size:12px;color:#64748b;">(${p2.doctor.role})</span>` : ''}
-            </div>
-            <div style="font-size:13px;color:#334155;font-weight:600;">
-                📅 Kỳ thống kê: <span style="color:#1D2357;">${periodLabel}</span> · Tổng: <strong style="color:#0f172a;font-size:14px;">${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</strong>
-            </div>
-        </div>
-
-        <div style="padding: 22px 28px;">
-            <!-- 4 KPI CARDS -->
-            <div class="kpi-grid">
-                <!-- KPI 1 -->
-                <div class="kpi-card">
-                    <div class="kpi-card-header">🎯 ${p1.doctor.id === 'dept_avg' ? 'Trung bình ca / BS cơ hữu' : (p1.doctor.id === 'dept_total' ? 'Tổng ca mổ toàn khoa' : (this.roleScope === 'assist' ? 'Tổng ca phụ mổ' : (this.roleScope === 'all' ? 'Tổng ca tham gia' : 'Tổng ca mổ chính')))}</div>
-                    <div class="kpi-val">${p1.doctor.id === 'dept_avg' ? p1.total.toFixed(1) : p1.total}</div>
-                    <div class="kpi-sub">${hasCompare ? `${shortName1}: ${p1.total} vs ${shortName2}: ${p2.total}` : (p1.doctor.id === 'dept_avg' ? `Trung bình ${p1.benchmarkDocCount || 0} BS cơ hữu mổ chính` : (p1.doctor.id === 'dept_total' ? `Toàn Khoa (${p1.total} ca)` : `Mổ chính: ${p1.mainCount || p1.total} · Phụ: ${p1.assistOnlyCount || 0} · Tham gia: ${p1.participatedCount || p1.total}`))}</div>
-                    <div class="kpi-tag">${p1.doctor.id === 'dept_avg' ? 'Chuẩn đối sánh nội bộ khoa' : (p1.doctor.id === 'dept_total' ? 'Tổng khối lượng mổ toàn khoa' : 'Khối lượng phẫu thuật hoàn thành')}</div>
-                </div>
-
-                <!-- KPI 2 -->
-                <div class="kpi-card">
-                    <div class="kpi-card-header">🔬 Tỷ lệ Xâm lấn tối thiểu (MIS)</div>
-                    <div class="kpi-val">${p1.misPct.toFixed(1)}%</div>
-                    <div class="kpi-sub">${p1.misCases} ca (Nội soi: ${p1.noisoiCases} · Robot: ${p1.robotCases})</div>
-                    <div class="kpi-tag">Mổ mở: ${p1.openCases} ca (${p1.openPct.toFixed(1)}%) · NSTH: ${p1.nsthCases} ca</div>
-                </div>
-
-                <!-- KPI 3 -->
-                <div class="kpi-card">
-                    <div class="kpi-card-header">⏱️ Thời lượng phẫu thuật ghi nhận</div>
-                    <div class="kpi-val">${p1.validDurCount > 0 ? `${p1.medianDur || p1.meanDur}p` : '—'}</div>
-                    <div class="kpi-sub">${p1.validDurCount > 0 ? `Trung vị [IQR: ${p1.iqrDur.q1}–${p1.iqrDur.q3}p] · Mẫu: ${p1.validDurCount}/${p1.totalRaw} (${p1.validDurCoveragePct}%)` : `Mẫu: 0/${p1.totalRaw} (0%)`}</div>
-                    <div class="kpi-tag">ĐT-TT: ${p1.colorectalMeanDur > 0 ? `${p1.colorectalMeanDur}p` : '—'} · HM-Sàn chậu: ${p1.proctoMeanDur > 0 ? `${p1.proctoMeanDur}p` : '—'}</div>
-                </div>
-
-                <!-- KPI 4 -->
-                <div class="kpi-card">
-                    <div class="kpi-card-header">📋 Cơ cấu Phân loại & Robot</div>
-                    <div class="kpi-val">${p1.yeucauPct.toFixed(0)}%</div>
-                    <div class="kpi-sub">Yêu cầu: ${p1.electiveReq} ca · Chương trình: ${p1.electiveRoutine} ca</div>
-                    <div class="kpi-tag">Loại Robot: ${p1.typeRobot || 0} ca · Bán khẩn: ${p1.urgent} ca · K ĐT-TT: ${p1.oncologyResections || 0} ca</div>
-                </div>
-            </div>
-
-            <!-- 2 COLUMNS: RADAR (LEFT) + MATRIX (RIGHT) -->
-            <div class="main-split">
-                <!-- LEFT: RADAR -->
-                <div class="sub-card">
-                    <div>
-                        <div class="sub-card-title">
-                            <span>🎯 Biểu Đồ Radar 6 Trục</span>
-                        </div>
-                        <div class="sub-card-desc">Hồ sơ phân bố cơ cấu chuyên môn phẫu thuật viên</div>
-                        <div class="legend-pill">
-                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1D2357;"></span>
-                            <span>${name1} (${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca/BS` : `${p1.total} ca`})</span>
-                            ${hasCompare ? ` · <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#CB242D;margin-left:4px;"></span> ${name2} (${p2.doctor.id === 'dept_avg' ? `${p2.total.toFixed(1)} ca/BS` : `${p2.total} ca`})` : ''}
-                        </div>
-                    </div>
-
-                    <div class="radar-box">
-                        ${radarSVGString}
-                    </div>
-
-                    <div class="disclaimer-box">
-                        ⚠️ <em>Chỉ số số lượng ca mổ và thời gian phẫu thuật phụ thuộc vào phân công lịch mổ, cơ cấu ca khó/phức tạp và tính chất cấp cứu; dùng phục vụ tự đánh giá chuyên môn và quản lý chất lượng.</em>
-                    </div>
-                </div>
-
-                <!-- RIGHT: MATRIX -->
-                <div class="sub-card">
-                    <div>
-                        <div class="sub-card-title">
-                            <span>📊 Bảng Phân Tích Cơ Cấu 6 Trục</span>
-                            <span style="font-size:11px;font-weight:600;color:#64748b;">Khoa PTĐTT — BV Bình Dân</span>
-                        </div>
-                        <div class="sub-card-desc">Chi tiết số lượng & Tỷ trọng từng nhóm phẫu thuật</div>
-                    </div>
-
-                    <table class="matrix-table">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left;">TRỤC NĂNG LỰC</th>
-                                ${hasCompare ? `
-                                    <th style="text-align:right;color:#1D2357;">${shortName1}</th>
-                                    <th style="text-align:right;color:#CB242D;">${shortName2}</th>
-                                    <th style="text-align:center;">Chênh lệch</th>
-                                ` : `
-                                    <th style="text-align:right;color:#1D2357;">Số ca (${shortName1})</th>
-                                    <th style="text-align:right;color:#1D2357;">Tỷ trọng cơ cấu</th>
-                                `}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRowsHTML}
-                        </tbody>
-                        <tfoot>
-                            <tr class="matrix-total-row">
-                                <td>TỔNG CỘNG</td>
-                                ${hasCompare ? `
-                                    <td style="text-align:right;color:#1D2357;">${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</td>
-                                    <td style="text-align:right;color:#CB242D;">${p2.doctor.id === 'dept_avg' ? `${p2.total.toFixed(1)} ca` : `${p2.total} ca`}</td>
-                                    <td style="text-align:center;">
-                                        <span style="display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;background:${totalDiff >= 0 ? '#ecfdf5' : '#fff1f2'};color:${totalDiff >= 0 ? '#059669' : '#CB242D'};">
-                                            ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
-                                        </span>
-                                    </td>
-                                ` : `
-                                    <td style="text-align:right;color:#1D2357;">${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</td>
-                                    <td style="text-align:right;color:#1D2357;">100%</td>
-                                `}
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    <div style="font-size: 10.5px; color: #64748b; margin-top: 12px; text-align: right;">
-                        Phân loại năng lực lâm sàng chuyên sâu Khoa Phẫu thuật Đại trực tràng (Chuẩn Cleveland Clinic DDSI / ASCRS)
-                    </div>
-                </div>
-            </div>
-
-            <!-- FOOTER -->
-            <div class="export-footer">
-                <span>Hệ thống Quản trị Lâm sàng Khoa Phẫu Thuật Đại Trực Tràng — Bệnh viện Bình Dân</span>
-                <span>Xuất bởi: <strong>${user}</strong> · Lúc ${timeStr} — ${dateStr}</span>
-            </div>
-        </div>
+        ${pagesHtml}
     </div>
 </body>
 </html>`;
 
-            // Create off-screen iframe
+        return { fullHtml, p1Main, isTwoPage, periodLabel, now };
+    },
+
+    // ===== EXPORT DOCTOR PROFILE AS HIGH-RES 2-PAGE IMAGE (RETINA QUALITY) =====
+    async exportProfileImage() {
+        const btns = document.querySelectorAll('.btn-export-profile');
+        btns.forEach(b => { b.disabled = true; b.innerHTML = '⏳ Đang tạo ảnh...'; });
+
+        try {
+            Toast.info('🖼️ Đang tạo hình ảnh hồ sơ bác sĩ (2 trang: Mổ chính & Phụ mổ)...');
+
+            const surgeries = this.getSurgeriesInRange();
+            const built = this._buildProfileExportHtml(surgeries);
+
+            if (!built || !built.p1Main) {
+                Toast.error('Không tìm thấy dữ liệu hồ sơ bác sĩ.');
+                btns.forEach(b => { b.disabled = false; b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Xuất hồ sơ bác sĩ'; });
+                return;
+            }
+
+            const { fullHtml, p1Main, isTwoPage, periodLabel, now } = built;
+            const pad = n => String(n).padStart(2, '0');
+
+            // Create off-screen iframe tall enough for 2 stacked pages
             const iframe = document.createElement('iframe');
-            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1200px;height:2400px;border:none;opacity:0;pointer-events:none';
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1200px;height:4800px;border:none;opacity:0;pointer-events:none';
             document.body.appendChild(iframe);
 
             await new Promise(resolve => { iframe.onload = resolve; iframe.srcdoc = fullHtml; });
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, 650));
 
             const captureEl = iframe.contentDocument.getElementById('capture');
             await Utils.loadScript('html2canvas');
-            const EXPORT_SCALE = Math.max(Math.ceil(2560 / 1120), 2.5); // Retina 2.5K
+            const EXPORT_SCALE = isTwoPage ? 2 : 2.5;
             const canvas = await html2canvas(captureEl, {
                 scale: EXPORT_SCALE,
                 useCORS: true,
@@ -2907,7 +3123,7 @@ const SurgeryStatsPage = {
             // Standard Watermark across entire canvas
             this._addProfileWatermark(canvas);
 
-            const safeName = (p1.doctor.name || 'HoSoBacSi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
+            const safeName = (p1Main.doctor.name || 'HoSoBacSi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
             const safePeriod = periodLabel.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-zA-Z0-9_\-]/g, '_');
             const filename = `HoSo_BS_${safeName}_${safePeriod}_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}.png`;
 
@@ -2936,7 +3152,7 @@ const SurgeryStatsPage = {
                     await new Promise(r => setTimeout(r, 500));
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    Toast.success('✅ Đã xuất hình ảnh hồ sơ bác sĩ thành công!');
+                    Toast.success('✅ Đã xuất hồ sơ bác sĩ (2 trang: Mổ chính & Phụ mổ) thành công!');
                     return;
                 }
             } catch (e) {
@@ -2951,7 +3167,7 @@ const SurgeryStatsPage = {
             document.body.appendChild(a);
             a.click();
             setTimeout(() => document.body.removeChild(a), 500);
-            Toast.success('✅ Đã xuất hình ảnh hồ sơ bác sĩ thành công!');
+            Toast.success('✅ Đã xuất hồ sơ bác sĩ (2 trang: Mổ chính & Phụ mổ) thành công!');
         } catch (err) {
             console.error('Export profile image error:', err);
             Toast.error('Lỗi khi xuất ảnh hồ sơ: ' + (err.message || err));
