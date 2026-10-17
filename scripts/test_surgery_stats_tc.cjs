@@ -151,6 +151,20 @@ runTest('TC-01', 'Phân loại 6 Trục + unclassified (Toàn Khoa, N = 2.749 ca
         const subSum = Object.keys(subMap).reduce((acc, sk) => acc + (deptTotal.subAxisCounts[sk] || 0), 0);
         assert.strictEqual(subSum, ax[axisKey], `Tổng subAxis của ${axisKey} (${subSum}) phải bằng axisCounts[${axisKey}] (${ax[axisKey]})`);
     });
+
+    // Explicit assertions for all 19 sub-axes matching classifySurgeryV2 in audit_reproducible.cjs
+    const expectedSubCounts = {
+        colon_sigmoid: 169, colon_right: 159, colon_left: 69, colon_other_combined: 9,
+        rectal_lar_tme: 198, rectal_miles_apr: 22, rectal_local_other: 71,
+        procto_hemorrhoid: 437, procto_fistula_abscess: 318, procto_other_pelvic: 111,
+        stoma_reversal: 315, stoma_creation_revision: 70,
+        hernia_inguinal_open: 152, hernia_inguinal_mis: 139, hernia_ventral_diaphragm_other: 120,
+        upper_gi_stomach_smallbowel: 198, upper_gi_biliary: 124, upper_gi_acute_combined: 57,
+        unclassified_other: 11, unclassified_empty: 0
+    };
+    for (const [subKey, expVal] of Object.entries(expectedSubCounts)) {
+        assert.strictEqual(deptTotal.subAxisCounts[subKey] || 0, expVal, `subAxisCounts[${subKey}] phải = ${expVal}`);
+    }
 });
 
 // =========================================================================
