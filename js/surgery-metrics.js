@@ -1,60 +1,91 @@
 // ===== SURGERY METRICS — Shared Statistical Calculation Module =====
 const SurgeryMetrics = {
     /**
+     * Resolve canonical surgery type (yeucau | chuongtrinh | bankhan | robot | unknown)
+     * Mutually exclusive partition contract
+     * @param {Object} s - Surgery record
+     * @returns {string} Canonical surgery type
+     */
+    resolveSurgeryType(s) {
+        if (!s) return 'unknown';
+        const t = String(s.surgeryType || '').trim();
+        if (t === 'yeucau' || t === 'chuongtrinh' || t === 'bankhan' || t === 'robot') return t;
+        // Fallback to 'robot' ONLY when surgeryType is empty but approachType is 'robot'
+        if (!t && String(s.approachType || '').trim() === 'robot') return 'robot';
+        return 'unknown';
+    },
+
+    /**
+     * Resolve canonical surgical approach (mo | noisoi | robot | nsth | unknown)
+     * Mutually exclusive partition contract
+     * @param {Object} s - Surgery record
+     * @returns {string} Canonical surgical approach
+     */
+    resolveApproach(s) {
+        if (!s) return 'unknown';
+        const a = String(s.approachType || '').trim();
+        if (a === 'mo' || a === 'noisoi' || a === 'robot' || a === 'nsth') return a;
+        // Fallback to 'robot' ONLY when approachType is empty but surgeryType is 'robot'
+        if (!a && String(s.surgeryType || '').trim() === 'robot') return 'robot';
+        return 'unknown';
+    },
+
+    /**
      * Calculate Minimally Invasive Surgery (MIS) & approach statistics
      * @param {Array} cases - Array of surgery objects
      * @returns {Object} MIS statistics breakdown
      */
     calculateMIS(cases) {
         if (!cases || !Array.isArray(cases)) {
-            return { total: 0, noisoi: 0, robot: 0, mo: 0, nsth: 0, misCases: 0, misPct: 0, noisoiPct: 0, robotPct: 0, openPct: 0 };
+            return { total: 0, noisoi: 0, robot: 0, mo: 0, nsth: 0, unknown: 0, misCases: 0, misPct: 0, noisoiPct: 0, robotPct: 0, openPct: 0, nsthPct: 0, unknownPct: 0 };
         }
         const total = cases.length;
-        const noisoi = cases.filter(s => s && s.approachType === 'noisoi').length;
-        const robot = cases.filter(s => s && (s.approachType === 'robot' || s.surgeryType === 'robot')).length;
-        const mo = cases.filter(s => s && s.approachType === 'mo').length;
-        const nsth = cases.filter(s => s && s.approachType === 'nsth').length;
-        const misCases = noisoi + robot;
+        const counts = { noisoi: 0, robot: 0, mo: 0, nsth: 0, unknown: 0 };
+        for (const s of cases) {
+            const app = this.resolveApproach(s);
+            counts[app] = (counts[app] || 0) + 1;
+        }
+        const misCases = counts.noisoi + counts.robot;
+        const pct = (n) => total > 0 ? Number((n / total * 100).toFixed(1)) : 0;
 
         return {
             total,
-            noisoi,
-            robot,
-            mo,
-            nsth,
+            ...counts,
             misCases,
-            misPct: total > 0 ? Number((misCases / total * 100).toFixed(1)) : 0,
-            noisoiPct: total > 0 ? Number((noisoi / total * 100).toFixed(1)) : 0,
-            robotPct: total > 0 ? Number((robot / total * 100).toFixed(1)) : 0,
-            openPct: total > 0 ? Number((mo / total * 100).toFixed(1)) : 0
+            misPct: pct(misCases),
+            noisoiPct: pct(counts.noisoi),
+            robotPct: pct(counts.robot),
+            openPct: pct(counts.mo),
+            nsthPct: pct(counts.nsth),
+            unknownPct: pct(counts.unknown)
         };
     },
 
     /**
-     * Calculate surgery type breakdown (Yêu cầu, Chương trình, Bán khẩn, Robot)
+     * Calculate surgery type breakdown (Yêu cầu, Chương trình, Bán khẩn, Robot, Chưa rõ)
      * @param {Array} cases - Array of surgery objects
      * @returns {Object} Type breakdown
      */
     calculateTypeBreakdown(cases) {
         if (!cases || !Array.isArray(cases)) {
-            return { total: 0, yeucau: 0, chuongtrinh: 0, bankhan: 0, robot: 0, yeucauPct: 0, chuongtrinhPct: 0, bankhanPct: 0, robotPct: 0 };
+            return { total: 0, yeucau: 0, chuongtrinh: 0, bankhan: 0, robot: 0, unknown: 0, yeucauPct: 0, chuongtrinhPct: 0, bankhanPct: 0, robotPct: 0, unknownPct: 0 };
         }
         const total = cases.length;
-        const yeucau = cases.filter(s => s && s.surgeryType === 'yeucau').length;
-        const chuongtrinh = cases.filter(s => s && s.surgeryType === 'chuongtrinh').length;
-        const bankhan = cases.filter(s => s && s.surgeryType === 'bankhan').length;
-        const robot = cases.filter(s => s && (s.surgeryType === 'robot' || s.approachType === 'robot')).length;
+        const counts = { yeucau: 0, chuongtrinh: 0, bankhan: 0, robot: 0, unknown: 0 };
+        for (const s of cases) {
+            const t = this.resolveSurgeryType(s);
+            counts[t] = (counts[t] || 0) + 1;
+        }
+        const pct = (n) => total > 0 ? Number((n / total * 100).toFixed(1)) : 0;
 
         return {
             total,
-            yeucau,
-            chuongtrinh,
-            bankhan,
-            robot,
-            yeucauPct: total > 0 ? Number((yeucau / total * 100).toFixed(1)) : 0,
-            chuongtrinhPct: total > 0 ? Number((chuongtrinh / total * 100).toFixed(1)) : 0,
-            bankhanPct: total > 0 ? Number((bankhan / total * 100).toFixed(1)) : 0,
-            robotPct: total > 0 ? Number((robot / total * 100).toFixed(1)) : 0
+            ...counts,
+            yeucauPct: pct(counts.yeucau),
+            chuongtrinhPct: pct(counts.chuongtrinh),
+            bankhanPct: pct(counts.bankhan),
+            robotPct: pct(counts.robot),
+            unknownPct: pct(counts.unknown)
         };
     },
 
@@ -123,7 +154,8 @@ const SurgeryMetrics = {
                     yeucau: types.yeucau,
                     chuongtrinh: types.chuongtrinh,
                     robot: types.robot,
-                    bankhan: types.bankhan
+                    bankhan: types.bankhan,
+                    unknown: types.unknown
                 },
                 mis
             });
