@@ -556,7 +556,7 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 .sstats-compare-kpi-card {
     padding: 14px 16px;
@@ -570,17 +570,17 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 .sstats-kpi-icon {
-    font-size: 1rem;
+    font-size: 1.05rem;
 }
 .sstats-kpi-title {
-    font-size: 0.76rem;
-    font-weight: 600;
+    font-size: 0.82rem;
+    font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
 }
 .sstats-kpi-values {
     display: flex;
@@ -605,31 +605,34 @@
     color: #e11d48;
 }
 .sstats-kpi-num {
-    font-size: 1.35rem;
+    font-size: 1.55rem;
     font-weight: 800;
     font-family: var(--font-mono, monospace);
     line-height: 1.1;
+    font-variant-numeric: tabular-nums;
 }
 .sstats-kpi-sub {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    margin-top: 2px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-top: 4px;
+    line-height: 1.35;
 }
 .sstats-kpi-divider {
     width: 1px;
-    height: 28px;
+    height: 30px;
     background: var(--border);
     margin: 0 10px;
 }
 .sstats-kpi-delta {
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 4px;
+    padding: 5px 10px;
+    border-radius: 6px;
     background: var(--bg-tertiary);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     text-align: center;
+    line-height: 1.35;
 }
 .sstats-kpi-delta.positive {
     background: var(--primary-a10);
@@ -643,66 +646,76 @@
 /* Radar & Matrix Layout Grid */
 .sstats-radar-layout-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
     gap: 16px;
     margin-bottom: 20px;
+    align-items: stretch;
 }
 .sstats-radar-card {
-    padding: 16px 20px;
+    padding: 16px 18px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
 }
 .sstats-radar-header {
-    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 .sstats-radar-title {
-    margin: 0 0 4px 0;
-    font-size: 0.95rem;
+    margin: 0 0 3px 0;
+    font-size: 1.04rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 .sstats-radar-subtitle {
     margin: 0;
-    font-size: 0.76rem;
+    font-size: 0.84rem;
     color: var(--text-muted);
 }
 .sstats-radar-legend {
     display: flex;
     gap: 16px;
-    margin-bottom: 10px;
-    padding: 6px 12px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
     background: var(--bg-primary);
     border: 1px solid var(--border);
     border-radius: 8px;
+    flex-wrap: wrap;
 }
 .sstats-legend-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
+    gap: 7px;
+    font-size: 0.88rem;
     color: var(--text-secondary);
 }
 .sstats-legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
+    flex-shrink: 0;
 }
 .sstats-radar-canvas-container {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    min-height: 380px;
+    min-height: 330px;
+    margin: 2px 0;
 }
 .sstats-radar-svg {
     width: 100%;
-    max-width: 460px;
+    max-width: 500px;
     height: auto;
     overflow: visible;
 }
 .sstats-radar-axis-title {
     font-family: inherit;
-    letter-spacing: -0.2px;
+    letter-spacing: -0.15px;
 }
 .sstats-polygon-p1, .sstats-polygon-p2 {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -714,93 +727,261 @@
 .sstats-radar-dot:hover {
     r: 6.5;
 }
+
+/* Radar Breakdown Panel (Balances Left Column Height with Useful Visual Data) */
+.sstats-radar-breakdown-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 12px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+.sstats-rb-section {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.sstats-rb-section + .sstats-rb-section {
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+}
+.sstats-rb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sstats-rb-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.sstats-rb-summary {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+.sstats-rb-bar-stack {
+    display: flex;
+    height: 8px;
+    width: 100%;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    gap: 1px;
+}
+.sstats-rb-seg {
+    height: 100%;
+    min-width: 2px;
+}
+.sstats-rb-pills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+.sstats-rb-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+.sstats-rb-pill strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+.sstats-rb-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
 .sstats-clinical-disclaimer {
-    margin-top: 14px;
-    padding: 8px 12px;
+    margin-top: 10px;
+    padding: 9px 12px;
     background: var(--bg-primary);
     border-left: 3px solid #f59e0b;
     border-radius: 0 6px 6px 0;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    line-height: 1.4;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
 }
 
-/* Comparative Matrix Card */
+/* Comparative Matrix Card — High-Density Full-Width Layout */
 .sstats-matrix-card {
-    padding: 16px 20px;
+    padding: 16px 18px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
 }
 .sstats-matrix-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .sstats-matrix-title {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 1.04rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 .sstats-matrix-hint {
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
     font-weight: 600;
 }
 .sstats-matrix-table-container {
-    overflow-x: auto;
+    overflow-x: visible;
+    width: 100%;
+    min-width: 0;
 }
 .sstats-matrix-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
-    font-size: 0.84rem;
+    font-size: 0.9rem;
 }
 .sstats-matrix-table th {
-    padding: 8px 10px;
-    font-size: 0.72rem;
+    padding: 7px 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
     color: var(--text-muted);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1.5px solid var(--border);
 }
 .sstats-matrix-table td {
-    padding: 10px 10px;
+    padding: 10px 6px;
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
+}
+.sstats-matrix-axis-cell {
+    padding: 10px 6px !important;
+}
+.sstats-axis-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+.sstats-axis-top-row.is-compare-row,
+.sstats-axis-top-row.sstats-axis-thead-row {
+    flex-wrap: wrap;
 }
 .sstats-axis-name {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
+    flex: 1;
+    min-width: 0;
+}
+.sstats-axis-name > div {
+    min-width: 0;
 }
 .sstats-axis-icon {
-    font-size: 1.15rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.sstats-axis-title-strong {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+    min-width: 0;
 }
 .sstats-axis-sub {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.sstats-axis-metrics-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.sstats-axis-metrics-right.is-compare {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.sstats-axis-vs-inline {
+    font-size: 0.78rem;
     color: var(--text-muted);
+    font-weight: 600;
 }
 .sstats-matrix-num {
     font-family: var(--font-mono, monospace);
-    font-size: 0.88rem;
+    font-size: 0.98rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     text-align: right;
+    white-space: nowrap;
+}
+.sstats-matrix-num strong {
+    font-size: 1.04rem;
+    font-weight: 800;
 }
 .sstats-matrix-pct {
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    margin-top: 1px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+.sstats-axis-pct-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    min-width: 58px;
+}
+.sstats-axis-bar-track {
+    width: 100%;
+    height: 5px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 6px 0 7px 0;
+}
+.sstats-axis-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 3px;
 }
 .sstats-matrix-delta {
     text-align: center;
 }
 .sstats-delta-badge {
     display: inline-block;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
     font-weight: 700;
     font-family: var(--font-mono, monospace);
 }
@@ -819,8 +1000,15 @@
 .sstats-matrix-total-row td {
     border-top: 2px solid var(--border);
     border-bottom: none;
-    padding-top: 12px;
-    font-size: 0.9rem;
+    padding: 12px 6px 6px 6px !important;
+    font-size: 0.96rem;
+}
+.sstats-matrix-footer-note {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    text-align: right;
+    padding-right: 4px;
 }
 
 /* Logbook Card */
@@ -832,13 +1020,13 @@
 }
 .sstats-logbook-title {
     margin: 0 0 4px 0;
-    font-size: 0.95rem;
+    font-size: 1.04rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 .sstats-logbook-subtitle {
     margin: 0;
-    font-size: 0.76rem;
+    font-size: 0.84rem;
     color: var(--text-muted);
 }
 .sstats-logbook-table-container {
@@ -1056,10 +1244,10 @@
 /* Responsive Breakpoints */
 @media (max-width: 1024px) {
     .sstats-compare-kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .sstats-radar-layout-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 @media (max-width: 768px) {
@@ -1070,8 +1258,17 @@
     .sstats-view-tab {
         flex: 1;
         justify-content: center;
-        padding: 8px 10px;
-        font-size: 0.78rem;
+        padding: 9px 10px;
+        font-size: 0.84rem;
+    }
+    .sstats-doctor-selector-card,
+    .sstats-radar-card,
+    .sstats-matrix-card,
+    .sstats-logbook-card {
+        padding: 14px 12px;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     .sstats-selector-row {
         flex-direction: column;
@@ -1079,15 +1276,58 @@
     }
     .sstats-doc-box {
         width: 100%;
+        min-width: 0;
     }
     .sstats-vs-badge {
         margin: -4px auto;
     }
     .sstats-compare-kpi-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+    .sstats-compare-kpi-card {
+        padding: 12px 14px;
+        min-width: 0;
     }
     .sstats-radar-canvas-container {
-        min-height: 300px;
+        min-height: 290px;
+    }
+    .sstats-rb-pills-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .sstats-axis-icon {
+        width: 25px;
+        height: 25px;
+        font-size: 0.9rem;
+    }
+    .sstats-axis-title-strong {
+        font-size: 0.92rem;
+    }
+    .sstats-matrix-num {
+        font-size: 0.92rem;
+    }
+    .sstats-matrix-num strong {
+        font-size: 0.98rem;
+    }
+    .sstats-axis-pct-badge {
+        font-size: 0.84rem;
+        padding: 2px 7px;
+        min-width: 50px;
+    }
+    .sstats-axis-sub-breakdown {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 5px;
+    }
+    .sstats-subaxis-chip {
+        font-size: 0.88rem !important;
+        padding: 7px 11px !important;
+    }
+    .sstats-subaxis-chip strong {
+        font-size: 0.94rem !important;
+    }
+    .sstats-filter-search-box {
+        min-width: 0;
+        width: 100%;
     }
     .sstats-filter-toolbar {
         flex-direction: column;
@@ -1101,7 +1341,9 @@
     .sstats-reset-filters-btn {
         width: 100%;
     }
-}/* Future scheduled notice */
+}
+
+/* Future scheduled notice */
 .sstats-future-notice {
     display: flex;
     align-items: center;
@@ -1112,11 +1354,11 @@
     border: 1px solid #fde68a;
     border-radius: 10px;
     color: #92400e;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 500;
 }
 .sstats-future-icon {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 }
 [data-theme="dark"] .sstats-future-notice {
     background: rgba(245, 158, 11, 0.12);
@@ -1135,7 +1377,7 @@
     flex-wrap: wrap;
 }
 .sstats-role-scope-title {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -1150,12 +1392,12 @@
     border: 1px solid var(--border);
 }
 .sstats-role-scope-btn {
-    padding: 5px 12px;
+    padding: 6px 14px;
     border-radius: 6px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -1171,11 +1413,11 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 .sstats-role-scope-badge {
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 6px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    font-size: 0.8rem;
+    font-size: 0.84rem;
     font-weight: 600;
     color: var(--primary);
 }
@@ -1190,12 +1432,12 @@
     border: 1px solid var(--border);
 }
 .sstats-radar-scale-btn {
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 6px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 0.75rem;
+    font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -1211,29 +1453,54 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* Subaxis Breakdown Chips */
+/* Subaxis Breakdown Chips — Full-Width 2-Column Balanced Grid */
 .sstats-axis-sub-breakdown {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 4px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+    width: 100%;
+}
+.sstats-axis-sub-breakdown .sstats-subaxis-chip:nth-child(3):last-child {
+    grid-column: 1 / -1;
 }
 .sstats-subaxis-chip {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--bg-secondary);
+    display: block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--bg-primary);
     border: 1px solid var(--border);
-    font-size: 0.68rem;
+    font-size: 0.84rem;
+    font-weight: 500;
     color: var(--text-secondary);
-    line-height: 1.3;
+    line-height: 1.4;
+}
+.sstats-subaxis-chip strong {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--primary);
+    font-family: var(--font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+    margin-left: 4px;
+}
+[data-theme="dark"] .sstats-subaxis-chip {
+    background: var(--bg-primary);
+    border-color: var(--border);
+}
+[data-theme="dark"] .sstats-radar-breakdown-panel {
+    background: var(--bg-primary);
+    border-color: var(--border);
+}
+[data-theme="dark"] .sstats-rb-pill {
+    background: var(--bg-secondary);
+    border-color: var(--border);
 }
 .sstats-subaxis-chip-more {
     display: inline-block;
-    padding: 1px 5px;
+    padding: 2px 6px;
     border-radius: 4px;
     background: var(--bg-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: var(--text-muted);
     line-height: 1.3;
@@ -1266,18 +1533,18 @@
     flex-wrap: wrap;
 }
 .sstats-cohort-filter-label {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--text-secondary);
     margin-right: 4px;
 }
 .sstats-cohort-filter-btn {
-    padding: 6px 12px;
+    padding: 7px 14px;
     border-radius: 7px;
     border: 1px solid var(--border);
     background: var(--bg-primary);
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -1293,4 +1560,5 @@
     border-color: var(--primary);
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
+
 

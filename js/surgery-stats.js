@@ -1432,6 +1432,47 @@ const SurgeryStatsPage = {
                     ${this._renderRadarSVG(p1, p2, { mode: this.radarScaleMode })}
                 </div>
 
+                <!-- TÓM TẮT CƠ CẤU KỸ THUẬT & PHÂN LOẠI PHẪU THUẬT (LẤP ĐẦY CÂN ĐỐI CỘT TRÁI) -->
+                <div class="sstats-radar-breakdown-panel">
+                    <div class="sstats-rb-section">
+                        <div class="sstats-rb-header">
+                            <span class="sstats-rb-title">🔬 Cơ cấu Đường tiếp cận (${shortName1})</span>
+                            <span class="sstats-rb-summary">MIS: <strong>${p1.misPct.toFixed(1)}%</strong> (${p1.misCases} ca)</span>
+                        </div>
+                        <div class="sstats-rb-bar-stack" role="img" aria-label="Thanh tỷ lệ đường tiếp cận phẫu thuật">
+                            <div class="sstats-rb-seg" style="width:${p1.total > 0 ? ((p1.noisoiCases / p1.total) * 100).toFixed(1) : 0}%;background:#16a34a" title="Nội soi: ${p1.noisoiCases} ca"></div>
+                            <div class="sstats-rb-seg" style="width:${p1.total > 0 ? ((p1.robotCases / p1.total) * 100).toFixed(1) : 0}%;background:#333C83" title="Robot: ${p1.robotCases} ca"></div>
+                            <div class="sstats-rb-seg" style="width:${p1.openPct.toFixed(1)}%;background:#be123c" title="Mổ mở: ${p1.openCases} ca"></div>
+                            <div class="sstats-rb-seg" style="width:${p1.total > 0 ? ((p1.nsthCases / p1.total) * 100).toFixed(1) : 0}%;background:#7c3aed" title="NSTH: ${p1.nsthCases} ca"></div>
+                        </div>
+                        <div class="sstats-rb-pills-grid">
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#16a34a"></span><span>Nội soi: <strong>${p1.noisoiCases}</strong> ca (${p1.total > 0 ? ((p1.noisoiCases / p1.total) * 100).toFixed(1) : '0.0'}%)</span></div>
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#333C83"></span><span>Robot: <strong>${p1.robotCases}</strong> ca (${p1.total > 0 ? ((p1.robotCases / p1.total) * 100).toFixed(1) : '0.0'}%)</span></div>
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#be123c"></span><span>Mổ mở: <strong>${p1.openCases}</strong> ca (${p1.openPct.toFixed(1)}%)</span></div>
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#7c3aed"></span><span>NSTH: <strong>${p1.nsthCases}</strong> ca (${p1.total > 0 ? ((p1.nsthCases / p1.total) * 100).toFixed(1) : '0.0'}%)</span></div>
+                        </div>
+                    </div>
+
+                    <div class="sstats-rb-section">
+                        <div class="sstats-rb-header">
+                            <span class="sstats-rb-title">📋 Cơ cấu Phân loại & Phẫu thuật Ung thư</span>
+                            <span class="sstats-rb-summary">K ĐT-TT: <strong>${p1.oncologyResections || 0}</strong> ca (${p1.oncologyResectionPct || 0}%)</span>
+                        </div>
+                        <div class="sstats-rb-bar-stack" role="img" aria-label="Thanh tỷ lệ phân loại phẫu thuật">
+                            <div class="sstats-rb-seg" style="width:${p1.yeucauPct.toFixed(1)}%;background:#d97706" title="Mổ Yêu cầu: ${p1.electiveReq} ca"></div>
+                            <div class="sstats-rb-seg" style="width:${p1.total > 0 ? ((p1.electiveRoutine / p1.total) * 100).toFixed(1) : 0}%;background:#0284c7" title="Mổ Chương trình: ${p1.electiveRoutine} ca"></div>
+                            <div class="sstats-rb-seg" style="width:${p1.total > 0 ? ((p1.urgent / p1.total) * 100).toFixed(1) : 0}%;background:#dc2626" title="Mổ Bán khẩn: ${p1.urgent} ca"></div>
+                            <div class="sstats-rb-seg" style="width:${p1.total > 0 ? (((p1.typeRobot || 0) / p1.total) * 100).toFixed(1) : 0}%;background:#333C83" title="Loại Robot: ${p1.typeRobot || 0} ca"></div>
+                        </div>
+                        <div class="sstats-rb-pills-grid">
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#d97706"></span><span>Mổ Yêu cầu: <strong>${p1.electiveReq}</strong> ca (${p1.yeucauPct.toFixed(1)}%)</span></div>
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#0284c7"></span><span>Chương trình: <strong>${p1.electiveRoutine}</strong> ca (${p1.total > 0 ? ((p1.electiveRoutine / p1.total) * 100).toFixed(1) : '0.0'}%)</span></div>
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#dc2626"></span><span>Bán khẩn: <strong>${p1.urgent}</strong> ca (${p1.total > 0 ? ((p1.urgent / p1.total) * 100).toFixed(1) : '0.0'}%)</span></div>
+                            <div class="sstats-rb-pill"><span class="sstats-rb-dot" style="background:#333C83"></span><span>Loại Robot: <strong>${p1.typeRobot || 0}</strong> ca · K: <strong>${p1.oncologyResections || 0}</strong></span></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- CLINICAL DISCLAIMER -->
                 <div class="sstats-clinical-disclaimer">
                     ⚠️ <em>Chỉ số số lượng ca mổ và thời gian phẫu thuật phụ thuộc vào phân công lịch mổ, cơ cấu ca khó/phức tạp và tính chất cấp cứu; dùng phục vụ tự đánh giá chuyên môn và quản lý chất lượng.</em>
@@ -1442,22 +1483,23 @@ const SurgeryStatsPage = {
             <div class="card sstats-matrix-card">
                 <div class="sstats-matrix-header">
                     <h3 class="sstats-matrix-title">📊 Bảng Phân Tích Cơ Cấu 6 Trục Lâm Sàng</h3>
-                    <span class="sstats-matrix-hint">Khoa PTĐTT — BV Bình Dân</span>
+                    <span class="sstats-matrix-hint">Nhấn vào trục để lọc nhật ký</span>
                 </div>
 
                 <div class="sstats-matrix-table-container">
                     <table class="sstats-matrix-table">
                         <thead>
                             <tr>
-                                <th>Trục Năng Lực</th>
-                                ${hasCompare ? `
-                                    <th style="color:var(--primary);text-align:right">${shortName1}</th>
-                                    <th style="color:var(--state-danger);text-align:right">${shortName2}</th>
-                                    <th style="text-align:center">Chênh lệch</th>
-                                ` : `
-                                    <th style="color:var(--primary);text-align:right">Số ca (${shortName1})</th>
-                                    <th style="color:var(--primary);text-align:right">Tỷ trọng cơ cấu</th>
-                                `}
+                                <th>
+                                    <div class="sstats-axis-top-row sstats-axis-thead-row">
+                                        <span>Trục Năng Lực Lâm Sàng</span>
+                                        <span>
+                                            ${hasCompare
+                                                ? `<span style="color:var(--primary)">${shortName1}</span> vs <span style="color:var(--state-danger)">${shortName2}</span>`
+                                                : `Số ca (${shortName1}) · Tỷ trọng`}
+                                        </span>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1475,39 +1517,39 @@ const SurgeryStatsPage = {
                                 <tr class="sstats-matrix-tr-clickable ${isActiveAxis ? 'is-active-axis' : ''}" 
                                     onclick="SurgeryStatsPage.setLogbookFilterAxis('${isActiveAxis ? 'all' : k}')" 
                                     title="Nhấp để ${isActiveAxis ? 'xóa lọc nhóm này' : `lọc danh sách ca mổ nhóm ${ax.label}`}">
-                                    <td>
-                                        <div class="sstats-axis-name">
-                                            <span class="sstats-axis-icon">${ax.icon}</span>
-                                            <div>
-                                                <strong>${ax.label} ${isActiveAxis ? '🔍' : ''}</strong>
-                                                <div class="sstats-axis-sub-breakdown">
-                                                    ${subEntries.map(([subKey, subLabel]) => `<span class="sstats-subaxis-chip">${subLabel}: <strong>${p1.subAxisCounts[subKey] || 0}</strong></span>`).join('')}
-                                                </div>
+                                    <td class="sstats-matrix-axis-cell">
+                                        <div class="sstats-axis-top-row ${hasCompare ? 'is-compare-row' : ''}">
+                                            <div class="sstats-axis-name">
+                                                <span class="sstats-axis-icon" style="background:${ax.color}18;color:${ax.color}">${ax.icon}</span>
+                                                <strong class="sstats-axis-title-strong">${ax.label} ${isActiveAxis ? '🔍' : ''}</strong>
                                             </div>
+                                            ${hasCompare ? `
+                                            <div class="sstats-axis-metrics-right is-compare">
+                                                <span class="sstats-matrix-num" style="color:var(--primary)">
+                                                    <strong>${c1}</strong> ca <span class="sstats-matrix-pct">(${pct1.toFixed(1)}%)</span>
+                                                </span>
+                                                <span class="sstats-axis-vs-inline">vs</span>
+                                                <span class="sstats-matrix-num" style="color:var(--state-danger)">
+                                                    <strong>${c2}</strong> ca <span class="sstats-matrix-pct">(${pct2.toFixed(1)}%)</span>
+                                                </span>
+                                                <span class="sstats-delta-badge ${delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'zero'}">
+                                                    ${delta > 0 ? `+${delta.toFixed(1)}%` : delta < 0 ? `${delta.toFixed(1)}%` : '0.0%'}
+                                                </span>
+                                            </div>
+                                            ` : `
+                                            <div class="sstats-axis-metrics-right">
+                                                <span class="sstats-matrix-num" style="color:var(--primary)"><strong>${c1}</strong> ca</span>
+                                                <span class="sstats-axis-pct-badge" style="background:${ax.color}18;color:${ax.color};border:1px solid ${ax.color}35"><strong>${pct1.toFixed(1)}%</strong></span>
+                                            </div>
+                                            `}
+                                        </div>
+                                        <div class="sstats-axis-bar-track">
+                                            <div class="sstats-axis-bar-fill" style="width:${Math.min(100, pct1)}%;background:${ax.color}"></div>
+                                        </div>
+                                        <div class="sstats-axis-sub-breakdown">
+                                            ${subEntries.map(([subKey, subLabel]) => `<span class="sstats-subaxis-chip">${subLabel}: <strong>${p1.subAxisCounts[subKey] || 0}</strong></span>`).join('')}
                                         </div>
                                     </td>
-                                    ${hasCompare ? `
-                                    <td class="sstats-matrix-num" style="color:var(--primary)">
-                                        <strong>${c1}</strong> ca
-                                        <div class="sstats-matrix-pct">${pct1.toFixed(1)}%</div>
-                                    </td>
-                                    <td class="sstats-matrix-num" style="color:var(--state-danger)">
-                                        <strong>${c2}</strong> ca
-                                        <div class="sstats-matrix-pct">${pct2.toFixed(1)}%</div>
-                                    </td>
-                                    <td class="sstats-matrix-delta">
-                                        <span class="sstats-delta-badge ${delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'zero'}">
-                                            ${delta > 0 ? `+${delta.toFixed(1)}%` : delta < 0 ? `${delta.toFixed(1)}%` : '0.0%'}
-                                        </span>
-                                    </td>
-                                    ` : `
-                                    <td class="sstats-matrix-num" style="color:var(--primary)">
-                                        <strong>${c1}</strong> ca
-                                    </td>
-                                    <td class="sstats-matrix-num" style="color:var(--primary)">
-                                        <strong>${pct1.toFixed(1)}%</strong>
-                                    </td>
-                                    `}
                                 </tr>`;
                             }).join('')}
                             ${(p1.unclassifiedCount > 0 || (p2 && p2.unclassifiedCount > 0)) ? (() => {
@@ -1521,60 +1563,66 @@ const SurgeryStatsPage = {
                                 <tr class="sstats-matrix-tr-clickable sstats-unclassified-tr ${isUnclassActive ? 'is-active-axis' : ''}"
                                     onclick="SurgeryStatsPage.setLogbookFilterAxis('${isUnclassActive ? 'all' : 'unclassified'}')"
                                     title="Nhấp để ${isUnclassActive ? 'xóa lọc nhóm này' : 'lọc danh sách các ca chưa phân loại hoặc ngoại khoa khác'}">
-                                    <td>
-                                        <div class="sstats-axis-name">
-                                            <span class="sstats-axis-icon">⚠️</span>
-                                            <div>
-                                                <strong style="color:var(--amber-11, #d97706)">Chưa phân loại / Ngoại khoa khác ${isUnclassActive ? '🔍' : ''}</strong>
-                                                <div class="sstats-axis-sub">Cần rà soát chẩn đoán và phương pháp mổ</div>
+                                    <td class="sstats-matrix-axis-cell">
+                                        <div class="sstats-axis-top-row ${hasCompare ? 'is-compare-row' : ''}">
+                                            <div class="sstats-axis-name">
+                                                <span class="sstats-axis-icon" style="background:#fef3c7;color:#d97706">⚠️</span>
+                                                <div>
+                                                    <strong class="sstats-axis-title-strong" style="color:var(--amber-11, #d97706)">Chưa phân loại / Ngoại khoa khác ${isUnclassActive ? '🔍' : ''}</strong>
+                                                    <div class="sstats-axis-sub">Cần rà soát chẩn đoán và phương pháp mổ</div>
+                                                </div>
                                             </div>
+                                            ${hasCompare ? `
+                                            <div class="sstats-axis-metrics-right is-compare">
+                                                <span class="sstats-matrix-num" style="color:var(--primary)">
+                                                    <strong>${u1}</strong> ca <span class="sstats-matrix-pct">(${upct1.toFixed(1)}%)</span>
+                                                </span>
+                                                <span class="sstats-axis-vs-inline">vs</span>
+                                                <span class="sstats-matrix-num" style="color:var(--state-danger)">
+                                                    <strong>${u2}</strong> ca <span class="sstats-matrix-pct">(${upct2.toFixed(1)}%)</span>
+                                                </span>
+                                                <span class="sstats-delta-badge zero">
+                                                    ${udelta > 0 ? `+${udelta.toFixed(1)}%` : udelta < 0 ? `${udelta.toFixed(1)}%` : '0.0%'}
+                                                </span>
+                                            </div>
+                                            ` : `
+                                            <div class="sstats-axis-metrics-right">
+                                                <span class="sstats-matrix-num" style="color:var(--primary)"><strong>${u1}</strong> ca</span>
+                                                <span class="sstats-axis-pct-badge" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a"><strong>${upct1.toFixed(1)}%</strong></span>
+                                            </div>
+                                            `}
                                         </div>
                                     </td>
-                                    ${hasCompare ? `
-                                    <td class="sstats-matrix-num" style="color:var(--primary)">
-                                        <strong>${u1}</strong> ca
-                                        <div class="sstats-matrix-pct">${upct1.toFixed(1)}%</div>
-                                    </td>
-                                    <td class="sstats-matrix-num" style="color:var(--state-danger)">
-                                        <strong>${u2}</strong> ca
-                                        <div class="sstats-matrix-pct">${upct2.toFixed(1)}%</div>
-                                    </td>
-                                    <td class="sstats-matrix-delta">
-                                        <span class="sstats-delta-badge zero">
-                                            ${udelta > 0 ? `+${udelta.toFixed(1)}%` : udelta < 0 ? `${udelta.toFixed(1)}%` : '0.0%'}
-                                        </span>
-                                    </td>
-                                    ` : `
-                                    <td class="sstats-matrix-num" style="color:var(--primary)">
-                                        <strong>${u1}</strong> ca
-                                    </td>
-                                    <td class="sstats-matrix-num" style="color:var(--primary)">
-                                        <strong>${upct1.toFixed(1)}%</strong>
-                                    </td>
-                                    `}
                                 </tr>`;
                             })() : ''}
                         </tbody>
                         <tfoot>
                             <tr class="sstats-matrix-total-row">
-                                <td><strong>TỔNG CỘNG</strong></td>
-                                ${hasCompare ? `
-                                <td style="text-align:right;color:var(--primary)"><strong>${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</strong></td>
-                                <td style="text-align:right;color:var(--state-danger)"><strong>${p2.doctor.id === 'dept_avg' ? `${p2.total.toFixed(1)} ca` : `${p2.total} ca`}</strong></td>
-                                <td style="text-align:center">
-                                    <span class="sstats-delta-badge ${totalDiff >= 0 ? 'pos' : 'neg'}" title="${totalDiff >= 0 ? `+${totalDiff.toFixed(1)}` : totalDiff.toFixed(1)} ca">
-                                        ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
-                                    </span>
+                                <td>
+                                    <div class="sstats-axis-top-row ${hasCompare ? 'is-compare-row' : ''}">
+                                        <strong style="font-size:0.98rem">TỔNG CỘNG TOÀN BỘ</strong>
+                                        ${hasCompare ? `
+                                        <div class="sstats-axis-metrics-right is-compare">
+                                            <span style="color:var(--primary);font-weight:800;font-size:1rem">${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</span>
+                                            <span class="sstats-axis-vs-inline">vs</span>
+                                            <span style="color:var(--state-danger);font-weight:800;font-size:1rem">${p2.doctor.id === 'dept_avg' ? `${p2.total.toFixed(1)} ca` : `${p2.total} ca`}</span>
+                                            <span class="sstats-delta-badge ${totalDiff >= 0 ? 'pos' : 'neg'}" title="${totalDiff >= 0 ? `+${totalDiff.toFixed(1)}` : totalDiff.toFixed(1)} ca">
+                                                ${totalPctDiff >= 0 ? `+${totalPctDiff.toFixed(1)}%` : `${totalPctDiff.toFixed(1)}%`}
+                                            </span>
+                                        </div>
+                                        ` : `
+                                        <div class="sstats-axis-metrics-right">
+                                            <span style="color:var(--primary);font-weight:800;font-size:1.05rem">${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</span>
+                                            <span class="sstats-axis-pct-badge" style="background:var(--primary-a10);color:var(--primary);border:1px solid var(--primary-a20)"><strong>100%</strong></span>
+                                        </div>
+                                        `}
+                                    </div>
                                 </td>
-                                ` : `
-                                <td style="text-align:right;color:var(--primary)"><strong>${p1.doctor.id === 'dept_avg' ? `${p1.total.toFixed(1)} ca` : `${p1.total} ca`}</strong></td>
-                                <td style="text-align:right;color:var(--primary)"><strong>100%</strong></td>
-                                `}
                             </tr>
                         </tfoot>
                     </table>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 10px; text-align: right; padding-right: 4px;">
+                <div class="sstats-matrix-footer-note">
                     Phân loại năng lực lâm sàng chuyên sâu Khoa Phẫu thuật Đại trực tràng (Chuẩn Cleveland Clinic DDSI / ASCRS)
                 </div>
             </div>
@@ -1775,11 +1823,11 @@ const SurgeryStatsPage = {
 
     // ===== SVG RADAR CHART GENERATOR =====
     _renderRadarSVG(p1, p2, options = {}) {
-        const width = 500;
-        const height = 430;
+        const width = 480;
+        const height = 390;
         const cx = width / 2;
-        const cy = height / 2 + 10;
-        const radius = 120;
+        const cy = height / 2 + 2;
+        const radius = 102;
         const axisKeys = Object.keys(this.CLINICAL_AXES);
         const numAxes = axisKeys.length;
         const hasCompare = !!p2;
@@ -1832,34 +1880,36 @@ const SurgeryStatsPage = {
                 const r = lvl * radius;
                 pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
             }
-            gridSVG += `<polygon points="${pts.join(' ')}" class="sstats-radar-grid" stroke="${borderColor}" stroke-dasharray="${lvlIdx === levels.length - 1 ? 'none' : '2,3'}" fill="none" stroke-width="1" />`;
+            gridSVG += `<polygon points="${pts.join(' ')}" class="sstats-radar-grid" stroke="${borderColor}" stroke-dasharray="${lvlIdx === levels.length - 1 ? 'none' : '2,3'}" fill="none" stroke-width="1.2" />`;
             // Scale label
             const rawRingVal = lvl * maxScale;
             const labelVal = isPct
                 ? `${Number.isInteger(rawRingVal) ? rawRingVal : rawRingVal.toFixed(1)}%`
                 : Math.round(rawRingVal);
-            gridSVG += `<text x="${cx + 4}" y="${cy - lvl * radius + 10}" class="sstats-radar-grid-label" fill="${textMutedColor}" font-size="9">${labelVal}</text>`;
+            gridSVG += `<text x="${cx + 5}" y="${cy - lvl * radius + 11}" class="sstats-radar-grid-label" fill="${textMutedColor}" font-size="11" font-weight="600">${labelVal}</text>`;
         });
 
-        // Axis spokes & labels
+        // Axis spokes & labels (smart non-clipping positions outside the r=102 hexagon)
         let spokesSVG = '';
         let labelsSVG = '';
+        const labelPositions = [
+            { lx: cx,       ly: 34,  anchor: 'middle' }, // 0: Top (Đại tràng)
+            { lx: cx + 136, ly: 82,  anchor: 'middle' }, // 1: Top-Right (Trực tràng)
+            { lx: cx + 136, ly: 312, anchor: 'middle' }, // 2: Bottom-Right (Hậu môn – Sàn chậu)
+            { lx: cx,       ly: 360, anchor: 'middle' }, // 3: Bottom (Đóng & Mở HMNT)
+            { lx: cx - 126, ly: 312, anchor: 'middle' }, // 4: Bottom-Left (Thoát vị & Phục hồi Thành bụng)
+            { lx: cx - 124, ly: 82,  anchor: 'middle' }  // 5: Top-Left (Tiêu hóa trên, Gan mật & Phối hợp)
+        ];
 
         axisKeys.forEach((k, i) => {
             const ax = this.CLINICAL_AXES[k];
             const endCoord = getCoord(maxScale, i, maxScale);
-            spokesSVG += `<line x1="${cx}" y1="${cy}" x2="${endCoord.x}" y2="${endCoord.y}" stroke="${borderColor}" stroke-width="1.2" />`;
+            spokesSVG += `<line x1="${cx}" y1="${cy}" x2="${endCoord.x}" y2="${endCoord.y}" stroke="${borderColor}" stroke-width="1.3" />`;
 
-            // Label coordinate slightly outside radius
-            const labelAngle = i * angleSlice - Math.PI / 2;
-            const labelRadius = radius + 28;
-            const lx = cx + labelRadius * Math.cos(labelAngle);
-            const ly = cy + labelRadius * Math.sin(labelAngle);
-
-            let anchor = 'middle';
-            if (Math.abs(Math.cos(labelAngle)) > 0.3) {
-                anchor = Math.cos(labelAngle) > 0 ? 'start' : 'end';
-            }
+            const pos = labelPositions[i] || { lx: cx, ly: cy, anchor: 'middle' };
+            const lx = pos.lx;
+            const ly = pos.ly;
+            const anchor = pos.anchor;
 
             const c1 = (p1 && p1.axisCounts && p1.axisCounts[k]) || 0;
             const pct1 = (p1 && p1.axisPct && p1.axisPct[k]) || 0;
@@ -1868,10 +1918,10 @@ const SurgeryStatsPage = {
 
             labelsSVG += `
             <g class="sstats-radar-axis-label-group">
-                <text x="${lx}" y="${ly - 6}" text-anchor="${anchor}" class="sstats-radar-axis-title" fill="${textPrimaryColor}" font-size="11" font-weight="700">
+                <text x="${lx}" y="${ly - 6}" text-anchor="${anchor}" class="sstats-radar-axis-title" fill="${textPrimaryColor}" font-size="13" font-weight="700">
                     ${ax.label}
                 </text>
-                <text x="${lx}" y="${ly + 8}" text-anchor="${anchor}" class="sstats-radar-axis-values" font-size="10">
+                <text x="${lx}" y="${ly + 11}" text-anchor="${anchor}" class="sstats-radar-axis-values" font-size="12">
                     ${hasCompare 
                         ? (isPct 
                             ? `<tspan fill="${p1Color}" font-weight="700">${pct1.toFixed(0)}%</tspan> <tspan fill="${textMutedColor}">vs</tspan> <tspan fill="${p2Color}" font-weight="700">${pct2.toFixed(0)}%</tspan>`
