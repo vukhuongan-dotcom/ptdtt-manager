@@ -137,23 +137,42 @@ const Onboarding = {
         `;
 
         // Position tooltip
+        this._positionTooltip(tooltip, rect, step);
+
+        overlay.appendChild(tooltip);
+        document.body.appendChild(overlay);
+    },
+
+    _positionTooltip(tooltip, rect, step) {
+        if (window.innerWidth <= 768) {
+            tooltip.style.left = '12px';
+            tooltip.style.right = '12px';
+            tooltip.style.width = 'auto';
+            tooltip.style.maxWidth = (window.innerWidth - 24) + 'px';
+            tooltip.style.bottom = '76px';
+            tooltip.style.top = 'auto';
+            tooltip.style.transform = 'none';
+            return;
+        }
         if (rect) {
             const gap = 16;
             if (step.position === 'right') {
-                tooltip.style.top = Math.max(10, rect.top - 10) + 'px';
-                tooltip.style.left = (rect.right + gap) + 'px';
+                tooltip.style.top = Math.max(12, rect.top - 10) + 'px';
+                tooltip.style.left = Math.max(12, rect.right + gap) + 'px';
             } else if (step.position === 'bottom') {
-                tooltip.style.top = (rect.bottom + gap) + 'px';
-                tooltip.style.left = Math.max(10, rect.left) + 'px';
+                tooltip.style.top = Math.max(12, rect.bottom + gap) + 'px';
+                tooltip.style.left = Math.max(12, rect.left) + 'px';
             }
-            // Check if overflows viewport
             requestAnimationFrame(() => {
                 const tr = tooltip.getBoundingClientRect();
-                if (tr.right > window.innerWidth - 10) {
-                    tooltip.style.left = (window.innerWidth - tr.width - 10) + 'px';
+                if (tr.right > window.innerWidth - 12) {
+                    tooltip.style.left = Math.max(12, window.innerWidth - tr.width - 12) + 'px';
                 }
-                if (tr.bottom > window.innerHeight - 10) {
-                    tooltip.style.top = (window.innerHeight - tr.height - 10) + 'px';
+                if (tr.left < 12) {
+                    tooltip.style.left = '12px';
+                }
+                if (tr.bottom > window.innerHeight - 12) {
+                    tooltip.style.top = Math.max(12, window.innerHeight - tr.height - 12) + 'px';
                 }
             });
         } else {
@@ -161,9 +180,6 @@ const Onboarding = {
             tooltip.style.left = '50%';
             tooltip.style.transform = 'translate(-50%, -50%)';
         }
-
-        overlay.appendChild(tooltip);
-        document.body.appendChild(overlay);
     },
 
     _cleanup() {

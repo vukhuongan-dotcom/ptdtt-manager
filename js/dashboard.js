@@ -13,7 +13,7 @@ const DashboardPage = {
         const reports16h = Store.getAll('reports16h') || [];
 
         const _now = new Date();
-        const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+        const today = (typeof Utils !== 'undefined' && Utils.localDateStr) ? Utils.localDateStr(_now) : `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
 
         // Surgery stats (live from SurgeryPage)
         SurgeryPage.init();
@@ -23,7 +23,7 @@ const DashboardPage = {
 
         // MIS & Clinical Approach Metrics via shared SurgeryMetrics
         const monthCount = (this._trendMonths === 'year') ? (new Date().getMonth() + 1) : (parseInt(this._trendMonths) || 6);
-        const recentMonths = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.getMonthlyTrend(surgeries, monthCount) : [];
+        const recentMonths = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.getMonthlyTrend(surgeries, monthCount, _now) : [];
         const totalRecentCases = recentMonths.reduce((sum, m) => sum + (m.total || 0), 0);
         const minKey = (recentMonths.length > 0 && recentMonths[0]?.key) ? (recentMonths[0].key + '-01') : `${today.slice(0, 7)}-01`;
         const allRecentCases = surgeries.filter(s => {
@@ -31,7 +31,10 @@ const DashboardPage = {
         });
         const misStats = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateMIS(allRecentCases) : { misPct: 0, noisoiPct: 0, robotPct: 0, openPct: 0, misCases: 0, noisoi: 0, robot: 0, mo: 0 };
         const typeBreakdown = (typeof SurgeryMetrics !== 'undefined') ? SurgeryMetrics.calculateTypeBreakdown(allRecentCases) : { yeucauPct: 0, chuongtrinhPct: 0, robotPct: 0, bankhanPct: 0, yeucau: 0, chuongtrinh: 0, robot: 0, bankhan: 0 };
-        const avgMonthly = recentMonths.length > 0 ? (totalRecentCases / recentMonths.length).toFixed(1) : 0;
+        const avgRef = (typeof SurgeryMetrics !== 'undefined' && SurgeryMetrics.computeAverageReference)
+            ? SurgeryMetrics.computeAverageReference(recentMonths)
+            : { avgValue: null, completedCount: 0 };
+        const avgMonthly = avgRef.avgValue !== null ? avgRef.avgValue.toFixed(1) : '—';
 
         // Inpatient Flow (Widget 3) from latest reports7h & reports16h (strictly chronological)
         const valid16h = [...reports16h].filter(r => r && r.totalPatients).sort((a,b) => b.date.localeCompare(a.date));
@@ -191,8 +194,8 @@ const DashboardPage = {
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">Trung bình / tháng</div>
-                        <div class="trend-kpi-val text-green">${avgMonthly} <span class="trend-kpi-unit">ca</span></div>
-                        <div class="trend-kpi-sub">Công suất khoa</div>
+                        <div class="trend-kpi-val text-green">${avgMonthly}${avgRef.avgValue !== null ? ' <span class="trend-kpi-unit">ca</span>' : ''}</div>
+                        <div class="trend-kpi-sub">${avgRef.completedCount > 0 ? `TB ${avgRef.completedCount} tháng trước` : 'Chưa đủ tháng hoàn tất'}</div>
                     </div>
                     <div class="trend-kpi-item">
                         <div class="trend-kpi-lbl">PT Yêu cầu</div>
@@ -234,9 +237,9 @@ const DashboardPage = {
                         <div class="trend-legend-dot trend-dot-total"></div>
                         ● Tổng số ca
                     </div>
-                    <div class="trend-legend-item" title="Đường trung bình 6 tháng chuẩn">
+                    <div class="trend-legend-item" title="Đường trung bình các tháng lịch đã hoàn tất">
                         <div class="trend-legend-line-dashed"></div>
-                        Mốc TB (${Math.round(avgMonthly)} ca)
+                        ${avgRef.avgValue !== null ? `TB ${avgRef.completedCount} tháng trước (${Math.round(avgRef.avgValue)} ca)` : 'Mốc TB (chưa đủ tháng)'}
                     </div>
                 </div>
             </div>
@@ -489,24 +492,28 @@ const DashboardPage = {
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
 
+        const now = new Date();
         const surgeries = Store.getAll('surgeries') || [];
         let numMonths = 6;
         if (this._trendMonths === 12) numMonths = 12;
         else if (this._trendMonths === 'year') {
-            numMonths = new Date().getMonth() + 1;
+            numMonths = now.getMonth() + 1;
         }
 
-        const data = SurgeryMetrics.getMonthlyTrend(surgeries, numMonths);
+        const data = SurgeryMetrics.getMonthlyTrend(surgeries, numMonths, now);
         if (!data || data.length === 0) return;
 
         const pad = { top: 32, right: 24, bottom: 38, left: 46 };
         const cW = w - pad.left - pad.right;
         const cH = h - pad.top - pad.bottom;
 
-        // Calculate max value for Y-axis (including benchmark & run-rate projections)
+        // Calculate completed-months average reference (V2-04)
+        const completedMonths = data.filter(m => !m.isCurrentMonth);
+        const avgValue = completedMonths.length > 0
+            ? completedMonths.reduce((s, m) => s + m.total, 0) / completedMonths.length
+            : null;
         const allTotals = data.map(m => Math.max(m.total, m.runRateProjected || 0));
-        const avgValue = data.reduce((s, m) => s + m.total, 0) / data.length;
-        const maxVal = Math.max(...allTotals, avgValue, 10);
+        const maxVal = Math.max(...allTotals, avgValue || 0, 10);
         const yMax = Math.ceil(maxVal / 50) * 50 || 250;
 
         const yOf = v => pad.top + cH - (v / yMax) * cH;
@@ -537,8 +544,8 @@ const DashboardPage = {
             ctx.fillText(val, pad.left - 8, y + 4);
         }
 
-        // 2. Draw Benchmark Line (6-Month Average Reference)
-        if (avgValue > 0) {
+        // 2. Draw Benchmark Line (Completed Months Average Reference)
+        if (avgValue !== null && avgValue > 0) {
             const yAvg = yOf(avgValue);
             ctx.save();
             ctx.setLineDash([5, 4]);
@@ -553,7 +560,7 @@ const DashboardPage = {
             ctx.font = '10px "Noto Sans", sans-serif';
             ctx.textAlign = 'right';
             ctx.fillStyle = isDark ? '#fbbf24' : '#d97706';
-            ctx.fillText(`Mốc TB: ${Math.round(avgValue)} ca`, w - pad.right, yAvg - 6);
+            ctx.fillText(`TB ${completedMonths.length} tháng trước: ${Math.round(avgValue)} ca`, w - pad.right, yAvg - 6);
             ctx.restore();
         }
 
@@ -609,39 +616,6 @@ const DashboardPage = {
                 }
             });
 
-            // For Current Month: Draw Run-Rate Projection Extension
-            if (m.isCurrentMonth && m.runRateProjected > m.total) {
-                const yActualTop = yOf(m.total);
-                const yProjTop = yOf(m.runRateProjected);
-                const projHeight = yActualTop - yProjTop;
-
-                ctx.save();
-                ctx.fillStyle = isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.15)';
-                ctx.strokeStyle = isDark ? 'rgba(139, 92, 246, 0.65)' : 'rgba(124, 58, 237, 0.7)';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([3, 3]);
-
-                // Draw dashed projection box
-                ctx.beginPath();
-                const radius = 4;
-                ctx.moveTo(xLeft, yActualTop);
-                ctx.lineTo(xLeft, yProjTop + radius);
-                ctx.quadraticCurveTo(xLeft, yProjTop, xLeft + radius, yProjTop);
-                ctx.lineTo(xLeft + barWidth - radius, yProjTop);
-                ctx.quadraticCurveTo(xLeft + barWidth, yProjTop, xLeft + barWidth, yProjTop + radius);
-                ctx.lineTo(xLeft + barWidth, yActualTop);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-
-                // Projection badge on top
-                ctx.font = 'bold 9.5px "Noto Sans", sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillStyle = isDark ? '#c084fc' : '#7c3aed';
-                ctx.fillText(`~${m.runRateProjected}*`, xCenter, yProjTop - 6);
-                ctx.restore();
-            }
-
             barCoordinates.push({
                 index: i,
                 month: m,
@@ -661,7 +635,7 @@ const DashboardPage = {
             if (m.isCurrentMonth) {
                 ctx.font = '9px "Noto Sans", sans-serif';
                 ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
-                ctx.fillText('(đến 21/8)', xCenter, h - pad.bottom + 28);
+                ctx.fillText(`(tính đến ${now.getDate()}/${m.month})`, xCenter, h - pad.bottom + 28);
             }
         });
 
@@ -730,12 +704,53 @@ const DashboardPage = {
 
             if (hovered) {
                 const m = hovered.month;
-                const statusTag = m.isCurrentMonth ? '<span class="trend-tooltip-badge live">Đang diễn ra (đến 21/08)</span>' : '<span class="trend-tooltip-badge">Hoàn tất</span>';
-                const runRateHtml = m.isCurrentMonth ? `
-                    <div class="trend-tooltip-proj-box">
-                        <div class="trend-proj-title">⚡ Dự phóng cả tháng (Run-rate): <strong>~${m.runRateProjected} ca</strong></div>
-                        <div class="trend-proj-sub">Tốc độ hiện tại thấp hơn TB 6 tháng (${Math.round(avgValue)} ca) <strong>-${Math.abs(Math.round(((m.runRateProjected/avgValue)-1)*100))}%</strong></div>
-                    </div>` : '';
+                const dd = String(now.getDate()).padStart(2, '0');
+                const mm = String(m.month).padStart(2, '0');
+                const statusTag = m.isCurrentMonth
+                    ? `<span class="trend-tooltip-badge live">Tháng hiện tại (tính đến ${dd}/${mm})</span>`
+                    : '<span class="trend-tooltip-badge">Hoàn tất</span>';
+
+                let comparisonLine = 'Chưa có mốc trung bình các tháng trước để so sánh';
+                if (avgValue !== null && avgValue > 0) {
+                    const roundedAvg = Math.round(avgValue);
+                    if (m.isCurrentMonth) {
+                        const pctOfAvg = Math.round((m.total / avgValue) * 100);
+                        comparisonLine = `Đã ghi nhận <strong>${m.total} ca</strong> (bằng <strong>${pctOfAvg}%</strong> mức TB ${completedMonths.length} tháng trước: ${roundedAvg} ca)`;
+                    } else {
+                        const diffPct = Math.round(((m.total - avgValue) / avgValue) * 100);
+                        if (diffPct > 0) {
+                            comparisonLine = `Cao hơn TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>+${diffPct}%</strong>`;
+                        } else if (diffPct < 0) {
+                            comparisonLine = `Thấp hơn TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>${diffPct}%</strong>`;
+                        } else {
+                            comparisonLine = `Tương đương TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>(0%)</strong>`;
+                        }
+                    }
+                }
+
+                let coverageHtml = '';
+                if (m.isCurrentMonth) {
+                    const formattedLatest = m.latestCaseDateInMonth
+                        ? String(m.latestCaseDateInMonth).split('T')[0].split('-').reverse().join('/')
+                        : '—';
+                    const latestInfo = m.total > 0
+                        ? `Ngày có ca gần nhất trên lịch: <strong>${formattedLatest}</strong>`
+                        : `Chưa có ca mổ nào trên lịch từ 01/${mm} đến ${dd}/${mm}`;
+                    const afterTodayInfo = (m.scheduledAfterToday || 0) > 0
+                        ? `<div class="trend-proj-sub">Đã xếp lịch sau ngày ${dd}/${mm}: <strong>+${m.scheduledAfterToday} ca</strong></div>`
+                        : '';
+                    coverageHtml = `
+                        <div class="trend-tooltip-proj-box">
+                            <div class="trend-proj-title">${latestInfo}</div>
+                            ${afterTodayInfo}
+                            <div class="trend-proj-sub">${comparisonLine}</div>
+                        </div>`;
+                } else {
+                    coverageHtml = `
+                        <div class="trend-tooltip-proj-box">
+                            <div class="trend-proj-sub">${comparisonLine}</div>
+                        </div>`;
+                }
 
                 tooltip.innerHTML = `
                     <div class="trend-tooltip-header">
@@ -743,7 +758,7 @@ const DashboardPage = {
                         ${statusTag}
                     </div>
                     <div class="trend-tooltip-total-row">
-                        <span>Tổng số ca:</span>
+                        <span>${m.isCurrentMonth ? `Số ca ghi nhận trên lịch (tính đến ${dd}/${mm}):` : 'Tổng số ca:'}</span>
                         <strong class="trend-tooltip-total-num">${m.total} ca</strong>
                     </div>
                     <div class="trend-tooltip-breakdown">
@@ -768,7 +783,7 @@ const DashboardPage = {
                         <span>✨ Tỉ lệ MIS (Nội soi + Robot):</span>
                         <strong class="text-blue">${m.mis.misPct}%</strong>
                     </div>
-                    ${runRateHtml}
+                    ${coverageHtml}
                 `;
                 tooltip.classList.add('visible');
 

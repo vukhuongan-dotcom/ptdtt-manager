@@ -128,8 +128,8 @@ const StaffPage = {
             <div class="staff-toolbar-mid">
                 <div class="search-box">
                     ${Utils.searchIcon()}
-                    <input type="text" placeholder="Tìm nhân sự, SĐT, vai trò..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
-                    ${this.searchQuery ? `<button class="search-clear-btn" onclick="StaffPage.clearSearch()" title="Xóa">✕</button>` : ''}
+                    <input type="text" aria-label="Tìm kiếm nhân sự" placeholder="Tìm nhân sự, SĐT, vai trò..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
+                    ${this.searchQuery ? `<button class="search-clear-btn" onclick="StaffPage.clearSearch()" aria-label="Xóa tìm kiếm" title="Xóa">✕</button>` : ''}
                 </div>
                 ${isAdmin ? `<button class="btn btn-primary btn-add-staff" onclick="StaffPage.openForm()">
                     ${Utils.plusIcon()} <span>Thêm</span>
@@ -271,8 +271,8 @@ const StaffPage = {
             <div class="staff-toolbar-mid">
                 <div class="search-box">
                     ${Utils.searchIcon()}
-                    <input type="text" placeholder="Tìm BS ngoài khoa..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
-                    ${this.searchQuery ? `<button class="search-clear-btn" onclick="StaffPage.clearSearch()" title="Xóa">✕</button>` : ''}
+                    <input type="text" aria-label="Tìm kiếm bác sĩ ngoài khoa" placeholder="Tìm BS ngoài khoa..." value="${this.searchQuery}" oninput="StaffPage.search(this.value)" id="staff-search">
+                    ${this.searchQuery ? `<button class="search-clear-btn" onclick="StaffPage.clearSearch()" aria-label="Xóa tìm kiếm" title="Xóa">✕</button>` : ''}
                 </div>
                 ${isAdmin ? `<button class="btn btn-primary btn-add-staff" onclick="StaffPage.openExternalForm()">
                     ${Utils.plusIcon()} <span>Thêm BS</span>

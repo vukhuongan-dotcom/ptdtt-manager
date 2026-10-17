@@ -506,6 +506,14 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
     background-clip: text;
 }
 
+[data-theme="dark"] .page-title {
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
 .page-subtitle {
     color: var(--text-muted);
     font-size: 0.9rem;
@@ -931,7 +939,6 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     display: flex;
     flex-direction: column;
     z-index: 100;
-    transition: width var(--transition-slow);
 }
 
 .sidebar-logo {
@@ -1126,6 +1133,66 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 @media (max-width: 768px) {
     .sidebar-theme-area { display: none; }
 }
+
+/* BUG-174: Tablet & Split-Screen (769px – 1024px) — Khóa cứng sidebar thu gọn 72px */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: var(--sidebar-collapsed);
+        max-width: var(--sidebar-collapsed);
+        transition: none;
+    }
+    .sidebar-logo {
+        justify-content: center;
+        padding: 14px 8px;
+    }
+    .sidebar .logo-text,
+    .sidebar .nav-item span,
+    .sidebar .user-details,
+    .sidebar .notif-bell-label,
+    .sidebar .sidebar-search-label,
+    .sidebar .sidebar-search-btn .search-shortcut,
+    .sidebar .sidebar-btn-text {
+        display: none !important;
+    }
+    .sidebar-nav {
+        padding: 8px 8px;
+    }
+    .sidebar .nav-item {
+        justify-content: center;
+        padding: 10px 0;
+    }
+    .sidebar .sidebar-search-btn {
+        justify-content: center;
+        padding: 10px 0;
+        gap: 0;
+    }
+    .sidebar-footer {
+        padding: 10px 8px;
+    }
+    .sidebar-theme-area,
+    .sidebar-bell-area,
+    .user-info {
+        display: flex;
+        justify-content: center;
+    }
+    .sidebar-admin-btns {
+        flex-direction: column;
+        gap: 4px;
+    }
+    .sidebar-admin-btns .btn,
+    .sidebar-full-btn,
+    .sidebar-full-btn-spaced,
+    .logout-btn {
+        padding: 6px 0;
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+    }
+    .logout-btn-icon {
+        margin-right: 0;
+    }
+}
+
 .login-page {
     min-height: 100vh;
     display: flex;
@@ -3602,6 +3669,16 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
+.staff-toolbar-mid {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.btn-add-staff {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
 .staff-filters-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -3707,7 +3784,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .staff-desktop-view { display: block; }
 .staff-mobile-cards { display: none; }
 
-.staff-table-card { margin-top: 12px; padding: 0; overflow: hidden; }
+.staff-table-card { margin-top: 12px; padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .staff-table { width: 100%; border-collapse: collapse; }
 .staff-table th {
     background: var(--bg-tertiary);
@@ -3716,12 +3793,12 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    padding: 12px 14px;
+    padding: 10px 8px;
     text-align: left;
     border-bottom: 1px solid var(--border);
 }
 .staff-table td {
-    padding: 12px 14px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--border);
     font-size: 0.86rem;
     vertical-align: middle;
@@ -3980,20 +4057,20 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .staff-contact-link svg { flex-shrink: 0; color: var(--text-muted); }
 .staff-contact-link:hover svg { color: var(--primary); }
 
-.staff-actions { display: flex; gap: 6px; align-items: center; }
+.staff-actions { display: flex; gap: 4px; align-items: center; justify-content: center; }
 .btn-danger-icon { color: var(--text-muted); }
 .btn-danger-icon:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
 /* Table Columns */
-.th-name { min-width: 220px; white-space: nowrap; }
-.th-dob  { width: 110px; white-space: nowrap; }
-.th-title { width: 120px; white-space: nowrap; }
-.th-role { width: 160px; white-space: nowrap; }
-.th-phone { width: 130px; white-space: nowrap; }
-.th-email { width: 180px; white-space: nowrap; }
-.th-dept { width: 150px; white-space: nowrap; }
-.th-action { width: 80px; text-align: center; }
-.th-stt { width: 50px; text-align: center; }
+.th-name { min-width: 175px; white-space: nowrap; }
+.th-dob  { width: 92px; white-space: nowrap; }
+.th-title { width: 90px; white-space: nowrap; }
+.th-role { width: 125px; white-space: nowrap; }
+.th-phone { width: 110px; white-space: nowrap; }
+.th-email { width: 150px; white-space: nowrap; }
+.th-dept { width: 130px; white-space: nowrap; }
+.th-action { width: 108px; min-width: 108px; text-align: center; }
+.th-stt { width: 42px; text-align: center; }
 .th-action-wide { width: 150px; text-align: center; }
 
 /* ===== Mobile Cards Styling (< 768px) ===== */
@@ -6629,6 +6706,19 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     flex-direction: column;
     width: 200px;        /* fixed column width per day */
     flex-shrink: 0;
+}
+
+@media (min-width: 1400px) {
+    .surgery-week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        min-width: 0;
+        width: 100%;
+    }
+    .surgery-day {
+        width: auto;
+        min-width: 0;
+    }
 }
 .surgery-day.today {
     border-color: var(--primary);
@@ -11030,48 +11120,53 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         left: 0;
         right: 0;
         height: 52px;
-        padding: 0 12px;
+        padding: 0 10px;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border);
         z-index: 1001;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        gap: 6px;
     }
 
     .mobile-header-left {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         color: var(--primary);
         min-width: 0;
+        flex: 1 1 auto;
     }
     .mobile-header-logo {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         object-fit: contain;
         flex-shrink: 0;
     }
     .mobile-header-title {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         font-weight: 700;
         color: var(--text-primary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        min-width: 60px;
     }
 
     .mobile-header-right {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         flex-shrink: 0;
     }
 
-    /* Theme toggle button trong mobile header */
-    .mobile-theme-toggle {
-        width: 36px;
-        height: 36px;
-        min-width: 44px;  /* A M1: WCAG 2.5.5 — cả 2 chiều ≥ 44px */
-        min-height: 44px; /* WCAG 2.5.5 touch target */
+    /* 5 nút chuẩn hóa trên mobile header (Search, Theme, Bell, Avatar, Logout) */
+    .mobile-search-btn,
+    .mobile-theme-toggle,
+    .mobile-header-right .notif-bell-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -11083,24 +11178,36 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         transition: background var(--transition-fast), color var(--transition-fast);
         flex-shrink: 0;
         padding: 0;
+        box-sizing: border-box;
     }
-    .mobile-theme-toggle:hover {
+    .mobile-search-btn:hover,
+    .mobile-theme-toggle:hover,
+    .mobile-header-right .notif-bell-btn:hover {
         background: var(--bg-hover);
         color: var(--primary);
     }
 
     .mobile-user-avatar {
-        width: 28px;
-        height: 28px;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px;
+        min-height: 44px;
         border-radius: 50%;
-        background: var(--primary-fill, #1D2357);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: 0.72rem; /* fix: 0.65rem → 0.72rem WCAG 1.4.4 */
+        font-size: 0.72rem;
         font-weight: 700;
         flex-shrink: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    .mobile-user-avatar .staff-avatar-img,
+    .mobile-user-avatar .staff-avatar-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
     }
     /* Hide full name on mobile to save space */
     .mobile-user-name {
@@ -11110,15 +11217,20 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         background: none;
         border: 1px solid rgba(239,68,68,0.3);
         color: #ef4444;
-        padding: 6px 12px;
-        min-height: 44px; /* A3: WCAG 2.5.5 touch target */
-        border-radius: 6px;
-        font-size: 0.72rem; /* fix: 0.68rem → 0.72rem WCAG 1.4.4 */
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 0.72rem;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 3px;
+        justify-content: center;
+        flex-shrink: 0;
+        box-sizing: border-box;
         transition: background 0.2s, color 0.2s;
     }
     .mobile-logout-btn:hover, .mobile-logout-btn:active {
@@ -11147,6 +11259,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
     .sidebar-logo { display: none; }
     .sidebar-footer { display: none; }
+    .sidebar-search-btn { display: none !important; }
 
     .sidebar-nav {
         flex-direction: row;
@@ -11581,8 +11694,15 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .report-stat-card { padding: 8px 10px; }
     .report-stat-value { font-size: 1.15rem; }
 
-    /* ===== HIDE NON-ESSENTIAL ===== */
-    .stat-change { display: none; }
+    /* ===== STAT CHANGE — Hiển thị gọn trên mobile (BUG-178) ===== */
+    .stat-change {
+        display: block !important;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
 
     /* ===== SCROLL FADE — bottom nav ===== */
     .sidebar::after {
@@ -11600,7 +11720,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 /* ===== SMALL PHONES — max-width: 480px ===== */
 @media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr !important; }
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
     .patient-stats { grid-template-columns: 1fr !important; }
     .room-grid { grid-template-columns: 1fr !important; }
     .surgery-stats-grid { grid-template-columns: 1fr !important; }
@@ -11618,6 +11738,48 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     /* U0 A2: 0.52rem → 0.72rem */
     .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
     .day-number { font-size: 0.72rem; } /* fix: 0.65rem → 0.72rem */
+}
+
+/* ===== COMPACT ANDROID PHONES — max-width: 389px (360×800) ===== */
+@media (max-width: 389px) {
+    .mobile-header {
+        padding: 0 8px;
+        gap: 4px;
+    }
+    .mobile-header-left {
+        gap: 5px;
+    }
+    .mobile-header-logo {
+        width: 26px;
+        height: 26px;
+    }
+    .mobile-header-title {
+        font-size: 0.78rem;
+    }
+    .mobile-header-right {
+        gap: 3px;
+    }
+    .mobile-search-btn,
+    .mobile-theme-toggle,
+    .mobile-header-right .notif-bell-btn,
+    .mobile-logout-btn {
+        width: 40px;
+        min-width: 40px;
+        height: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+    }
+    .mobile-user-avatar {
+        width: 40px !important;
+        min-width: 40px;
+        height: 44px !important;
+        min-height: 44px;
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 339px) {
+    .stats-grid { grid-template-columns: 1fr !important; }
 }
 
 /* ===== iOS ZOOM PREVENTION — schedule-select ===== */

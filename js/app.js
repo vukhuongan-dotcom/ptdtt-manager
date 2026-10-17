@@ -2,6 +2,10 @@
 const App = {
     currentPage: 'dashboard',
     _keyboardShortcutHandler: null,
+    _navBound: false,
+    _idleListenersBound: false,
+    _networkStatusBound: false,
+    _swipeBound: false,
 
     pages: {
         dashboard: DashboardPage,
@@ -23,44 +27,13 @@ const App = {
         this.bindModal();
         Auth.init();
 
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        if (isLocal) {
-            // Auto bypass login for local test/demo mode as BS. Vũ Khương An
-            const localSession = {
-                staffId: 2,
-                username: 'vkan',
-                name: 'Vũ Khương An',
-                role: 'BS Phó trưởng khoa',
-                title: 'BSCKII',
-                isAdmin: true,
-                isSuperAdmin: true,
-                color: '#1878B4',
-                loginTime: new Date().toISOString()
-            };
-            localStorage.setItem(Auth.SESSION_KEY, JSON.stringify(localSession));
-            const mockPayload = btoa(JSON.stringify({ staffId: 2, username: 'vkan', exp: Math.floor(Date.now() / 1000) + 86400 * 365 }));
-            const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${mockPayload}.mockSignature`;
-            sessionStorage.setItem(Auth.TOKEN_KEY, mockToken);
-            localStorage.setItem(Auth.TOKEN_KEY, mockToken);
-
-            Store.init();
-            try {
-                const res = await fetch('data/db.json?t=' + Date.now());
-                if (res.ok) {
-                    const realDb = await res.json();
-                    Store._data = realDb;
-                    Store._saveLocal();
-                    console.log('✅ [Local] Loaded real database:', Object.keys(realDb).length, 'collections,', (realDb.surgeries || []).length, 'surgeries');
-                }
-            } catch (e) {
-                console.warn('[Local] Could not fetch data/db.json:', e);
+        let token = Auth.getToken();
+        if (!token && typeof Auth.tryLocalAutoLogin === 'function' && Auth.isLocalHost() && navigator.onLine !== false) {
+            const localLogin = await Auth.tryLocalAutoLogin();
+            if (localLogin && localLogin.success) {
+                token = Auth.getToken();
             }
-
-            this.showApp('surgery-stats');
-            return;
         }
-
-        const token = Auth.getToken();
         if (!token) {
             // No token at all — go straight to login
             Store.init();
@@ -70,7 +43,14 @@ const App = {
 
         // Token exists — validate with server before showing app
         this._showAuthChecking();
-        const session = await Auth.validateStoredSession();
+        let session = await Auth.validateStoredSession();
+
+        if (!session && typeof Auth.tryLocalAutoLogin === 'function' && Auth.isLocalHost() && navigator.onLine !== false) {
+            const localLogin = await Auth.tryLocalAutoLogin();
+            if (localLogin && localLogin.success) {
+                session = localLogin.session;
+            }
+        }
 
         if (!session) {
             // Token invalid/expired/disabled — show login
@@ -110,7 +90,9 @@ const App = {
         document.getElementById('idle-warning-bar')?.remove();
         document.getElementById('auth-checking')?.remove();
         Notifications.stopPolling();
-        Store.resetForLogout();
+        if (typeof Store !== 'undefined' && typeof Store._stopPolling === 'function') {
+            Store._stopPolling();
+        }
         if (typeof EMR !== 'undefined') {
             EMR.stopAutoRefresh();
             EMR.clearRuntimeCache();
@@ -184,6 +166,8 @@ const App = {
 
     // Mobile UX: Offline / Online connectivity banner
     _initNetworkStatusIndicator() {
+        if (this._networkStatusBound) return;
+        this._networkStatusBound = true;
         const showStatus = (isOnline) => {
             let banner = document.getElementById('network-status-banner');
             if (!banner) {
@@ -210,24 +194,29 @@ const App = {
 
     // Mobile UX: Swipe navigation for Surgery and Schedule pages
     _initSwipeNavigation() {
+        if (this._swipeBound) return;
+        const content = document.getElementById('main-content');
+        if (!content) return;
+        this._swipeBound = true;
+
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
         let touchEndY = 0;
+        let ignoreSwipe = false;
         const minSwipeDistance = 60; // px
         const maxPerpendicularDistance = 45; // px
 
-        const content = document.getElementById('content');
-        if (!content) return;
-
         content.addEventListener('touchstart', (e) => {
             if (e.touches.length !== 1) return;
+            ignoreSwipe = !!(e.target && e.target.closest && e.target.closest('.surgery-scroll-zone, .schedule-table-wrap, .staff-filters-scroll, .table-responsive'));
+            if (ignoreSwipe) return;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         }, { passive: true });
 
         content.addEventListener('touchend', (e) => {
-            if (e.changedTouches.length !== 1) return;
+            if (ignoreSwipe || e.changedTouches.length !== 1) return;
             touchEndX = e.changedTouches[0].clientX;
             touchEndY = e.changedTouches[0].clientY;
 
@@ -253,25 +242,11 @@ const App = {
         }, { passive: true });
     },
 
-    // P3.3b: Global keyboard shortcuts
+    // P3.3b: Global keyboard shortcuts (delegated to GlobalSearch.init for '/' and Cmd/Ctrl+K)
     _initKeyboardShortcuts() {
-        if (this._keyboardShortcutHandler) {
-            document.removeEventListener('keydown', this._keyboardShortcutHandler);
+        if (typeof GlobalSearch !== 'undefined' && typeof GlobalSearch.init === 'function') {
+            GlobalSearch.init();
         }
-        this._keyboardShortcutHandler = (e) => {
-            // Skip if user is typing in an input, textarea, or contenteditable
-            const tag = document.activeElement?.tagName;
-            const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
-                || document.activeElement?.isContentEditable;
-
-            // '/' or Cmd/Ctrl+K — open global search
-            if (!isEditing && (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k'))) {
-                e.preventDefault();
-                if (typeof GlobalSearch !== 'undefined') GlobalSearch.open();
-                return;
-            }
-        };
-        document.addEventListener('keydown', this._keyboardShortcutHandler);
     },
 
     // Hide nav items based on role
@@ -315,32 +290,35 @@ const App = {
         // Init last activity
         this._setLastActivity();
 
-        // Track user activity — desktop + mobile events
-        const resetIdle = () => {
-            this._setLastActivity();
-            if (this._idleWarned) {
-                this._idleWarned = false;
-                const warn = document.getElementById('idle-warning-bar');
-                if (warn) warn.remove();
-            }
-        };
+        if (!this._idleListenersBound) {
+            this._idleListenersBound = true;
+            // Track user activity — desktop + mobile events
+            const resetIdle = () => {
+                this._setLastActivity();
+                if (this._idleWarned) {
+                    this._idleWarned = false;
+                    const warn = document.getElementById('idle-warning-bar');
+                    if (warn) warn.remove();
+                }
+            };
 
-        ['mousemove', 'mousedown', 'keydown', 'click', 'scroll',
-            'touchstart', 'touchmove', 'touchend'].forEach(evt => {
-                document.addEventListener(evt, resetIdle, { passive: true });
+            ['mousemove', 'mousedown', 'keydown', 'click', 'scroll',
+                'touchstart', 'touchmove', 'touchend'].forEach(evt => {
+                    document.addEventListener(evt, resetIdle, { passive: true });
+                });
+
+            // Visibility change — crucial for mobile (timers freeze when tab/app is hidden)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
+                    this._checkIdle();
+                }
             });
 
-        // Visibility change — crucial for mobile (timers freeze when tab/app is hidden)
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && Auth.isLoggedIn()) {
-                this._checkIdle();
-            }
-        });
-
-        // Also check on window focus (some mobile browsers use this instead)
-        window.addEventListener('focus', () => {
-            if (Auth.isLoggedIn()) this._checkIdle();
-        });
+            // Also check on window focus (some mobile browsers use this instead)
+            window.addEventListener('focus', () => {
+                if (Auth.isLoggedIn()) this._checkIdle();
+            });
+        }
 
         // Periodic check every 30 seconds (works on desktop, may be throttled on mobile)
         if (this._idleTimer) clearInterval(this._idleTimer);
@@ -401,6 +379,12 @@ const App = {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
         area.innerHTML = `
+            <button class="mobile-search-btn" id="mobile-search-btn"
+                onclick="GlobalSearch.open()" title="Tìm kiếm" aria-label="Tìm kiếm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </button>
             <button class="mobile-theme-toggle" id="mobile-theme-toggle-btn"
                 onclick="App.toggleTheme()" title="${isDark ? 'Giao diện sáng' : 'Giao diện tối'}"
                 aria-label="${isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}">
@@ -412,8 +396,8 @@ const App = {
             ${Notifications.renderBellButton('mobile')}
             ${Utils.renderAvatar({ id: session.staffId, name: session.name, color: session.color || 'var(--gradient-accent)' }, 'sm', { extraClass: 'mobile-user-avatar' })}
             <span class="mobile-user-name">${session.name}</span>
-            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đăng xuất">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đăng xuất" title="Đăng xuất">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
         `;
 
@@ -457,14 +441,14 @@ const App = {
                 </div>
             </div>
             ${session.isAdmin ? `<div class="sidebar-admin-btns">
-                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openChangePassword()">&#128273; Đổi MK</button>
-                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openManagePasswords()">&#128101; Quản lý TK</button>` : ''}
+                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openChangePassword()" aria-label="Đổi mật khẩu" title="Đổi mật khẩu">&#128273;<span class="sidebar-btn-text"> Đổi MK</span></button>
+                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openManagePasswords()" aria-label="Quản lý tài khoản" title="Quản lý tài khoản">&#128101;<span class="sidebar-btn-text"> Quản lý TK</span></button>` : ''}
             </div>
-            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-full-btn" onclick="AuditLog.open()">&#128203; Lịch sử hoạt động</button>` : ''}` : ''}
-            <button class="btn btn-secondary btn-sm sidebar-full-btn-spaced" onclick="Onboarding.start()">&#10067; Hướng dẫn sử dụng</button>
-            <button class="logout-btn" id="logout-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-btn-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Đăng xuất
+            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-full-btn" onclick="AuditLog.open()" aria-label="Lịch sử hoạt động" title="Lịch sử hoạt động">&#128203;<span class="sidebar-btn-text"> Lịch sử hoạt động</span></button>` : ''}` : ''}
+            <button class="btn btn-secondary btn-sm sidebar-full-btn-spaced" onclick="Onboarding.start()" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn sử dụng">&#10067;<span class="sidebar-btn-text"> Hướng dẫn sử dụng</span></button>
+            <button class="logout-btn" id="logout-btn" aria-label="Đăng xuất" title="Đăng xuất">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-btn-icon" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span class="sidebar-btn-text">Đăng xuất</span>
             </button>
         `;
 
@@ -487,6 +471,8 @@ const App = {
 
     // === Navigation ===
     bindNavigation() {
+        if (this._navBound) return;
+        this._navBound = true;
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();

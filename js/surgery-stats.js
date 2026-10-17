@@ -582,11 +582,11 @@ const SurgeryStatsPage = {
 
         ${!isAllPeriod ? `
         <div class="sstats-nav">
-            <button class="btn-icon" onclick="SurgeryStatsPage.prevPeriod()" title="Kỳ trước">
+            <button class="btn-icon" onclick="SurgeryStatsPage.prevPeriod()" title="Kỳ trước" aria-label="Kỳ trước">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <span class="sstats-nav-label">${this.getPeriodLabel()}</span>
-            <button class="btn-icon" onclick="SurgeryStatsPage.nextPeriod()" title="Kỳ sau">
+            <button class="btn-icon" onclick="SurgeryStatsPage.nextPeriod()" title="Kỳ sau" aria-label="Kỳ sau">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
             ${this.offset !== 0 ? `<button class="btn btn-secondary btn-sm" onclick="SurgeryStatsPage.resetPeriod()">Hiện tại</button>` : ''}
@@ -657,7 +657,7 @@ const SurgeryStatsPage = {
                 <div class="sstats-doc-box sstats-doc-box-primary">
                     <div class="sstats-doc-box-badge" style="background:var(--primary-fill)">Bác sĩ 1 (Màu Xanh Navy)</div>
                     <div class="sstats-doc-box-controls">
-                        <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setPrimaryDoctor(this.value)">
+                        <select class="form-control sstats-doc-select" aria-label="Chọn bác sĩ chính (Bác sĩ 1)" onchange="SurgeryStatsPage.setPrimaryDoctor(this.value)">
                             <option value="dept_total" ${(this.primaryDoctorId === 'dept_total' || this.primaryDoctorId === 'dept_avg') ? 'selected' : ''}>
                                 📊 Toàn Khoa (Tổng số ca)
                             </option>
@@ -674,7 +674,7 @@ const SurgeryStatsPage = {
                         ${hasCompare ? 'Bác sĩ 2 (Màu Đỏ Rose)' : 'Bác sĩ 2 (Để trống)'}
                     </div>
                     <div class="sstats-doc-box-controls">
-                        <select class="form-control sstats-doc-select" onchange="SurgeryStatsPage.setCompareDoctor(this.value)">
+                        <select class="form-control sstats-doc-select" aria-label="Chọn bác sĩ đối chiếu (Bác sĩ 2)" onchange="SurgeryStatsPage.setCompareDoctor(this.value)">
                             <option value="none" ${this.compareDoctorId === 'none' ? 'selected' : ''}>🚫 Để trống (Không so sánh)</option>
                             <option value="dept_total" ${(this.compareDoctorId === 'dept_total' || this.compareDoctorId === 'dept_avg') ? 'selected' : ''}>📊 Toàn Khoa (Tổng số ca)</option>
                             ${this._renderDoctorOptions(this.compareDoctorId, allDocs)}
@@ -998,22 +998,23 @@ const SurgeryStatsPage = {
                         <input type="text" 
                                id="sstats-logbook-search-input" 
                                class="form-control sstats-filter-search-input" 
+                               aria-label="Tìm kiếm sổ tay phẫu thuật"
                                placeholder="Tìm tên BN, năm sinh, chẩn đoán, PP mổ..." 
                                value="${(this.logbookSearch || '').replace(/"/g, '&quot;')}" 
                                oninput="SurgeryStatsPage.setLogbookSearch(this.value)">
                         ${this.logbookSearch ? `
-                            <button class="sstats-clear-search-btn" onclick="SurgeryStatsPage.setLogbookSearch('')" title="Xóa tìm kiếm">✕</button>
+                            <button class="sstats-clear-search-btn" onclick="SurgeryStatsPage.setLogbookSearch('')" aria-label="Xóa tìm kiếm" title="Xóa tìm kiếm">✕</button>
                         ` : ''}
                     </div>
                     <div class="sstats-filter-controls">
-                        <select class="form-control sstats-filter-select" onchange="SurgeryStatsPage.setLogbookFilterAxis(this.value)">
+                        <select class="form-control sstats-filter-select" aria-label="Lọc theo nhóm Radar 6 trục" onchange="SurgeryStatsPage.setLogbookFilterAxis(this.value)">
                             <option value="all">🎯 Tất cả nhóm Radar (6 trục)</option>
                             ${Object.entries(this.CLINICAL_AXES).map(([k, ax]) => `
                                 <option value="${k}" ${this.logbookFilterAxis === k ? 'selected' : ''}>${ax.icon} ${ax.label}</option>
                             `).join('')}
                         </select>
 
-                        <select class="form-control sstats-filter-select" onchange="SurgeryStatsPage.setLogbookFilterApproach(this.value)">
+                        <select class="form-control sstats-filter-select" aria-label="Lọc theo đường mổ" onchange="SurgeryStatsPage.setLogbookFilterApproach(this.value)">
                             <option value="all">🔪 Tất cả đường mổ</option>
                             <option value="noisoi" ${this.logbookFilterApproach === 'noisoi' ? 'selected' : ''}>🔬 Nội soi</option>
                             <option value="mo" ${this.logbookFilterApproach === 'mo' ? 'selected' : ''}>🔪 Mổ mở</option>
@@ -1021,7 +1022,7 @@ const SurgeryStatsPage = {
                             <option value="nsth" ${this.logbookFilterApproach === 'nsth' ? 'selected' : ''}>⚡ NSTH</option>
                         </select>
 
-                        <select class="form-control sstats-filter-select" onchange="SurgeryStatsPage.setLogbookFilterType(this.value)">
+                        <select class="form-control sstats-filter-select" aria-label="Lọc theo loại phẫu thuật" onchange="SurgeryStatsPage.setLogbookFilterType(this.value)">
                             <option value="all">📋 Tất cả loại PT</option>
                             <option value="chuongtrinh" ${this.logbookFilterType === 'chuongtrinh' ? 'selected' : ''}>📅 Chương trình</option>
                             <option value="yeucau" ${this.logbookFilterType === 'yeucau' ? 'selected' : ''}>⭐ Yêu cầu</option>

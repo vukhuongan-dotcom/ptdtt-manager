@@ -211,9 +211,9 @@ const StaffTrackingPage = {
                 <button class="st-tab ${this.viewMode === 'month' ? 'active' : ''}" onclick="StaffTrackingPage.setView('month')">🗓 Tháng</button>
             </div>
             <div class="calendar-nav">
-                <button class="btn-icon" onclick="StaffTrackingPage.prev()">${Utils.chevronLeft()}</button>
+                <button class="btn-icon" onclick="StaffTrackingPage.prev()" aria-label="Kỳ trước" title="Kỳ trước">${Utils.chevronLeft()}</button>
                 <span class="calendar-month-label">${periodLabel}</span>
-                <button class="btn-icon" onclick="StaffTrackingPage.next()">${Utils.chevronRight()}</button>
+                <button class="btn-icon" onclick="StaffTrackingPage.next()" aria-label="Kỳ sau" title="Kỳ sau">${Utils.chevronRight()}</button>
                 <button class="btn btn-secondary btn-sm" onclick="StaffTrackingPage.goToday()">${this.viewMode === 'week' ? 'Tuần này' : 'Tháng này'}</button>
             </div>
             <div class="st-legend">${legend}</div>

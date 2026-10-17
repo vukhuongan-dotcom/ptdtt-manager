@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2610091805';
+const CACHE_NAME = 'ptdtt-v2610171019';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
     '/js/schedule.js',
     '/js/surgery.js',
     '/js/emr.js',
+    '/js/surgery-metrics.js',
     '/js/surgery-stats.js',
     '/js/rooms.js',
     '/js/notifications.js',
@@ -28,6 +29,9 @@ const STATIC_ASSETS = [
     '/js/conferences.js',
     '/js/audit-log.js',
     '/js/app.js',
+    '/js/xlsx.full.min.js',
+    '/js/html2canvas.min.js',
+    '/js/chart.umd.min.js',
     '/img/logo-khoa.jpg',
     '/img/logo-mark.png',
     '/img/logo-symbol.png',
@@ -56,13 +60,21 @@ const STATIC_ASSETS = [
     '/fonts/noto-sans-vietnamese-400-normal.woff2',
     '/fonts/noto-sans-vietnamese-500-normal.woff2',
     '/fonts/noto-sans-vietnamese-600-normal.woff2',
-    '/fonts/noto-sans-vietnamese-700-normal.woff2'
+    '/fonts/noto-sans-vietnamese-700-normal.woff2',
+    '/img/staff/1.webp', '/img/staff/2.webp', '/img/staff/3.webp', '/img/staff/4.webp',
+    '/img/staff/5.webp', '/img/staff/6.webp', '/img/staff/7.webp', '/img/staff/8.webp',
+    '/img/staff/9.webp', '/img/staff/10.webp', '/img/staff/11.webp', '/img/staff/12.webp',
+    '/img/staff/16.webp', '/img/staff/24.webp', '/img/staff/25.webp', '/img/staff/26.webp',
+    '/img/staff/27.webp', '/img/staff/28.webp', '/img/staff/29.webp', '/img/staff/30.webp',
+    '/img/staff/31.webp', '/img/staff/32.webp', '/img/staff/33.webp', '/img/staff/35.webp',
+    '/img/staff/36.webp', '/img/staff/37.webp', '/img/staff/38.webp', '/img/staff/39.webp',
+    '/img/staff/40.webp'
 ];
 const STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
 
 function isCacheableStaticRequest(request, url) {
     if (request.method !== 'GET' || url.origin !== self.location.origin) return false;
-    return STATIC_ASSET_PATHS.has(url.pathname);
+    return STATIC_ASSET_PATHS.has(url.pathname) || /^\/img\/staff\/\d+(-lg)?\.webp$/.test(url.pathname);
 }
 
 // Install: precache static assets
@@ -92,18 +104,17 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Fetch: Network only for API, cache only for static allowlist
+// Fetch: Network only for API, versioned CACHE_NAME first for static allowlist
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
     const url = new URL(event.request.url);
 
-    // API requests: Network only — NEVER cache authenticated data
+    // API requests: Network only — do not intercept in SW so browser handles API/SSE directly
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/data')) {
-        event.respondWith(fetch(event.request));
         return;
     }
 
-    // Navigations: always prefer fresh HTML, fallback to the cached shell when offline
+    // Navigations: always prefer fresh HTML when online, fallback to cached shell when offline
     if (event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request).catch(() => caches.match('/index.html'))
@@ -112,39 +123,25 @@ self.addEventListener('fetch', event => {
     }
 
     if (!isCacheableStaticRequest(event.request, url)) {
-        event.respondWith(fetch(event.request));
-        return;
-    }
-
-    if (url.search) {
-        event.respondWith(
-            fetch(event.request).then(response => {
-                if (response.ok) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, clone);
-                    });
-                }
-                return response;
-            }).catch(() =>
-                caches.match(event.request).then(cached => cached || caches.match(url.pathname))
-            )
-        );
         return;
     }
 
     event.respondWith(
-        caches.match(url.pathname).then(cached => {
-            if (cached) return cached;
-            return fetch(event.request).then(response => {
-                if (response.ok) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(url.pathname, clone);
+        caches.open(CACHE_NAME).then(cache =>
+            cache.match(event.request).then(exactMatch => {
+                if (exactMatch) return exactMatch;
+                return cache.match(url.pathname).then(pathMatch => {
+                    if (pathMatch) return pathMatch;
+                    return fetch(event.request).then(response => {
+                        if (response.ok) {
+                            cache.put(url.search ? event.request : url.pathname, response.clone());
+                        }
+                        return response;
                     });
-                }
-                return response;
-            });
-        }).catch(() => caches.match(url.pathname))
+                });
+            })
+        ).catch(() =>
+            caches.match(event.request).then(c => c || caches.match(url.pathname) || (url.pathname.startsWith('/img/staff/') ? caches.match('/img/logo-khoa.jpg') : Response.error()))
+        )
     );
 });

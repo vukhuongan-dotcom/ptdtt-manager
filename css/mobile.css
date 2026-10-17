@@ -15,48 +15,53 @@
         left: 0;
         right: 0;
         height: 52px;
-        padding: 0 12px;
+        padding: 0 10px;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border);
         z-index: 1001;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        gap: 6px;
     }
 
     .mobile-header-left {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         color: var(--primary);
         min-width: 0;
+        flex: 1 1 auto;
     }
     .mobile-header-logo {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         object-fit: contain;
         flex-shrink: 0;
     }
     .mobile-header-title {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         font-weight: 700;
         color: var(--text-primary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        min-width: 60px;
     }
 
     .mobile-header-right {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         flex-shrink: 0;
     }
 
-    /* Theme toggle button trong mobile header */
-    .mobile-theme-toggle {
-        width: 36px;
-        height: 36px;
-        min-width: 44px;  /* A M1: WCAG 2.5.5 — cả 2 chiều ≥ 44px */
-        min-height: 44px; /* WCAG 2.5.5 touch target */
+    /* 5 nút chuẩn hóa trên mobile header (Search, Theme, Bell, Avatar, Logout) */
+    .mobile-search-btn,
+    .mobile-theme-toggle,
+    .mobile-header-right .notif-bell-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -68,24 +73,36 @@
         transition: background var(--transition-fast), color var(--transition-fast);
         flex-shrink: 0;
         padding: 0;
+        box-sizing: border-box;
     }
-    .mobile-theme-toggle:hover {
+    .mobile-search-btn:hover,
+    .mobile-theme-toggle:hover,
+    .mobile-header-right .notif-bell-btn:hover {
         background: var(--bg-hover);
         color: var(--primary);
     }
 
     .mobile-user-avatar {
-        width: 28px;
-        height: 28px;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px;
+        min-height: 44px;
         border-radius: 50%;
-        background: var(--primary-fill, #1D2357);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: 0.72rem; /* fix: 0.65rem → 0.72rem WCAG 1.4.4 */
+        font-size: 0.72rem;
         font-weight: 700;
         flex-shrink: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    .mobile-user-avatar .staff-avatar-img,
+    .mobile-user-avatar .staff-avatar-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
     }
     /* Hide full name on mobile to save space */
     .mobile-user-name {
@@ -95,15 +112,20 @@
         background: none;
         border: 1px solid rgba(239,68,68,0.3);
         color: #ef4444;
-        padding: 6px 12px;
-        min-height: 44px; /* A3: WCAG 2.5.5 touch target */
-        border-radius: 6px;
-        font-size: 0.72rem; /* fix: 0.68rem → 0.72rem WCAG 1.4.4 */
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 0.72rem;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 3px;
+        justify-content: center;
+        flex-shrink: 0;
+        box-sizing: border-box;
         transition: background 0.2s, color 0.2s;
     }
     .mobile-logout-btn:hover, .mobile-logout-btn:active {
@@ -132,6 +154,7 @@
 
     .sidebar-logo { display: none; }
     .sidebar-footer { display: none; }
+    .sidebar-search-btn { display: none !important; }
 
     .sidebar-nav {
         flex-direction: row;
@@ -566,8 +589,15 @@
     .report-stat-card { padding: 8px 10px; }
     .report-stat-value { font-size: 1.15rem; }
 
-    /* ===== HIDE NON-ESSENTIAL ===== */
-    .stat-change { display: none; }
+    /* ===== STAT CHANGE — Hiển thị gọn trên mobile (BUG-178) ===== */
+    .stat-change {
+        display: block !important;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
 
     /* ===== SCROLL FADE — bottom nav ===== */
     .sidebar::after {
@@ -585,7 +615,7 @@
 
 /* ===== SMALL PHONES — max-width: 480px ===== */
 @media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr !important; }
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
     .patient-stats { grid-template-columns: 1fr !important; }
     .room-grid { grid-template-columns: 1fr !important; }
     .surgery-stats-grid { grid-template-columns: 1fr !important; }
@@ -603,6 +633,48 @@
     /* U0 A2: 0.52rem → 0.72rem */
     .calendar-event { font-size: 0.72rem; padding: 1px 2px; }
     .day-number { font-size: 0.72rem; } /* fix: 0.65rem → 0.72rem */
+}
+
+/* ===== COMPACT ANDROID PHONES — max-width: 389px (360×800) ===== */
+@media (max-width: 389px) {
+    .mobile-header {
+        padding: 0 8px;
+        gap: 4px;
+    }
+    .mobile-header-left {
+        gap: 5px;
+    }
+    .mobile-header-logo {
+        width: 26px;
+        height: 26px;
+    }
+    .mobile-header-title {
+        font-size: 0.78rem;
+    }
+    .mobile-header-right {
+        gap: 3px;
+    }
+    .mobile-search-btn,
+    .mobile-theme-toggle,
+    .mobile-header-right .notif-bell-btn,
+    .mobile-logout-btn {
+        width: 40px;
+        min-width: 40px;
+        height: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+    }
+    .mobile-user-avatar {
+        width: 40px !important;
+        min-width: 40px;
+        height: 44px !important;
+        min-height: 44px;
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 339px) {
+    .stats-grid { grid-template-columns: 1fr !important; }
 }
 
 /* ===== iOS ZOOM PREVENTION — schedule-select ===== */

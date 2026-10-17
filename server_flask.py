@@ -13,7 +13,8 @@ import ssl
 import threading
 import glob
 import shutil
-from datetime import datetime, timedelta
+import copy
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from http.cookiejar import CookieJar
 import urllib.request
@@ -37,7 +38,7 @@ if not JWT_SECRET:
     raise RuntimeError('JWT_SECRET environment variable is required. Set it in /etc/systemd/system/ptdtt.service or .env')
 JWT_EXPIRY_HOURS = int(os.environ.get('JWT_EXPIRY_HOURS', '8'))
 PORT      = int(os.environ.get('PORT', 5000))
-MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2804281805'))
+MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2610091805'))
 PASSWORD_MIN_LENGTH = int(os.environ.get('PASSWORD_MIN_LENGTH', '10'))
 LOGIN_WINDOW_MINUTES = int(os.environ.get('LOGIN_WINDOW_MINUTES', '15'))
 LOGIN_MAX_ATTEMPTS = int(os.environ.get('LOGIN_MAX_ATTEMPTS', '5'))
@@ -74,7 +75,7 @@ def add_no_cache_headers(response):
     response.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: blob:; "
@@ -389,30 +390,642 @@ def require_superadmin(f):
         return f(*args, **kwargs)
     return decorated
 
+# ────────────────────────────── Role & Date Helpers ──────────────────────────────
+VN_TZ = timezone(timedelta(hours=7))  # Asia/Ho_Chi_Minh (UTC+7)
+_ISO_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+_WEEK_KEY_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+
+def _today_vn():
+    return datetime.now(VN_TZ).date()
+
+def _current_week_key_vn():
+    today = _today_vn()
+    monday = today - timedelta(days=today.weekday())
+    return monday.strftime('%Y-%m-%d')
+
+def _is_valid_iso_date(val):
+    if not isinstance(val, str) or not _ISO_DATE_RE.fullmatch(val):
+        return False
+    try:
+        datetime.strptime(val, '%Y-%m-%d').date()
+        return True
+    except ValueError:
+        return False
+
+def _is_valid_monday_week_key(wk):
+    if not isinstance(wk, str) or not _WEEK_KEY_RE.fullmatch(wk):
+        return False
+    try:
+        dt = datetime.strptime(wk, '%Y-%m-%d').date()
+    except ValueError:
+        return False
+    return dt.weekday() == 0
+
+def is_surgery_week_locked(date_str):
+    if not _is_valid_iso_date(date_str):
+        return False
+    dt = datetime.strptime(date_str, '%Y-%m-%d').date()
+    monday = dt - timedelta(days=dt.weekday())
+    return (_today_vn() - monday).days > 7
+
+def _is_superadmin(user):
+    return bool(user and user.get('isSuperAdmin'))
+
+def _is_admin(user):
+    return bool(user and (user.get('isAdmin') or user.get('isSuperAdmin')))
+
+def _is_doctor(user):
+    if not user:
+        return False
+    role = str(user.get('role') or '')
+    return ('Bác sĩ' in role) or ('Trưởng khoa' in role) or ('Phó trưởng khoa' in role)
+
+def _can_edit_shcm(user):
+    if _is_admin(user):
+        return True
+    role = str((user or {}).get('role') or '')
+    return ('Bác sĩ chính' in role) or ('Trưởng khoa' in role) or ('Phó trưởng khoa' in role)
+
+def _is_schedule_editor(user):
+    if _is_admin(user):
+        return True
+    return bool(user and user.get('staffId') in (3, 12))
+
+
+# ────────────────────────────── Schema, Structural Diff & RBAC ──────────────────────────────
+_AUDIT_META_KEYS = {'updatedBy', 'updatedAt'}
+
+class CollectionAuthError(Exception):
+    def __init__(self, status_code, message, detail=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.message = message
+        self.detail = detail or {}
+
+def _is_pos_int(val):
+    return isinstance(val, int) and not isinstance(val, bool) and val > 0
+
+def _validate_collection_schema(collection, items):
+    if not isinstance(items, list):
+        return False, 'Payload items phải là một danh sách (list).'
+    seen_ids = set()
+    seen_natural = set()
+
+    for idx, r in enumerate(items):
+        if not isinstance(r, dict):
+            return False, f'Phần tử thứ {idx} trong {collection} phải là object (dict).'
+
+        if collection in ('reports16h', 'reports7h'):
+            has_id = 'id' in r and r['id'] is not None
+            if has_id:
+                if not _is_pos_int(r['id']):
+                    return False, f'Bản ghi trong {collection} có id không hợp lệ.'
+                if r['id'] in seen_ids:
+                    return False, f'Trùng lặp id={r["id"]} trong {collection}.'
+                seen_ids.add(r['id'])
+            date_val = r.get('date')
+            if date_val is not None:
+                if not _is_valid_iso_date(date_val):
+                    return False, f'Ngày báo cáo "{date_val}" không hợp lệ (YYYY-MM-DD).'
+                if date_val in seen_natural:
+                    return False, f'Trùng lặp ngày báo cáo "{date_val}" trong {collection}.'
+                seen_natural.add(date_val)
+            elif not has_id:
+                return False, f'Bản ghi trong {collection} phải có trường date (YYYY-MM-DD) hoặc id nguyên dương.'
+            continue
+
+        if collection == 'staffStatuses':
+            has_id = 'id' in r and r['id'] is not None
+            if has_id:
+                if not _is_pos_int(r['id']):
+                    return False, 'Bản ghi staffStatuses có id không hợp lệ.'
+                if r['id'] in seen_ids:
+                    return False, f'Trùng lặp id={r["id"]} trong staffStatuses.'
+                seen_ids.add(r['id'])
+            sid = r.get('staffId')
+            dval = r.get('date')
+            if sid is not None or dval is not None:
+                if not _is_pos_int(sid) or not _is_valid_iso_date(dval):
+                    return False, 'Bản ghi staffStatuses phải có staffId nguyên dương và date YYYY-MM-DD.'
+                nkey = (sid, dval)
+                if nkey in seen_natural:
+                    return False, f'Trùng lặp (staffId={sid}, date={dval}) trong staffStatuses.'
+                seen_natural.add(nkey)
+            elif not has_id:
+                return False, 'Bản ghi staffStatuses thiếu khóa định danh.'
+            continue
+
+        rid = r.get('id')
+        if not _is_pos_int(rid):
+            return False, f'Bản ghi trong {collection} thiếu id hoặc id không phải số nguyên dương.'
+        if rid in seen_ids:
+            return False, f'Trùng lặp id={rid} trong {collection}.'
+        seen_ids.add(rid)
+
+        if collection == 'schedules':
+            wk = r.get('weekKey')
+            if not _is_valid_monday_week_key(wk):
+                return False, f'weekKey "{wk}" không hợp lệ (phải là ngày Thứ Hai định dạng YYYY-MM-DD).'
+            if wk in seen_natural:
+                return False, f'Trùng lặp weekKey="{wk}" trong schedules.'
+            seen_natural.add(wk)
+
+    return True, None
+
+def _record_primary_key(collection, rec):
+    if not isinstance(rec, dict):
+        return None
+    if collection in ('reports16h', 'reports7h'):
+        if rec.get('date'):
+            return f"date:{rec['date']}"
+        if _is_pos_int(rec.get('id')):
+            return f"id:{rec['id']}"
+        return None
+    if collection == 'staffStatuses':
+        if _is_pos_int(rec.get('staffId')) and rec.get('date'):
+            return f"ss:{rec['staffId']}:{rec['date']}"
+        if _is_pos_int(rec.get('id')):
+            return f"id:{rec['id']}"
+        return None
+    return rec.get('id')
+
+def _changed_field_keys(old_r, new_r):
+    all_keys = (set(old_r.keys()) | set(new_r.keys())) - _AUDIT_META_KEYS
+    return {k for k in all_keys if old_r.get(k) != new_r.get(k)}
+
+def _compute_auth_diff(old_items, new_items, collection):
+    """Full structural diff across all fields (except _AUDIT_META_KEYS) for RBAC and atomic merge."""
+    old_map = {}
+    for r in (old_items or []):
+        pk = _record_primary_key(collection, r)
+        if pk is not None:
+            old_map[pk] = r
+
+    new_map = {}
+    for r in (new_items or []):
+        pk = _record_primary_key(collection, r)
+        if pk is not None:
+            new_map[pk] = r
+
+    added = [new_map[k] for k in new_map if k not in old_map]
+    removed = [old_map[k] for k in old_map if k not in new_map]
+    modified = []
+    unchanged = []
+
+    for k, new_r in new_map.items():
+        if k in old_map:
+            old_r = old_map[k]
+            ckeys = _changed_field_keys(old_r, new_r)
+            if ckeys:
+                modified.append((old_r, new_r, ckeys))
+            else:
+                unchanged.append((old_r, new_r))
+
+    return {
+        'added': added,
+        'removed': removed,
+        'modified': modified,
+        'unchanged': unchanged,
+        'has_changes': bool(added or removed or modified)
+    }
+
+def _derive_safe_next_id(collection, effective_items, data):
+    max_id = max([int(r['id']) for r in effective_items if isinstance(r, dict) and _is_pos_int(r.get('id'))], default=0)
+    if collection == 'staff':
+        max_dep = max([int(r['id']) for r in data.get('departedStaff', []) if isinstance(r, dict) and _is_pos_int(r.get('id'))], default=0)
+        max_id = max(max_id, max_dep)
+    raw_old = data.get('nextIds', {}).get(collection, 1)
+    old_next = int(raw_old) if isinstance(raw_old, int) and not isinstance(raw_old, bool) and raw_old > 0 else 1
+    return max(old_next, max_id + 1)
+
+def _atomic_merge_collection(collection, server_items, base_items, new_items, data):
+    """Merge client delta (base_items -> new_items) onto server_items inside atomic_update lock (V3-03)."""
+    client_delta = _compute_auth_diff(base_items, new_items, collection)
+    if not client_delta['has_changes']:
+        return copy.deepcopy(server_items), {}
+
+    base_map = {_record_primary_key(collection, r): r for r in base_items if _record_primary_key(collection, r) is not None}
+    server_map = {_record_primary_key(collection, r): copy.deepcopy(r) for r in server_items if _record_primary_key(collection, r) is not None}
+    server_order = [_record_primary_key(collection, r) for r in server_items if _record_primary_key(collection, r) is not None]
+
+    reassigned_ids = {}
+    max_id = _derive_safe_next_id(collection, server_items, data) - 1
+
+    # 1. Check removed records (Delete/Modify check)
+    removed_pks = set()
+    for old_r in client_delta['removed']:
+        pk = _record_primary_key(collection, old_r)
+        if pk not in server_map:
+            # Already deleted on server — idempotent delete
+            continue
+        server_r = server_map[pk]
+        base_r = base_map.get(pk, old_r)
+        if _changed_field_keys(base_r, server_r):
+            raise CollectionAuthError(
+                409,
+                f'Xung đột dữ liệu: Bản ghi ({pk}) đã được người khác cập nhật trên máy chủ trước khi bạn xóa.',
+                {
+                    'errorCode': 'DATA_CONFLICT',
+                    'conflictType': 'DELETED_MODIFIED_RECORD',
+                    'recordKey': pk,
+                    'serverRecord': server_r
+                }
+            )
+        removed_pks.add(pk)
+
+    # 2. Check modified records (Modify/Delete and Modify/Modify checks)
+    for base_r, new_r, client_ckeys in client_delta['modified']:
+        pk = _record_primary_key(collection, base_r)
+        if pk not in server_map:
+            raise CollectionAuthError(
+                409,
+                f'Xung đột dữ liệu: Bản ghi ({pk}) đã bị xóa trên máy chủ trong lúc bạn đang chỉnh sửa.',
+                {
+                    'errorCode': 'DATA_CONFLICT',
+                    'conflictType': 'MODIFIED_DELETED_RECORD',
+                    'recordKey': pk,
+                    'clientRecord': new_r
+                }
+            )
+        server_r = server_map[pk]
+        server_ckeys = _changed_field_keys(base_r, server_r)
+        overlap = client_ckeys & server_ckeys
+        for k in overlap:
+            if new_r.get(k) != server_r.get(k):
+                raise CollectionAuthError(
+                    409,
+                    f'Xung đột dữ liệu: Trường "{k}" của bản ghi ({pk}) vừa được người khác sửa trên máy chủ.',
+                    {
+                        'errorCode': 'DATA_CONFLICT',
+                        'conflictType': 'MODIFY_MODIFY_OVERLAP',
+                        'recordKey': pk,
+                        'field': k,
+                        'serverRecord': server_r,
+                        'clientRecord': new_r
+                    }
+                )
+        # Disjoint field edits or server unchanged: apply client_ckeys onto server_r
+        merged_r = copy.deepcopy(server_r)
+        for k in client_ckeys:
+            if k in new_r:
+                merged_r[k] = copy.deepcopy(new_r[k])
+            else:
+                merged_r.pop(k, None)
+        server_map[pk] = merged_r
+
+    # 3. Check added records (Add/Add check)
+    added_records = []
+    server_week_keys = {r.get('weekKey'): r for r in server_map.values() if isinstance(r, dict) and r.get('weekKey')}
+    for new_r in client_delta['added']:
+        rec_copy = copy.deepcopy(new_r)
+        pk = _record_primary_key(collection, rec_copy)
+        if collection == 'schedules':
+            wk = rec_copy.get('weekKey')
+            if wk in server_week_keys and _changed_field_keys(server_week_keys[wk], rec_copy) - {'id'}:
+                raise CollectionAuthError(
+                    409,
+                    f'Xung đột dữ liệu: Tuần {wk} vừa được tạo trên máy chủ bởi người dùng khác.',
+                    {
+                        'errorCode': 'DATA_CONFLICT',
+                        'conflictType': 'ADD_ADD_NATURAL_KEY',
+                        'recordKey': wk,
+                        'serverRecord': server_week_keys[wk],
+                        'clientRecord': rec_copy
+                    }
+                )
+            elif wk in server_week_keys:
+                continue
+        if collection in ('reports16h', 'reports7h', 'staffStatuses'):
+            if pk in server_map:
+                if _changed_field_keys(server_map[pk], rec_copy):
+                    raise CollectionAuthError(
+                        409,
+                        f'Xung đột dữ liệu: Bản ghi {pk} vừa được tạo trên máy chủ bởi người dùng khác.',
+                        {
+                            'errorCode': 'DATA_CONFLICT',
+                            'conflictType': 'ADD_ADD_NATURAL_KEY',
+                            'recordKey': pk,
+                            'serverRecord': server_map[pk],
+                            'clientRecord': rec_copy
+                        }
+                    )
+                continue
+            added_records.append(rec_copy)
+            continue
+
+        # ID-based collection: if id collides with a record added on server since base_items, reassign a fresh id
+        old_id = rec_copy.get('id')
+        if old_id in server_map:
+            if _changed_field_keys(server_map[old_id], rec_copy):
+                max_id += 1
+                rec_copy['id'] = max_id
+                reassigned_ids[str(old_id)] = max_id
+                added_records.append(rec_copy)
+            # If identical record was already added, skip duplicate
+        else:
+            max_id = max(max_id, int(old_id))
+            added_records.append(rec_copy)
+
+    merged_list = [server_map[pk] for pk in server_order if pk not in removed_pks and pk in server_map]
+    merged_list.extend(added_records)
+    return merged_list, reassigned_ids
+
+def _stamp_audit_fields(user, old_items, candidate_items, collection):
+    """Stamp server-verified updatedBy onto added/modified records and preserve unchanged records' updatedBy."""
+    username = (user or {}).get('sub') or 'unknown'
+    old_map = {_record_primary_key(collection, r): r for r in (old_items or []) if _record_primary_key(collection, r) is not None}
+    stamped = []
+    for r in candidate_items:
+        rec = copy.deepcopy(r)
+        pk = _record_primary_key(collection, rec)
+        if pk in old_map:
+            old_r = old_map[pk]
+            if _changed_field_keys(old_r, rec):
+                rec['updatedBy'] = username
+            else:
+                if 'updatedBy' in old_r:
+                    rec['updatedBy'] = old_r['updatedBy']
+                else:
+                    rec.pop('updatedBy', None)
+        else:
+            rec['updatedBy'] = username
+        stamped.append(rec)
+    return stamped
+
+def _authorize_and_prepare_items(user, collection, old_items, candidate_items, auth_diff, full_data, base_items=None):
+    """Enforce record-level, field-level, week-lock, and cross-collection RBAC inside atomic_update."""
+    # 1. staff
+    if collection == 'staff':
+        if _is_admin(user):
+            return _stamp_audit_fields(user, old_items, candidate_items, collection)
+        my_id = (user or {}).get('staffId')
+        if not _is_pos_int(my_id):
+            raise CollectionAuthError(403, 'Tài khoản không gắn với hồ sơ nhân sự để tự cập nhật thông tin liên hệ.')
+        ref_items = base_items if isinstance(base_items, list) else old_items
+        delta = _compute_auth_diff(ref_items, candidate_items, 'staff')
+        if delta['added'] or delta['removed']:
+            raise CollectionAuthError(403, 'Chỉ Quản trị viên mới có quyền thêm hoặc xóa nhân sự.')
+        for old_r, new_r, ckeys in delta['modified']:
+            if old_r.get('id') != my_id:
+                raise CollectionAuthError(403, 'Bạn chỉ có quyền sửa thông tin liên hệ của chính mình.')
+            if not ckeys.issubset({'phone', 'email'}):
+                raise CollectionAuthError(403, f'Nhân viên chỉ được tự cập nhật SĐT và Email (không được sửa: {", ".join(sorted(ckeys - {"phone", "email"}))}).')
+        # Also verify against live old_items that if new_me is present, no non-contact fields were forged
+        new_me = next((r for r in candidate_items if r.get('id') == my_id), None)
+        old_me = next((r for r in old_items if r.get('id') == my_id), None)
+        if not new_me or not old_me:
+            raise CollectionAuthError(403, 'Không tìm thấy hồ sơ nhân sự của bạn.')
+        # Patch ONLY phone and email of my_id onto the latest server old_items (safe against stale client snapshots)
+        effective = copy.deepcopy(old_items)
+        for r in effective:
+            if r.get('id') == my_id:
+                if 'phone' in new_me:
+                    r['phone'] = new_me['phone']
+                if 'email' in new_me:
+                    r['email'] = new_me['email']
+                r['updatedBy'] = user.get('sub', 'unknown')
+                break
+        return effective
+
+    # 2–6 & 17–20: Admin-only collections
+    if collection in ('departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses', 'conferences',
+                      'tasksTrash', 'patients', 'rooms', 'surgerySchedule'):
+        if not _is_admin(user):
+            raise CollectionAuthError(403, f'Chỉ Quản trị viên mới có quyền cập nhật {collection}.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 7. schedules
+    if collection == 'schedules':
+        if not _is_schedule_editor(user):
+            raise CollectionAuthError(403, 'Bạn không có quyền chỉnh sửa lịch phân công tuần.')
+        if not _is_superadmin(user):
+            current_wk = _current_week_key_vn()
+            for r in auth_diff['added']:
+                if r.get('weekKey', '') < current_wk:
+                    raise CollectionAuthError(403, f'Tuần quá khứ ({r.get("weekKey")}) đã khóa. Chỉ Super Admin mới có quyền chỉnh sửa.')
+            for r in auth_diff['removed']:
+                if r.get('weekKey', '') < current_wk:
+                    raise CollectionAuthError(403, f'Tuần quá khứ ({r.get("weekKey")}) đã khóa. Chỉ Super Admin mới có quyền xóa.')
+            for old_r, new_r, _ckeys in auth_diff['modified']:
+                if old_r.get('weekKey', '') < current_wk or new_r.get('weekKey', '') < current_wk:
+                    raise CollectionAuthError(403, f'Tuần quá khứ ({old_r.get("weekKey")}) đã khóa. Chỉ Super Admin mới có quyền chỉnh sửa.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 8. surgeries
+    if collection == 'surgeries':
+        if not (_is_admin(user) or _is_doctor(user)):
+            raise CollectionAuthError(403, 'Chỉ Bác sĩ và Quản trị viên mới có quyền cập nhật lịch mổ.')
+        if not _is_superadmin(user):
+            for r in auth_diff['added']:
+                if is_surgery_week_locked(r.get('date', '')):
+                    raise CollectionAuthError(403, f'Tuần của ngày {r.get("date")} đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền thêm ca.')
+            for r in auth_diff['removed']:
+                if is_surgery_week_locked(r.get('date', '')):
+                    raise CollectionAuthError(403, f'Tuần của ngày {r.get("date")} đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa ca.')
+            for old_r, new_r, _ckeys in auth_diff['modified']:
+                if is_surgery_week_locked(old_r.get('date', '')) or is_surgery_week_locked(new_r.get('date', '')):
+                    raise CollectionAuthError(403, 'Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền sửa hoặc dời ngày.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 9. surgeriesTrash
+    if collection == 'surgeriesTrash':
+        if not (_is_admin(user) or _is_doctor(user)):
+            raise CollectionAuthError(403, 'Chỉ Bác sĩ và Quản trị viên mới có quyền thao tác thùng rác lịch mổ.')
+        if not _is_superadmin(user):
+            for r in auth_diff['added']:
+                if is_surgery_week_locked(r.get('date', '')):
+                    raise CollectionAuthError(403, 'Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới được phép xóa.')
+            for old_r, new_r, _ckeys in auth_diff['modified']:
+                if is_surgery_week_locked(old_r.get('date', '')) or is_surgery_week_locked(new_r.get('date', '')):
+                    raise CollectionAuthError(403, 'Ca mổ trong thùng rác thuộc tuần đã khóa.')
+            now_utc = datetime.now(timezone.utc)
+            for old_r in auth_diff['removed']:
+                # Allow removal if auto-cleaning expired (> 7 days) OR if surgery date is not locked
+                expired = False
+                del_at = old_r.get('deletedAt')
+                if isinstance(del_at, str) and del_at:
+                    try:
+                        dt = datetime.fromisoformat(del_at.replace('Z', '+00:00'))
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=timezone.utc)
+                        if (now_utc - dt).total_seconds() > 7 * 86400:
+                            expired = True
+                    except ValueError:
+                        pass
+                if not expired and is_surgery_week_locked(old_r.get('date', '')):
+                    raise CollectionAuthError(403, 'Không thể khôi phục/xóa vĩnh viễn ca mổ thuộc tuần đã khóa.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 10. shcmSchedule
+    if collection == 'shcmSchedule':
+        if not _can_edit_shcm(user):
+            raise CollectionAuthError(403, 'Chỉ Bác sĩ chính và Ban Chủ nhiệm mới có quyền chỉnh sửa lịch Sinh hoạt chuyên môn.')
+        if not _is_superadmin(user):
+            for old_r in auth_diff['removed']:
+                if old_r.get('status') == 'done':
+                    raise CollectionAuthError(403, 'Bài SHCM đã trình bày (done) đã bị khóa. Chỉ Super Admin mới có quyền xóa.')
+            for old_r, new_r, ckeys in auth_diff['modified']:
+                if old_r.get('status') == 'done':
+                    raise CollectionAuthError(403, 'Bài SHCM đã trình bày (done) đã bị khóa. Chỉ Super Admin mới có quyền chỉnh sửa.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 11. shcmSettings
+    if collection == 'shcmSettings':
+        if not _can_edit_shcm(user):
+            raise CollectionAuthError(403, 'Chỉ Bác sĩ chính và Ban Chủ nhiệm mới có quyền cập nhật cài đặt SHCM.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 12. plans
+    if collection == 'plans':
+        if _is_admin(user):
+            return _stamp_audit_fields(user, old_items, candidate_items, collection)
+        if not _can_edit_shcm(user):
+            raise CollectionAuthError(403, 'Bạn không có quyền chỉnh sửa Kế hoạch.')
+        # Bác sĩ chính (non-admin): only allowed to add/modify/remove plans strictly linked to shcmSchedule
+        shcm_items = full_data.get('shcmSchedule', [])
+        shcm_by_id = {s.get('id'): s for s in shcm_items if isinstance(s, dict) and _is_pos_int(s.get('id'))}
+
+        def _is_valid_shcm_plan(p):
+            if p.get('source') != 'shcm' or p.get('type') != 'training' or p.get('title') != 'Sinh hoạt chuyên môn BS':
+                return False
+            shcm_id = p.get('shcmId')
+            s = shcm_by_id.get(shcm_id)
+            if not s:
+                return False
+            return p.get('date') == s.get('presentDate') and p.get('responsible') == s.get('doctorId')
+
+        for new_p in auth_diff['added']:
+            if not _is_valid_shcm_plan(new_p):
+                raise CollectionAuthError(403, 'Bác sĩ chính chỉ được tạo kế hoạch đồng bộ từ lịch Sinh hoạt chuyên môn hợp lệ.')
+
+        for old_p, new_p, _ckeys in auth_diff['modified']:
+            if old_p.get('source') != 'shcm' or old_p.get('shcmId') != new_p.get('shcmId'):
+                raise CollectionAuthError(403, 'Bác sĩ chính không được chỉnh sửa kế hoạch ngoài Sinh hoạt chuyên môn.')
+            if not _is_valid_shcm_plan(new_p):
+                raise CollectionAuthError(403, 'Dữ liệu kế hoạch SHCM không khớp với lịch Sinh hoạt chuyên môn hiện hành.')
+
+        for old_p in auth_diff['removed']:
+            if old_p.get('source') != 'shcm':
+                raise CollectionAuthError(403, 'Bác sĩ chính không được xóa kế hoạch ngoài Sinh hoạt chuyên môn.')
+            s = shcm_by_id.get(old_p.get('shcmId'))
+            if s and s.get('status') == 'done':
+                raise CollectionAuthError(403, 'Không được xóa kế hoạch của bài SHCM đã trình bày (done).')
+
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 13–14. reports16h, reports7h
+    if collection in ('reports16h', 'reports7h'):
+        if not _is_admin(user) and len(auth_diff['removed']) > 1:
+            raise CollectionAuthError(403, 'Chỉ Quản trị viên mới được phép xóa nhiều báo cáo lịch sử.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 15. notifications
+    if collection == 'notifications':
+        if _is_admin(user):
+            return _stamp_audit_fields(user, old_items, candidate_items, collection)
+        my_id = (user or {}).get('staffId')
+        tasks_by_id = {t.get('id'): t for t in full_data.get('tasks', []) if isinstance(t, dict) and _is_pos_int(t.get('id'))}
+        for old_n, new_n, ckeys in auth_diff['modified']:
+            if old_n.get('toStaffId') != my_id:
+                raise CollectionAuthError(403, 'Không được sửa thông báo của nhân sự khác.')
+            if not ckeys.issubset({'read'}) or new_n.get('read') is not True:
+                raise CollectionAuthError(403, 'Chỉ được phép đánh dấu đã đọc thông báo của chính mình.')
+        for old_n in auth_diff['removed']:
+            if old_n.get('toStaffId') != my_id or not old_n.get('read'):
+                raise CollectionAuthError(403, 'Chỉ được xóa thông báo đã đọc của chính mình.')
+        for new_n in auth_diff['added']:
+            t = tasks_by_id.get(new_n.get('taskId'))
+            if (new_n.get('fromStaffId') != my_id
+                    or new_n.get('type') not in ('task_accepted', 'task_completed')
+                    or not t or t.get('assignee') != my_id):
+                raise CollectionAuthError(403, 'Nhân viên chỉ được tạo thông báo xác nhận/hoàn thành công việc của chính mình.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    # 16. tasks
+    if collection == 'tasks':
+        if _is_admin(user):
+            return _stamp_audit_fields(user, old_items, candidate_items, collection)
+        my_id = (user or {}).get('staffId')
+        if auth_diff['added'] or auth_diff['removed']:
+            raise CollectionAuthError(403, 'Chỉ Quản trị viên mới có quyền tạo hoặc xóa công việc.')
+        for old_t, new_t, ckeys in auth_diff['modified']:
+            if old_t.get('assignee') != my_id:
+                raise CollectionAuthError(403, 'Bạn chỉ được cập nhật trạng thái công việc giao cho chính mình.')
+            if not ckeys.issubset({'status', 'completedAt'}):
+                raise CollectionAuthError(403, 'Nhân viên chỉ được phép cập nhật trạng thái hoàn thành của công việc.')
+        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+
+    raise CollectionAuthError(403, f'Không có quyền ghi vào {collection}.')
+
+
 # ────────────────────────────── Static files ──────────────────────────────
+ALLOWLIST_ROOT_FILES = {'index.html', 'manifest.json', 'sw.js', 'favicon.ico'}
+ALLOWLIST_STATIC_DIRS = {'css', 'js', 'img', 'fonts'}
+ALLOWLIST_STATIC_EXTS = {'.css', '.js', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.woff', '.woff2', '.ttf'}
+
 @app.route('/')
 def index():
     return send_from_directory(BASE_DIR, 'index.html')
 
 @app.route('/<path:path>')
 def static_files(path):
-    full = os.path.normpath(os.path.join(BASE_DIR, path))
-    if not full.startswith(BASE_DIR):
-        abort(403)
-    if os.path.isfile(full):
-        directory = os.path.dirname(full)
-        filename = os.path.basename(full)
-        return send_from_directory(directory, filename)
-    abort(404)
+    if not path or '\x00' in path or '\\' in path:
+        abort(404)
+    parts = path.split('/')
+    for part in parts:
+        if part in ('', '.', '..') or part.startswith('.'):
+            abort(404)
+
+    base_real = os.path.realpath(BASE_DIR)
+
+    if '/' not in path:
+        if path not in ALLOWLIST_ROOT_FILES:
+            abort(404)
+        candidate = os.path.join(BASE_DIR, path)
+        if os.path.islink(candidate):
+            abort(404)
+        target_real = os.path.realpath(candidate)
+        if os.path.dirname(target_real) != base_real or os.path.basename(target_real) != path:
+            abort(404)
+        if not os.path.isfile(target_real):
+            abort(404)
+        return send_from_directory(base_real, path)
+
+    top_dir = parts[0]
+    if top_dir not in ALLOWLIST_STATIC_DIRS:
+        abort(404)
+
+    cur = BASE_DIR
+    for part in parts:
+        cur = os.path.join(cur, part)
+        if os.path.islink(cur):
+            abort(404)
+
+    dir_real = os.path.realpath(os.path.join(BASE_DIR, top_dir))
+    candidate = os.path.join(BASE_DIR, path)
+    target_real = os.path.realpath(candidate)
+
+    if os.path.splitext(target_real)[1].lower() not in ALLOWLIST_STATIC_EXTS:
+        abort(404)
+    if os.path.commonpath([dir_real, target_real]) != dir_real:
+        abort(404)
+    if not os.path.isfile(target_real):
+        abort(404)
+
+    return send_from_directory(os.path.dirname(target_real), os.path.basename(target_real))
+
 
 # ────────────────────────────── Data API ──────────────────────────────
+_STRIP_DB_FIELDS = {'customPasswords', 'customAdmins', 'disabledAccounts', '_recentMutations'}
+
 @app.route('/api/data', methods=['GET'])
 @require_auth
 def get_data():
     """Return the entire JSON database (sensitive fields stripped, auth required)"""
     data = load_data()
-    # Strip sensitive auth-related fields from response
-    safe_data = {k: v for k, v in data.items() if k not in ('customPasswords', 'customAdmins', 'disabledAccounts')}
+    revisions = data.get('_revisions', {})
+    safe_data = {k: v for k, v in data.items() if k not in _STRIP_DB_FIELDS}
+    safe_data['_revisions'] = {col: int(revisions.get(col, 1)) for col in WRITE_COLLECTIONS}
     # P2.4: ETag — tránh trả về 956KB nếu data không đổi
     data_str = json.dumps(safe_data, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
     etag = '"' + hashlib.md5(data_str.encode('utf-8')).hexdigest() + '"'
@@ -429,17 +1042,34 @@ def get_data():
 def put_data():
     """Replace the entire JSON database (superadmin only)"""
     data = request.get_json(force=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Invalid database payload'}), 400
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     client_build = _client_build()
     if client_build < MIN_CLIENT_BUILD:
         audit_log(user, 'data.put.rejected.stale_client', {'clientBuild': client_build, 'requiredBuild': MIN_CLIENT_BUILD})
         return jsonify({
             'error': 'Client too old. Please reload the page before saving.',
+            'errorCode': 'STALE_CLIENT',
             'requiredBuild': MIN_CLIENT_BUILD
         }), 409
+    for col in WRITE_COLLECTIONS:
+        if col in data:
+            ok, err_msg = _validate_collection_schema(col, data[col])
+            if not ok:
+                return jsonify({'error': err_msg, 'collection': col}), 400
     audit_log(user, 'data.put', {'size': len(json.dumps(data))})
     snapshot_data_file('data-put')
-    save_data(data)
+    with atomic_update() as current_db:
+        revs = current_db.get('_revisions', {})
+        for k, v in data.items():
+            if k not in _STRIP_DB_FIELDS:
+                current_db[k] = v
+        new_revs = current_db.setdefault('_revisions', {})
+        for col in WRITE_COLLECTIONS:
+            new_revs[col] = int(revs.get(col, 1)) + 1
+            if isinstance(current_db.get(col), list):
+                current_db.setdefault('nextIds', {})[col] = _derive_safe_next_id(col, current_db[col], current_db)
     return jsonify({'ok': True, 'version': _get_file_version()})
 
 @app.route('/api/data/version', methods=['GET'])
@@ -502,64 +1132,229 @@ def get_surgeries_filtered():
 @require_auth
 def get_collection(collection):
     """Return a single collection (auth required)"""
+    if collection not in WRITE_COLLECTIONS:
+        return jsonify({'error': f'Unknown collection "{collection}"'}), 404
     data = load_data()
-    return jsonify(data.get(collection, []))
+    items = data.get(collection, [])
+    if request.args.get('meta') == '1':
+        rev = int(data.get('_revisions', {}).get(collection, 1))
+        next_id = data.get('nextIds', {}).get(collection)
+        return jsonify({'items': items, 'revision': rev, 'nextId': next_id})
+    return jsonify(items)
 
 @app.route('/api/data/<collection>', methods=['PUT'])
 @require_auth
 def put_collection(collection):
-    """Replace a single collection (auth required, allowlist enforced)"""
+    """Replace or atomically merge a single collection (auth + RBAC + revision control enforced)"""
     if collection not in WRITE_COLLECTIONS:
         return jsonify({'error': f'Collection "{collection}" is not writable via API'}), 403
-    payload = request.get_json(force=True)
-    if isinstance(payload, dict) and 'items' in payload:
-        items = payload.get('items', [])
-        next_id = payload.get('nextId')
-    else:
-        items = payload
-        next_id = None
-    user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
+
+    user_obj = getattr(request, '_user', {}) or {}
+    username = user_obj.get('sub', request.headers.get('X-User', 'unknown'))
     client_build = _client_build()
     if client_build < MIN_CLIENT_BUILD:
-        audit_log(user, f'collection.put.rejected.stale_client.{collection}', {'clientBuild': client_build, 'requiredBuild': MIN_CLIENT_BUILD})
+        audit_log(username, f'collection.put.rejected.stale_client.{collection}', {'clientBuild': client_build, 'requiredBuild': MIN_CLIENT_BUILD})
         return jsonify({
             'error': 'Client too old. Please reload the page before saving.',
+            'code': 'STALE_CLIENT',
+            'errorCode': 'STALE_CLIENT',
             'requiredBuild': MIN_CLIENT_BUILD
         }), 409
 
-    # Compute diff before writing (only for list-of-objects with 'id' field)
-    diff_detail = None
-    if isinstance(items, list) and items and isinstance(items[0], dict) and 'id' in items[0]:
-        try:
-            current_data = load_data()
-            old_items = current_data.get(collection, [])
-            if isinstance(old_items, list):
-                diff = diff_collection(old_items, items, collection)
+    payload = request.get_json(force=True, silent=True)
+    if payload is None:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+
+    base_revision = None
+    base_items = None
+    client_mutation_id = None
+    force_overwrite_revision = None
+
+    if isinstance(payload, dict) and 'items' in payload:
+        items = payload.get('items')
+        base_revision = payload.get('baseRevision')
+        base_items = payload.get('baseItems')
+        client_mutation_id = payload.get('clientMutationId')
+        force_overwrite_revision = payload.get('forceOverwriteRevision')
+    else:
+        items = payload
+
+    ok_schema, schema_err = _validate_collection_schema(collection, items)
+    if not ok_schema:
+        audit_log(username, f'collection.put.rejected.schema.{collection}', {'error': schema_err})
+        return jsonify({'error': schema_err}), 400
+
+    if base_items is not None:
+        ok_base, base_err = _validate_collection_schema(collection, base_items)
+        if not ok_base:
+            return jsonify({'error': f'Invalid baseItems: {base_err}'}), 400
+
+    def _parse_int_rev(val):
+        if val is None or isinstance(val, bool):
+            return None
+        if isinstance(val, int):
+            return val
+        if isinstance(val, str) and val.strip().isdigit():
+            return int(val.strip())
+        return None
+
+    parsed_base_rev = _parse_int_rev(base_revision)
+    parsed_force_rev = _parse_int_rev(force_overwrite_revision)
+
+    try:
+        with atomic_update() as data:
+            old_items = data.get(collection, [])
+            if not isinstance(old_items, list):
+                old_items = []
+            revs = data.setdefault('_revisions', {})
+            server_rev = int(revs.get(collection, 1))
+
+            # Step 1: Idempotency check for retried requests (V3-03)
+            recent_list = data.setdefault('_recentMutations', {}).setdefault(collection, [])
+            if isinstance(client_mutation_id, str) and client_mutation_id.strip():
+                for entry in recent_list:
+                    if entry.get('id') == client_mutation_id and entry.get('user') == username:
+                        return jsonify({
+                            'ok': True,
+                            'idempotentReplay': True,
+                            'version': _get_file_version(),
+                            'revision': server_rev,
+                            'items': old_items,
+                            'nextId': data.get('nextIds', {}).get(collection),
+                            'reassignedIds': entry.get('reassignedIds', {})
+                        })
+
+            # Step 2: Revision check & Server-side Atomic Merge (V3-03)
+            reassigned_ids = {}
+            is_non_admin_staff_self_edit = (collection == 'staff' and not _is_admin(user_obj))
+            has_diverged = (
+                (parsed_base_rev is not None and parsed_base_rev != server_rev)
+                or (isinstance(base_items, list) and base_items != old_items)
+                or (base_revision is not None and parsed_base_rev is None and base_items is None)
+            )
+
+            if is_non_admin_staff_self_edit:
+                # Non-admin staff self-edit patches phone/email directly onto old_items inside _authorize_and_prepare_items
+                candidate_items = items
+            elif has_diverged:
+                if parsed_force_rev is not None and parsed_force_rev == server_rev:
+                    candidate_items = items
+                elif parsed_force_rev is not None and parsed_force_rev != server_rev:
+                    raise CollectionAuthError(
+                        409,
+                        'Dữ liệu trên máy chủ vừa tiếp tục thay đổi bởi người dùng khác. Vui lòng kiểm tra lại trước khi ghi đè.',
+                        {
+                            'code': 'DATA_CONFLICT',
+                            'errorCode': 'DATA_CONFLICT',
+                            'conflictType': 'STALE_FORCE_OVERWRITE',
+                            'serverRevision': server_rev,
+                            'serverVersion': server_rev,
+                            'serverItems': old_items
+                        }
+                    )
+                elif isinstance(base_items, list):
+                    candidate_items, reassigned_ids = _atomic_merge_collection(
+                        collection, old_items, base_items, items, data
+                    )
+                else:
+                    raise CollectionAuthError(
+                        409,
+                        'Dữ liệu trên máy chủ đã thay đổi (baseRevision cũ) và thiếu baseItems để hợp nhất tự động.',
+                        {
+                            'code': 'DATA_CONFLICT',
+                            'errorCode': 'DATA_CONFLICT',
+                            'conflictType': 'MISSING_BASE_ITEMS',
+                            'serverRevision': server_rev,
+                            'serverVersion': server_rev,
+                            'serverItems': old_items
+                        }
+                    )
+            else:
+                candidate_items = items
+
+            # Step 3: Compute Full Structural Diff & Authorize (V3-02, V2-02, V2-03)
+            auth_diff = _compute_auth_diff(old_items, candidate_items, collection)
+            effective_items = _authorize_and_prepare_items(
+                user=user_obj,
+                collection=collection,
+                old_items=old_items,
+                candidate_items=candidate_items,
+                auth_diff=auth_diff,
+                full_data=data,
+                base_items=base_items
+            )
+
+            # Recompute final structural diff after _authorize_and_prepare_items (e.g. staff self-edit patch)
+            final_auth_diff = _compute_auth_diff(old_items, effective_items, collection)
+            safe_next_id = _derive_safe_next_id(collection, effective_items, data)
+            data[collection] = effective_items
+            data.setdefault('nextIds', {})[collection] = safe_next_id
+
+            if final_auth_diff['has_changes']:
+                new_rev = server_rev + 1
+                revs[collection] = new_rev
+            else:
+                new_rev = server_rev
+                revs[collection] = server_rev
+
+            if isinstance(client_mutation_id, str) and client_mutation_id.strip():
+                recent_list.append({
+                    'id': client_mutation_id,
+                    'user': username,
+                    'revision': new_rev,
+                    'reassignedIds': reassigned_ids,
+                    'ts': datetime.now(VN_TZ).isoformat()
+                })
+                if len(recent_list) > 50:
+                    del recent_list[:-50]
+
+            # Build audit summary using diff_collection
+            try:
+                summary_diff = diff_collection(old_items, effective_items, collection)
                 diff_detail = {
-                    'count': len(items),
-                    'nextId': next_id,
-                    'added': len(diff['added']),
-                    'removed': len(diff['removed']),
-                    'changed': len(diff['changed']),
+                    'count': len(effective_items),
+                    'nextId': safe_next_id,
+                    'revision': new_rev,
+                    'added': len(final_auth_diff['added']),
+                    'removed': len(final_auth_diff['removed']),
+                    'changed': len(final_auth_diff['modified']),
                     'diff': {
-                        'added': diff['added'][:20],    # cap to avoid huge logs
-                        'removed': diff['removed'][:20],
-                        'changed': diff['changed'][:20]
+                        'added': summary_diff['added'][:20],
+                        'removed': summary_diff['removed'][:20],
+                        'changed': summary_diff['changed'][:20]
                     }
                 }
-        except Exception as ex:
-            print(f'[Audit] diff_collection error: {ex}')
+            except Exception:
+                diff_detail = {'count': len(effective_items), 'nextId': safe_next_id, 'revision': new_rev}
 
-    if diff_detail is None:
-        diff_detail = {'count': len(items) if isinstance(items, list) else 1, 'nextId': next_id}
+    except CollectionAuthError as auth_err:
+        payload_err = {'error': auth_err.message}
+        if auth_err.detail:
+            payload_err.update(auth_err.detail)
+            if 'errorCode' in payload_err and 'code' not in payload_err:
+                payload_err['code'] = payload_err['errorCode']
+            if auth_err.status_code == 409 and 'serverItems' not in payload_err:
+                cur_db = load_data()
+                srv_rev = int(cur_db.get('_revisions', {}).get(collection, 1))
+                payload_err['serverItems'] = cur_db.get(collection, [])
+                payload_err['serverRevision'] = srv_rev
+                payload_err['serverVersion'] = srv_rev
+        audit_log(username, f'collection.put.rejected.{collection}', {
+            'status': auth_err.status_code,
+            'error': auth_err.message,
+            'errorCode': payload_err.get('errorCode')
+        })
+        return jsonify(payload_err), auth_err.status_code
 
-    audit_log(user, f'collection.put.{collection}', diff_detail)
-
-    with atomic_update() as data:
-        data[collection] = items
-        if next_id is not None:
-            data.setdefault('nextIds', {})[collection] = next_id
-    return jsonify({'ok': True, 'version': _get_file_version()})
+    audit_log(username, f'collection.put.{collection}', diff_detail)
+    return jsonify({
+        'ok': True,
+        'version': _get_file_version(),
+        'revision': new_rev,
+        'items': effective_items,
+        'nextId': safe_next_id,
+        'reassignedIds': reassigned_ids
+    })
 
 # ────────────────────────────── Audit API ──────────────────────────────
 @app.route('/api/audit', methods=['GET'])
@@ -850,6 +1645,15 @@ def auth_login():
             'ip': client_ip,
             'remaining': status['remaining']
         })
+        if status['locked']:
+            response = jsonify({
+                'error': f'Đăng nhập tạm bị khóa do nhập sai quá nhiều lần. Vui lòng thử lại sau {LOGIN_LOCKOUT_MINUTES} phút.',
+                'retryAfter': status['retryAfter']
+            })
+            response.headers['Retry-After'] = str(status['retryAfter'])
+            return response, 429
+        return jsonify({'error': 'Tài khoản hoặc mật khẩu không đúng'}), 401
+
     # Check activeUntil expiry
     active_until = user.get('activeUntil')
     if active_until:
@@ -873,7 +1677,7 @@ def auth_login():
                 if date.today() >= date.fromisoformat(active_from):
                     user['disabled'] = False
                     user.pop('activeFrom', None)
-                    _save_auth(auth_data)
+                    _save_auth(auth)
                     # Allow login to continue
                 else:
                     activation_date = date.fromisoformat(active_from).strftime('%d/%m/%Y')
@@ -897,10 +1701,10 @@ def auth_login():
             response = jsonify({
                 'error': f'Đăng nhập tạm bị khóa do nhập sai quá nhiều lần. Vui lòng thử lại sau {LOGIN_LOCKOUT_MINUTES} phút.',
                 'retryAfter': status['retryAfter']
-            })
+        })
             response.headers['Retry-After'] = str(status['retryAfter'])
             return response, 429
-        return jsonify({'error': 'Mật khẩu không đúng'}), 401
+        return jsonify({'error': 'Tài khoản hoặc mật khẩu không đúng'}), 401
 
     _clear_login_failures(username, client_ip)
     token = _create_jwt(username, user)
@@ -935,6 +1739,38 @@ def auth_me():
         'isSuperAdmin': payload.get('isSuperAdmin', False),
         'staffId': payload.get('staffId', 0),
         'color': payload.get('color', '#6366f1')
+    })
+
+@app.route('/api/auth/local-session', methods=['POST'])
+def auth_local_session():
+    """Issue a local preview SuperAdmin session ONLY for direct loopback requests (never via reverse proxy)."""
+    if os.environ.get('PTDTT_DISABLE_LOCAL_AUTOLOGIN') == '1':
+        return jsonify({'error': 'Local auto-login disabled'}), 403
+    if request.headers.get('X-Forwarded-For') or request.headers.get('X-Real-IP'):
+        return jsonify({'error': 'Forbidden outside direct loopback'}), 403
+    host_only = (request.host or '').split(':')[0].lower()
+    if request.remote_addr not in ('127.0.0.1', '::1') or host_only not in ('localhost', '127.0.0.1'):
+        return jsonify({'error': 'Forbidden outside loopback'}), 403
+
+    auth = _load_auth()
+    username = 'vkan'
+    user = auth.get('users', {}).get(username)
+    if not user:
+        return jsonify({'error': 'Local admin account not found'}), 404
+
+    token = _create_jwt(username, user)
+    return jsonify({
+        'token': token,
+        'user': {
+            'username': username,
+            'name': user.get('name', 'Vũ Khương An'),
+            'role': user.get('role', 'Phó trưởng khoa'),
+            'title': user.get('title', 'BSCKII.'),
+            'staffId': user.get('staffId', 2),
+            'isAdmin': user.get('isAdmin', True),
+            'isSuperAdmin': user.get('isSuperAdmin', True),
+            'color': user.get('color', '#8b5cf6')
+        }
     })
 
 @app.route('/api/auth/password', methods=['PUT'])
@@ -1306,14 +2142,44 @@ def _format_size(size_bytes):
     else:
         return f"{size_bytes / (1024 * 1024):.1f} MB"
 
+def _resolve_safe_shcm_path(filename):
+    """Validate and resolve SHCM PDF path safely (no traversal, no symlinks, .pdf only)."""
+    _ensure_shcm_dir()
+    if not filename or not isinstance(filename, str):
+        return None
+    if '\x00' in filename or '/' in filename or '\\' in filename:
+        return None
+    if os.path.basename(filename) != filename:
+        return None
+    if filename.startswith('.'):
+        return None
+    if not filename.lower().endswith('.pdf'):
+        return None
+    candidate = os.path.join(SHCM_DIR, filename)
+    if os.path.islink(candidate):
+        return None
+    base_real = os.path.realpath(SHCM_DIR)
+    target_real = os.path.realpath(candidate)
+    if os.path.dirname(target_real) != base_real:
+        return None
+    try:
+        if os.path.commonpath([base_real, target_real]) != base_real:
+            return None
+    except ValueError:
+        return None
+    if not os.path.isfile(target_real):
+        return None
+    return target_real
+
 @app.route('/api/shcm/files', methods=['GET'])
+@require_auth
 def shcm_list_files():
     _ensure_shcm_dir()
     files = []
     for f in sorted(os.listdir(SHCM_DIR)):
-        if f.lower().endswith('.pdf'):
-            fpath = os.path.join(SHCM_DIR, f)
-            stat = os.stat(fpath)
+        target_real = _resolve_safe_shcm_path(f)
+        if target_real:
+            stat = os.stat(target_real)
             files.append({
                 'name': f,
                 'size': _format_size(stat.st_size),
@@ -1334,29 +2200,79 @@ def shcm_upload():
     }), 410
 
 @app.route('/api/shcm/download/<path:filename>', methods=['GET'])
+@require_auth
 def shcm_download(filename):
-    _ensure_shcm_dir()
-    filepath = os.path.join(SHCM_DIR, filename)
-    if not os.path.exists(filepath) or not filepath.startswith(SHCM_DIR):
+    target_real = _resolve_safe_shcm_path(filename)
+    if not target_real:
         return jsonify({'error': 'File not found'}), 404
-    return send_from_directory(SHCM_DIR, filename, as_attachment=True)
+    base_real = os.path.realpath(SHCM_DIR)
+    safe_name = os.path.basename(target_real)
+    return send_from_directory(base_real, safe_name, as_attachment=True)
 
 @app.route('/api/shcm/delete/<path:filename>', methods=['DELETE'])
 @require_auth
 def shcm_delete(filename):
-    _ensure_shcm_dir()
     user = request._user
-    filepath = os.path.join(SHCM_DIR, filename)
-    if not os.path.exists(filepath) or not filepath.startswith(SHCM_DIR):
+    if not _can_edit_shcm(user):
+        return jsonify({'error': 'Chỉ Quản trị viên hoặc Bác sĩ mới có quyền xóa tài liệu SHCM'}), 403
+    target_real = _resolve_safe_shcm_path(filename)
+    if not target_real:
         return jsonify({'error': 'File not found'}), 404
-    os.remove(filepath)
-    audit_log(user.get('sub', '?'), 'shcm_delete', {'file': filename})
+    os.remove(target_real)
+    audit_log(user.get('sub', '?'), 'shcm_delete', {'file': os.path.basename(target_real)})
     return jsonify({'success': True})
+
+def _normalize_legacy_db_ids():
+    """Normalize historical duplicate/zero IDs in db.json so strict schema validation passes."""
+    if not os.path.exists(DATA_FILE):
+        return
+    with _data_lock:
+        db_data = load_data()
+        changed = False
+        if 'nextId' in db_data:
+            db_data.pop('nextId', None)
+            changed = True
+        next_ids = db_data.get('nextIds')
+        if not isinstance(next_ids, dict):
+            next_ids = {}
+            db_data['nextIds'] = next_ids
+            changed = True
+
+        for col in WRITE_COLLECTIONS:
+            if col in ('nextIds', 'reports16h', 'reports7h', 'staffStatuses'):
+                continue
+            items = db_data.get(col)
+            if not isinstance(items, list):
+                continue
+            max_id = max(
+                [it.get('id') for it in items if isinstance(it, dict) and isinstance(it.get('id'), int) and not isinstance(it.get('id'), bool) and it.get('id') > 0] + [0]
+            )
+            seen_ids = set()
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                rec_id = it.get('id')
+                is_valid_int = isinstance(rec_id, int) and not isinstance(rec_id, bool) and rec_id > 0
+                if not is_valid_int or rec_id in seen_ids:
+                    max_id += 1
+                    it['id'] = max_id
+                    rec_id = max_id
+                    changed = True
+                seen_ids.add(rec_id)
+            cur_next = next_ids.get(col, 1)
+            if not isinstance(cur_next, int) or isinstance(cur_next, bool) or cur_next <= max_id:
+                next_ids[col] = max_id + 1
+                changed = True
+
+        if changed:
+            save_data(db_data)
+            print('[DB] ✅ Normalized legacy collection IDs and nextIds counters in db.json')
 
 # ────────────────────────────── Init ──────────────────────────────
 _ensure_data_dir()
 _ensure_log_dir()
 _cleanup_old_logs(90)
+_normalize_legacy_db_ids()
 _init_auth_from_db()
 _purge_legacy_db_auth_fields()
 

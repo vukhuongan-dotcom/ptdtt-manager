@@ -65,8 +65,8 @@ const ReportsPage = {
         return `
         <div class="rpt-header-row">
             <div class="rpt-date-controls">
-                <label class="rpt-label-date">Ngày:</label>
-                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
+                <label class="rpt-label-date" for="rpt-16h-date-input">Ngày:</label>
+                <input type="date" id="rpt-16h-date-input" aria-label="Chọn ngày báo cáo" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
                 <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
             <div class="rpt-export-btns">
@@ -744,8 +744,8 @@ const ReportsPage = {
         return `
         <div class="rpt-header-row">
             <div class="rpt-date-controls">
-                <label class="rpt-label-date">Ngày:</label>
-                <input type="date" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
+                <label class="rpt-label-date" for="rpt-7h-date-input">Ngày:</label>
+                <input type="date" id="rpt-7h-date-input" aria-label="Chọn ngày báo cáo" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
                 <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
             <div class="rpt-export-btns">

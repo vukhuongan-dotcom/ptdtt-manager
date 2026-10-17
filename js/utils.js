@@ -3,11 +3,15 @@ const Utils = {
     // ─── Lazy-load heavy libraries (script-loader, giữ global behavior) ───
     // CDN URLs tập trung — cập nhật version tại đây khi cần
     _LIBS: {
-        html2canvas: 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
-        chartjs:     'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+        html2canvas: '/js/html2canvas.min.js',
+        chartjs:     '/js/chart.umd.min.js',
         xlsx:        '/js/xlsx.full.min.js',
     },
     _loadingPromises: {},
+
+    localDateStr(d = new Date()) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
 
     /**
      * Load một script một lần duy nhất. Trả về Promise resolve khi script sẵn sàng.
@@ -68,13 +72,16 @@ const Utils = {
         const filterStyle = isDeparted ? 'filter:grayscale(50%);' : '';
         const combinedStyle = extraStyle + (filterStyle ? (extraStyle ? ';' : '') + filterStyle : '');
 
+        const safeName = (name || '').replace(/"/g, '&quot;');
         const fallbackHtml = `<div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}${extraClass}" style="background:${color}${combinedStyle ? ';' + combinedStyle : ''}">${initials}</div>`;
 
         if (!hasPhoto) {
+            if (options.extraClass && options.extraClass.includes('mobile-user-avatar')) {
+                return `<button type="button" class="avatar avatar-${size}${extraClass}" aria-label="Tài khoản ${safeName}" title="${safeName}" style="${combinedStyle}"><div class="staff-avatar-${size}" style="background:${color}">${initials}</div></button>`;
+            }
             return fallbackHtml;
         }
 
-        const safeName = (name || '').replace(/"/g, '&quot;');
         return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" data-staff-id="${sid}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();var sp=(typeof StaffPage!=='undefined'?StaffPage:window.StaffPage);if(sp&&sp.showPhotoModal){sp.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
     },
 
@@ -773,23 +780,26 @@ const Confirm = {
             // Trigger animation
             requestAnimationFrame(() => overlay.classList.add('show'));
 
-            const cleanup = (result) => {
+            let finished = false;
+            const keyHandler = (e) => {
+                if (e.key === 'Escape') finish(false);
+                else if (e.key === 'Enter') finish(true);
+            };
+            const finish = (result) => {
+                if (finished) return;
+                finished = true;
+                document.removeEventListener('keydown', keyHandler);
                 overlay.classList.remove('show');
                 setTimeout(() => overlay.remove(), 250);
                 resolve(result);
             };
 
-            overlay.querySelector('#confirm-cancel').addEventListener('click', () => cleanup(false));
-            overlay.querySelector('#confirm-ok').addEventListener('click', () => cleanup(true));
+            overlay.querySelector('#confirm-cancel').addEventListener('click', () => finish(false));
+            overlay.querySelector('#confirm-ok').addEventListener('click', () => finish(true));
             overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) cleanup(false);
+                if (e.target === overlay) finish(false);
             });
 
-            // Keyboard support
-            const keyHandler = (e) => {
-                if (e.key === 'Escape') { cleanup(false); document.removeEventListener('keydown', keyHandler); }
-                if (e.key === 'Enter') { cleanup(true); document.removeEventListener('keydown', keyHandler); }
-            };
             document.addEventListener('keydown', keyHandler);
         });
     },

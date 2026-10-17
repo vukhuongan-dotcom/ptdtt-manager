@@ -144,8 +144,55 @@ const Auth = {
         }
     },
 
-    // Logout — cleans ALL sensitive data
+    isLocalHost() {
+        return typeof window !== 'undefined' &&
+            window.location &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    },
+
+    async tryLocalAutoLogin() {
+        if (!this.isLocalHost()) return { success: false };
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            return { success: false };
+        }
+        try {
+            const response = await fetch('/api/auth/local-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!response.ok) return { success: false };
+            const result = await response.json();
+            if (!result || !result.token || !result.user) return { success: false };
+
+            this._saveToken(result.token, true);
+            sessionStorage.setItem(this.TOKEN_KEY, result.token);
+            const session = {
+                staffId: result.user.staffId,
+                username: result.user.username,
+                name: result.user.name,
+                role: result.user.role,
+                title: result.user.title || '',
+                isAdmin: result.user.isAdmin,
+                isSuperAdmin: result.user.isSuperAdmin || false,
+                color: result.user.color || '#8b5cf6',
+                loginTime: new Date().toISOString()
+            };
+            localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            if (!localStorage.getItem('ptdtt_onboarding_done')) {
+                localStorage.setItem('ptdtt_onboarding_done', 'true');
+            }
+            return { success: true, session };
+        } catch (e) {
+            return { success: false };
+        }
+    },
+
+    // Logout — cleans ALL sensitive data while preserving isolated pending queue per ownerKey
     logout() {
+        if (typeof Store !== 'undefined' && typeof Store.resetForLogout === 'function') {
+            Store.resetForLogout();
+        }
         // Token
         this._removeToken();
         // Session

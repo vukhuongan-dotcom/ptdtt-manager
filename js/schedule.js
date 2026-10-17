@@ -589,7 +589,7 @@ const SchedulePage = {
         <div class="schedule-notes card schedule-notes--mt">
             <h3 class="schedule-notes-heading">📝 Ghi chú</h3>
             ${isAdmin
-                ? `<textarea class="form-textarea schedule-notes-textarea" id="schedule-notes" placeholder="Ghi chú tuần này...">${schedule?.notes || ''}</textarea>`
+                ? `<textarea class="form-textarea schedule-notes-textarea" id="schedule-notes" aria-label="Ghi chú lịch phân công tuần" placeholder="Ghi chú tuần này...">${schedule?.notes || ''}</textarea>`
                 : `<p class="schedule-notes-readonly">${schedule?.notes ? schedule.notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Không có ghi chú'}</p>`
             }
         </div>
@@ -628,9 +628,10 @@ const SchedulePage = {
                 const conflictCls = isHardCell ? ' schedule-select--conflict-block' : (isSoftCell ? ' schedule-select--conflict' : '');
 
                 if (isAdmin) {
+                    const selectAriaLabel = `${pos.label}${slotLabel ? ' ' + slotLabel : ''} - ${DAY_LABELS[dayIdx]}`;
                     rows += `<td class="schedule-cell ${dayIdx >= 5 ? 'weekend' : ''}${leadClass}">
                         ${slotLabel ? `<span class="schedule-slot-label">${slotLabel}</span>` : ''}
-                        <select class="schedule-select${conflictCls}" data-pos="${pos.key}" data-cell="${cellKey}" onchange="SchedulePage.onCellChange(this)">
+                        <select class="schedule-select${conflictCls}" data-pos="${pos.key}" data-cell="${cellKey}" aria-label="${selectAriaLabel}" onchange="SchedulePage.onCellChange(this)">
                             <option value="">—</option>
                             ${staffOptions.map(s => {
                                 const stConf = activeConflicts.find(c => c.day === DAYS[dayIdx] && c.staffId === s.id && c.duties.some(dt => dt.cellKey === cellKey));

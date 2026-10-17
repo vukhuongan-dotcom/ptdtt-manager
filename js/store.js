@@ -1,19 +1,38 @@
 // ===== DATA STORE (localStorage + Server Sync) =====
 const STORE_KEY = 'ptdtt_manager';
+const PENDING_KEY = 'ptdtt_pending_v1';
+const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
+const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2610091805;
+const CLIENT_BUILD = 2610170930;
+
+const COLLECTION_SYNC_ORDER = [
+    'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
+    'shcmSettings', 'shcmSchedule', 'plans',
+    'surgeries', 'surgeriesTrash',
+    'schedules', 'reports16h', 'reports7h',
+    'tasks', 'tasksTrash', 'notifications',
+    'conferences', 'patients', 'rooms', 'surgerySchedule'
+];
 
 const Store = {
     _data: null,
+    _serverSyncedData: null,
     _serverAvailable: false,
     _deletedIds: new Set(),
     _dirtyCollections: new Set(),
+    _pendingMeta: {},
+    _mutationGen: {},
+    _pendingOwnerKey: null,
+    _pendingOwnerUsername: null,
+    _pendingOwnerStaffId: null,
     _hasLoadedServerOnce: false,
     _pendingSaveAfterSync: false,
     _syncingDirtyCollections: false,
     _initialSyncPromise: null,
     _collectionSaveWaiters: [],
     _pollBound: false,
+    _onlineBound: false,
     _lastEtag: null,         // P2.4: ETag từ lần GET /api/data gần nhất
 
     // Save to localStorage only (no server push) — used during init
@@ -28,6 +47,185 @@ const Store = {
 
     _localDateStr(d) {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    _getCurrentOwnerInfo() {
+        if (typeof Auth === 'undefined' || !Auth.getSession) return null;
+        const s = Auth.getSession();
+        if (!s || !s.username) return null;
+        const username = String(s.username).trim().toLowerCase();
+        const staffId = Number(s.staffId || 0);
+        return {
+            ownerKey: `${username}:${staffId}`,
+            ownerUsername: username,
+            ownerStaffId: staffId
+        };
+    },
+
+    _parsePendingEnvelope(raw) {
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                return {
+                    ownerKey: null,
+                    ownerUsername: null,
+                    ownerStaffId: null,
+                    collections: parsed.filter(Boolean),
+                    meta: {},
+                    dataSnapshots: {},
+                    nextIdSnapshots: {}
+                };
+            }
+            if (parsed && typeof parsed === 'object') {
+                return {
+                    ownerKey: parsed.ownerKey || null,
+                    ownerUsername: parsed.ownerUsername || null,
+                    ownerStaffId: parsed.ownerStaffId != null ? Number(parsed.ownerStaffId) : null,
+                    collections: Array.isArray(parsed.collections) ? parsed.collections.filter(Boolean) : [],
+                    meta: (parsed.meta && typeof parsed.meta === 'object') ? parsed.meta : {},
+                    dataSnapshots: (parsed.dataSnapshots && typeof parsed.dataSnapshots === 'object') ? parsed.dataSnapshots : {},
+                    nextIdSnapshots: (parsed.nextIdSnapshots && typeof parsed.nextIdSnapshots === 'object') ? parsed.nextIdSnapshots : {}
+                };
+            }
+        } catch (_) { }
+        return null;
+    },
+
+    _persistPendingQueue() {
+        const owner = this._getCurrentOwnerInfo();
+        if (owner) {
+            this._pendingOwnerKey = owner.ownerKey;
+            this._pendingOwnerUsername = owner.ownerUsername;
+            this._pendingOwnerStaffId = owner.ownerStaffId;
+        }
+        const collections = [...this._dirtyCollections];
+        if (collections.length === 0) {
+            localStorage.removeItem(PENDING_KEY);
+            if (this._pendingOwnerKey) {
+                localStorage.removeItem(PENDING_ISOLATED_PREFIX + this._pendingOwnerKey);
+            }
+            return;
+        }
+        const dataSnapshots = {};
+        const nextIdSnapshots = {};
+        collections.forEach(col => {
+            if (this._data && Object.prototype.hasOwnProperty.call(this._data, col)) {
+                dataSnapshots[col] = this._clone(this._data[col]);
+            }
+            if (this._data?.nextIds && Object.prototype.hasOwnProperty.call(this._data.nextIds, col)) {
+                nextIdSnapshots[col] = this._data.nextIds[col];
+            }
+        });
+        const envelope = {
+            ownerKey: this._pendingOwnerKey || null,
+            ownerUsername: this._pendingOwnerUsername || null,
+            ownerStaffId: this._pendingOwnerStaffId != null ? this._pendingOwnerStaffId : null,
+            collections,
+            meta: this._clone(this._pendingMeta || {}),
+            dataSnapshots,
+            nextIdSnapshots,
+            updatedAt: Date.now()
+        };
+        const serialized = JSON.stringify(envelope);
+        localStorage.setItem(PENDING_KEY, serialized);
+        if (envelope.ownerKey) {
+            localStorage.setItem(PENDING_ISOLATED_PREFIX + envelope.ownerKey, serialized);
+        }
+    },
+
+    _saveRejectedDraft(collection, reason, rejectedItems, serverItems) {
+        const owner = this._getCurrentOwnerInfo();
+        const ownerKey = owner ? owner.ownerKey : (this._pendingOwnerKey || 'anonymous:0');
+        const storageKey = REJECTED_DRAFTS_PREFIX + ownerKey;
+        let list = [];
+        try {
+            const existing = localStorage.getItem(storageKey);
+            if (existing) list = JSON.parse(existing);
+            if (!Array.isArray(list)) list = [];
+        } catch (_) { list = []; }
+        list.push({
+            collection,
+            reason: String(reason || 'Rejected'),
+            rejectedItems: this._clone(rejectedItems),
+            serverItems: this._clone(serverItems),
+            timestamp: new Date().toISOString()
+        });
+        if (list.length > 20) list = list.slice(-20);
+        localStorage.setItem(storageKey, JSON.stringify(list));
+    },
+
+    reconcilePendingForSession() {
+        const currentOwner = this._getCurrentOwnerInfo();
+        if (!currentOwner) return;
+
+        const rawActive = localStorage.getItem(PENDING_KEY);
+        const activeEnv = this._parsePendingEnvelope(rawActive);
+
+        if (activeEnv && activeEnv.collections.length > 0) {
+            if (!activeEnv.ownerKey) {
+                // Bind unowned pending queue to current session
+                activeEnv.ownerKey = currentOwner.ownerKey;
+                activeEnv.ownerUsername = currentOwner.ownerUsername;
+                activeEnv.ownerStaffId = currentOwner.ownerStaffId;
+                this._pendingOwnerKey = currentOwner.ownerKey;
+                this._pendingOwnerUsername = currentOwner.ownerUsername;
+                this._pendingOwnerStaffId = currentOwner.ownerStaffId;
+                this._persistPendingQueue();
+            } else if (activeEnv.ownerKey !== currentOwner.ownerKey) {
+                // Different user logged in (A -> B): isolate A's pending queue and revert A's unpushed local edits
+                const snapshots = activeEnv.dataSnapshots || {};
+                const nextIdSnaps = activeEnv.nextIdSnapshots || {};
+                activeEnv.collections.forEach(col => {
+                    if (!snapshots[col] && this._data && Object.prototype.hasOwnProperty.call(this._data, col)) {
+                        snapshots[col] = this._clone(this._data[col]);
+                    }
+                    if (this._pendingMeta?.[col]?.baseItems && this._data) {
+                        this._data[col] = this._clone(this._pendingMeta[col].baseItems);
+                    } else if (this._serverSyncedData && Object.prototype.hasOwnProperty.call(this._serverSyncedData, col)) {
+                        this._data[col] = this._clone(this._serverSyncedData[col]);
+                    }
+                });
+                activeEnv.dataSnapshots = snapshots;
+                activeEnv.nextIdSnapshots = nextIdSnaps;
+                localStorage.setItem(PENDING_ISOLATED_PREFIX + activeEnv.ownerKey, JSON.stringify(activeEnv));
+                localStorage.removeItem(PENDING_KEY);
+                this._dirtyCollections.clear();
+                this._pendingMeta = {};
+                this._saveLocal();
+            }
+        }
+
+        // Check if currentOwner has an isolated queue to restore (B -> A)
+        const isolatedRaw = localStorage.getItem(PENDING_ISOLATED_PREFIX + currentOwner.ownerKey);
+        const isolatedEnv = this._parsePendingEnvelope(isolatedRaw);
+        if (isolatedEnv && isolatedEnv.ownerKey === currentOwner.ownerKey && isolatedEnv.collections.length > 0) {
+            this._pendingOwnerKey = currentOwner.ownerKey;
+            this._pendingOwnerUsername = currentOwner.ownerUsername;
+            this._pendingOwnerStaffId = currentOwner.ownerStaffId;
+            isolatedEnv.collections.forEach(col => {
+                this._dirtyCollections.add(col);
+                if (isolatedEnv.meta && isolatedEnv.meta[col]) {
+                    this._pendingMeta[col] = this._clone(isolatedEnv.meta[col]);
+                    const g = Number(isolatedEnv.meta[col].gen || 1);
+                    if (!this._mutationGen[col] || this._mutationGen[col] < g) {
+                        this._mutationGen[col] = g;
+                    }
+                }
+                if (isolatedEnv.dataSnapshots && Array.isArray(isolatedEnv.dataSnapshots[col]) && this._data) {
+                    this._data[col] = this._clone(isolatedEnv.dataSnapshots[col]);
+                }
+                if (isolatedEnv.nextIdSnapshots && isolatedEnv.nextIdSnapshots[col] != null && this._data?.nextIds) {
+                    this._data.nextIds[col] = isolatedEnv.nextIdSnapshots[col];
+                }
+            });
+            this._saveLocal();
+            this._persistPendingQueue();
+        } else {
+            this._pendingOwnerKey = currentOwner.ownerKey;
+            this._pendingOwnerUsername = currentOwner.ownerUsername;
+            this._pendingOwnerStaffId = currentOwner.ownerStaffId;
+        }
     },
 
     init() {
@@ -64,6 +262,7 @@ const Store = {
         } else {
             this._data = parsed;
             if (!this._data.schedules) this._data.schedules = [];
+            if (!this._data.nextIds) this._data.nextIds = {};
             if (!this._data.nextIds.schedules) this._data.nextIds.schedules = 1;
             if (!this._data.notifications) this._data.notifications = [];
             if (!this._data.nextIds.notifications) this._data.nextIds.notifications = 1;
@@ -106,15 +305,51 @@ const Store = {
             this._saveLocal(); // Only localStorage, NOT server
         }
 
-        // Authenticated server sync is intentionally started by App after
-        // the session is validated. Keeping init local-only avoids duplicate
-        // sync races that can swallow edits made immediately after login.
+        this._serverSyncedData = this._clone(this._data);
+
+        // Restore persistent pending queue across reload
+        const env = this._parsePendingEnvelope(localStorage.getItem(PENDING_KEY));
+        if (env && env.collections.length > 0) {
+            this._pendingOwnerKey = env.ownerKey;
+            this._pendingOwnerUsername = env.ownerUsername;
+            this._pendingOwnerStaffId = env.ownerStaffId;
+            this._pendingMeta = env.meta || {};
+            env.collections.forEach(col => {
+                this._dirtyCollections.add(col);
+                const g = Number(this._pendingMeta[col]?.gen || 1);
+                this._mutationGen[col] = Math.max(this._mutationGen[col] || 0, g);
+                if (this._pendingMeta[col]?.baseItems && this._serverSyncedData) {
+                    this._serverSyncedData[col] = this._clone(this._pendingMeta[col].baseItems);
+                }
+                if (env.dataSnapshots && Array.isArray(env.dataSnapshots[col]) && this._data) {
+                    this._data[col] = this._clone(env.dataSnapshots[col]);
+                }
+            });
+            this._saveLocal();
+        }
+
+        if (!this._onlineBound && typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('online', () => {
+                if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn() && this._dirtyCollections.size > 0) {
+                    this._queueDirtyCollectionsSync();
+                }
+            });
+            this._onlineBound = true;
+        }
     },
 
     // Start server sync + polling. Safe to call multiple times.
     startAuthenticatedSync() {
+        if (!this._data) this.init();
+        this.reconcilePendingForSession();
         if (!this._initialSyncPromise) {
             this._initialSyncPromise = this._syncFromServer(true)
+                .then(async () => {
+                    this.reconcilePendingForSession();
+                    if (this._dirtyCollections.size > 0) {
+                        await this._flushDirtyCollections();
+                    }
+                })
                 .catch(e => {
                     this._serverAvailable = false;
                     if (e.message !== 'Unauthorized' && e.message !== 'StaleClient') {
@@ -128,15 +363,25 @@ const Store = {
         return this._initialSyncPromise;
     },
 
-    // Reset sync state on logout — prevents stale data leaking to next session
+    // Reset sync state on logout — isolates pending queue for current user instead of losing it
     resetForLogout() {
         this._stopPolling();
+        if (this._dirtyCollections.size > 0) {
+            this._persistPendingQueue();
+            localStorage.removeItem(PENDING_KEY);
+        }
+        this._dirtyCollections.clear();
+        this._pendingMeta = {};
+        this._mutationGen = {};
+        this._pendingOwnerKey = null;
+        this._pendingOwnerUsername = null;
+        this._pendingOwnerStaffId = null;
         this._hasLoadedServerOnce = false;
         this._serverVersion = null;
+        this._serverRevisions = {};
         this._syncing = false;
         this._syncingDirtyCollections = false;
         this._initialSyncPromise = null;
-        this._dirtyCollections.clear();
         this._deletedIds.clear();
         this._pendingSaveAfterSync = false;
         this._lastEtag = null;           // P2.4: Reset ETag on logout
@@ -148,11 +393,22 @@ const Store = {
     },
 
     _buildCollectionPayload(collection) {
+        const meta = this._pendingMeta?.[collection] || {};
         const payload = {
             items: this._clone(this._data?.[collection] ?? [])
         };
         if (Object.prototype.hasOwnProperty.call(this._data?.nextIds || {}, collection)) {
             payload.nextId = this._data.nextIds[collection];
+        }
+        const rev = meta.baseRevision ?? this._serverRevisions?.[collection] ?? this._serverVersion;
+        if (rev != null) {
+            payload.baseRevision = rev;
+        }
+        if (Array.isArray(meta.baseItems)) {
+            payload.baseItems = this._clone(meta.baseItems);
+        }
+        if (meta.clientMutationId) {
+            payload.clientMutationId = meta.clientMutationId;
         }
         return payload;
     },
@@ -160,8 +416,33 @@ const Store = {
     saveCollections(collections) {
         const unique = [...new Set((collections || []).filter(Boolean))];
         if (!unique.length) return;
+        const owner = this._getCurrentOwnerInfo();
+        if (owner) {
+            this._pendingOwnerKey = owner.ownerKey;
+            this._pendingOwnerUsername = owner.ownerUsername;
+            this._pendingOwnerStaffId = owner.ownerStaffId;
+        }
+        unique.forEach(collection => {
+            const nextGen = (this._mutationGen[collection] || 0) + 1;
+            this._mutationGen[collection] = nextGen;
+            const existingMeta = this._pendingMeta[collection];
+            const baseItems = existingMeta && Array.isArray(existingMeta.baseItems)
+                ? existingMeta.baseItems
+                : this._clone(this._serverSyncedData?.[collection] ?? []);
+            const baseRevision = existingMeta && existingMeta.baseRevision != null
+                ? existingMeta.baseRevision
+                : (this._serverRevisions?.[collection] ?? this._serverVersion ?? null);
+            this._pendingMeta[collection] = {
+                gen: nextGen,
+                clientMutationId: `mut_${Date.now()}_${nextGen}_${Math.random().toString(36).slice(2, 7)}`,
+                baseRevision,
+                baseItems,
+                updatedAt: Date.now()
+            };
+            this._dirtyCollections.add(collection);
+        });
         localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
-        unique.forEach(collection => this._dirtyCollections.add(collection));
+        this._persistPendingQueue();
         return this._queueDirtyCollectionsSync();
     },
 
@@ -169,6 +450,7 @@ const Store = {
     // ── Server sync with real-time polling ──
     _pollTimer: null,
     _serverVersion: null,
+    _serverRevisions: {},
     _syncing: false,
     _saveDebounce: null,
     _collectionSaveDebounce: null,
@@ -326,6 +608,15 @@ const Store = {
                 throw new Error('Unauthorized');
             }
             if (response.status === 409) {
+                let detail = null;
+                try { detail = await response.clone().json(); } catch (_) { }
+                if (detail && detail.code === 'DATA_CONFLICT') {
+                    const conflictErr = new Error(detail.error || 'Xung đột dữ liệu với máy chủ');
+                    conflictErr.status = 409;
+                    conflictErr.code = 'DATA_CONFLICT';
+                    conflictErr.detail = detail;
+                    throw conflictErr;
+                }
                 console.warn('[Store] 409 Conflict — stale client build, forcing reload');
                 if (typeof Toast !== 'undefined') {
                     Toast.error('Phiên bản trang đã cũ. Đang tải lại để tránh ghi đè dữ liệu...');
@@ -338,6 +629,7 @@ const Store = {
                 try { detail = await response.clone().json(); } catch (_) { }
                 const error = new Error(detail?.error || `HTTP ${response.status}`);
                 error.status = response.status;
+                error.code = detail?.code || null;
                 error.detail = detail;
                 throw error;
             }
@@ -367,7 +659,6 @@ const Store = {
             }).then(r => r.json()).then(res => {
                 this._serverAvailable = true;
                 if (res.version) this._serverVersion = res.version;
-                // Clear deleted IDs after successful push
                 this._deletedIds.clear();
                 console.log('[Store] ✅ Merged & saved to server, version:', res.version);
             }).catch(e => {
@@ -396,6 +687,17 @@ const Store = {
         });
     },
 
+    _orderedDirtyCollections() {
+        const dirty = [...this._dirtyCollections];
+        return dirty.sort((a, b) => {
+            const ia = COLLECTION_SYNC_ORDER.indexOf(a);
+            const ib = COLLECTION_SYNC_ORDER.indexOf(b);
+            const oa = ia === -1 ? 999 : ia;
+            const ob = ib === -1 ? 999 : ib;
+            return oa - ob;
+        });
+    },
+
     async _flushDirtyCollections() {
         if (this._syncingDirtyCollections) return { ok: true, pending: true, errors: [] };
         if (!this._dirtyCollections.size) return { ok: true, errors: [] };
@@ -417,10 +719,12 @@ const Store = {
         const errors = [];
 
         try {
-            const collections = [...this._dirtyCollections];
+            const collections = this._orderedDirtyCollections();
 
             for (const collection of collections) {
-                const payload = JSON.stringify(this._buildCollectionPayload(collection));
+                const sentGen = this._mutationGen[collection] || this._pendingMeta[collection]?.gen || 1;
+                const payloadObj = this._buildCollectionPayload(collection);
+                const payload = JSON.stringify(payloadObj);
 
                 try {
                     const response = await this._api(`/api/data/${encodeURIComponent(collection)}`, {
@@ -431,10 +735,39 @@ const Store = {
                     const result = await response.json();
                     this._serverAvailable = true;
                     if (result.version) this._serverVersion = result.version;
+                    if (result.revision != null) {
+                        if (!this._serverRevisions) this._serverRevisions = {};
+                        this._serverRevisions[collection] = result.revision;
+                    }
+                    if (Array.isArray(result.items)) {
+                        if (!this._serverSyncedData) this._serverSyncedData = {};
+                        this._serverSyncedData[collection] = this._clone(result.items);
+                    }
 
-                    if (JSON.stringify(this._buildCollectionPayload(collection)) === payload) {
+                    const currentGen = this._mutationGen[collection] || sentGen;
+                    if (currentGen === sentGen) {
+                        if (Array.isArray(result.items) && this._data) {
+                            this._data[collection] = this._clone(result.items);
+                        }
+                        if (result.nextId != null && this._data?.nextIds) {
+                            this._data.nextIds[collection] = result.nextId;
+                        }
                         this._dirtyCollections.delete(collection);
+                        delete this._pendingMeta[collection];
+                        this._saveLocal();
+                        this._persistPendingQueue();
                     } else {
+                        // Newer local mutation occurred while PUT was in flight: rebase onto result
+                        if (this._pendingMeta[collection]) {
+                            this._pendingMeta[collection].baseRevision = result.revision ?? result.version ?? this._serverVersion;
+                            if (Array.isArray(result.items)) {
+                                this._pendingMeta[collection].baseItems = this._clone(result.items);
+                            }
+                        }
+                        if (result.nextId != null && this._data?.nextIds && this._data.nextIds[collection] < result.nextId) {
+                            this._data.nextIds[collection] = result.nextId;
+                        }
+                        this._persistPendingQueue();
                         shouldRetry = true;
                     }
 
@@ -443,11 +776,80 @@ const Store = {
                     if (e.message === 'Unauthorized' || e.message === 'StaleClient') {
                         continue;
                     }
-                    this._serverAvailable = false;
-                    const permanent = [400, 403, 404].includes(e.status);
-                    if (!permanent) {
-                        shouldRetry = true;
+                    const currentGen = this._mutationGen[collection] || sentGen;
+
+                    if (e.status === 409 && e.code === 'DATA_CONFLICT') {
+                        const serverItems = e.detail?.serverItems;
+                        const serverVersion = e.detail?.serverVersion;
+                        const serverRevision = e.detail?.serverRevision;
+                        if (serverVersion) this._serverVersion = serverVersion;
+                        if (serverRevision != null) {
+                            if (!this._serverRevisions) this._serverRevisions = {};
+                            this._serverRevisions[collection] = serverRevision;
+                        }
+                        if (Array.isArray(serverItems)) {
+                            if (!this._serverSyncedData) this._serverSyncedData = {};
+                            this._serverSyncedData[collection] = this._clone(serverItems);
+                        }
+                        this._saveRejectedDraft(collection, e.message || 'DATA_CONFLICT', payloadObj.items, serverItems);
+                        if (currentGen === sentGen) {
+                            if (Array.isArray(serverItems) && this._data) {
+                                this._data[collection] = this._clone(serverItems);
+                            }
+                            this._dirtyCollections.delete(collection);
+                            delete this._pendingMeta[collection];
+                            this._saveLocal();
+                            this._persistPendingQueue();
+                            if (typeof App !== 'undefined' && App.renderCurrentPage) {
+                                App.renderCurrentPage();
+                            }
+                        } else {
+                            // Newer draft exists: rebase onto latest server snapshot and retry
+                            if (this._pendingMeta[collection]) {
+                                this._pendingMeta[collection].baseRevision = serverRevision ?? serverVersion ?? this._serverVersion;
+                                if (Array.isArray(serverItems)) {
+                                    this._pendingMeta[collection].baseItems = this._clone(serverItems);
+                                }
+                            }
+                            this._persistPendingQueue();
+                            shouldRetry = true;
+                        }
+                        errors.push({ collection, error: e, message: e.message || 'Xung đột dữ liệu' });
+                        this._notifySyncError(`Xung đột dữ liệu ${collection}: ${e.message}`);
+                        continue;
                     }
+
+                    const permanent = [400, 403, 404].includes(e.status);
+                    if (permanent) {
+                        const cleanItems = this._serverSyncedData?.[collection];
+                        this._saveRejectedDraft(collection, e.message || `HTTP ${e.status}`, payloadObj.items, cleanItems);
+                        if (currentGen === sentGen) {
+                            if (Array.isArray(cleanItems) && this._data) {
+                                this._data[collection] = this._clone(cleanItems);
+                            }
+                            this._dirtyCollections.delete(collection);
+                            delete this._pendingMeta[collection];
+                            this._saveLocal();
+                            this._persistPendingQueue();
+                            if (typeof App !== 'undefined' && App.renderCurrentPage) {
+                                App.renderCurrentPage();
+                            }
+                        } else {
+                            // Newer draft exists: rebase baseItems onto clean server state and retry
+                            if (this._pendingMeta[collection] && Array.isArray(cleanItems)) {
+                                this._pendingMeta[collection].baseItems = this._clone(cleanItems);
+                            }
+                            this._persistPendingQueue();
+                            shouldRetry = true;
+                        }
+                        errors.push({ collection, error: e, message: e.message || 'Lỗi lưu dữ liệu' });
+                        this._notifySyncError(`Không thể lưu ${collection}: ${e.message}`);
+                        continue;
+                    }
+
+                    // Transient / offline / 5xx error: preserve in pending queue
+                    this._serverAvailable = false;
+                    this._persistPendingQueue();
                     errors.push({ collection, error: e, message: e.message || 'Lỗi lưu dữ liệu' });
                     this._notifySyncError(`Chưa lưu được ${collection}: ${e.message}`);
                 }
@@ -491,6 +893,27 @@ const Store = {
                 if (serverData._version == null && this._data?._version != null) {
                     serverData._version = this._data._version;
                 }
+                if (serverData._revision) {
+                    this._serverVersion = serverData._revision;
+                }
+                if (serverData._revisions && typeof serverData._revisions === 'object') {
+                    this._serverRevisions = { ...(this._serverRevisions || {}), ...serverData._revisions };
+                }
+                this._serverSyncedData = this._clone(serverData);
+
+                // Ensure any pending collection without baseRevision/baseItems gets anchored to first server snapshot if not yet set
+                this._dirtyCollections.forEach(col => {
+                    if (this._pendingMeta[col]) {
+                        const colRev = this._serverRevisions?.[col] ?? this._serverVersion;
+                        if (this._pendingMeta[col].baseRevision == null && colRev != null) {
+                            this._pendingMeta[col].baseRevision = colRev;
+                        }
+                        if (!Array.isArray(this._pendingMeta[col].baseItems) && Array.isArray(serverData[col])) {
+                            this._pendingMeta[col].baseItems = this._clone(serverData[col]);
+                        }
+                    }
+                });
+
                 // Remove any locally-deleted IDs from server data before applying
                 if (this._deletedIds.size > 0 && serverData.surgeries) {
                     serverData.surgeries = serverData.surgeries.filter(s => !this._deletedIds.has(s.id));
@@ -551,6 +974,9 @@ const Store = {
     _checkForUpdates() {
         this._api('/api/data/version').then(r => r.json()).then(v => {
             if (!v.version) return;
+            if (this._dirtyCollections.size > 0 && !this._syncingDirtyCollections) {
+                this._flushDirtyCollections().catch(() => { });
+            }
             if (this._serverVersion === null) {
                 this._serverVersion = v.version;
                 // First successful version check: if we never loaded server data,
@@ -582,24 +1008,34 @@ const Store = {
         return (this._data['staff'] || []).filter(s => !s.startDate || s.startDate <= today);
     },
 
-
+    _canMutateSurgeries() {
+        if (typeof Auth === 'undefined' || !Auth.getSession) return false;
+        const s = Auth.getSession();
+        if (!s) return false;
+        if (s.isAdmin || s.isSuperAdmin) return true;
+        const role = String(s.role || '');
+        return role.includes('Bác sĩ') || role.includes('Trưởng khoa') || role.includes('Phó trưởng khoa');
+    },
 
     cleanSurgeriesTrash(maxDays = 7) {
-        if (!this._data || !Array.isArray(this._data.surgeriesTrash)) return [];
-        const now = Date.now();
-        const maxMs = maxDays * 24 * 60 * 60 * 1000;
+        const trash = this._data?.surgeriesTrash || [];
+        if (trash.length === 0) return [];
+        const now = new Date();
         const valid = [];
-        let expiredCount = 0;
-        this._data.surgeriesTrash.forEach(item => {
-            const delTime = item.deletedAt ? new Date(item.deletedAt).getTime() : 0;
-            if (delTime > 0 && (now - delTime) > maxMs) {
-                expiredCount++;
-                if (item.id) this._deletedIds.add(item.id);
-            } else {
+        const expiredIds = [];
+        for (const item of trash) {
+            const deletedAt = new Date(item.deletedAt);
+            const diffDays = (now - deletedAt) / (1000 * 60 * 60 * 24);
+            if (diffDays <= maxDays) {
                 valid.push(item);
+            } else if (item && item.id != null) {
+                expiredIds.push(item.id);
             }
-        });
-        if (expiredCount > 0) {
+        }
+        if (expiredIds.length > 0 && this._canMutateSurgeries()) {
+            for (const id of expiredIds) {
+                this._deletedIds.add('surgeriesTrash:' + id);
+            }
             this._data.surgeriesTrash = valid;
             this.saveCollections(['surgeriesTrash']);
         }
@@ -736,6 +1172,10 @@ const Store = {
 
     resetData() {
         localStorage.removeItem(STORE_KEY);
+        localStorage.removeItem(PENDING_KEY);
+        this._dirtyCollections.clear();
+        this._pendingMeta = {};
+        this._mutationGen = {};
         this.init();
     }
 };

@@ -43,8 +43,8 @@ const GlobalSearch = {
         div.innerHTML = `
             <div class="search-container">
                 <div class="search-input-wrap">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="global-search-input" class="search-input" placeholder="Tìm kiếm nhân sự, bệnh nhân, ca mổ..." autocomplete="off" autofocus>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="global-search-input" class="search-input" aria-label="Tìm kiếm toàn hệ thống" placeholder="Tìm kiếm nhân sự, bệnh nhân, ca mổ..." autocomplete="off" autofocus>
                     <span class="search-kbd">ESC</span>
                 </div>
                 <div class="search-results" id="search-results">
@@ -110,7 +110,7 @@ const GlobalSearch = {
                     detail: `${s.title} — ${s.role}`,
                     badge: s.cơHữu ? 'Cơ hữu' : 'Biên chế',
                     badgeBg: 'var(--primary-a10)', badgeColor: 'var(--primary)',
-                    action: () => { App.navigateTo('staff'); }
+                    action: () => { App.navigate('staff'); }
                 });
             }
         });
@@ -124,7 +124,7 @@ const GlobalSearch = {
                     name: d.name,
                     detail: `${d.title} — ${d.position || d.department || ''}`,
                     badge: 'BS ngoài', badgeBg: '#8b5cf620', badgeColor: '#7c3aed',
-                    action: () => { StaffPage.activeTab = 'external'; App.navigateTo('staff'); }
+                    action: () => { StaffPage.activeTab = 'external'; App.navigate('staff'); }
                 });
             }
         });
@@ -146,20 +146,6 @@ const GlobalSearch = {
             }
         });
 
-        // Search patients
-        const patients = Store.getAll('patients');
-        patients.forEach(p => {
-            if (this.normalize(p.name).includes(nq) || this.normalize(p.diagnosis || '').includes(nq)) {
-                results.push({
-                    type: 'patient', icon: '🏥', iconBg: '#10b98120',
-                    name: p.name,
-                    detail: `${p.gender}, ${p.age}T — ${p.diagnosis || ''}`,
-                    badge: p.bed, badgeBg: '#10b98120', badgeColor: '#059669',
-                    action: () => { App.navigateTo('patients'); }
-                });
-            }
-        });
-
         // Search SHCM (Research)
         const shcm = Store.getAll('shcmSchedule') || [];
         shcm.forEach(s => {
@@ -169,7 +155,7 @@ const GlobalSearch = {
                     name: s.title,
                     detail: `${s.doctorName || 'BS'} · ${s.presentDate || 'Chưa định ngày'}`,
                     badge: s.status === 'done' ? 'Đã trình' : 'SHCM', badgeBg: 'var(--primary-a10)', badgeColor: 'var(--primary)',
-                    action: () => { App.navigateTo('research'); }
+                    action: () => { App.navigate('research'); }
                 });
             }
         });
@@ -183,7 +169,7 @@ const GlobalSearch = {
                     name: p.title,
                     detail: `${p.date || ''} ${p.time || ''} · ${p.location || ''} ${p.note ? '— ' + p.note : ''}`,
                     badge: 'Kế hoạch', badgeBg: '#f59e0b20', badgeColor: '#d97706',
-                    action: () => { App.navigateTo('plans'); }
+                    action: () => { App.navigate('plans'); }
                 });
             }
         });
@@ -209,7 +195,7 @@ const GlobalSearch = {
                     name: n.name,
                     detail: n.detail,
                     badge: 'Trang', badgeBg: '#94a3b820', badgeColor: '#64748b',
-                    action: () => { App.navigateTo(n.page); }
+                    action: () => { App.navigate(n.page); }
                 });
             }
         });
@@ -224,7 +210,7 @@ const GlobalSearch = {
         if (!container) return;
 
         if (this.results.length === 0) {
-            container.innerHTML = `<div class="search-results-empty">Không tìm thấy kết quả cho "${query}"</div>`;
+            container.innerHTML = `<div class="search-results-empty">Không tìm thấy kết quả cho "${Utils.escapeHtml(query)}"</div>`;
             return;
         }
 
@@ -242,7 +228,7 @@ const GlobalSearch = {
             if (!groups[type]) return;
             html += `<div class="search-group-label">${groupLabels[type]} (${groups[type].length})</div>`;
             groups[type].forEach(r => {
-                // Highlight match in name
+                // Highlight match in name (HTML-escaped before inserting <mark>)
                 const highlightedName = this._highlight(r.name, query);
                 html += `
                     <div class="search-result-item ${r.idx === this.focusedIndex ? 'focused' : ''}" 
@@ -250,9 +236,9 @@ const GlobalSearch = {
                         <div class="search-result-icon" style="background:${r.iconBg}">${r.icon}</div>
                         <div class="search-result-info">
                             <div class="search-result-name">${highlightedName}</div>
-                            <div class="search-result-detail">${r.detail}</div>
+                            <div class="search-result-detail">${Utils.escapeHtml(r.detail || '')}</div>
                         </div>
-                        <span class="search-result-badge" style="background:${r.badgeBg};color:${r.badgeColor}">${r.badge}</span>
+                        <span class="search-result-badge" style="background:${r.badgeBg};color:${r.badgeColor}">${Utils.escapeHtml(r.badge || '')}</span>
                     </div>
                 `;
             });
@@ -262,9 +248,13 @@ const GlobalSearch = {
     },
 
     _highlight(text, query) {
-        if (!query) return text;
-        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        const raw = String(text ?? '');
+        if (!query) return Utils.escapeHtml(raw);
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+        return raw.split(regex).map((part, idx) =>
+            idx % 2 === 1 ? `<mark>${Utils.escapeHtml(part)}</mark>` : Utils.escapeHtml(part)
+        ).join('');
     },
 
     _moveFocus(dir) {
@@ -294,15 +284,31 @@ const GlobalSearch = {
         }
     },
 
-    // Initialize keyboard shortcut
+    // Initialize keyboard shortcut (single unified handler)
+    _bound: false,
     init() {
+        if (this._bound) return;
+        this._bound = true;
         document.addEventListener('keydown', (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            if ((e.metaKey || e.ctrlKey) && (e.key || '').toLowerCase() === 'k') {
                 e.preventDefault();
                 if (this.isOpen) this.close();
                 else this.open();
+                return;
+            }
+            if (e.key === '/' && !this.isOpen) {
+                const tag = document.activeElement?.tagName;
+                const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+                    || document.activeElement?.isContentEditable;
+                const hasModalOpen = !!document.querySelector('.modal-overlay.active, .confirm-overlay.show');
+                if (!isEditing && !hasModalOpen) {
+                    e.preventDefault();
+                    this.open();
+                }
+                return;
             }
             if (e.key === 'Escape' && this.isOpen) {
+                e.preventDefault();
                 this.close();
             }
         });

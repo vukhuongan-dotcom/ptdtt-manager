@@ -9,7 +9,6 @@
     display: flex;
     flex-direction: column;
     z-index: 100;
-    transition: width var(--transition-slow);
 }
 
 .sidebar-logo {
@@ -204,3 +203,63 @@
 @media (max-width: 768px) {
     .sidebar-theme-area { display: none; }
 }
+
+/* BUG-174: Tablet & Split-Screen (769px – 1024px) — Khóa cứng sidebar thu gọn 72px */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: var(--sidebar-collapsed);
+        max-width: var(--sidebar-collapsed);
+        transition: none;
+    }
+    .sidebar-logo {
+        justify-content: center;
+        padding: 14px 8px;
+    }
+    .sidebar .logo-text,
+    .sidebar .nav-item span,
+    .sidebar .user-details,
+    .sidebar .notif-bell-label,
+    .sidebar .sidebar-search-label,
+    .sidebar .sidebar-search-btn .search-shortcut,
+    .sidebar .sidebar-btn-text {
+        display: none !important;
+    }
+    .sidebar-nav {
+        padding: 8px 8px;
+    }
+    .sidebar .nav-item {
+        justify-content: center;
+        padding: 10px 0;
+    }
+    .sidebar .sidebar-search-btn {
+        justify-content: center;
+        padding: 10px 0;
+        gap: 0;
+    }
+    .sidebar-footer {
+        padding: 10px 8px;
+    }
+    .sidebar-theme-area,
+    .sidebar-bell-area,
+    .user-info {
+        display: flex;
+        justify-content: center;
+    }
+    .sidebar-admin-btns {
+        flex-direction: column;
+        gap: 4px;
+    }
+    .sidebar-admin-btns .btn,
+    .sidebar-full-btn,
+    .sidebar-full-btn-spaced,
+    .logout-btn {
+        padding: 6px 0;
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+    }
+    .logout-btn-icon {
+        margin-right: 0;
+    }
+}
+

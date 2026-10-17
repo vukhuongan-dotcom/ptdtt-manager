@@ -5,8 +5,14 @@
     <!-- One-time cache migration — runs BEFORE any other script -->
     <script>
         (function () {
-            var REQUIRED_VER = '2609281105';
-            if (localStorage.getItem('ptdtt_cache_ver') === REQUIRED_VER) return;
+            var SCHEMA_MIGRATION_VER = '2609281105';
+            var SW_BUILD_VER = '2610171019';
+            var needMigration = localStorage.getItem('ptdtt_cache_ver') !== SCHEMA_MIGRATION_VER;
+            var needSwUpdate = navigator.onLine !== false && localStorage.getItem('ptdtt_sw_build') !== SW_BUILD_VER;
+            if (!needMigration && !needSwUpdate) return;
+            localStorage.setItem('ptdtt_cache_ver', SCHEMA_MIGRATION_VER);
+            localStorage.setItem('ptdtt_sw_build', SW_BUILD_VER);
+            var hadController = Boolean(navigator.serviceWorker && navigator.serviceWorker.controller);
             // Nuke all service workers and caches
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -18,12 +24,10 @@
                     names.forEach(function (n) { caches.delete(n); });
                 });
             }
-            // Clear stale business data (session is preserved)
-            localStorage.removeItem('ptdtt_manager');
-            localStorage.removeItem('ptdtt_lastActivity');
-            localStorage.setItem('ptdtt_cache_ver', REQUIRED_VER);
-            // Force clean reload after cache purge
-            setTimeout(function () { location.reload(); }, 200);
+            if (needMigration || hadController) {
+                localStorage.removeItem('ptdtt_lastActivity');
+                setTimeout(function () { location.reload(); }, 150);
+            }
         })();
     </script>
 
@@ -40,7 +44,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
     <!-- P2.1: CSS bundle (25 files → 1 request). Build: bash build-css.sh -->
-    <link rel="stylesheet" href="css/app.bundle.css?v=2610091805">
+    <link rel="stylesheet" href="css/app.bundle.css?v=2610171019">
     <!-- U0 BUG-2: @keyframes shake + pulse chuyển vào base.css — xóa inline để tránh xung đột -->
     <!-- U0 Dark mode: set theme trước CSS bundle để tránh flash. Tôn trọng OS preference nếu chưa có saved theme -->
     <script>
@@ -78,11 +82,11 @@
                 <!-- Search button: / shortcut -->
                 <button class="sidebar-search-btn" onclick="GlobalSearch.open()"
                     aria-label="Tìm kiếm" aria-keyshortcuts="/ Control+k Meta+k">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
-                    Tìm kiếm...
+                    <span class="sidebar-search-label">Tìm kiếm...</span>
                     <span class="search-shortcut" aria-hidden="true">/ ⌘K</span>
                 </button>
                 <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard" aria-current="page">
@@ -234,38 +238,38 @@
     </div>
 
     <!-- Core: defer — execute in order after DOM parsed -->
-    <script defer src="js/data.js?v=2610091805"></script>
-    <script defer src="js/store.js?v=2610091805"></script>
-    <script defer src="js/auth.js?v=2610091805"></script>
-    <script defer src="js/staff-photos.js?v=2610091805"></script>
-    <script defer src="js/utils.js?v=2610091805"></script>
+    <script defer src="js/data.js?v=2610170930"></script>
+    <script defer src="js/store.js?v=2610170930"></script>
+    <script defer src="js/auth.js?v=2610171019"></script>
+    <script defer src="js/staff-photos.js?v=2610170930"></script>
+    <script defer src="js/utils.js?v=2610170930"></script>
 
     <!-- Page modules: defer — loaded after DOM ready, in document order -->
     <script>
-        var REQUIRED_VER = '2610091805';
+        var REQUIRED_VER = '2610171019';
         if (typeof window !== 'undefined') window.REQUIRED_VER = REQUIRED_VER;
     </script>
-    <script defer src="js/surgery-metrics.js?v=2610091805"></script>
-    <script defer src="js/dashboard.js?v=2610091805"></script>
-    <script defer src="js/staff.js?v=2610091805"></script>
-    <script defer src="js/staff-tracking.js?v=2610091805"></script>
-    <script defer src="js/tasks.js?v=2610091805"></script>
-    <script defer src="js/plans.js?v=2610091805"></script>
-    <script defer src="js/patients.js?v=2610091805"></script>
-    <script defer src="js/schedule.js?v=2610091805"></script>
-    <script defer src="js/surgery.js?v=2610091805"></script>
-    <script defer src="js/emr.js?v=2610091805"></script>
-    <script defer src="js/surgery-stats.js?v=2610091805"></script>
-    <script defer src="js/research.js?v=2610091805"></script>
-    <script defer src="js/conferences.js?v=2610091805"></script>
-    <script defer src="js/reports.js?v=2610091805"></script>
-    <script defer src="js/rooms.js?v=2610091805"></script>
-    <script defer src="js/notifications.js?v=2610091805"></script>
-    <script defer src="js/search.js?v=2610091805"></script>
-    <script defer src="js/onboarding.js?v=2610091805"></script>
-    <script defer src="js/audit-log.js?v=2610091805"></script>
+    <script defer src="js/surgery-metrics.js?v=2610170930"></script>
+    <script defer src="js/dashboard.js?v=2610170930"></script>
+    <script defer src="js/staff.js?v=2610170930"></script>
+    <script defer src="js/staff-tracking.js?v=2610170930"></script>
+    <script defer src="js/tasks.js?v=2610170930"></script>
+    <script defer src="js/plans.js?v=2610170930"></script>
+    <script defer src="js/patients.js?v=2610170930"></script>
+    <script defer src="js/schedule.js?v=2610170930"></script>
+    <script defer src="js/surgery.js?v=2610170930"></script>
+    <script defer src="js/emr.js?v=2610170930"></script>
+    <script defer src="js/surgery-stats.js?v=2610170930"></script>
+    <script defer src="js/research.js?v=2610170930"></script>
+    <script defer src="js/conferences.js?v=2610170930"></script>
+    <script defer src="js/reports.js?v=2610170930"></script>
+    <script defer src="js/rooms.js?v=2610170930"></script>
+    <script defer src="js/notifications.js?v=2610170930"></script>
+    <script defer src="js/search.js?v=2610170930"></script>
+    <script defer src="js/onboarding.js?v=2610170930"></script>
+    <script defer src="js/audit-log.js?v=2610170930"></script>
     <!-- app.js must be last — initializes after all page modules -->
-    <script defer src="js/app.js?v=2610091805"></script>
+    <script defer src="js/app.js?v=2610171019"></script>
 
     <!-- Offline Banner -->
     <div id="offline-banner"
@@ -276,35 +280,20 @@
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            if (isLocal) {
-                // In local test/development, clear service workers & cache to ensure instant live reload
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for (let registration of registrations) {
-                        registration.unregister();
-                    }
-                });
-                if ('caches' in window) {
-                    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-                }
-            } else {
-                let swControllerRefreshing = false;
+            let swControllerRefreshing = false;
 
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (swControllerRefreshing) return;
-                    swControllerRefreshing = true;
-                    window.location.reload();
-                });
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (swControllerRefreshing) return;
+                swControllerRefreshing = true;
+            });
 
-                window.addEventListener('load', async () => {
-                    try {
-                        const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
-                        console.log('SW registered:', reg.scope);
-                        if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
-                        reg.update();
-                    } catch (e) { console.log('SW registration failed:', e); }
-                });
-            }
+            window.addEventListener('load', async () => {
+                try {
+                    const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+                    if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+                    reg.update();
+                } catch (e) { console.log('SW registration failed:', e); }
+            });
         }
         // Offline/Online banner
         function updateOnlineStatus() {

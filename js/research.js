@@ -12,10 +12,10 @@ const ResearchPage = {
     _canEdit() {
         const s = Auth.getSession();
         if (!s) return false;
-        if (s.isAdmin) return true;
+        if (s.isAdmin || s.isSuperAdmin) return true;
         const staff = Store.getAll('staff').find(st => st.id === s.staffId);
-        if (!staff) return false;
-        return staff.role.includes('Bác sĩ chính') || staff.role.includes('Trưởng khoa') || staff.role.includes('Phó trưởng khoa');
+        const role = (staff && staff.role) ? staff.role : (s.role || '');
+        return role.includes('Bác sĩ') || role.includes('Trưởng khoa') || role.includes('Phó trưởng khoa');
     },
 
     _getSettings() {
@@ -109,11 +109,11 @@ const ResearchPage = {
             <div class="rsch-settings-row">
                 <div class="rsch-settings-group">
                     <span class="rsch-settings-label">⚙️ Giờ mặc định:</span>
-                    <input type="time" class="form-input rsch-time-input" id="shcm-default-time" value="${settings.defaultTime}">
+                    <input type="time" class="form-input rsch-time-input" id="shcm-default-time" aria-label="Giờ sinh hoạt chuyên môn mặc định" value="${settings.defaultTime}">
                 </div>
                 <div class="rsch-settings-group">
                     <span class="rsch-settings-label">Thời lượng:</span>
-                    <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
+                    <input type="number" class="form-input rsch-dur-input" id="shcm-default-dur" aria-label="Thời lượng sinh hoạt chuyên môn mặc định (phút)" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="60" step="5">
                     <span class="rsch-settings-unit">phút</span>
                 </div>
                 <button class="btn btn-secondary btn-sm" onclick="ResearchPage.saveSettings()" aria-label="Lưu cài đặt giờ sinh hoạt chuyên môn">Lưu</button>
@@ -130,8 +130,8 @@ const ResearchPage = {
             </div>
             <div class="rsch-search-box">
                 <span class="rsch-search-icon">🔍</span>
-                <input type="text" class="form-input rsch-search-input" placeholder="Tìm đề tài, bác sĩ, ngày trình..." value="${this.searchQuery}" oninput="ResearchPage.handleSearch(this.value)">
-                ${this.searchQuery ? `<button class="search-clear-btn" onclick="ResearchPage.clearSearch()" title="Xóa tìm kiếm">✕</button>` : ''}
+                <input type="text" class="form-input rsch-search-input" aria-label="Tìm đề tài, bác sĩ hoặc ngày trình sinh hoạt chuyên môn" placeholder="Tìm đề tài, bác sĩ, ngày trình..." value="${this.searchQuery}" oninput="ResearchPage.handleSearch(this.value)">
+                ${this.searchQuery ? `<button class="search-clear-btn" onclick="ResearchPage.clearSearch()" title="Xóa tìm kiếm" aria-label="Xóa tìm kiếm">✕</button>` : ''}
             </div>
         </div>
 
@@ -232,8 +232,8 @@ const ResearchPage = {
                                 ${(isDone && !isSuperAdmin) ? `
                                     <span class="rsch-locked-pill" title="Bài đã trình đã khoá — Chỉ Super Admin mới được sửa/xoá">🔒 Đã khoá</span>
                                 ` : `
-                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}"><span class="pencil-flip">✏️</span></button>
-                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}">🗑️</button>
+                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span></button>
+                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
                                 `}
                             </div>
                             ` : ''}
@@ -254,6 +254,7 @@ const ResearchPage = {
 
     // Auto-transition: registered → pending after 1 week
     _autoStatusTransition() {
+        if (!this._canEdit()) return;
         const now = new Date();
         const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
         const items = Store.getAll('shcmSchedule');
@@ -273,6 +274,7 @@ const ResearchPage = {
 
     // Auto-dedup: shift items with duplicate dates +14 days (ONLY for pending/registered, never touch done)
     _autoDedupDates() {
+        if (!this._canEdit()) return;
         const items = Store.getAll('shcmSchedule')
             .filter(i => i.presentDate && i.status !== 'done')
             .sort((a, b) => a.presentDate.localeCompare(b.presentDate) || a.id - b.id);
@@ -305,9 +307,9 @@ const ResearchPage = {
         let synced = 0;
         items.forEach(item => {
             if (!item.presentDate) return;
-            // Always sync (create or update)
-            this._syncPlan(item);
-            synced++;
+            if (this._syncPlan(item)) {
+                synced++;
+            }
         });
         if (synced > 0) {
             console.log(`[SHCM] Synced ${synced} entries to Plans`);
@@ -551,7 +553,8 @@ const ResearchPage = {
 
     // ===== Plan sync =====
     _syncPlan(item) {
-        if (!item || !item.presentDate) return;
+        if (!this._canEdit()) return false;
+        if (!item || !item.presentDate) return false;
         const settings = this._getSettings();
         const planData = {
             title: `Sinh hoạt chuyên môn BS`,
@@ -567,11 +570,17 @@ const ResearchPage = {
         };
 
         if (item.planId) {
-            Store.update('plans', item.planId, planData);
-        } else {
-            const newPlan = Store.add('plans', planData);
-            Store.update('shcmSchedule', item.id, { planId: newPlan.id });
+            const existing = Store.getById('plans', item.planId);
+            if (existing) {
+                const unchanged = Object.keys(planData).every(k => existing[k] === planData[k]);
+                if (unchanged) return false;
+                Store.update('plans', item.planId, planData);
+                return true;
+            }
         }
+        const newPlan = Store.add('plans', planData);
+        Store.update('shcmSchedule', item.id, { planId: newPlan.id });
+        return true;
     },
 
     // ===== Settings =====
@@ -615,13 +624,37 @@ const ResearchPage = {
                         <div class="rsch-file-meta">${f.size} · ${f.uploaded || ''}</div>
                     </div>
                     <div class="rsch-file-actions">
-                        <a href="/api/shcm/download/${encodeURIComponent(f.name)}" class="btn btn-secondary btn-sm" download>⬇️ Tải</a>
-                        ${canEdit ? `<button class="btn btn-danger btn-sm" onclick="ResearchPage.deleteFile('${f.name.replace(/'/g, "\\'")}')">🗑️</button>` : ''}
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="ResearchPage.downloadFile('${f.name.replace(/'/g, "\\'")}')" aria-label="Tải tài liệu ${f.name.replace(/"/g, '&quot;')}">⬇️ Tải</button>
+                        ${canEdit ? `<button class="btn btn-danger btn-sm" onclick="ResearchPage.deleteFile('${f.name.replace(/'/g, "\\'")}')" aria-label="Xoá tài liệu ${f.name.replace(/"/g, '&quot;')}">🗑️</button>` : ''}
                     </div>
                 </div>
             `).join('');
         } catch (err) {
             container.innerHTML = '<div class="rsch-error-files">Không thể tải danh sách file</div>';
+        }
+    },
+
+    async downloadFile(filename) {
+        try {
+            const token = Auth.getToken();
+            const resp = await fetch('/api/shcm/download/' + encodeURIComponent(filename), {
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+            });
+            if (!resp.ok) throw new Error('Download failed (' + resp.status + ')');
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                if (a.parentNode) a.parentNode.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 300);
+        } catch (err) {
+            Toast.error('Không thể tải tài liệu SHCM');
         }
     },
 

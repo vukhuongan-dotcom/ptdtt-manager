@@ -55,6 +55,16 @@
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
+.staff-toolbar-mid {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.btn-add-staff {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
 .staff-filters-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -160,7 +170,7 @@
 .staff-desktop-view { display: block; }
 .staff-mobile-cards { display: none; }
 
-.staff-table-card { margin-top: 12px; padding: 0; overflow: hidden; }
+.staff-table-card { margin-top: 12px; padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .staff-table { width: 100%; border-collapse: collapse; }
 .staff-table th {
     background: var(--bg-tertiary);
@@ -169,12 +179,12 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    padding: 12px 14px;
+    padding: 10px 8px;
     text-align: left;
     border-bottom: 1px solid var(--border);
 }
 .staff-table td {
-    padding: 12px 14px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--border);
     font-size: 0.86rem;
     vertical-align: middle;
@@ -433,20 +443,20 @@
 .staff-contact-link svg { flex-shrink: 0; color: var(--text-muted); }
 .staff-contact-link:hover svg { color: var(--primary); }
 
-.staff-actions { display: flex; gap: 6px; align-items: center; }
+.staff-actions { display: flex; gap: 4px; align-items: center; justify-content: center; }
 .btn-danger-icon { color: var(--text-muted); }
 .btn-danger-icon:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
 /* Table Columns */
-.th-name { min-width: 220px; white-space: nowrap; }
-.th-dob  { width: 110px; white-space: nowrap; }
-.th-title { width: 120px; white-space: nowrap; }
-.th-role { width: 160px; white-space: nowrap; }
-.th-phone { width: 130px; white-space: nowrap; }
-.th-email { width: 180px; white-space: nowrap; }
-.th-dept { width: 150px; white-space: nowrap; }
-.th-action { width: 80px; text-align: center; }
-.th-stt { width: 50px; text-align: center; }
+.th-name { min-width: 175px; white-space: nowrap; }
+.th-dob  { width: 92px; white-space: nowrap; }
+.th-title { width: 90px; white-space: nowrap; }
+.th-role { width: 125px; white-space: nowrap; }
+.th-phone { width: 110px; white-space: nowrap; }
+.th-email { width: 150px; white-space: nowrap; }
+.th-dept { width: 130px; white-space: nowrap; }
+.th-action { width: 108px; min-width: 108px; text-align: center; }
+.th-stt { width: 42px; text-align: center; }
 .th-action-wide { width: 150px; text-align: center; }
 
 /* ===== Mobile Cards Styling (< 768px) ===== */

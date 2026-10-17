@@ -61,12 +61,16 @@ const SurgeryMetrics = {
     /**
      * Get monthly trend series for a specified number of months
      * @param {Array} allSurgeries - All surgery records from Store
-     * @param {number} numMonths - Number of past months (default 6)
+     * @param {number|string} numMonths - Number of months (6, 12, 'year'/'ytd')
+     * @param {Date} [refDate] - Optional reference date (defaults to new Date())
      * @returns {Array} Array of monthly data items
      */
-    getMonthlyTrend(allSurgeries, numMonths = 6) {
+    getMonthlyTrend(allSurgeries, numMonths = 6, refDate = new Date()) {
         const surgeries = allSurgeries || [];
-        const now = new Date();
+        const now = (refDate && typeof refDate.getTime === 'function' && !isNaN(refDate.getTime()))
+            ? new Date(refDate.getTime())
+            : new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const months = [];
 
         let count = 6;
@@ -89,19 +93,19 @@ const SurgeryMetrics = {
             const shortLabel = `T${m + 1}`;
 
             const isCurrentMonth = (i === 0);
-            const maxStr = isCurrentMonth ? `${y}-${String(m + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` : endStr;
+            const maxStr = isCurrentMonth ? todayStr : endStr;
             const monthCases = surgeries.filter(s => s && s.date && s.date >= startStr && s.date <= maxStr);
+            const scheduledAfterToday = isCurrentMonth
+                ? surgeries.filter(s => s && s.date && s.date > todayStr && s.date <= endStr).length
+                : 0;
+            const latestCaseDateInMonth = monthCases.length > 0
+                ? monthCases.map(s => s.date).sort().slice(-1)[0]
+                : null;
             const types = this.calculateTypeBreakdown(monthCases);
             const mis = this.calculateMIS(monthCases);
 
-            let runRateProjected = types.total;
-
-            if (isCurrentMonth) {
-                const currentDay = now.getDate();
-                if (currentDay > 0 && currentDay < lastDay) {
-                    runRateProjected = Math.round((types.total / currentDay) * lastDay);
-                }
-            }
+            // V2-04: Do not extrapolate run-rate projection automatically without verified cutoff coverage
+            const runRateProjected = null;
 
             months.push({
                 key: `${y}-${String(m + 1).padStart(2, '0')}`,
@@ -110,7 +114,10 @@ const SurgeryMetrics = {
                 year: y,
                 month: m + 1,
                 isCurrentMonth,
+                cutoffDate: maxStr,
                 total: types.total,
+                scheduledAfterToday,
+                latestCaseDateInMonth,
                 runRateProjected,
                 byType: {
                     yeucau: types.yeucau,
@@ -126,11 +133,25 @@ const SurgeryMetrics = {
     },
 
     /**
-     * Calculate working days run-rate projection
-     * @param {number} actualCases - Cases recorded so far in current month
-     * @param {number} currentDay - Current day of month (e.g. 21)
-     * @param {number} totalDays - Total days in month (e.g. 31)
-     * @returns {Object} Detailed projection
+     * Compute reference average strictly across completed calendar months (!isCurrentMonth)
+     * @param {Array} monthsData - Output of getMonthlyTrend
+     * @returns {{ avgValue: number|null, completedCount: number }}
+     */
+    computeAverageReference(monthsData) {
+        const completedMonths = (monthsData || []).filter(m => m && !m.isCurrentMonth);
+        if (completedMonths.length === 0) {
+            return { avgValue: null, completedCount: 0, completedMonths: [] };
+        }
+        const sum = completedMonths.reduce((acc, m) => acc + (m.total || 0), 0);
+        return {
+            avgValue: sum / completedMonths.length,
+            completedCount: completedMonths.length,
+            completedMonths
+        };
+    },
+
+    /**
+     * Calculate working days run-rate projection (explicit opt-in helper)
      */
     calculateDetailedProjection(actualCases, currentDay, totalDays) {
         if (currentDay <= 0) return { calendarProjected: 0, paceDiff: 0 };

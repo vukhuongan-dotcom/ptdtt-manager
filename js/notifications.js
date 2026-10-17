@@ -146,7 +146,7 @@ const Notifications = {
         const count = this.getUnreadCount();
         const id = position === 'mobile' ? 'notif-bell-mobile' : 'notif-bell-desktop';
         return `
-        <button class="notif-bell-btn" id="${id}" onclick="Notifications.togglePanel('${position}')">
+        <button class="notif-bell-btn" id="${id}" aria-label="Thông báo" title="Thông báo" onclick="Notifications.togglePanel('${position}')">
             ${this.bellIconSVG()}
             ${count > 0 ? `<span class="notif-badge">${count > 9 ? '9+' : count}</span>` : ''}
         </button>`;
