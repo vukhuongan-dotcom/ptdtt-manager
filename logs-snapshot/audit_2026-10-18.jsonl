@@ -1,0 +1,35 @@
+{"ts": "2026-10-18T06:19:13.953830", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T06:21:14.280695", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 195, "nextId": 1, "revision": 2, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T06:21:43.191563", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 195, "nextId": 1, "revision": 3, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T06:22:24.384727", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T07:43:18.823464", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T07:45:33.468321", "user": "pvphu", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2758, "nextId": 1792284332551, "revision": 2, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1792284332550, "label": "Nguyễn Diễm My — 1991 — 2026-10-20", "record": {"patientName": "Nguyễn Diễm My", "birthYear": 1991, "admissionId": "26068028", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-10-20", "duration": 45, "mainSurgeon": 7, "assistSurgeon1": 10, "diagnosis": "Trĩ ngoại thuyên tắc", "method": "Phẫu thuật cắt trĩ bằng dao siêu âm.", "notes": "", "isFirstCase": false, "id": 1792284332550, "createdBy": {"username": "pvphu", "name": "Phạm Vĩnh Phú", "at": "2026-10-18T00:45:32.542Z"}, "updatedBy": "pvphu"}}], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T08:11:33.292941", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T08:21:04.322771", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T09:07:56.270444", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T10:16:33.399999", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T10:17:07.310397", "user": "nmnphuong", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2758, "nextId": 1792284332551, "revision": 3, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T11:05:03.672835", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T12:25:21.887915", "user": "pbtkiet", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T12:34:47.383390", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T13:05:48.776162", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T13:14:12.445066", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T13:20:00.605153", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T14:46:56.214116", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T14:56:07.226169", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T15:18:07.979839", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 2, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 25, "label": "2026-10-19", "from": {"notes": ""}, "to": {"notes": "BS Tuấn dạy học chiều thứ 2 13h-16h50, có lịch dạy học sáng thứ 6 8h-11h30\nBSNT Khôi, BS Minh Đức nghỉ phép thứ 5-thứ 6\n"}}]}}}
+{"ts": "2026-10-18T15:25:23.880294", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 3, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T15:37:11.953475", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T15:37:40.829308", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 4, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T15:38:56.199529", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 5, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T15:40:22.987959", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T18:04:42.887736", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T18:38:00.102559", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T18:44:20.166679", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 6, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T18:45:08.716051", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 7, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T18:47:33.481402", "user": "pttminh", "action": "collection.put.schedules", "ip": "127.0.0.1", "details": {"count": 31, "nextId": 32, "revision": 8, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-18T19:38:22.012816", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T21:31:47.235340", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T21:46:33.765164", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T22:11:08.114047", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-18T22:29:43.596305", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
