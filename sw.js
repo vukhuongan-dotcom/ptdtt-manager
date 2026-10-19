@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2610171645';
+const CACHE_NAME = 'ptdtt-v2610192222';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -77,11 +77,11 @@ function isCacheableStaticRequest(request, url) {
     return STATIC_ASSET_PATHS.has(url.pathname) || /^\/img\/staff\/\d+(-lg)?\.webp$/.test(url.pathname);
 }
 
-// Install: precache static assets
+// Install: precache static assets (bypass stale HTTP disk cache on version bump)
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(STATIC_ASSETS))
+            .then(cache => cache.addAll(STATIC_ASSETS.map(u => new Request(u, { cache: 'reload' }))))
             .then(() => self.skipWaiting())
     );
 });
@@ -132,7 +132,7 @@ self.addEventListener('fetch', event => {
                 if (exactMatch) return exactMatch;
                 return cache.match(url.pathname).then(pathMatch => {
                     if (pathMatch) return pathMatch;
-                    return fetch(event.request).then(response => {
+                    return fetch(event.request, { cache: 'no-cache' }).then(response => {
                         if (response.ok) {
                             cache.put(url.search ? event.request : url.pathname, response.clone());
                         }
