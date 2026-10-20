@@ -575,6 +575,7 @@ const Modal = {
         // U3: Lưu element hiện tại để restore focus khi đóng
         this._triggerElement = document.activeElement;
 
+        overlay.style.removeProperty('display');
         overlay.classList.add('active');
         overlay.setAttribute('aria-hidden', 'false');
 
@@ -640,11 +641,18 @@ const Modal = {
 
     close() {
         const overlay = document.getElementById('modal-overlay');
-        overlay.classList.remove('active');
-        overlay.setAttribute('aria-hidden', 'true');
+        if (overlay) {
+            overlay.classList.remove('active');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+        // Remove any open duplicate confirmation sub-dialog
+        const dupDialog = document.getElementById('surgery-duplicate-dialog');
+        if (dupDialog) {
+            try { dupDialog.remove(); } catch (_) {}
+        }
         // Stop auto-save timer (keep draft — user may reopen)
         if (this._currentFormKey) {
-            FormAutoSave.stop(this._currentFormKey);
+            try { FormAutoSave.stop(this._currentFormKey); } catch (_) {}
             this._currentFormKey = null;
         }
         // Remove Esc handler
@@ -659,7 +667,7 @@ const Modal = {
         }
         // U3: Restore focus về element trước khi mở modal
         if (this._triggerElement && typeof this._triggerElement.focus === 'function') {
-            this._triggerElement.focus();
+            try { this._triggerElement.focus(); } catch (_) {}
             this._triggerElement = null;
         }
     },

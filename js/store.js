@@ -4,7 +4,7 @@ const PENDING_KEY = 'ptdtt_pending_v1';
 const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
 const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2610201405;
+const CLIENT_BUILD = 2610201515;
 
 const COLLECTION_SYNC_ORDER = [
     'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
@@ -37,7 +37,11 @@ const Store = {
 
     // Save to localStorage only (no server push) — used during init
     _saveLocal() {
-        localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+        try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+        } catch (e) {
+            console.warn('[Store] localStorage write failed in _saveLocal:', e.message);
+        }
     },
 
     _clone(value) {
@@ -101,36 +105,50 @@ const Store = {
         }
         const collections = [...this._dirtyCollections];
         if (collections.length === 0) {
-            localStorage.removeItem(PENDING_KEY);
-            if (this._pendingOwnerKey) {
-                localStorage.removeItem(PENDING_ISOLATED_PREFIX + this._pendingOwnerKey);
-            }
+            try {
+                localStorage.removeItem(PENDING_KEY);
+                if (this._pendingOwnerKey) {
+                    localStorage.removeItem(PENDING_ISOLATED_PREFIX + this._pendingOwnerKey);
+                }
+            } catch (_) {}
             return;
         }
-        const dataSnapshots = {};
+
+        // Lightweight metadata envelope without duplicating full datasets into localStorage
+        // Note: Full baseItems and uncommitted data are preserved in memory (this._pendingMeta & this._data)
+        // and STORE_KEY already holds the latest local data.
+        const cleanMeta = {};
         const nextIdSnapshots = {};
         collections.forEach(col => {
-            if (this._data && Object.prototype.hasOwnProperty.call(this._data, col)) {
-                dataSnapshots[col] = this._clone(this._data[col]);
+            if (this._pendingMeta?.[col]) {
+                const m = this._pendingMeta[col];
+                cleanMeta[col] = {
+                    gen: m.gen,
+                    clientMutationId: m.clientMutationId,
+                    baseRevision: m.baseRevision,
+                    updatedAt: m.updatedAt
+                };
             }
             if (this._data?.nextIds && Object.prototype.hasOwnProperty.call(this._data.nextIds, col)) {
                 nextIdSnapshots[col] = this._data.nextIds[col];
             }
         });
+
         const envelope = {
             ownerKey: this._pendingOwnerKey || null,
             ownerUsername: this._pendingOwnerUsername || null,
             ownerStaffId: this._pendingOwnerStaffId != null ? this._pendingOwnerStaffId : null,
             collections,
-            meta: this._clone(this._pendingMeta || {}),
-            dataSnapshots,
+            meta: cleanMeta,
             nextIdSnapshots,
             updatedAt: Date.now()
         };
-        const serialized = JSON.stringify(envelope);
-        localStorage.setItem(PENDING_KEY, serialized);
-        if (envelope.ownerKey) {
-            localStorage.setItem(PENDING_ISOLATED_PREFIX + envelope.ownerKey, serialized);
+
+        try {
+            const serialized = JSON.stringify(envelope);
+            localStorage.setItem(PENDING_KEY, serialized);
+        } catch (quotaErr) {
+            console.warn('[Store] LocalStorage quota reached in _persistPendingQueue (ignoring):', quotaErr.message);
         }
     },
 
@@ -441,7 +459,11 @@ const Store = {
             };
             this._dirtyCollections.add(collection);
         });
-        localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+        try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(this._data));
+        } catch (e) {
+            console.warn('[Store] localStorage write failed in saveCollections:', e.message);
+        }
         this._persistPendingQueue();
         return this._queueDirtyCollectionsSync();
     },

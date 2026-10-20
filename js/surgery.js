@@ -1189,17 +1189,23 @@ const SurgeryPage = {
             }
         };
 
-        this.saveSurgeries(all);
-        Modal.clearDraft('surgery-new');
-        Modal.clearDraft('surgery-0');
-        this._closeDuplicateConfirmDialog();
-        Modal.close();
-        App.renderCurrentPage();
+        try {
+            this.saveSurgeries(all);
+            try { Modal.clearDraft('surgery-new'); } catch (_) {}
+            try { Modal.clearDraft('surgery-0'); } catch (_) {}
+            this._closeDuplicateConfirmDialog();
+            try { Modal.close(); } catch (_) {}
+            if (targetDate) this._selectedDayStr = targetDate;
+            App.renderCurrentPage();
 
-        if (targetHasFirst && (formObj.isFirstCase || existing.isFirstCase)) {
-            Toast.show(`Đã dời ca sang ngày ${Utils.formatDate(targetDate)}. Lưu ý: Ngày đích đã có ca đầu tiên nên ca dời không gắn ca đầu ngày.`, 'info');
-        } else {
-            Toast.show(`Đã dời ca mổ sang ngày ${Utils.formatDate(targetDate)} thành công.`, 'success');
+            if (targetHasFirst && (formObj.isFirstCase || existing.isFirstCase)) {
+                Toast.show(`Đã dời ca sang ngày ${Utils.formatDate(targetDate)}. Lưu ý: Ngày đích đã có ca đầu tiên nên ca dời không gắn ca đầu ngày.`, 'info');
+            } else {
+                Toast.show(`Đã dời ca mổ sang ngày ${Utils.formatDate(targetDate)} thành công.`, 'success');
+            }
+        } catch (err) {
+            console.error('[SurgeryPage] _rescheduleSurgery error:', err);
+            Toast.error('Không thể dời ca mổ: ' + (err.message || 'Lỗi không xác định'));
         }
     },
 
@@ -1262,90 +1268,124 @@ const SurgeryPage = {
 
     save(e, id) {
         e.preventDefault();
-        const f = new FormData(e.target);
-        const surgeryDate = f.get('date') || new Date().toISOString().split('T')[0];
-        const targetWeekKey = surgeryDate ? surgeryDate.substring(0, 10) : this.getWeekKey();
-        if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
-
-        // approachType: if surgeryType is robot, force 'robot' (select may be disabled)
-        const surgeryType = f.get('surgeryType');
-        const approachType = surgeryType === 'robot' ? 'robot' : f.get('approachType');
-        if (!approachType) {
-            Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
-            return;
+        const form = e.target;
+        const submitBtn = form?.querySelector('button[type="submit"]');
+        const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="fc-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px;vertical-align:middle;"></span> Đang lưu...';
         }
 
-        // Item 7: Audit trail — who created/updated this record
-        const session = Auth.getSession();
-        const actorMeta = session ? {
-            username: session.username,
-            name: session.name || session.username,
-            at: new Date().toISOString()
-        } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
-
-        const rawDuration = f.get('duration');
-        const durationVal = rawDuration ? (parseInt(rawDuration, 10) || null) : null;
-
-        const candidateData = {
-            patientName: Utils.toProperCase(f.get('patientName')),
-            birthYear: f.get('birthYear') ? parseInt(f.get('birthYear'), 10) : '',
-            admissionId: f.get('admissionId') ? f.get('admissionId').trim() : '',
-            surgeryType: surgeryType,
-            approachType: approachType,
-            date: surgeryDate,
-            duration: durationVal,
-            mainSurgeon: f.get('mainSurgeon') ? parseInt(f.get('mainSurgeon'), 10) : null,
-            assistSurgeon1: f.get('assistSurgeon1') ? parseInt(f.get('assistSurgeon1'), 10) : null,
-            diagnosis: f.get('diagnosis') || '',
-            method: f.get('method') || '',
-            notes: f.get('notes') || '',
-            isFirstCase: !!f.get('isFirstCase')
+        const restoreBtn = () => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnHtml;
+            }
         };
 
-        // Check for duplicates if not already overridden in this submit cycle
-        if (!this._pendingOverride) {
-            const matches = this._findDuplicateSurgeries(candidateData, id);
-            if (matches && matches.length > 0) {
-                this._showDuplicateConfirmDialog(matches, candidateData, id);
+        try {
+            const f = new FormData(form);
+            const surgeryDate = f.get('date') || new Date().toISOString().split('T')[0];
+            const targetWeekKey = surgeryDate ? surgeryDate.substring(0, 10) : this.getWeekKey();
+            if (!canEditSurgery(targetWeekKey)) {
+                Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error');
+                restoreBtn();
                 return;
             }
-        }
 
-        const data = {
-            ...candidateData
-        };
+            // approachType: if surgeryType is robot, force 'robot' (select may be disabled)
+            const surgeryType = f.get('surgeryType');
+            const approachType = surgeryType === 'robot' ? 'robot' : f.get('approachType');
+            if (!approachType) {
+                Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
+                restoreBtn();
+                return;
+            }
 
-        if (this._pendingOverride) {
-            data.duplicateOverride = this._pendingOverride;
-            this._pendingOverride = null;
-        }
+            // Item 7: Audit trail — who created/updated this record
+            const session = Auth.getSession();
+            const actorMeta = session ? {
+                username: session.username,
+                name: session.name || session.username,
+                at: new Date().toISOString()
+            } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
 
-        const all = this.getAllSurgeries();
-        if (id) {
-            const idx = all.findIndex(x => String(x.id) === String(id));
-            if (idx !== -1) {
-                all[idx] = {
-                    ...all[idx],
-                    ...data,
-                    updatedBy: actorMeta   // audit trail: who last edited
-                };
+            const rawDuration = f.get('duration');
+            const durationVal = rawDuration ? (parseInt(rawDuration, 10) || null) : null;
+
+            const candidateData = {
+                patientName: Utils.toProperCase(f.get('patientName')),
+                birthYear: f.get('birthYear') ? parseInt(f.get('birthYear'), 10) : '',
+                admissionId: f.get('admissionId') ? f.get('admissionId').trim() : '',
+                surgeryType: surgeryType,
+                approachType: approachType,
+                date: surgeryDate,
+                duration: durationVal,
+                mainSurgeon: f.get('mainSurgeon') ? parseInt(f.get('mainSurgeon'), 10) : null,
+                assistSurgeon1: f.get('assistSurgeon1') ? parseInt(f.get('assistSurgeon1'), 10) : null,
+                diagnosis: f.get('diagnosis') || '',
+                method: f.get('method') || '',
+                notes: f.get('notes') || '',
+                isFirstCase: !!f.get('isFirstCase')
+            };
+
+            // Check for duplicates if not already overridden in this submit cycle
+            if (!this._pendingOverride) {
+                const matches = this._findDuplicateSurgeries(candidateData, id);
+                if (matches && matches.length > 0) {
+                    restoreBtn();
+                    this._showDuplicateConfirmDialog(matches, candidateData, id);
+                    return;
+                }
+            }
+
+            const data = {
+                ...candidateData
+            };
+
+            if (this._pendingOverride) {
+                data.duplicateOverride = this._pendingOverride;
+                this._pendingOverride = null;
+            }
+
+            const all = this.getAllSurgeries();
+            if (id) {
+                const idx = all.findIndex(x => String(x.id) === String(id));
+                if (idx !== -1) {
+                    all[idx] = {
+                        ...all[idx],
+                        ...data,
+                        updatedBy: actorMeta   // audit trail: who last edited
+                    };
+                } else {
+                    data.id = id;
+                    data.createdBy = actorMeta;
+                    all.push(data);
+                }
             } else {
-                data.id = id;
-                data.createdBy = actorMeta;
+                data.id = Date.now();
+                data.createdBy = actorMeta;    // audit trail: who created
                 all.push(data);
             }
-        } else {
-            data.id = Date.now();
-            data.createdBy = actorMeta;    // audit trail: who created
-            all.push(data);
+            this.saveSurgeries(all);
+
+            // P1: Clear auto-save draft on successful save
+            const formKey = `surgery-${id || 'new'}`;
+            try { Modal.clearDraft(formKey); } catch (_) {}
+            try { Modal.close(); } catch (_) {}
+
+            // Switch selected day focus to the surgery's date so the user immediately sees the updated case
+            if (surgeryDate) {
+                this._selectedDayStr = surgeryDate;
+            }
+
+            App.renderCurrentPage();
+            Toast.success(id ? 'Đã cập nhật ca mổ' : 'Đã thêm ca mổ');
+        } catch (err) {
+            console.error('[SurgeryPage] save error:', err);
+            Toast.error('Không thể lưu ca mổ: ' + (err.message || 'Lỗi không xác định'));
+            restoreBtn();
         }
-        this.saveSurgeries(all);
-        // P1: Clear auto-save draft on successful save
-        const formKey = `surgery-${id || 'new'}`;
-        Modal.clearDraft(formKey);
-        Modal.close();
-        App.renderCurrentPage();
-        Toast.success(id ? 'Đã cập nhật ca mổ' : 'Đã thêm ca mổ');
     },
 
     async deleteSurgery(id) {

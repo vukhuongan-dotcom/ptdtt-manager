@@ -496,7 +496,7 @@ const App = {
     },
 
     bindModal() {
-        document.getElementById('modal-close').addEventListener('click', Modal.close);
+        document.getElementById('modal-close').addEventListener('click', () => Modal.close());
         document.getElementById('modal-overlay').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) Modal.close();
         });
