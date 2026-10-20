@@ -539,10 +539,10 @@ runTest('TC-15', '100% Tiếng Việt thuần túy trên 6 trục và 19 phân n
 });
 
 // =========================================================================
-// TC-16: CSS Bundle & Synchronous Versioning (2610171645)
+// TC-16: CSS Bundle & Synchronous Versioning (2610201225)
 // =========================================================================
-runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css) và phiên bản 2610171645 trên toàn hệ thống', () => {
-    const EXPECTED_VER = '2610171645';
+runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar 10 bác sĩ và phiên bản 2610201225 trên toàn hệ thống', () => {
+    const EXPECTED_VER = '2610201225';
     const bundlePath = path.join(ROOT_DIR, 'css/app.bundle.css');
     assert(fs.existsSync(bundlePath), 'css/app.bundle.css phải tồn tại');
     const bundleContent = fs.readFileSync(bundlePath, 'utf8');
@@ -564,6 +564,14 @@ runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css) và phiên bản 
 
     const versionMd = fs.readFileSync(path.join(ROOT_DIR, 'VERSION.md'), 'utf8');
     assert.strictEqual(versionMd.trim(), EXPECTED_VER, 'VERSION.md phải khớp');
+
+    // Verify all 10 doctors' avatar files & STAFF_PHOTO_DIMS (480x600)
+    const staffPhotosJs = fs.readFileSync(path.join(ROOT_DIR, 'js/staff-photos.js'), 'utf8');
+    [1, 2, 4, 5, 7, 8, 9, 10, 11, 12].forEach(id => {
+        assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}.webp`)), `img/staff/${id}.webp phải tồn tại`);
+        assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}-lg.webp`)), `img/staff/${id}-lg.webp phải tồn tại`);
+        assert(staffPhotosJs.includes(`${id}: { w: 480, h: 600 }`), `STAFF_PHOTO_DIMS[${id}] phải là 480x600`);
+    });
 });
 
 console.log(`\n=== KẾT QUẢ KIỂM THỬ: ${passed}/16 PASS, ${failed} FAIL ===`);

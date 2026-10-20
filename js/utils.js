@@ -82,7 +82,8 @@ const Utils = {
             return fallbackHtml;
         }
 
-        return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" data-staff-id="${sid}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();var sp=(typeof StaffPage!=='undefined'?StaffPage:window.StaffPage);if(sp&&sp.showPhotoModal){sp.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
+        const photoVer = (typeof window !== 'undefined' && window.REQUIRED_VER) ? `?v=${window.REQUIRED_VER}` : '';
+        return `<button type="button" class="avatar avatar-${size} avatar-btn${extraClass}" data-staff-id="${sid}" aria-label="Xem ảnh ${safeName}" onclick="event.stopPropagation();var sp=(typeof StaffPage!=='undefined'?StaffPage:window.StaffPage);if(sp&&sp.showPhotoModal){sp.showPhotoModal(${sid}, this);}" style="${combinedStyle}"><img src="img/staff/${sid}.webp${photoVer}" alt="" width="${px}" height="${px}" loading="lazy" class="staff-avatar-img" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';"><div class="staff-avatar-${size}${isDeparted ? ' departed-avatar' : ''}" style="display:none;background:${color}">${initials}</div></button>`;
     },
 
     getStaffRoleRank(s) {

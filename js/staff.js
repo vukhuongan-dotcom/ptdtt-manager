@@ -1434,17 +1434,18 @@ const StaffPage = {
                 imgEl.setAttribute('height', nh);
                 imgEl.style.maxHeight = `min(70vh, ${nh}px)`;
             };
+            const photoVer = (typeof window !== 'undefined' && window.REQUIRED_VER) ? `?v=${window.REQUIRED_VER}` : '';
             imgEl.onerror = () => {
                 imgEl.onerror = null;
-                imgEl.src = `img/staff/${sid}.webp`;
+                imgEl.src = `img/staff/${sid}.webp${photoVer}`;
             };
-            imgEl.src = `img/staff/${sid}-lg.webp`;
+            imgEl.src = `img/staff/${sid}-lg.webp${photoVer}`;
 
             if (hasNav) {
                 const pIdx = (index - 1 + albumList.length) % albumList.length;
                 const nIdx = (index + 1) % albumList.length;
-                new Image().src = `img/staff/${albumList[pIdx]}-lg.webp`;
-                new Image().src = `img/staff/${albumList[nIdx]}-lg.webp`;
+                new Image().src = `img/staff/${albumList[pIdx]}-lg.webp${photoVer}`;
+                new Image().src = `img/staff/${albumList[nIdx]}-lg.webp${photoVer}`;
             }
         };
 
