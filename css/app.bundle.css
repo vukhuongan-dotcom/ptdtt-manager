@@ -6782,9 +6782,33 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 /* Compact row (always visible) */
 .surgery-card-compact-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 6px;
     padding: 7px 10px;
+}
+.surgery-card-compact-row .surgery-card-type-tag {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+}
+.surgery-card-compact-row .surgery-type-dot {
+    margin: 0;
+}
+.surgery-card-compact-row .surgery-card-compact-name {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.3;
+}
+.surgery-card-compact-row .surgery-card-yob {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.3;
 }
 .surgery-card-order {
     width: 20px;
@@ -7295,6 +7319,11 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .surg-mobile-full-card .surgery-card-compact-row {
     padding: 10px 12px;
     gap: 8px;
+    align-items: center;
+}
+.surg-mobile-full-card .surgery-card-compact-row .surgery-card-type-tag {
+    font-size: 0.7rem;
+    padding: 3px 8px;
 }
 .surg-mobile-full-card .surgery-card-order {
     width: 24px;
