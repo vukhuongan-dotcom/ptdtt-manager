@@ -1,0 +1,72 @@
+{"ts": "2026-10-22T05:25:06.480327", "user": "btm.trinh", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "not_found", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-10-22T05:25:16.641798", "user": "btmtrinh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T05:27:34.184966", "user": "btmtrinh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 199, "nextId": 1, "revision": 8, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T05:55:24.729440", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T06:32:12.133737", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T06:43:18.813960", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T06:46:43.713398", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T06:53:05.751091", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T07:11:02.644887", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T07:12:26.251706", "user": "nnmkhoi", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2797, "nextId": 1792627944294, "revision": 94, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1792627944293, "label": "Nguyễn Hữu Tâm — 1983 — 2026-10-23", "record": {"patientName": "Nguyễn Hữu Tâm", "birthYear": 1983, "admissionId": "26068805", "surgeryType": "chuongtrinh", "approachType": "mo", "date": "2026-10-23", "duration": 90, "mainSurgeon": 1, "assistSurgeon1": 7, "diagnosis": "RÒ HẬU MÔN PHỨC TẠP", "method": "Phẫu thuật cắt mô xơ đường rò", "notes": "", "isFirstCase": false, "id": 1792627944293, "createdBy": {"username": "nnmkhoi", "name": "Nguyễn Ngọc Minh Khôi", "at": "2026-10-22T00:12:24.289Z"}, "updatedBy": "nnmkhoi"}}], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T07:46:51.219068", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T07:55:24.521738", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T07:59:54.120462", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:01:24.648455", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:07:10.064415", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:21:30.988034", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:38:14.497434", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:39:38.289055", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:45:19.086878", "user": "ntnthuy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:47:56.113902", "user": "ntnthuy", "action": "collection.put.staff", "ip": "127.0.0.1", "details": {"count": 38, "nextId": 53, "revision": 3, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T08:47:56.320568", "user": "ntnthuy", "action": "collection.put.staffStatuses", "ip": "127.0.0.1", "details": {"count": 114, "nextId": 1, "revision": 5, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T08:48:05.459844", "user": "ntnthuy", "action": "collection.put.staff", "ip": "127.0.0.1", "details": {"count": 38, "nextId": 53, "revision": 3, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T08:48:05.615210", "user": "ntnthuy", "action": "collection.put.staffStatuses", "ip": "127.0.0.1", "details": {"count": 115, "nextId": 1, "revision": 6, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T08:52:45.414649", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T08:57:46.869061", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T09:02:16.543557", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T09:05:15.233300", "user": "hkxhang", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T09:14:40.824491", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T09:15:19.128525", "user": "nnmkhoi", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2798, "nextId": 1792635317498, "revision": 95, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1792635317497, "label": "Đỗ Văn Cống — 1984 — 2026-10-23", "record": {"patientName": "Đỗ Văn Cống", "birthYear": 1984, "admissionId": "26069303", "surgeryType": "yeucau", "approachType": "mo", "date": "2026-10-23", "duration": 130, "mainSurgeon": 1, "assistSurgeon1": 7, "diagnosis": "Rò hậu môn", "method": "Phẫu thuật cắt mô xơ đường rò ", "notes": "", "isFirstCase": false, "id": 1792635317497, "createdBy": {"username": "nnmkhoi", "name": "Nguyễn Ngọc Minh Khôi", "at": "2026-10-22T02:15:17.491Z"}, "updatedBy": "nnmkhoi"}}], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T09:22:36.391200", "user": "dtbchau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T09:34:20.457173", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T09:50:47.001480", "user": "pttminh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:04:54.939785", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:05:25.997816", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:05:50.608085", "user": "nnmkhoi", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:28:35.507557", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:32:17.390483", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:33:48.863694", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T10:35:41.056737", "user": "nmnphuong", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2798, "nextId": 1792635317498, "revision": 96, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T10:39:25.634008", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T11:04:59.408835", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T11:42:18.738523", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T11:49:43.210486", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T11:49:58.550758", "user": "vkan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2798, "nextId": 1792635317498, "revision": 97, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T12:42:55.553468", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T14:33:27.125742", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T15:30:48.028686", "user": "ntttruc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T15:40:40.954582", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T15:47:27.896283", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T15:48:34.425914", "user": "ghtquy", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2798, "nextId": 1792635317498, "revision": 97, "added": 0, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T15:51:29.039335", "user": "vkan", "action": "collection.put.externalDoctors", "ip": "127.0.0.1", "details": {"count": 28, "nextId": 210, "revision": 3, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 209, "label": "id=209", "record": {"name": "Bùi Minh Tín", "title": "BSCKII", "position": "Bác sĩ điều trị", "department": "Ngoại Tiêu hoá", "note": "", "color": "#f97316", "id": 209, "updatedBy": "vkan"}}], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T15:52:19.014689", "user": "ghtquy", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 98, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [{"id": 1792659138060, "label": "Lê Hoàng Việt — 1970 — 2026-10-22", "record": {"patientName": "Lê Hoàng Việt", "birthYear": 1970, "admissionId": "26068756", "surgeryType": "bankhan", "approachType": "mo", "date": "2026-10-22", "duration": 90, "mainSurgeon": 4, "assistSurgeon1": null, "diagnosis": "Rò hậu môn áp xe hoá lan tầng sinh môn", "method": "Phẫu thuật rạch tháo mủ", "notes": "", "isFirstCase": false, "id": 1792659138060, "createdBy": {"username": "ghtquy", "name": "Giao Hữu Trường Quy", "at": "2026-10-22T08:52:18.055Z"}, "updatedBy": "ghtquy"}}], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T15:52:50.559591", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T15:53:45.690619", "user": "ghtquy", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 99, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": [{"id": 1792659138060, "label": "Lê Hoàng Việt — 1970 — 2026-10-22", "from": {"mainSurgeon": 4}, "to": {"mainSurgeon": 209}}]}}}
+{"ts": "2026-10-22T16:00:51.687866", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T16:02:51.901331", "user": "ndluan", "action": "collection.put.reports16h", "ip": "127.0.0.1", "details": {"count": 142, "nextId": 1, "revision": 5, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T16:03:48.977104", "user": "ghtquy", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T16:04:47.051156", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T16:05:04.812880", "user": "vkan", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 100, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T16:12:55.158626", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T16:18:46.020504", "user": "bhmhau", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T16:36:46.783448", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T17:31:35.066817", "user": "tmtrong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "disabled"}}
+{"ts": "2026-10-22T17:40:58.968682", "user": "lmthanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T17:50:22.058766", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T18:28:20.602817", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T18:29:16.338791", "user": "pvphu", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 101, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T18:29:57.874254", "user": "pvphu", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 102, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T18:30:11.045413", "user": "pvphu", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 103, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T18:30:22.591129", "user": "pvphu", "action": "collection.put.surgeries", "ip": "127.0.0.1", "details": {"count": 2799, "nextId": 1792659138061, "revision": 104, "added": 0, "removed": 0, "changed": 1, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-22T18:50:29.881158", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-22T19:46:00.536864", "user": "lvhoan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
