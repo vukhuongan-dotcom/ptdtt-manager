@@ -539,10 +539,10 @@ runTest('TC-15', '100% Tiếng Việt thuần túy trên 6 trục và 19 phân n
 });
 
 // =========================================================================
-// TC-16: CSS Bundle & Synchronous Versioning (2610201515)
+// TC-16: CSS Bundle & Synchronous Versioning (2610231716)
 // =========================================================================
-runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar 10 bác sĩ và phiên bản 2610201515 trên toàn hệ thống', () => {
-    const EXPECTED_VER = '2610201515';
+runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar 10 bác sĩ + 15 ĐD/HL/TK và phiên bản 2610231716 trên toàn hệ thống', () => {
+    const EXPECTED_VER = '2610231716';
     const bundlePath = path.join(ROOT_DIR, 'css/app.bundle.css');
     assert(fs.existsSync(bundlePath), 'css/app.bundle.css phải tồn tại');
     const bundleContent = fs.readFileSync(bundlePath, 'utf8');
@@ -568,6 +568,13 @@ runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar 10 
     // Verify all 10 doctors' avatar files & STAFF_PHOTO_DIMS (480x600)
     const staffPhotosJs = fs.readFileSync(path.join(ROOT_DIR, 'js/staff-photos.js'), 'utf8');
     [1, 2, 4, 5, 7, 8, 9, 10, 11, 12].forEach(id => {
+        assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}.webp`)), `img/staff/${id}.webp phải tồn tại`);
+        assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}-lg.webp`)), `img/staff/${id}-lg.webp phải tồn tại`);
+        assert(staffPhotosJs.includes(`${id}: { w: 480, h: 600 }`), `STAFF_PHOTO_DIMS[${id}] phải là 480x600`);
+    });
+
+    // Verify all 15 ĐD, HL, TK staff avatars & STAFF_PHOTO_DIMS (480x600)
+    [24, 25, 26, 27, 28, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40].forEach(id => {
         assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}.webp`)), `img/staff/${id}.webp phải tồn tại`);
         assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}-lg.webp`)), `img/staff/${id}-lg.webp phải tồn tại`);
         assert(staffPhotosJs.includes(`${id}: { w: 480, h: 600 }`), `STAFF_PHOTO_DIMS[${id}] phải là 480x600`);

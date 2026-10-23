@@ -51,7 +51,7 @@
 
 ### 1.1 Tệp gốc chính thức
 
-- `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` — Google Drive: `AN/01. CÔNG VIỆC/KHOA PTDTT/06. WEB APP /3. LOGO KHOA/`.
+- `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` — Google Drive: `AN/01. CÔNG VIỆC/KHOA PTDTT/06. WEB APP/3. LOGO KHOA/`.
 - JPEG 480 × 480 px, md5 `db144bb49b076d907881e6b04f96f478`. Trùng byte với `img/logo-khoa.jpg` trên web.
 - BS. An chỉ định là logo chính thức duy nhất của Khoa cho web app (03/10/2026).
 

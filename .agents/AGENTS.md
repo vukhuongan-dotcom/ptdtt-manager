@@ -37,7 +37,7 @@ ESD, ERCP, "nội soi tiêu hóa", "nội soi nong", "cắt polyp qua ngã hậu
 > 🎨 **NGUỒN SỰ THẬT DUY NHẤT (SSoT):** Ban hành ngày 03/10/2026 bởi BS. Vũ Khương An. Chi tiết xem tại `docs/brand/BRAND.md` và `DESIGN.md`.
 
 ### 1. Logo Khoa — Nguyên Bản & Đầy Đủ
-- **Tệp nguồn chính thức:** `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` (Google Drive: `.../06. WEB APP /3. LOGO KHOA/`)
+- **Tệp nguồn chính thức:** `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` (Google Drive: `.../06. WEB APP/3. LOGO KHOA/`)
 - **Tệp phân phối trên Web:** `img/logo-khoa.jpg` (MD5: `db144bb49b076d907881e6b04f96f478`).
 - 🛑 **Quy tắc bất biến:**
   - Luôn sử dụng **Logo gốc đầy đủ** có chữ *"BINH DAN HOSPITAL"* và *"COLORECTAL SURGERY DEPARTMENT"* (`img/logo-khoa.jpg`) trên cả **Sidebar desktop** và **Mobile header**.

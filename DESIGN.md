@@ -7,7 +7,7 @@
 
 ## 1. Identity & Logo System
 
-- **Master Source File:** `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` (Google Drive: `.../06. WEB APP /3. LOGO KHOA/`)
+- **Master Source File:** `z7671210353977_f44e88d91f47e3616ae9e99a5b74ebb8.jpg` (Google Drive: `.../06. WEB APP/3. LOGO KHOA/`)
 - **Canonical Web Asset:** `img/logo-khoa.jpg` (MD5: `db144bb49b076d907881e6b04f96f478`)
 - **Dimensions:** 480 × 480 px, JFIF JPEG, baseline RGB.
 - **Rule:** The **complete logo with full department text** ("BINH DAN HOSPITAL" & "COLORECTAL SURGERY DEPARTMENT") must always be used for the sidebar (`.logo-icon img`) and mobile header (`.mobile-header-logo`).
