@@ -4,7 +4,7 @@ const PENDING_KEY = 'ptdtt_pending_v1';
 const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
 const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2610231726;
+const CLIENT_BUILD = 2610231751;
 
 const COLLECTION_SYNC_ORDER = [
     'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
