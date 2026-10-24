@@ -1,0 +1,9 @@
+{"ts": "2026-10-24T05:59:54.311135", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T06:02:53.981211", "user": "tpquan", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 201, "nextId": 1, "revision": 10, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-10-24T06:22:22.941234", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T06:27:36.373431", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T06:28:04.738219", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T07:39:56.227278", "user": "pvphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T15:52:13.315259", "user": "thmduc", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T17:11:20.008493", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
+{"ts": "2026-10-24T21:26:32.546763", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": null}
