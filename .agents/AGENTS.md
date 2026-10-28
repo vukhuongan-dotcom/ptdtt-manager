@@ -32,6 +32,27 @@ ESD, ERCP, "nội soi tiêu hóa", "nội soi nong", "cắt polyp qua ngã hậu
 
 ---
 
+## Phân Loại Phẫu Thuật & Quy Tắc Xếp Cột Bác Sĩ Mổ Chính (SSoT 2026)
+
+> 📋 **NGUỒN SỰ THẬT DUY NHẤT (SSoT):** Cập nhật ngày 28/10/2026 từ `BVBD_PHÂN LOẠI PHẪU THUẬT_nhóm NGOẠI TIÊU HOÁ.xls` (`309` kỹ thuật: `118` Nội soi + `191` dòng Mở), `Quyết định 1073/QĐ-BVBD` và `KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`. Tra cứu toàn bộ danh mục 309 kỹ thuật tại `docs/PHAN_LOAI_PHAU_THUAT_VA_XEP_COT_BS_PTDTT.md` (đồng bộ tại `PROJECT_CONTEXT/PHAN_LOAI_PHAU_THUAT_VA_XEP_COT_BS_PTDTT.md`).
+
+### 1. Nguyên tắc "Bác sĩ chính cột nào mổ được phẫu thuật loại đó"
+- Đối chiếu song song theo **Đường mổ** (`Mổ mở` tra Sheet `PHẪU THUẬT MỞ`; `Mổ nội soi` tra Sheet `PHẪU THUẬT NỘI SOI`) và **Cột chuyên môn** của `BS mổ chính` (`mainSurgeon`):
+  - **Cột Đặc biệt (`Cột ĐB`):** Mổ chính đúng cột `PT-ĐB`, `PT-I`, `PT-II`, `PT-III` (+ Thủ thuật các loại). Riêng **Phẫu thuật Robot** yêu cầu chứng nhận phê duyệt riêng (`TS. BSCKII. Nguyễn Phú Hữu`).
+  - **Cột I (`Cột 1`):** Mổ chính đúng cột `PT-I`, `PT-II`, `PT-III` (`PT-ĐB` cần duyệt vượt cột theo từng DVKT cụ thể).
+  - **Cột II (`Cột 2`):** Mổ chính đúng cột `PT-II`, `PT-III` (`PT-I`, `PT-ĐB` cần duyệt vượt cột theo từng DVKT cụ thể).
+  - **Cột III (`Cột 3`):** Mổ chính đúng cột `PT-III` (`PT-II`, `PT-I`, `PT-ĐB` cần duyệt vượt cột theo từng DVKT cụ thể).
+  - **Bác sĩ nội trú & Bác sĩ học viên (`Chưa xếp cột`):** Cấm đứng tên `BS mổ chính`; chỉ phụ mổ và chuẩn bị hồ sơ tiền phẫu.
+
+### 2. Bảng Xếp Cột Năm 2026 Của 11 Bác Sĩ Khoa Phẫu Thuật Đại Trực Tràng
+- **Cột Đặc biệt (Mổ mở `ĐB` / Nội soi `ĐB` — 04 BS):** `TS. BSCKII. Nguyễn Phú Hữu` (`id: 1`, Trưởng khoa — có chứng nhận **PT Robot**), `BSCKII. Vũ Khương An` (`id: 2`, Phó Trưởng khoa), `BSCKII. Vũ Ngọc Anh Tuấn` (`id: 4`), `BSCKII. Bùi Hồng Minh Hậu` (`id: 5`).
+- **Cột I (Mổ mở `I` / Nội soi `I` — 01 BS):** `BSCKII. Võ Chí Nguyện` (`id: 6`).
+- **Cột II (Mổ mở `II` / Nội soi `II` — 03 BS):** `ThS. BSCKI. Phạm Vĩnh Phú` (`id: 7`), `ThS. BSCKI. Giao Hữu Trường Quy` (`id: 8`), `ThS. BSCKI. Trịnh Hoàng Minh Đức` (`id: 9`).
+- **Cột III (Mổ mở `III` / Nội soi `III` — 03 BS):** `BSCKI. Trần Như Đức` (`id: 10`), `BSCKI. Lê Văn Hoan` (`id: 11`), `BSCKI. Phạm Thị Tuyết Minh` (`id: 12`).
+- **Lưu ý lâm sàng trọng yếu:** Danh mục `PHẪU THUẬT NỘI SOI` có **`0` kỹ thuật `PT-III`** và chỉ **`03` kỹ thuật `PT-II`** (PTNS mở thông dạ dày, PTNS cắt ruột thừa, PTNS cắt ruột thừa + rửa bụng); danh mục `PHẪU THUẬT MỞ` chỉ có **`07` kỹ thuật `PT-III`** (lấy trĩ tắc mạch, cắt u nhú condylome ống hậu môn, mở thông hồi/hỗng tràng, mở thông dạ dày, mở bụng thăm dò/sinh thiết, nối vị tràng). Trong PTNS Đại trực tràng, các ca không nạo hạch thuộc `PT-I`, còn toàn bộ các ca có nạo vét hạch ung thư / cắt toàn bộ đại tràng / nối đại tràng – ống hậu môn thuộc `PT-ĐB`.
+
+---
+
 ## Bộ Nhận Diện Thương Hiệu (Brand Identity Standards v1)
 
 > 🎨 **NGUỒN SỰ THẬT DUY NHẤT (SSoT):** Ban hành ngày 03/10/2026 bởi BS. Vũ Khương An. Chi tiết xem tại `docs/brand/BRAND.md` và `DESIGN.md`.
