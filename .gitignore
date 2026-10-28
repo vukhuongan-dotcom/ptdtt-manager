@@ -21,8 +21,9 @@ __pycache__/
 .env
 venv/
 
-# Data (server-side database)
-data/
+# Data (server-side database — keep static reference catalog tracked)
+data/*
+!data/procedure_catalog_2026_v1.json
 data_backups/
 data/snapshots/
 *.sqlite

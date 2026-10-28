@@ -17,6 +17,7 @@ const App = {
         patients: PatientsPage,
         schedule: SchedulePage,
         surgery: SurgeryPage,
+        'surgery-approval': SurgeryApprovalPage,
         'surgery-stats': SurgeryStatsPage,
         research: ResearchPage,
         conferences: ConferencesPage,
@@ -268,6 +269,16 @@ const App = {
         if (navPatients) navPatients.style.display = 'none';
         const navTasks = document.getElementById('nav-tasks');
         if (navTasks) navTasks.style.display = 'none';
+        // Departmental Surgery Approval canary visibility gate
+        const navApproval = document.getElementById('nav-surgery-approval');
+        if (navApproval) {
+            const showApproval = typeof SurgeryApprovalPage !== 'undefined'
+                && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
+            navApproval.style.display = showApproval ? '' : 'none';
+            if (!showApproval && this.currentPage === 'surgery-approval') {
+                this.navigate('dashboard');
+            }
+        }
     },
 
     // === Idle Auto-Logout (5 minutes) ===
@@ -515,6 +526,11 @@ const App = {
         // Guard: super-admin-only pages
         if (this._superAdminOnlyPages.includes(page) && !this.isSuperAdmin()) {
             Toast.show('⛔ Chức năng này chỉ dành cho Super Admin.', 'error');
+            return;
+        }
+        // Guard: Departmental Surgery Approval canary rollout gate
+        if (page === 'surgery-approval' && (typeof SurgeryApprovalPage === 'undefined' || !SurgeryApprovalPage.isFeatureVisibleForCurrentUser())) {
+            Toast.show('🔒 Tab Duyệt mổ hiện đang trong giai đoạn kiểm thử dành cho Super Admin.', 'info');
             return;
         }
 

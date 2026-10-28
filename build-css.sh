@@ -30,6 +30,7 @@ cat \
   css/patients.css \
   css/schedule.css \
   css/surgery.css \
+  css/surgery-approval.css \
   css/surgery-stats.css \
   css/rooms.css \
   css/research.css \

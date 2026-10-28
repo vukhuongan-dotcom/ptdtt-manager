@@ -1,0 +1,4568 @@
+{
+  "catalogVersion": "2026.v1",
+  "ruleVersion": "2026.10.v4",
+  "scope": "departmental_step1_only",
+  "zeroHisCoupling": true,
+  "privilegeMatrix": {
+    "privilegeMatrixVersion": "BVBD-PTDTT-2026.v1",
+    "privilegeMatrix2026Status": "pending_signed_decision",
+    "sourceDocStatus": "pending_signed_council_decision_verification",
+    "regulationRef": "QĐ 1073/QĐ-BVBD (12/06/2024) — đã đối chiếu bản PDF scan, chờ xác nhận chưa bị thay thế",
+    "effectiveFrom": "2026-01-01",
+    "effectiveTo": "2026-12-31",
+    "attendingStaffIds": [
+      1,
+      2,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "bcnStaffIds": [
+      1,
+      2
+    ],
+    "chiefStaffId": 1,
+    "deputyStaffId": 2,
+    "traineeStaffIds": [
+      16,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      50
+    ],
+    "robotCertifiedStaffIds": [
+      1
+    ],
+    "attendingColumns": {
+      "1": {
+        "name": "TS. BSCKII. Nguyễn Phú Hữu",
+        "open": "DB",
+        "lap": "DB",
+        "robot": true
+      },
+      "2": {
+        "name": "BSCKII. Vũ Khương An",
+        "open": "DB",
+        "lap": "DB",
+        "robot": false
+      },
+      "4": {
+        "name": "BSCKII. Vũ Ngọc Anh Tuấn",
+        "open": "DB",
+        "lap": "DB",
+        "robot": false
+      },
+      "5": {
+        "name": "BSCKII. Bùi Hồng Minh Hậu",
+        "open": "DB",
+        "lap": "DB",
+        "robot": false
+      },
+      "6": {
+        "name": "BSCKII. Võ Chí Nguyện",
+        "open": "I",
+        "lap": "I",
+        "robot": false
+      },
+      "7": {
+        "name": "ThS. BSCKI. Phạm Vĩnh Phú",
+        "open": "II",
+        "lap": "II",
+        "robot": false
+      },
+      "8": {
+        "name": "ThS. BSCKI. Giao Hữu Trường Quy",
+        "open": "II",
+        "lap": "II",
+        "robot": false
+      },
+      "9": {
+        "name": "ThS. BSCKI. Trịnh Hoàng Minh Đức",
+        "open": "II",
+        "lap": "II",
+        "robot": false
+      },
+      "10": {
+        "name": "BSCKI. Trần Như Đức",
+        "open": "III",
+        "lap": "III",
+        "robot": false
+      },
+      "11": {
+        "name": "BSCKI. Lê Văn Hoan",
+        "open": "III",
+        "lap": "III",
+        "robot": false
+      },
+      "12": {
+        "name": "BSCKI. Phạm Thị Tuyết Minh",
+        "open": "III",
+        "lap": "III",
+        "robot": false
+      }
+    },
+    "approvedOverColumnGrants": []
+  },
+  "podRoster": {
+    "rosterPeriod": "2026-10-05_2026-12-13",
+    "effectiveFrom": "2026-10-05",
+    "effectiveTo": "2026-12-13",
+    "onCallDutyHours": "08:00-18:00 (cùng ngày)",
+    "rooms": {
+      "718": {
+        "podId": 1,
+        "attendingStaffIds": [
+          2,
+          12
+        ],
+        "residentStaffIds": [
+          46
+        ]
+      },
+      "707": {
+        "podId": 1,
+        "attendingStaffIds": [
+          9
+        ],
+        "residentStaffIds": [
+          45
+        ]
+      },
+      "705": {
+        "podId": 2,
+        "attendingStaffIds": [
+          8
+        ],
+        "residentStaffIds": [
+          50
+        ]
+      },
+      "706": {
+        "podId": 2,
+        "attendingStaffIds": [
+          8
+        ],
+        "residentStaffIds": [
+          44
+        ]
+      },
+      "711": {
+        "podId": 2,
+        "attendingStaffIds": [
+          10
+        ],
+        "residentStaffIds": []
+      },
+      "712": {
+        "podId": 2,
+        "attendingStaffIds": [
+          10
+        ],
+        "residentStaffIds": [
+          16
+        ]
+      },
+      "712A": {
+        "podId": 2,
+        "attendingStaffIds": [
+          6
+        ],
+        "residentStaffIds": [
+          16
+        ]
+      },
+      "719": {
+        "podId": 2,
+        "attendingStaffIds": [
+          6
+        ],
+        "residentStaffIds": [
+          16
+        ]
+      },
+      "708": {
+        "podId": 3,
+        "attendingStaffIds": [
+          4
+        ],
+        "residentStaffIds": [
+          43
+        ]
+      },
+      "709": {
+        "podId": 3,
+        "attendingStaffIds": [
+          11
+        ],
+        "residentStaffIds": [
+          48
+        ]
+      },
+      "710": {
+        "podId": 3,
+        "attendingStaffIds": [
+          7
+        ],
+        "residentStaffIds": [
+          47
+        ]
+      },
+      "unassigned": {
+        "podId": null,
+        "attendingStaffIds": [],
+        "residentStaffIds": []
+      }
+    }
+  },
+  "procedures": [
+    {
+      "catalogEntryId": "PTNS-118",
+      "aliases": [
+        "118"
+      ],
+      "rowIndex": 1,
+      "sheetCode": "118",
+      "officialName": "Cắt thực quản nội soi ngực và bụng",
+      "normalizedName": "cắt thực quản nội soi ngực và bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-119",
+      "aliases": [
+        "119"
+      ],
+      "rowIndex": 2,
+      "sheetCode": "119",
+      "officialName": "Cắt thực quản nội soi ngực phải",
+      "normalizedName": "cắt thực quản nội soi ngực phải",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-120",
+      "aliases": [
+        "120"
+      ],
+      "rowIndex": 3,
+      "sheetCode": "120",
+      "officialName": "Cắt thực quản nội soi qua khe hoành",
+      "normalizedName": "cắt thực quản nội soi qua khe hoành",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-121",
+      "aliases": [
+        "121"
+      ],
+      "rowIndex": 4,
+      "sheetCode": "121",
+      "officialName": "Cắt thực quản nội soi bụng – ngực phải với miệng nối ở ngực phải (phẫu thuật Lewis – Santy)",
+      "normalizedName": "cắt thực quản nội soi bụng – ngực phải với miệng nối ở ngực phải (phẫu thuật lewis – santy)",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-122",
+      "aliases": [
+        "122"
+      ],
+      "rowIndex": 5,
+      "sheetCode": "122",
+      "officialName": "Cắt u lành thực quản nội soi ngực phải",
+      "normalizedName": "cắt u lành thực quản nội soi ngực phải",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-123",
+      "aliases": [
+        "123"
+      ],
+      "rowIndex": 6,
+      "sheetCode": "123",
+      "officialName": "Cắt u lành thực quản nội soi ngực trái",
+      "normalizedName": "cắt u lành thực quản nội soi ngực trái",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-124",
+      "aliases": [
+        "124"
+      ],
+      "rowIndex": 7,
+      "sheetCode": "124",
+      "officialName": "Cắt u lành thực quản nội soi bụng",
+      "normalizedName": "cắt u lành thực quản nội soi bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-125",
+      "aliases": [
+        "125"
+      ],
+      "rowIndex": 8,
+      "sheetCode": "125",
+      "officialName": "Cắt thực quản đôi dạng nang qua nội soi ngực phải",
+      "normalizedName": "cắt thực quản đôi dạng nang qua nội soi ngực phải",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-126",
+      "aliases": [
+        "126"
+      ],
+      "rowIndex": 9,
+      "sheetCode": "126",
+      "officialName": "Cắt thực quản đôi dạng nang qua nội soi ngực trái",
+      "normalizedName": "cắt thực quản đôi dạng nang qua nội soi ngực trái",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-127",
+      "aliases": [
+        "127"
+      ],
+      "rowIndex": 10,
+      "sheetCode": "127",
+      "officialName": "Cắt thực quản đôi dạng nang qua nội soi bụng",
+      "normalizedName": "cắt thực quản đôi dạng nang qua nội soi bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-128",
+      "aliases": [
+        "128"
+      ],
+      "rowIndex": 11,
+      "sheetCode": "128",
+      "officialName": "Cắt túi thừa thực quản qua nội soi ngực phải",
+      "normalizedName": "cắt túi thừa thực quản qua nội soi ngực phải",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-129",
+      "aliases": [
+        "129"
+      ],
+      "rowIndex": 12,
+      "sheetCode": "129",
+      "officialName": "Cắt túi thừa thực quản qua nội soi ngực trái",
+      "normalizedName": "cắt túi thừa thực quản qua nội soi ngực trái",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-130",
+      "aliases": [
+        "130"
+      ],
+      "rowIndex": 13,
+      "sheetCode": "130",
+      "officialName": "Cắt túi thừa thực quản qua nội soi bụng",
+      "normalizedName": "cắt túi thừa thực quản qua nội soi bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-131",
+      "aliases": [
+        "131"
+      ],
+      "rowIndex": 14,
+      "sheetCode": "131",
+      "officialName": "Phẫu thuật nội soi điều trị teo thực quản bẩm sinh",
+      "normalizedName": "phẫu thuật nội soi điều trị teo thực quản bẩm sinh",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-132",
+      "aliases": [
+        "132"
+      ],
+      "rowIndex": 15,
+      "sheetCode": "132",
+      "officialName": "Phẫu thuật Heller qua nội soi ngực trái",
+      "normalizedName": "phẫu thuật heller qua nội soi ngực trái",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-133",
+      "aliases": [
+        "133"
+      ],
+      "rowIndex": 16,
+      "sheetCode": "133",
+      "officialName": "Phẫu thuật Heller qua nội soi bụng",
+      "normalizedName": "phẫu thuật heller qua nội soi bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-134",
+      "aliases": [
+        "134"
+      ],
+      "rowIndex": 17,
+      "sheetCode": "134",
+      "officialName": "Phẫu thuật Heller kết hợp tạo van chống trào ngược qua nội soi bụng",
+      "normalizedName": "phẫu thuật heller kết hợp tạo van chống trào ngược qua nội soi bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-135",
+      "aliases": [
+        "135"
+      ],
+      "rowIndex": 18,
+      "sheetCode": "135",
+      "officialName": "Phẫu thuật mở cơ thực quản nội soi ngực phải điều trị bệnh co thắt thực quản nan tỏa",
+      "normalizedName": "phẫu thuật mở cơ thực quản nội soi ngực phải điều trị bệnh co thắt thực quản nan tỏa",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-136",
+      "aliases": [
+        "136"
+      ],
+      "rowIndex": 19,
+      "sheetCode": "136",
+      "officialName": "Phẫu thuật tạo van chống trào ngược dạ dày – thực quản qua nội soi",
+      "normalizedName": "phẫu thuật tạo van chống trào ngược dạ dày – thực quản qua nội soi",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0784"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-137",
+      "aliases": [
+        "137"
+      ],
+      "rowIndex": 20,
+      "sheetCode": "137",
+      "officialName": "Phẫu thuật nội soi điều trị thoát vị khe hoành",
+      "normalizedName": "phẫu thuật nội soi điều trị thoát vị khe hoành",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1369"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-138",
+      "aliases": [
+        "138"
+      ],
+      "rowIndex": 21,
+      "sheetCode": "138",
+      "officialName": "Phẫu thuật nội soi tạo hình thực quản bằng dạ dày",
+      "normalizedName": "phẫu thuật nội soi tạo hình thực quản bằng dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0790"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-139",
+      "aliases": [
+        "139"
+      ],
+      "rowIndex": 22,
+      "sheetCode": "139",
+      "officialName": "Phẫu thuật nội soi tạo hình thực quản bằng đại tràng",
+      "normalizedName": "phẫu thuật nội soi tạo hình thực quản bằng đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0791"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-140",
+      "aliases": [
+        "140"
+      ],
+      "rowIndex": 23,
+      "sheetCode": "140",
+      "officialName": "Phẫu thuật nội soi cố định dạ dày",
+      "normalizedName": "phẫu thuật nội soi cố định dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1370"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-141",
+      "aliases": [
+        "141"
+      ],
+      "rowIndex": 24,
+      "sheetCode": "141",
+      "officialName": "Phẫu thuật nội soi điều trị hẹp môn vị phì đại",
+      "normalizedName": "phẫu thuật nội soi điều trị hẹp môn vị phì đại",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-142",
+      "aliases": [
+        "142"
+      ],
+      "rowIndex": 25,
+      "sheetCode": "142",
+      "officialName": "Phẫu thuật nội soi khâu thủng dạ dày",
+      "normalizedName": "phẫu thuật nội soi khâu thủng dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "KH0072"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-143",
+      "aliases": [
+        "143"
+      ],
+      "rowIndex": 26,
+      "sheetCode": "143",
+      "officialName": "Phẫu thuật nội soi khâu thủng dạ dày + nối dạ dày-hỗng tràng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng dạ dày + nối dạ dày-hỗng tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1371"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-144",
+      "aliases": [
+        "144"
+      ],
+      "rowIndex": 27,
+      "sheetCode": "144",
+      "officialName": "Phẫu thuật nội soi khâu vết thương dạ dày",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0786"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-145",
+      "aliases": [
+        "145"
+      ],
+      "rowIndex": 28,
+      "sheetCode": "145",
+      "officialName": "Phẫu thuật nội soi khâu vết thương dạ dày + nối dạ dày-hỗng tràng",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương dạ dày + nối dạ dày-hỗng tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1372"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-146",
+      "aliases": [
+        "146"
+      ],
+      "rowIndex": 29,
+      "sheetCode": "146",
+      "officialName": "Phẫu thuật nội soi qua dạ dày cắt polyp dạ dày (Intraluminal Lap Surgery)",
+      "normalizedName": "phẫu thuật nội soi qua dạ dày cắt polyp dạ dày (intraluminal lap surgery)",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-147",
+      "aliases": [
+        "147"
+      ],
+      "rowIndex": 30,
+      "sheetCode": "147",
+      "officialName": "Phẫu thuật nội soi mở thông dạ dày",
+      "normalizedName": "phẫu thuật nội soi mở thông dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH1373"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-148",
+      "aliases": [
+        "148"
+      ],
+      "rowIndex": 31,
+      "sheetCode": "148",
+      "officialName": "Phẫu thuật nội soi cắt thân thần kinh X",
+      "normalizedName": "phẫu thuật nội soi cắt thân thần kinh x",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-149",
+      "aliases": [
+        "149"
+      ],
+      "rowIndex": 32,
+      "sheetCode": "149",
+      "officialName": "Phẫu thuật nội soi cắt thần kinh X chọn lọc",
+      "normalizedName": "phẫu thuật nội soi cắt thần kinh x chọn lọc",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-150",
+      "aliases": [
+        "150"
+      ],
+      "rowIndex": 33,
+      "sheetCode": "150",
+      "officialName": "Phẫu thuật nội soi cắt thần kinh X siêu chọn lọc",
+      "normalizedName": "phẫu thuật nội soi cắt thần kinh x siêu chọn lọc",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-151",
+      "aliases": [
+        "151"
+      ],
+      "rowIndex": 34,
+      "sheetCode": "151",
+      "officialName": "Phẫu thuật nội soi điều trị xoắn dạ dày có kèm cắt dạ dày",
+      "normalizedName": "phẫu thuật nội soi điều trị xoắn dạ dày có kèm cắt dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0806"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-152",
+      "aliases": [
+        "152"
+      ],
+      "rowIndex": 35,
+      "sheetCode": "152",
+      "officialName": "Phẫu thuật nội soi nối dạ dày - hỗng tràng",
+      "normalizedName": "phẫu thuật nội soi nối dạ dày - hỗng tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0835"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-153",
+      "aliases": [
+        "153"
+      ],
+      "rowIndex": 36,
+      "sheetCode": "153",
+      "officialName": "Phẫu thuật nội soi nối dạ dày - hỗng tràng, nối túi mật-hỗng tràng",
+      "normalizedName": "phẫu thuật nội soi nối dạ dày - hỗng tràng, nối túi mật-hỗng tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0836"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-154",
+      "aliases": [
+        "154"
+      ],
+      "rowIndex": 37,
+      "sheetCode": "154",
+      "officialName": "Phẫu thuật nội soi cắt dạ dày không điển hình",
+      "normalizedName": "phẫu thuật nội soi cắt dạ dày không điển hình",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0798"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-155",
+      "aliases": [
+        "155"
+      ],
+      "rowIndex": 38,
+      "sheetCode": "155",
+      "officialName": "Phẫu thuật nội soi cắt 2/3 dạ dày",
+      "normalizedName": "phẫu thuật nội soi cắt 2/3 dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0807"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-156",
+      "aliases": [
+        "156"
+      ],
+      "rowIndex": 39,
+      "sheetCode": "156",
+      "officialName": "Phẫu thuật nội soi cắt 3/4 dạ dày",
+      "normalizedName": "phẫu thuật nội soi cắt 3/4 dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0808"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-157",
+      "aliases": [
+        "157"
+      ],
+      "rowIndex": 40,
+      "sheetCode": "157",
+      "officialName": "Phẫu thuật nội soi cắt toàn bộ dạ dày",
+      "normalizedName": "phẫu thuật nội soi cắt toàn bộ dạ dày",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0799"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-158",
+      "aliases": [
+        "158"
+      ],
+      "rowIndex": 41,
+      "sheetCode": "158",
+      "officialName": "Phẫu thuật nội soi cắt toàn bộ dạ dày + cắt lách",
+      "normalizedName": "phẫu thuật nội soi cắt toàn bộ dạ dày + cắt lách",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0800"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-159",
+      "aliases": [
+        "159"
+      ],
+      "rowIndex": 42,
+      "sheetCode": "159",
+      "officialName": "Phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch D1",
+      "normalizedName": "phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch d1",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0811"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-160",
+      "aliases": [
+        "160"
+      ],
+      "rowIndex": 43,
+      "sheetCode": "160",
+      "officialName": "Phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch D1α",
+      "normalizedName": "phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch d1α",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0812"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-161",
+      "aliases": [
+        "161"
+      ],
+      "rowIndex": 44,
+      "sheetCode": "161",
+      "officialName": "Phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch D1β",
+      "normalizedName": "phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch d1β",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0813"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-162",
+      "aliases": [
+        "162"
+      ],
+      "rowIndex": 45,
+      "sheetCode": "162",
+      "officialName": "Phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch D2",
+      "normalizedName": "phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch d2",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0809"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-163",
+      "aliases": [
+        "163"
+      ],
+      "rowIndex": 46,
+      "sheetCode": "163",
+      "officialName": "Phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch D3",
+      "normalizedName": "phẫu thuật nội soi cắt bán phần dưới dạ dày + nạo hạch d3",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0810"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-164",
+      "aliases": [
+        "164"
+      ],
+      "rowIndex": 47,
+      "sheetCode": "164",
+      "officialName": "Phẫu thuật nội soi cắt toàn bộ dạ dày + nạo hạch D2",
+      "normalizedName": "phẫu thuật nội soi cắt toàn bộ dạ dày + nạo hạch d2",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0802"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-165",
+      "aliases": [
+        "165"
+      ],
+      "rowIndex": 48,
+      "sheetCode": "165",
+      "officialName": "Phẫu thuật nội soi cắt toàn bộ dạ dày + cắt lách + nạo hạch D2",
+      "normalizedName": "phẫu thuật nội soi cắt toàn bộ dạ dày + cắt lách + nạo hạch d2",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0801"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-166",
+      "aliases": [
+        "166"
+      ],
+      "rowIndex": 49,
+      "sheetCode": "166",
+      "officialName": "Phẫu thuật nội soi khâu thủng tá tràng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng tá tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-167",
+      "aliases": [
+        "167"
+      ],
+      "rowIndex": 50,
+      "sheetCode": "167",
+      "officialName": "Phẫu thuật nội soi khâu vết thương tá tràng",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương tá tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-168",
+      "aliases": [
+        "168"
+      ],
+      "rowIndex": 51,
+      "sheetCode": "168",
+      "officialName": "Phẫu thuật nội soi khâu thủng tá tràng + nối dạ dày-hỗng tràng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng tá tràng + nối dạ dày-hỗng tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0852"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-169",
+      "aliases": [
+        "169"
+      ],
+      "rowIndex": 52,
+      "sheetCode": "169",
+      "officialName": "Phẫu thuật nội soi khâu vết thương tá tràng + nối dạ dày-hỗng tràng",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương tá tràng + nối dạ dày-hỗng tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0834"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-170",
+      "aliases": [
+        "170"
+      ],
+      "rowIndex": 53,
+      "sheetCode": "170",
+      "officialName": "Phẫu thuật nội soi cắt túi thừa tá tràng",
+      "normalizedName": "phẫu thuật nội soi cắt túi thừa tá tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-171",
+      "aliases": [
+        "171"
+      ],
+      "rowIndex": 54,
+      "sheetCode": "171",
+      "officialName": "Phẫu thuật nội soi cắt đoạn tá tràng",
+      "normalizedName": "phẫu thuật nội soi cắt đoạn tá tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-172",
+      "aliases": [
+        "172"
+      ],
+      "rowIndex": 55,
+      "sheetCode": "172",
+      "officialName": "Phẫu thuật nội soi khâu thủng ruột non",
+      "normalizedName": "phẫu thuật nội soi khâu thủng ruột non",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-173",
+      "aliases": [
+        "173"
+      ],
+      "rowIndex": 56,
+      "sheetCode": "173",
+      "officialName": "Phẫu thuật nội soi khâu vết thương ruột non",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương ruột non",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-174",
+      "aliases": [
+        "174"
+      ],
+      "rowIndex": 57,
+      "sheetCode": "174",
+      "officialName": "Phẫu thuật nội soi khâu thủng ruột non + đưa ruột non ra da trên dòng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng ruột non + đưa ruột non ra da trên dòng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-175",
+      "aliases": [
+        "175"
+      ],
+      "rowIndex": 58,
+      "sheetCode": "175",
+      "officialName": "Phẫu thuật nội soi khâu vết thương ruột non + đưa ruột non ra da trên dòng",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương ruột non + đưa ruột non ra da trên dòng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-176",
+      "aliases": [
+        "176"
+      ],
+      "rowIndex": 59,
+      "sheetCode": "176",
+      "officialName": "Phẫu thuật nội soi nối tắt ruột non - ruột non",
+      "normalizedName": "phẫu thuật nội soi nối tắt ruột non - ruột non",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-177",
+      "aliases": [
+        "177"
+      ],
+      "rowIndex": 60,
+      "sheetCode": "177",
+      "officialName": "Phẫu thuật nội soi gỡ dính ruột",
+      "normalizedName": "phẫu thuật nội soi gỡ dính ruột",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-178",
+      "aliases": [
+        "178"
+      ],
+      "rowIndex": 61,
+      "sheetCode": "178",
+      "officialName": "Phẫu thuật nội soi cắt dây dính hay dây chằng",
+      "normalizedName": "phẫu thuật nội soi cắt dây dính hay dây chằng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-179",
+      "aliases": [
+        "179"
+      ],
+      "rowIndex": 62,
+      "sheetCode": "179",
+      "officialName": "Phẫu thuật nội soi mở hỗng tràng ra da",
+      "normalizedName": "phẫu thuật nội soi mở hỗng tràng ra da",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-180",
+      "aliases": [
+        "180"
+      ],
+      "rowIndex": 63,
+      "sheetCode": "180",
+      "officialName": "Phẫu thuật nội soi mở hồi tràng ra da",
+      "normalizedName": "phẫu thuật nội soi mở hồi tràng ra da",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1382"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-181",
+      "aliases": [
+        "181"
+      ],
+      "rowIndex": 64,
+      "sheetCode": "181",
+      "officialName": "Phẫu thuật nội soi mở ruột lấy dị vật",
+      "normalizedName": "phẫu thuật nội soi mở ruột lấy dị vật",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-182",
+      "aliases": [
+        "182"
+      ],
+      "rowIndex": 65,
+      "sheetCode": "182",
+      "officialName": "Phẫu thuật nội soi điều trị hẹp môn vị phì đại",
+      "normalizedName": "phẫu thuật nội soi điều trị hẹp môn vị phì đại",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-183",
+      "aliases": [
+        "183"
+      ],
+      "rowIndex": 66,
+      "sheetCode": "183",
+      "officialName": "Phẫu thuật nội soi tháo lồng ruột và cố định manh tràng",
+      "normalizedName": "phẫu thuật nội soi tháo lồng ruột và cố định manh tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0859"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-184",
+      "aliases": [
+        "184"
+      ],
+      "rowIndex": 67,
+      "sheetCode": "184",
+      "officialName": "Phẫu thuật nội soi cắt túi thừa Meckel",
+      "normalizedName": "phẫu thuật nội soi cắt túi thừa meckel",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-185",
+      "aliases": [
+        "185"
+      ],
+      "rowIndex": 68,
+      "sheetCode": "185",
+      "officialName": "Phẫu thuật nội soi cắt đoạn ruột non",
+      "normalizedName": "phẫu thuật nội soi cắt đoạn ruột non",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-186",
+      "aliases": [
+        "186"
+      ],
+      "rowIndex": 69,
+      "sheetCode": "186",
+      "officialName": "Phẫu thuật nội soi cắt gần toàn bộ ruột non",
+      "normalizedName": "phẫu thuật nội soi cắt gần toàn bộ ruột non",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-187",
+      "aliases": [
+        "187"
+      ],
+      "rowIndex": 70,
+      "sheetCode": "187",
+      "officialName": "Phẫu thuật nội soi cắt ruột thừa",
+      "normalizedName": "phẫu thuật nội soi cắt ruột thừa",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-188",
+      "aliases": [
+        "188"
+      ],
+      "rowIndex": 71,
+      "sheetCode": "188",
+      "officialName": "Phẫu thuật nội soi cắt ruột thừa + rửa bụng",
+      "normalizedName": "phẫu thuật nội soi cắt ruột thừa + rửa bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-189",
+      "aliases": [
+        "189"
+      ],
+      "rowIndex": 72,
+      "sheetCode": "189",
+      "officialName": "Phẫu thuật nội soi cắt lại mỏm ruột thừa",
+      "normalizedName": "phẫu thuật nội soi cắt lại mỏm ruột thừa",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-190",
+      "aliases": [
+        "190"
+      ],
+      "rowIndex": 73,
+      "sheetCode": "190",
+      "officialName": "Phẫu thuật nội soi điều trị áp xe ruột thừa trong ổ bụng",
+      "normalizedName": "phẫu thuật nội soi điều trị áp xe ruột thừa trong ổ bụng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-191",
+      "aliases": [
+        "191"
+      ],
+      "rowIndex": 74,
+      "sheetCode": "191",
+      "officialName": "Phẫu thuật nội soi viêm phúc mạc do viêm ruột thừa",
+      "normalizedName": "phẫu thuật nội soi viêm phúc mạc do viêm ruột thừa",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-192",
+      "aliases": [
+        "192"
+      ],
+      "rowIndex": 75,
+      "sheetCode": "192",
+      "officialName": "Phẫu thuật nội soi cắt manh tràng",
+      "normalizedName": "phẫu thuật nội soi cắt manh tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-193",
+      "aliases": [
+        "193"
+      ],
+      "rowIndex": 76,
+      "sheetCode": "193",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng phải",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng phải",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-194",
+      "aliases": [
+        "194"
+      ],
+      "rowIndex": 77,
+      "sheetCode": "194",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng phải + nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng phải + nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0868"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-195",
+      "aliases": [
+        "195"
+      ],
+      "rowIndex": 78,
+      "sheetCode": "195",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng phải mở rộng",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng phải mở rộng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0830"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-196",
+      "aliases": [
+        "196"
+      ],
+      "rowIndex": 79,
+      "sheetCode": "196",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng phải mở + nạo vét hạch rộng",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng phải mở + nạo vét hạch rộng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0869"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-197",
+      "aliases": [
+        "197"
+      ],
+      "rowIndex": 80,
+      "sheetCode": "197",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng ngang",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng ngang",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0829"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-198",
+      "aliases": [
+        "198"
+      ],
+      "rowIndex": 81,
+      "sheetCode": "198",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng ngang + nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng ngang + nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0867"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-199",
+      "aliases": [
+        "199"
+      ],
+      "rowIndex": 82,
+      "sheetCode": "199",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng trái",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng trái",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0831"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-200",
+      "aliases": [
+        "200"
+      ],
+      "rowIndex": 83,
+      "sheetCode": "200",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng trái+ nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng trái+ nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0870"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-201",
+      "aliases": [
+        "201"
+      ],
+      "rowIndex": 84,
+      "sheetCode": "201",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng chậu hông",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng chậu hông",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0828"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-202",
+      "aliases": [
+        "202"
+      ],
+      "rowIndex": 85,
+      "sheetCode": "202",
+      "officialName": "Phẫu thuật nội soi cắt đại tràng chậu hông+ nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt đại tràng chậu hông+ nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0866"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-203",
+      "aliases": [
+        "203"
+      ],
+      "rowIndex": 86,
+      "sheetCode": "203",
+      "officialName": "Phẫu thuật nội soi cắt toàn bộ đại tràng",
+      "normalizedName": "phẫu thuật nội soi cắt toàn bộ đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0839"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-204",
+      "aliases": [
+        "204"
+      ],
+      "rowIndex": 87,
+      "sheetCode": "204",
+      "officialName": "Phẫu thuật nội soi cắt toàn bộ đại tràng + nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt toàn bộ đại tràng + nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0864"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-205",
+      "aliases": [
+        "205"
+      ],
+      "rowIndex": 88,
+      "sheetCode": "205",
+      "officialName": "Phẫu thuật nội soi cắt đoạn đại tràng",
+      "normalizedName": "phẫu thuật nội soi cắt đoạn đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0832"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-206",
+      "aliases": [
+        "206"
+      ],
+      "rowIndex": 89,
+      "sheetCode": "206",
+      "officialName": "Phẫu thuật nội soi cắt túi thừa đại tràng",
+      "normalizedName": "phẫu thuật nội soi cắt túi thừa đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1391"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-207",
+      "aliases": [
+        "207"
+      ],
+      "rowIndex": 90,
+      "sheetCode": "207",
+      "officialName": "Phẫu thuật nội soi khâu thủng đại tràng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1392"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-208",
+      "aliases": [
+        "208"
+      ],
+      "rowIndex": 91,
+      "sheetCode": "208",
+      "officialName": "Phẫu thuật nội soi khâu thủng đại tràng + hậu môn nhân tạo trên dòng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng đại tràng + hậu môn nhân tạo trên dòng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0814"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-209",
+      "aliases": [
+        "209"
+      ],
+      "rowIndex": 92,
+      "sheetCode": "209",
+      "officialName": "Phẫu thuật nội soi khâu vết thương đại tràng + hậu môn nhân tạo",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương đại tràng + hậu môn nhân tạo",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1395"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-210",
+      "aliases": [
+        "210"
+      ],
+      "rowIndex": 93,
+      "sheetCode": "210",
+      "officialName": "Phẫu thuật nội soi nối tắt hồi tràng - đại tràng ngang",
+      "normalizedName": "phẫu thuật nội soi nối tắt hồi tràng - đại tràng ngang",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0838"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-211",
+      "aliases": [
+        "211"
+      ],
+      "rowIndex": 94,
+      "sheetCode": "211",
+      "officialName": "Phẫu thuật nội soi nối tắt đại tràng - đại tràng",
+      "normalizedName": "phẫu thuật nội soi nối tắt đại tràng - đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0837"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-212",
+      "aliases": [
+        "212"
+      ],
+      "rowIndex": 95,
+      "sheetCode": "212",
+      "officialName": "Phẫu thuật nội soi làm hậu môn nhân tạo",
+      "normalizedName": "phẫu thuật nội soi làm hậu môn nhân tạo",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1396"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-213",
+      "aliases": [
+        "213",
+        "MO-213"
+      ],
+      "rowIndex": 96,
+      "sheetCode": "213",
+      "officialName": "Phẫu thuật nội soi Điều trị Megacolon (phẫu thuật Soave đường hậu môn một thì)",
+      "normalizedName": "phẫu thuật nội soi điều trị megacolon (phẫu thuật soave đường hậu môn một thì)",
+      "approachGroup": "noisoi",
+      "procedureClass": "unclassified",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-214",
+      "aliases": [
+        "214"
+      ],
+      "rowIndex": 97,
+      "sheetCode": "214",
+      "officialName": "Phẫu thuật nội soi đóng hậu môn nhân tạo",
+      "normalizedName": "phẫu thuật nội soi đóng hậu môn nhân tạo",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-215",
+      "aliases": [
+        "215"
+      ],
+      "rowIndex": 98,
+      "sheetCode": "215",
+      "officialName": "Phẫu thuật nội soi cắt đoạn đại trực tràng",
+      "normalizedName": "phẫu thuật nội soi cắt đoạn đại trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0833"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-216",
+      "aliases": [
+        "216"
+      ],
+      "rowIndex": 99,
+      "sheetCode": "216",
+      "officialName": "Phẫu thuật nội soi cắt đoạn đại trực tràng+ nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt đoạn đại trực tràng+ nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0872"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-217",
+      "aliases": [
+        "217"
+      ],
+      "rowIndex": 100,
+      "sheetCode": "217",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng thấp",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng thấp",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0846"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-218",
+      "aliases": [
+        "218"
+      ],
+      "rowIndex": 101,
+      "sheetCode": "218",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng thấp+ nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng thấp+ nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0865"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-219",
+      "aliases": [
+        "219"
+      ],
+      "rowIndex": 102,
+      "sheetCode": "219",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng, nối đại tràng - ống hậu môn",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng, nối đại tràng - ống hậu môn",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0847"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-220",
+      "aliases": [
+        "220"
+      ],
+      "rowIndex": 103,
+      "sheetCode": "220",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng, nối đại tràng - ống hậu môn+ nạo vét hạch+ nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng, nối đại tràng - ống hậu môn+ nạo vét hạch+ nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0871"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-221",
+      "aliases": [
+        "221"
+      ],
+      "rowIndex": 104,
+      "sheetCode": "221",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng, ống hậu môn ngả bụng và tầng sinh môn",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng, ống hậu môn ngả bụng và tầng sinh môn",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1397"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-222",
+      "aliases": [
+        "222"
+      ],
+      "rowIndex": 105,
+      "sheetCode": "222",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng, ống hậu môn ngả bụng và tầng sinh môn + nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng, ống hậu môn ngả bụng và tầng sinh môn + nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0874"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-223",
+      "aliases": [
+        "223"
+      ],
+      "rowIndex": 106,
+      "sheetCode": "223",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng, đóng mỏm cụt trực tràng, mở hậu môn nhân tạo",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng, đóng mỏm cụt trực tràng, mở hậu môn nhân tạo",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1398"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-224",
+      "aliases": [
+        "224"
+      ],
+      "rowIndex": 107,
+      "sheetCode": "224",
+      "officialName": "Phẫu thuật nội soi cắt trực tràng, đóng mỏm cụt trực tràng, mở hậu môn nhân tạo+ nạo vét hạch",
+      "normalizedName": "phẫu thuật nội soi cắt trực tràng, đóng mỏm cụt trực tràng, mở hậu môn nhân tạo+ nạo vét hạch",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "PH0873"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-225",
+      "aliases": [
+        "225"
+      ],
+      "rowIndex": 108,
+      "sheetCode": "225",
+      "officialName": "Phẫu thuật nội soi cố định trực tràng",
+      "normalizedName": "phẫu thuật nội soi cố định trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0859"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-226",
+      "aliases": [
+        "226"
+      ],
+      "rowIndex": 109,
+      "sheetCode": "226",
+      "officialName": "Phẫu thuật nội soi cố định trực tràng + cắt đoạn đại tràng",
+      "normalizedName": "phẫu thuật nội soi cố định trực tràng + cắt đoạn đại tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0860"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-227",
+      "aliases": [
+        "227"
+      ],
+      "rowIndex": 110,
+      "sheetCode": "227",
+      "officialName": "Phẫu thuật nội soi khâu thủng trực tràng",
+      "normalizedName": "phẫu thuật nội soi khâu thủng trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1399"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-228",
+      "aliases": [
+        "228"
+      ],
+      "rowIndex": 111,
+      "sheetCode": "228",
+      "officialName": "Phẫu thuật nội soi khâu thủng trực tràng + hậu môn nhân tạo",
+      "normalizedName": "phẫu thuật nội soi khâu thủng trực tràng + hậu môn nhân tạo",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1400"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-229",
+      "aliases": [
+        "229"
+      ],
+      "rowIndex": 112,
+      "sheetCode": "229",
+      "officialName": "Phẫu thuật nội soi khâu vết thương trực tràng",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1401"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-230",
+      "aliases": [
+        "230"
+      ],
+      "rowIndex": 113,
+      "sheetCode": "230",
+      "officialName": "Phẫu thuật nội soi khâu vết thương trực tràng + hậu môn nhân tạo trên dòng",
+      "normalizedName": "phẫu thuật nội soi khâu vết thương trực tràng + hậu môn nhân tạo trên dòng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1402"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-231",
+      "aliases": [
+        "231"
+      ],
+      "rowIndex": 114,
+      "sheetCode": "231",
+      "officialName": "Phẫu thuật nội soi khâu miệng nối đại-trực tràng, rửa bụng, dẫn lưu (xì miệng nối đại - trực tràng)",
+      "normalizedName": "phẫu thuật nội soi khâu miệng nối đại-trực tràng, rửa bụng, dẫn lưu (xì miệng nối đại - trực tràng)",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "PTNS-233",
+      "aliases": [
+        "233"
+      ],
+      "rowIndex": 115,
+      "sheetCode": "233",
+      "officialName": "Phẫu thuật nội soi cắt đoạn trực tràng trong điều trị sa trực tràng",
+      "normalizedName": "phẫu thuật nội soi cắt đoạn trực tràng trong điều trị sa trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0843"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-234",
+      "aliases": [
+        "234"
+      ],
+      "rowIndex": 116,
+      "sheetCode": "234",
+      "officialName": "Phẫu thuật nội soi cố định trực tràng trong điều trị sa trực tràng",
+      "normalizedName": "phẫu thuật nội soi cố định trực tràng trong điều trị sa trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0862"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-235",
+      "aliases": [
+        "235"
+      ],
+      "rowIndex": 117,
+      "sheetCode": "235",
+      "officialName": "Phẫu thuật nội soi cố định trực tràng bằng lưới trong điều trị sa trực tràng",
+      "normalizedName": "phẫu thuật nội soi cố định trực tràng bằng lưới trong điều trị sa trực tràng",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0861"
+      ]
+    },
+    {
+      "catalogEntryId": "PTNS-236",
+      "aliases": [
+        "236"
+      ],
+      "rowIndex": 118,
+      "sheetCode": "236",
+      "officialName": "Phẫu thuật nội soi điều trị rò hậu môn",
+      "normalizedName": "phẫu thuật nội soi điều trị rò hậu môn",
+      "approachGroup": "noisoi",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-001",
+      "aliases": [
+        "MO-1"
+      ],
+      "rowIndex": 1,
+      "sheetCode": "1",
+      "officialName": "Mở ngực thăm dò",
+      "normalizedName": "mở ngực thăm dò",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-002",
+      "aliases": [
+        "MO-2"
+      ],
+      "rowIndex": 2,
+      "sheetCode": "2",
+      "officialName": "Mở ngực thăm dò, sinh thiết",
+      "normalizedName": "mở ngực thăm dò, sinh thiết",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-003",
+      "aliases": [
+        "MO-3"
+      ],
+      "rowIndex": 3,
+      "sheetCode": "3",
+      "officialName": "Mở thông dạ dày",
+      "normalizedName": "mở thông dạ dày",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": [
+        "MO0067"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-004",
+      "aliases": [
+        "MO-4"
+      ],
+      "rowIndex": 4,
+      "sheetCode": "4",
+      "officialName": "Đưa thực quản ra ngoài",
+      "normalizedName": "đưa thực quản ra ngoài",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-005",
+      "aliases": [
+        "MO-5"
+      ],
+      "rowIndex": 5,
+      "sheetCode": "5",
+      "officialName": "Dẫn lưu áp xe thực quản, trung thất",
+      "normalizedName": "dẫn lưu áp xe thực quản, trung thất",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-006",
+      "aliases": [
+        "MO-6"
+      ],
+      "rowIndex": 6,
+      "sheetCode": "6",
+      "officialName": "Khâu lỗ thủng hoặc vết thương thực quản",
+      "normalizedName": "khâu lỗ thủng hoặc vết thương thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-007",
+      "aliases": [
+        "MO-7"
+      ],
+      "rowIndex": 7,
+      "sheetCode": "7",
+      "officialName": "Lấy dị vật thực quản đường cổ",
+      "normalizedName": "lấy dị vật thực quản đường cổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-008",
+      "aliases": [
+        "MO-8"
+      ],
+      "rowIndex": 8,
+      "sheetCode": "8",
+      "officialName": "Lấy dị vật thực quản đường ngực",
+      "normalizedName": "lấy dị vật thực quản đường ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-009",
+      "aliases": [
+        "MO-9"
+      ],
+      "rowIndex": 9,
+      "sheetCode": "9",
+      "officialName": "Lấy dị vật thực quản đường bụng",
+      "normalizedName": "lấy dị vật thực quản đường bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-010",
+      "aliases": [
+        "MO-10"
+      ],
+      "rowIndex": 10,
+      "sheetCode": "10",
+      "officialName": "Đóng rò thực quản",
+      "normalizedName": "đóng rò thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "DO0069"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-011",
+      "aliases": [
+        "MO-11"
+      ],
+      "rowIndex": 11,
+      "sheetCode": "11",
+      "officialName": "Đóng lỗ rò thực quản – khí quản",
+      "normalizedName": "đóng lỗ rò thực quản – khí quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "DO0070"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-012",
+      "aliases": [
+        "MO-12"
+      ],
+      "rowIndex": 12,
+      "sheetCode": "12",
+      "officialName": "Cắt túi thừa thực quản cổ",
+      "normalizedName": "cắt túi thừa thực quản cổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-013",
+      "aliases": [
+        "MO-13"
+      ],
+      "rowIndex": 13,
+      "sheetCode": "13",
+      "officialName": "Cắt túi thừa thực quản ngực",
+      "normalizedName": "cắt túi thừa thực quản ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-014",
+      "aliases": [
+        "MO-14"
+      ],
+      "rowIndex": 14,
+      "sheetCode": "14",
+      "officialName": "Lấy u cơ, xơ…thực quản đường ngực",
+      "normalizedName": "lấy u cơ, xơ…thực quản đường ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-015",
+      "aliases": [
+        "MO-15"
+      ],
+      "rowIndex": 15,
+      "sheetCode": "15",
+      "officialName": "Lấy u cơ, xơ…thực quản đường cổ hoặc đường bụng",
+      "normalizedName": "lấy u cơ, xơ…thực quản đường cổ hoặc đường bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-016",
+      "aliases": [
+        "MO-16"
+      ],
+      "rowIndex": 16,
+      "sheetCode": "16",
+      "officialName": "Cắt đoạn thực quản, dẫn lưu hai đầu ra ngoài",
+      "normalizedName": "cắt đoạn thực quản, dẫn lưu hai đầu ra ngoài",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-017",
+      "aliases": [
+        "MO-17"
+      ],
+      "rowIndex": 17,
+      "sheetCode": "17",
+      "officialName": "Cắt nối thực quản",
+      "normalizedName": "cắt nối thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-018",
+      "aliases": [
+        "MO-18"
+      ],
+      "rowIndex": 18,
+      "sheetCode": "18",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng dạ dày không mở ngực",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng dạ dày không mở ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0557"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-019",
+      "aliases": [
+        "MO-19"
+      ],
+      "rowIndex": 19,
+      "sheetCode": "19",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng dạ dày đường bụng, ngực, cổ",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng dạ dày đường bụng, ngực, cổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0556"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-020",
+      "aliases": [
+        "MO-20"
+      ],
+      "rowIndex": 20,
+      "sheetCode": "20",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng dạ dày đường bụng, ngực",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng dạ dày đường bụng, ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0555"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-021",
+      "aliases": [
+        "MO-21"
+      ],
+      "rowIndex": 21,
+      "sheetCode": "21",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng đại tràng không mở ngực",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng đại tràng không mở ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0545"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-022",
+      "aliases": [
+        "MO-22"
+      ],
+      "rowIndex": 22,
+      "sheetCode": "22",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng đại tràng đường bụng, ngực, cổ",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng đại tràng đường bụng, ngực, cổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0559"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-023",
+      "aliases": [
+        "MO-23"
+      ],
+      "rowIndex": 23,
+      "sheetCode": "23",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng đại tràng đường bụng, ngực",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng đại tràng đường bụng, ngực",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0558"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-024",
+      "aliases": [
+        "MO-24"
+      ],
+      "rowIndex": 24,
+      "sheetCode": "24",
+      "officialName": "Cắt thực quản, cắt toàn bộ dạ dày, tạo hình thực quản bằng đoạn đại tràng hoặc ruột non",
+      "normalizedName": "cắt thực quản, cắt toàn bộ dạ dày, tạo hình thực quản bằng đoạn đại tràng hoặc ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0554"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-025",
+      "aliases": [
+        "MO-25"
+      ],
+      "rowIndex": 25,
+      "sheetCode": "25",
+      "officialName": "Cắt thực quản, hạ họng, thanh quản",
+      "normalizedName": "cắt thực quản, hạ họng, thanh quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-026",
+      "aliases": [
+        "MO-26"
+      ],
+      "rowIndex": 26,
+      "sheetCode": "26",
+      "officialName": "Cắt thực quản, tạo hình thực quản bằng quai ruột (ruột non, đại tràng vi phẫu)",
+      "normalizedName": "cắt thực quản, tạo hình thực quản bằng quai ruột (ruột non, đại tràng vi phẫu)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-027",
+      "aliases": [
+        "MO-27"
+      ],
+      "rowIndex": 27,
+      "sheetCode": "27",
+      "officialName": "Tạo hình thực quản bằng dạ dày không cắt thực quản",
+      "normalizedName": "tạo hình thực quản bằng dạ dày không cắt thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "TA0117"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-028",
+      "aliases": [
+        "MO-28"
+      ],
+      "rowIndex": 28,
+      "sheetCode": "28",
+      "officialName": "Tạo hình thực quản bằng đại tràng không cắt thực quản",
+      "normalizedName": "tạo hình thực quản bằng đại tràng không cắt thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "TA0118"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-029",
+      "aliases": [
+        "MO-29"
+      ],
+      "rowIndex": 29,
+      "sheetCode": "29",
+      "officialName": "Phẫu thuật điều trị thực quản đôi",
+      "normalizedName": "phẫu thuật điều trị thực quản đôi",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-030",
+      "aliases": [
+        "MO-30"
+      ],
+      "rowIndex": 30,
+      "sheetCode": "30",
+      "officialName": "Phẫu thuật điều trị teo thực quản",
+      "normalizedName": "phẫu thuật điều trị teo thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-031",
+      "aliases": [
+        "MO-31"
+      ],
+      "rowIndex": 31,
+      "sheetCode": "31",
+      "officialName": "Nạo vét hạch trung thất",
+      "normalizedName": "nạo vét hạch trung thất",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-032",
+      "aliases": [
+        "MO-32"
+      ],
+      "rowIndex": 32,
+      "sheetCode": "32",
+      "officialName": "Nạo vét hạch cổ",
+      "normalizedName": "nạo vét hạch cổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-033",
+      "aliases": [
+        "MO-33"
+      ],
+      "rowIndex": 33,
+      "sheetCode": "33",
+      "officialName": "Phẫu thuật điều trị co thắt thực quản lan tỏa",
+      "normalizedName": "phẫu thuật điều trị co thắt thực quản lan tỏa",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-034",
+      "aliases": [
+        "MO-34"
+      ],
+      "rowIndex": 34,
+      "sheetCode": "34",
+      "officialName": "Phẫu thuật Heller",
+      "normalizedName": "phẫu thuật heller",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-035",
+      "aliases": [
+        "MO-35"
+      ],
+      "rowIndex": 35,
+      "sheetCode": "35",
+      "officialName": "Tạo van chống trào ngược dạ dày – thực quản",
+      "normalizedName": "tạo van chống trào ngược dạ dày – thực quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-036",
+      "aliases": [
+        "MO-36"
+      ],
+      "rowIndex": 36,
+      "sheetCode": "36",
+      "officialName": "Tạo hình tại chỗ sẹo hẹp thực quản đường cổ",
+      "normalizedName": "tạo hình tại chỗ sẹo hẹp thực quản đường cổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-037",
+      "aliases": [
+        "MO-37"
+      ],
+      "rowIndex": 37,
+      "sheetCode": "37",
+      "officialName": "Các phẫu thuật thực quản khác",
+      "normalizedName": "các phẫu thuật thực quản khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-038",
+      "aliases": [
+        "MO-38"
+      ],
+      "rowIndex": 38,
+      "sheetCode": "38",
+      "officialName": "Mở bụng thăm dò",
+      "normalizedName": "mở bụng thăm dò",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-039",
+      "aliases": [
+        "MO-39"
+      ],
+      "rowIndex": 39,
+      "sheetCode": "39",
+      "officialName": "Mở bụng thăm dò, sinh thiết",
+      "normalizedName": "mở bụng thăm dò, sinh thiết",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-040",
+      "aliases": [
+        "MO-40"
+      ],
+      "rowIndex": 40,
+      "sheetCode": "40",
+      "officialName": "Nối vị tràng",
+      "normalizedName": "nối vị tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-041",
+      "aliases": [
+        "MO-41"
+      ],
+      "rowIndex": 41,
+      "sheetCode": "41",
+      "officialName": "Cắt dạ dày hình chêm",
+      "normalizedName": "cắt dạ dày hình chêm",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "CA0875"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-042",
+      "aliases": [
+        "MO-42"
+      ],
+      "rowIndex": 42,
+      "sheetCode": "42",
+      "officialName": "Cắt đoạn dạ dày",
+      "normalizedName": "cắt đoạn dạ dày",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0575"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-043",
+      "aliases": [
+        "MO-43"
+      ],
+      "rowIndex": 43,
+      "sheetCode": "43",
+      "officialName": "Cắt đoạn dạ dày và mạc nối lớn",
+      "normalizedName": "cắt đoạn dạ dày và mạc nối lớn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0576"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-044",
+      "aliases": [
+        "MO-44"
+      ],
+      "rowIndex": 44,
+      "sheetCode": "44",
+      "officialName": "Cắt toàn bộ dạ dày",
+      "normalizedName": "cắt toàn bộ dạ dày",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0578"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-045",
+      "aliases": [
+        "MO-45"
+      ],
+      "rowIndex": 45,
+      "sheetCode": "45",
+      "officialName": "Cắt lại dạ dày",
+      "normalizedName": "cắt lại dạ dày",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0577"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-046",
+      "aliases": [
+        "MO-46"
+      ],
+      "rowIndex": 46,
+      "sheetCode": "46",
+      "officialName": "Nạo vét hạch D1",
+      "normalizedName": "nạo vét hạch d1",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-047",
+      "aliases": [
+        "MO-47"
+      ],
+      "rowIndex": 47,
+      "sheetCode": "47",
+      "officialName": "Nạo vét hạch D2",
+      "normalizedName": "nạo vét hạch d2",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-048",
+      "aliases": [
+        "MO-48"
+      ],
+      "rowIndex": 48,
+      "sheetCode": "48",
+      "officialName": "Nạo vét hạch D3",
+      "normalizedName": "nạo vét hạch d3",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-049",
+      "aliases": [
+        "MO-49"
+      ],
+      "rowIndex": 49,
+      "sheetCode": "49",
+      "officialName": "Nạo vét hạch D4",
+      "normalizedName": "nạo vét hạch d4",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-050",
+      "aliases": [
+        "MO-50"
+      ],
+      "rowIndex": 50,
+      "sheetCode": "50",
+      "officialName": "Khâu lỗ thủng dạ dày tá tràng",
+      "normalizedName": "khâu lỗ thủng dạ dày tá tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "KH0076"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-051",
+      "aliases": [
+        "MO-51"
+      ],
+      "rowIndex": 51,
+      "sheetCode": "51",
+      "officialName": "Phẫu thuật Newmann",
+      "normalizedName": "phẫu thuật newmann",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-052",
+      "aliases": [
+        "MO-52"
+      ],
+      "rowIndex": 52,
+      "sheetCode": "52",
+      "officialName": "Khâu cầm máu ổ loét dạ dày",
+      "normalizedName": "khâu cầm máu ổ loét dạ dày",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "KH0075"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-053",
+      "aliases": [
+        "MO-53"
+      ],
+      "rowIndex": 53,
+      "sheetCode": "53",
+      "officialName": "Cắt thần kinh X toàn bộ",
+      "normalizedName": "cắt thần kinh x toàn bộ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-054",
+      "aliases": [
+        "MO-54"
+      ],
+      "rowIndex": 54,
+      "sheetCode": "54",
+      "officialName": "Cắt thần kinh X chọn lọc",
+      "normalizedName": "cắt thần kinh x chọn lọc",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-055",
+      "aliases": [
+        "MO-55"
+      ],
+      "rowIndex": 55,
+      "sheetCode": "55",
+      "officialName": "Cắt thần kinh X siêu chọn lọc",
+      "normalizedName": "cắt thần kinh x siêu chọn lọc",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-056",
+      "aliases": [
+        "MO-56"
+      ],
+      "rowIndex": 56,
+      "sheetCode": "56",
+      "officialName": "Mở cơ môn vị",
+      "normalizedName": "mở cơ môn vị",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-057",
+      "aliases": [
+        "MO-57"
+      ],
+      "rowIndex": 57,
+      "sheetCode": "57",
+      "officialName": "Tạo hình môn vị",
+      "normalizedName": "tạo hình môn vị",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-058",
+      "aliases": [
+        "MO-58"
+      ],
+      "rowIndex": 58,
+      "sheetCode": "58",
+      "officialName": "Mở dạ dày xử lý tổn thương",
+      "normalizedName": "mở dạ dày xử lý tổn thương",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "MO0102"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-059",
+      "aliases": [
+        "MO-59"
+      ],
+      "rowIndex": 59,
+      "sheetCode": "59",
+      "officialName": "Các phẫu thuật dạ dày khác",
+      "normalizedName": "các phẫu thuật dạ dày khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-060",
+      "aliases": [
+        "MO-60"
+      ],
+      "rowIndex": 60,
+      "sheetCode": "60",
+      "officialName": "Cắt u tá tràng",
+      "normalizedName": "cắt u tá tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-061",
+      "aliases": [
+        "MO-61"
+      ],
+      "rowIndex": 61,
+      "sheetCode": "61",
+      "officialName": "Cắt tá tràng bảo tồn đầu tụy",
+      "normalizedName": "cắt tá tràng bảo tồn đầu tụy",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-062",
+      "aliases": [
+        "MO-62"
+      ],
+      "rowIndex": 62,
+      "sheetCode": "62",
+      "officialName": "Khâu vùi túi thừa tá tràng",
+      "normalizedName": "khâu vùi túi thừa tá tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-063",
+      "aliases": [
+        "MO-63"
+      ],
+      "rowIndex": 63,
+      "sheetCode": "63",
+      "officialName": "Cắt túi thừa tá tràng",
+      "normalizedName": "cắt túi thừa tá tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-064",
+      "aliases": [
+        "MO-64"
+      ],
+      "rowIndex": 64,
+      "sheetCode": "64",
+      "officialName": "Cắt bóng Vater và tạo hình ống mật chủ, ống Wirsung qua đường mở D2 tá tràng",
+      "normalizedName": "cắt bóng vater và tạo hình ống mật chủ, ống wirsung qua đường mở d2 tá tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-065",
+      "aliases": [
+        "MO-65"
+      ],
+      "rowIndex": 65,
+      "sheetCode": "65",
+      "officialName": "Cắt màng ngăn tá tràng",
+      "normalizedName": "cắt màng ngăn tá tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-066",
+      "aliases": [
+        "MO-66"
+      ],
+      "rowIndex": 66,
+      "sheetCode": "66",
+      "officialName": "Mở thông hỗng tràng hoặc mở thông hồi tràng",
+      "normalizedName": "mở thông hỗng tràng hoặc mở thông hồi tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": [
+        "MO0073"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-067",
+      "aliases": [
+        "MO-67"
+      ],
+      "rowIndex": 67,
+      "sheetCode": "67",
+      "officialName": "Khâu lỗ thủng hoặc khâu vết thương ruột non",
+      "normalizedName": "khâu lỗ thủng hoặc khâu vết thương ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-068",
+      "aliases": [
+        "MO-68"
+      ],
+      "rowIndex": 68,
+      "sheetCode": "68",
+      "officialName": "Cắt dây chằng, gỡ dính ruột",
+      "normalizedName": "cắt dây chằng, gỡ dính ruột",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-069",
+      "aliases": [
+        "MO-69"
+      ],
+      "rowIndex": 69,
+      "sheetCode": "69",
+      "officialName": "Tháo xoắn ruột non",
+      "normalizedName": "tháo xoắn ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-070",
+      "aliases": [
+        "MO-70"
+      ],
+      "rowIndex": 70,
+      "sheetCode": "70",
+      "officialName": "Tháo lồng ruột non",
+      "normalizedName": "tháo lồng ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-071",
+      "aliases": [
+        "MO-71"
+      ],
+      "rowIndex": 71,
+      "sheetCode": "71",
+      "officialName": "Đẩy bã thức ăn xuống đại tràng",
+      "normalizedName": "đẩy bã thức ăn xuống đại tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "DA0126"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-072",
+      "aliases": [
+        "MO-72"
+      ],
+      "rowIndex": 72,
+      "sheetCode": "72",
+      "officialName": "Mở ruột non lấy dị vật (bã thức ăn, giun, mảnh kim loại,…)",
+      "normalizedName": "mở ruột non lấy dị vật (bã thức ăn, giun, mảnh kim loại,…)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-073",
+      "aliases": [
+        "MO-73"
+      ],
+      "rowIndex": 73,
+      "sheetCode": "73",
+      "officialName": "Cắt ruột non hình chêm",
+      "normalizedName": "cắt ruột non hình chêm",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-074",
+      "aliases": [
+        "MO-74"
+      ],
+      "rowIndex": 74,
+      "sheetCode": "74",
+      "officialName": "Cắt đoạn ruột non, lập lại lưu thông",
+      "normalizedName": "cắt đoạn ruột non, lập lại lưu thông",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-075",
+      "aliases": [
+        "MO-75"
+      ],
+      "rowIndex": 75,
+      "sheetCode": "75",
+      "officialName": "Cắt đoạn ruột non, đưa hai đầu ruột ra ngoài",
+      "normalizedName": "cắt đoạn ruột non, đưa hai đầu ruột ra ngoài",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-076",
+      "aliases": [
+        "MO-76"
+      ],
+      "rowIndex": 76,
+      "sheetCode": "76",
+      "officialName": "Cắt đoạn ruột non, nối tận bên, đưa 1 đầu ra ngoài (Quénue)",
+      "normalizedName": "cắt đoạn ruột non, nối tận bên, đưa 1 đầu ra ngoài (quénue)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-077",
+      "aliases": [
+        "MO-77"
+      ],
+      "rowIndex": 77,
+      "sheetCode": "77",
+      "officialName": "Cắt nhiều đoạn ruột non",
+      "normalizedName": "cắt nhiều đoạn ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-078",
+      "aliases": [
+        "MO-78"
+      ],
+      "rowIndex": 78,
+      "sheetCode": "78",
+      "officialName": "Gỡ dính sau mổ lại",
+      "normalizedName": "gỡ dính sau mổ lại",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-079",
+      "aliases": [
+        "MO-79"
+      ],
+      "rowIndex": 79,
+      "sheetCode": "79",
+      "officialName": "Phẫu thuật điều trị apxe tồn dư, dẫn lưu ổ bụng",
+      "normalizedName": "phẫu thuật điều trị apxe tồn dư, dẫn lưu ổ bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-080",
+      "aliases": [
+        "MO-80"
+      ],
+      "rowIndex": 80,
+      "sheetCode": "80",
+      "officialName": "Đóng mở thông ruột non",
+      "normalizedName": "đóng mở thông ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-081",
+      "aliases": [
+        "MO-81"
+      ],
+      "rowIndex": 81,
+      "sheetCode": "81",
+      "officialName": "Nối tắt ruột non - đại tràng hoặc trực tràng",
+      "normalizedName": "nối tắt ruột non - đại tràng hoặc trực tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "NO0287"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-082",
+      "aliases": [
+        "MO-82"
+      ],
+      "rowIndex": 82,
+      "sheetCode": "82",
+      "officialName": "Nối tắt ruột non - ruột non",
+      "normalizedName": "nối tắt ruột non - ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-083",
+      "aliases": [
+        "MO-83"
+      ],
+      "rowIndex": 83,
+      "sheetCode": "83",
+      "officialName": "Cắt mạc nối lớn",
+      "normalizedName": "cắt mạc nối lớn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-084",
+      "aliases": [
+        "MO-84"
+      ],
+      "rowIndex": 84,
+      "sheetCode": "84",
+      "officialName": "Cắt bỏ u mạc nối lớn",
+      "normalizedName": "cắt bỏ u mạc nối lớn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-085",
+      "aliases": [
+        "MO-85"
+      ],
+      "rowIndex": 85,
+      "sheetCode": "85",
+      "officialName": "Cắt u mạc treo ruột",
+      "normalizedName": "cắt u mạc treo ruột",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-086",
+      "aliases": [
+        "MO-86"
+      ],
+      "rowIndex": 86,
+      "sheetCode": "86",
+      "officialName": "Khâu vết thương tĩnh mạch mạc treo tràng trên",
+      "normalizedName": "khâu vết thương tĩnh mạch mạc treo tràng trên",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-087",
+      "aliases": [
+        "MO-87"
+      ],
+      "rowIndex": 87,
+      "sheetCode": "87",
+      "officialName": "Khâu vết thương động mạch mạc treo tràng trên",
+      "normalizedName": "khâu vết thương động mạch mạc treo tràng trên",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-088",
+      "aliases": [
+        "MO-88"
+      ],
+      "rowIndex": 88,
+      "sheetCode": "88",
+      "officialName": "Bắc cầu động mạch mạc treo tràng trên bằng đoạn tĩnh mạch hiển hoặc đoạn mạch nhân tạo",
+      "normalizedName": "bắc cầu động mạch mạc treo tràng trên bằng đoạn tĩnh mạch hiển hoặc đoạn mạch nhân tạo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-089",
+      "aliases": [
+        "MO-89"
+      ],
+      "rowIndex": 89,
+      "sheetCode": "89",
+      "officialName": "Cắt đoạn động mạch mạc treo tràng trên, nối động mạch trực tiếp",
+      "normalizedName": "cắt đoạn động mạch mạc treo tràng trên, nối động mạch trực tiếp",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-090",
+      "aliases": [
+        "MO-90"
+      ],
+      "rowIndex": 90,
+      "sheetCode": "90",
+      "officialName": "Cắt toàn bộ ruột non",
+      "normalizedName": "cắt toàn bộ ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-091",
+      "aliases": [
+        "MO-91"
+      ],
+      "rowIndex": 91,
+      "sheetCode": "91",
+      "officialName": "Ghép ruột non",
+      "normalizedName": "ghép ruột non",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-092",
+      "aliases": [
+        "MO-92"
+      ],
+      "rowIndex": 92,
+      "sheetCode": "92",
+      "officialName": "Các phẫu thuật tá tràng khác",
+      "normalizedName": "các phẫu thuật tá tràng khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-093",
+      "aliases": [
+        "MO-93"
+      ],
+      "rowIndex": 93,
+      "sheetCode": "93",
+      "officialName": "Cắt ruột thừa đơn thuần",
+      "normalizedName": "cắt ruột thừa đơn thuần",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-094",
+      "aliases": [
+        "MO-94"
+      ],
+      "rowIndex": 94,
+      "sheetCode": "94",
+      "officialName": "Cắt ruột thừa, lau rửa ổ bụng",
+      "normalizedName": "cắt ruột thừa, lau rửa ổ bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-095",
+      "aliases": [
+        "MO-95"
+      ],
+      "rowIndex": 95,
+      "sheetCode": "95",
+      "officialName": "Cắt ruột thừa, dẫn lưu ổ apxe",
+      "normalizedName": "cắt ruột thừa, dẫn lưu ổ apxe",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-096",
+      "aliases": [
+        "MO-96"
+      ],
+      "rowIndex": 96,
+      "sheetCode": "96",
+      "officialName": "Dẫn lưu áp xe ruột thừa",
+      "normalizedName": "dẫn lưu áp xe ruột thừa",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-097",
+      "aliases": [
+        "MO-97"
+      ],
+      "rowIndex": 97,
+      "sheetCode": "97",
+      "officialName": "Các phẫu thuật ruột thừa khác",
+      "normalizedName": "các phẫu thuật ruột thừa khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-098",
+      "aliases": [
+        "MO-98"
+      ],
+      "rowIndex": 98,
+      "sheetCode": "98",
+      "officialName": "Dẫn lưu hoặc mở thông manh tràng",
+      "normalizedName": "dẫn lưu hoặc mở thông manh tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-099",
+      "aliases": [
+        "MO-99"
+      ],
+      "rowIndex": 99,
+      "sheetCode": "99",
+      "officialName": "Khâu lỗ thủng đại tràng",
+      "normalizedName": "khâu lỗ thủng đại tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "KH0077"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-100",
+      "aliases": [
+        "MO-100"
+      ],
+      "rowIndex": 100,
+      "sheetCode": "100",
+      "officialName": "Cắt túi thừa đại tràng",
+      "normalizedName": "cắt túi thừa đại tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "CA0885"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-101",
+      "aliases": [
+        "MO-101"
+      ],
+      "rowIndex": 101,
+      "sheetCode": "101",
+      "officialName": "Cắt đoạn đại tràng nối ngay",
+      "normalizedName": "cắt đoạn đại tràng nối ngay",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0598"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-102",
+      "aliases": [
+        "MO-102"
+      ],
+      "rowIndex": 102,
+      "sheetCode": "102",
+      "officialName": "Cắt đoạn đại tràng, đưa 2 đầu đại tràng ra ngoài",
+      "normalizedName": "cắt đoạn đại tràng, đưa 2 đầu đại tràng ra ngoài",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0588"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-103",
+      "aliases": [
+        "MO-103"
+      ],
+      "rowIndex": 103,
+      "sheetCode": "103",
+      "officialName": "Cắt đoạn đại tràng, đóng đầu dưới, đưa đầu trên ra ngoài ổ bụng kiểu Hartmann",
+      "normalizedName": "cắt đoạn đại tràng, đóng đầu dưới, đưa đầu trên ra ngoài ổ bụng kiểu hartmann",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0587"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-104",
+      "aliases": [
+        "MO-104"
+      ],
+      "rowIndex": 104,
+      "sheetCode": "104",
+      "officialName": "Cắt manh tràng và đoạn cuối hồi tràng",
+      "normalizedName": "cắt manh tràng và đoạn cuối hồi tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0594"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-105",
+      "aliases": [
+        "MO-105"
+      ],
+      "rowIndex": 105,
+      "sheetCode": "105",
+      "officialName": "Cắt đại tràng phải hoặc đại tràng trái nối ngay",
+      "normalizedName": "cắt đại tràng phải hoặc đại tràng trái nối ngay",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0583"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-106",
+      "aliases": [
+        "MO-106"
+      ],
+      "rowIndex": 106,
+      "sheetCode": "106",
+      "officialName": "Cắt đại tràng phải hoặc đại tràng trái, đưa 2 đầu ruột ra ngoài",
+      "normalizedName": "cắt đại tràng phải hoặc đại tràng trái, đưa 2 đầu ruột ra ngoài",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0597"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-107",
+      "aliases": [
+        "MO-107"
+      ],
+      "rowIndex": 107,
+      "sheetCode": "107",
+      "officialName": "Cắt đại tràng phải hoặc đại tràng trái, đóng đầu dưới, đưa đầu trên ra ngoài kiểu Hartmann",
+      "normalizedName": "cắt đại tràng phải hoặc đại tràng trái, đóng đầu dưới, đưa đầu trên ra ngoài kiểu hartmann",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0584"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-108",
+      "aliases": [
+        "MO-108"
+      ],
+      "rowIndex": 108,
+      "sheetCode": "108",
+      "officialName": "Cắt toàn bộ đại tràng, nối ngay ruột non – trực tràng",
+      "normalizedName": "cắt toàn bộ đại tràng, nối ngay ruột non – trực tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0595"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-109",
+      "aliases": [
+        "MO-109"
+      ],
+      "rowIndex": 109,
+      "sheetCode": "109",
+      "officialName": "Cắt toàn bộ đại trực tràng, nối ngay ruột non - ống hậu môn",
+      "normalizedName": "cắt toàn bộ đại trực tràng, nối ngay ruột non - ống hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0585"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-110",
+      "aliases": [
+        "MO-110"
+      ],
+      "rowIndex": 110,
+      "sheetCode": "110",
+      "officialName": "Cắt toàn bộ đại trực tràng, đưa hồi tràng ra làm hậu môn nhân tạo",
+      "normalizedName": "cắt toàn bộ đại trực tràng, đưa hồi tràng ra làm hậu môn nhân tạo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0596"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-111",
+      "aliases": [
+        "MO-111"
+      ],
+      "rowIndex": 111,
+      "sheetCode": "111",
+      "officialName": "Làm hậu môn nhân tạo",
+      "normalizedName": "làm hậu môn nhân tạo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "LA0099"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-112",
+      "aliases": [
+        "MO-112"
+      ],
+      "rowIndex": 112,
+      "sheetCode": "112",
+      "officialName": "Làm hậu môn nhân tạo",
+      "normalizedName": "làm hậu môn nhân tạo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "LA0099"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-113",
+      "aliases": [
+        "MO-113"
+      ],
+      "rowIndex": 113,
+      "sheetCode": "113",
+      "officialName": "Lấy dị vật trực tràng",
+      "normalizedName": "lấy dị vật trực tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "LA0089"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-114",
+      "aliases": [
+        "MO-114"
+      ],
+      "rowIndex": 114,
+      "sheetCode": "114",
+      "officialName": "Cắt đoạn trực tràng nối ngay",
+      "normalizedName": "cắt đoạn trực tràng nối ngay",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0589"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-115",
+      "aliases": [
+        "MO-115"
+      ],
+      "rowIndex": 115,
+      "sheetCode": "115",
+      "officialName": "Cắt đoạn trực tràng, đóng đầu dưới đưa đầu trên ra ngoài kiểu Hartmann",
+      "normalizedName": "cắt đoạn trực tràng, đóng đầu dưới đưa đầu trên ra ngoài kiểu hartmann",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0591"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-116",
+      "aliases": [
+        "MO-116"
+      ],
+      "rowIndex": 116,
+      "sheetCode": "116",
+      "officialName": "Cắt đoạn trực tràng, miệng nối đại trực tràng thấp",
+      "normalizedName": "cắt đoạn trực tràng, miệng nối đại trực tràng thấp",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0593"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-117",
+      "aliases": [
+        "MO-117"
+      ],
+      "rowIndex": 117,
+      "sheetCode": "117",
+      "officialName": "Cắt đoạn trực tràng, miệng nối đại tràng - ống hậu môn",
+      "normalizedName": "cắt đoạn trực tràng, miệng nối đại tràng - ống hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0592"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-118",
+      "aliases": [
+        "MO-118"
+      ],
+      "rowIndex": 118,
+      "sheetCode": "118",
+      "officialName": "Cắt đoạn trực tràng, cơ thắt trong bảo tồn cơ thắt ngoài đường tầng sinh môn",
+      "normalizedName": "cắt đoạn trực tràng, cơ thắt trong bảo tồn cơ thắt ngoài đường tầng sinh môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0590"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-119",
+      "aliases": [
+        "MO-119"
+      ],
+      "rowIndex": 119,
+      "sheetCode": "119",
+      "officialName": "Cắt cụt trực tràng đường bụng, tầng sinh môn",
+      "normalizedName": "cắt cụt trực tràng đường bụng, tầng sinh môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": [
+        "CA0606"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-120",
+      "aliases": [
+        "MO-120"
+      ],
+      "rowIndex": 120,
+      "sheetCode": "120",
+      "officialName": "Cắt u, polyp trực tràng đường hậu môn",
+      "normalizedName": "cắt u, polyp trực tràng đường hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "CA1417",
+        "PH0963"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-121",
+      "aliases": [
+        "MO-121"
+      ],
+      "rowIndex": 121,
+      "sheetCode": "121",
+      "officialName": "Khâu lỗ thủng, vết thương trực tràng",
+      "normalizedName": "khâu lỗ thủng, vết thương trực tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "KH0073"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-122",
+      "aliases": [
+        "MO-122"
+      ],
+      "rowIndex": 122,
+      "sheetCode": "122",
+      "officialName": "Phẫu thuật điều trị sa trực tràng đường bụng",
+      "normalizedName": "phẫu thuật điều trị sa trực tràng đường bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1309"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-123",
+      "aliases": [
+        "MO-123"
+      ],
+      "rowIndex": 123,
+      "sheetCode": "123",
+      "officialName": "Phẫu thuật điều trị sa trực tràng qua đường hậu môn",
+      "normalizedName": "phẫu thuật điều trị sa trực tràng qua đường hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1310"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-124",
+      "aliases": [
+        "MO-124"
+      ],
+      "rowIndex": 124,
+      "sheetCode": "124",
+      "officialName": "Cắt toàn bộ mạc treo trực tràng",
+      "normalizedName": "cắt toàn bộ mạc treo trực tràng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "CA0887"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-125",
+      "aliases": [
+        "MO-125"
+      ],
+      "rowIndex": 125,
+      "sheetCode": "125",
+      "officialName": "Bóc u xơ, cơ..trực tràng đường bụng",
+      "normalizedName": "bóc u xơ, cơ..trực tràng đường bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "BO0030"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-126",
+      "aliases": [
+        "MO-126"
+      ],
+      "rowIndex": 126,
+      "sheetCode": "126",
+      "officialName": "Bóc u xơ, cơ..trực tràng đường tầng sinh môn",
+      "normalizedName": "bóc u xơ, cơ..trực tràng đường tầng sinh môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "BO0087",
+        "BO0051"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-127",
+      "aliases": [
+        "MO-127"
+      ],
+      "rowIndex": 127,
+      "sheetCode": "127",
+      "officialName": "Đóng rò trực tràng – âm đạo",
+      "normalizedName": "đóng rò trực tràng – âm đạo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "DO0042"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-128",
+      "aliases": [
+        "MO-128"
+      ],
+      "rowIndex": 128,
+      "sheetCode": "128",
+      "officialName": "Đóng rò trực tràng – bàng quang",
+      "normalizedName": "đóng rò trực tràng – bàng quang",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "DO0043"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-129",
+      "aliases": [
+        "MO-129"
+      ],
+      "rowIndex": 129,
+      "sheetCode": "129",
+      "officialName": "Phẫu thuật điều trị rò trực tràng – niệu quản",
+      "normalizedName": "phẫu thuật điều trị rò trực tràng – niệu quản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0879"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-130",
+      "aliases": [
+        "MO-130"
+      ],
+      "rowIndex": 130,
+      "sheetCode": "130",
+      "officialName": "Phẫu thuật điều trị rò trực tràng – niệu đạo",
+      "normalizedName": "phẫu thuật điều trị rò trực tràng – niệu đạo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0878"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-131",
+      "aliases": [
+        "MO-131"
+      ],
+      "rowIndex": 131,
+      "sheetCode": "131",
+      "officialName": "Phẫu thuật điều trị rò trực tràng – tầng sinh môn",
+      "normalizedName": "phẫu thuật điều trị rò trực tràng – tầng sinh môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0880"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-132",
+      "aliases": [
+        "MO-132"
+      ],
+      "rowIndex": 132,
+      "sheetCode": "132",
+      "officialName": "Phẫu thuật điều trị rò trực tràng – tiểu khung",
+      "normalizedName": "phẫu thuật điều trị rò trực tràng – tiểu khung",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0881"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-133",
+      "aliases": [
+        "MO-133"
+      ],
+      "rowIndex": 133,
+      "sheetCode": "133",
+      "officialName": "Các phẫu thuật trực tràng khác",
+      "normalizedName": "các phẫu thuật trực tràng khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-134",
+      "aliases": [
+        "MO-134"
+      ],
+      "rowIndex": 134,
+      "sheetCode": "134",
+      "officialName": "Phẫu thuật cắt 1 búi trĩ",
+      "normalizedName": "phẫu thuật cắt 1 búi trĩ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2360",
+        "PH0964"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-135",
+      "aliases": [
+        "MO-135"
+      ],
+      "rowIndex": 135,
+      "sheetCode": "135",
+      "officialName": "Phẫu thuật lấy trĩ tắc mạch",
+      "normalizedName": "phẫu thuật lấy trĩ tắc mạch",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": [
+        "PH2367",
+        "PH0980"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-136",
+      "aliases": [
+        "MO-136"
+      ],
+      "rowIndex": 136,
+      "sheetCode": "136",
+      "officialName": "Phẫu thuật cắt trĩ kinh điển (phương pháp Milligan – Morgan hoặc Ferguson)",
+      "normalizedName": "phẫu thuật cắt trĩ kinh điển (phương pháp milligan – morgan hoặc ferguson)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2362",
+        "PH0969"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-137",
+      "aliases": [
+        "MO-137"
+      ],
+      "rowIndex": 137,
+      "sheetCode": "137",
+      "officialName": "Phẫu thuật cắt trĩ kinh điển có sử dụng dụng cụ hỗ trợ",
+      "normalizedName": "phẫu thuật cắt trĩ kinh điển có sử dụng dụng cụ hỗ trợ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2331",
+        "PH0970"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-138",
+      "aliases": [
+        "MO-138"
+      ],
+      "rowIndex": 138,
+      "sheetCode": "138",
+      "officialName": "Phẫu thuật lấy toàn bộ trĩ vòng",
+      "normalizedName": "phẫu thuật lấy toàn bộ trĩ vòng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH2333",
+        "PH0975"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-139",
+      "aliases": [
+        "MO-139"
+      ],
+      "rowIndex": 139,
+      "sheetCode": "139",
+      "officialName": "Phẫu thuật Longo",
+      "normalizedName": "phẫu thuật longo",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-140",
+      "aliases": [
+        "MO-140"
+      ],
+      "rowIndex": 140,
+      "sheetCode": "140",
+      "officialName": "Phẫu thuật Longo kết hợp với khâu treo trĩ",
+      "normalizedName": "phẫu thuật longo kết hợp với khâu treo trĩ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH0983"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-141",
+      "aliases": [
+        "MO-141"
+      ],
+      "rowIndex": 141,
+      "sheetCode": "141",
+      "officialName": "Phẫu thuật khâu treo và triệt mạch trĩ (THD)",
+      "normalizedName": "phẫu thuật khâu treo và triệt mạch trĩ (thd)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2334",
+        "PH0974"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-142",
+      "aliases": [
+        "MO-142"
+      ],
+      "rowIndex": 142,
+      "sheetCode": "142",
+      "officialName": "Phẫu thuật chích, dẫn lưu áp xe cạnh hậu môn đơn giản",
+      "normalizedName": "phẫu thuật chích, dẫn lưu áp xe cạnh hậu môn đơn giản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-143",
+      "aliases": [
+        "MO-143"
+      ],
+      "rowIndex": 143,
+      "sheetCode": "143",
+      "officialName": "Phẫu thuật điều trị áp xe hậu môn phức tạp",
+      "normalizedName": "phẫu thuật điều trị áp xe hậu môn phức tạp",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-144",
+      "aliases": [
+        "MO-144"
+      ],
+      "rowIndex": 144,
+      "sheetCode": "144",
+      "officialName": "Phẫu thuật điều trị rò hậu môn đơn giản",
+      "normalizedName": "phẫu thuật điều trị rò hậu môn đơn giản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2337",
+        "PH0979"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-145",
+      "aliases": [
+        "MO-145"
+      ],
+      "rowIndex": 145,
+      "sheetCode": "145",
+      "officialName": "Phẫu thuật điều trị rò hậu môn phức tạp",
+      "normalizedName": "phẫu thuật điều trị rò hậu môn phức tạp",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH2354",
+        "PH0973"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-146",
+      "aliases": [
+        "MO-146"
+      ],
+      "rowIndex": 146,
+      "sheetCode": "146",
+      "officialName": "Phẫu thuật điều trị rò hậu môn cắt cơ thắt trên chỉ chờ",
+      "normalizedName": "phẫu thuật điều trị rò hậu môn cắt cơ thắt trên chỉ chờ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH2356",
+        "PH0972"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-147",
+      "aliases": [
+        "MO-147"
+      ],
+      "rowIndex": 147,
+      "sheetCode": "147",
+      "officialName": "Phẫu thuật điều trị bệnh Verneuil",
+      "normalizedName": "phẫu thuật điều trị bệnh verneuil",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-148",
+      "aliases": [
+        "MO-148"
+      ],
+      "rowIndex": 148,
+      "sheetCode": "148",
+      "officialName": "Điều trị nứt kẽ hậu môn bằng cắt cơ tròn trong (vị trí 3 giờ và 9 giờ)",
+      "normalizedName": "điều trị nứt kẽ hậu môn bằng cắt cơ tròn trong (vị trí 3 giờ và 9 giờ)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "DI0307",
+        "CA0679"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-149",
+      "aliases": [
+        "MO-149"
+      ],
+      "rowIndex": 149,
+      "sheetCode": "149",
+      "officialName": "Điều trị nứt kẽ hậu môn bằng cắt cơ tròn trong vị trí 6 giờ, tạo hình hậu môn",
+      "normalizedName": "điều trị nứt kẽ hậu môn bằng cắt cơ tròn trong vị trí 6 giờ, tạo hình hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "DI0305",
+        "DI0104"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-150",
+      "aliases": [
+        "MO-150"
+      ],
+      "rowIndex": 150,
+      "sheetCode": "150",
+      "officialName": "Điều trị hẹp hậu môn bằng cắt vòng xơ, tạo hình hậu môn",
+      "normalizedName": "điều trị hẹp hậu môn bằng cắt vòng xơ, tạo hình hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-151",
+      "aliases": [
+        "MO-151"
+      ],
+      "rowIndex": 151,
+      "sheetCode": "151",
+      "officialName": "Phẫu thuật điều trị bệnh Rectocelle",
+      "normalizedName": "phẫu thuật điều trị bệnh rectocelle",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-152",
+      "aliases": [
+        "MO-152"
+      ],
+      "rowIndex": 152,
+      "sheetCode": "152",
+      "officialName": "Phẫu thuật cắt da thừa cạnh hậu môn",
+      "normalizedName": "phẫu thuật cắt da thừa cạnh hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-153",
+      "aliases": [
+        "MO-153"
+      ],
+      "rowIndex": 153,
+      "sheetCode": "153",
+      "officialName": "Phẫu thuật cắt u nhú ống hậu môn (condylome)",
+      "normalizedName": "phẫu thuật cắt u nhú ống hậu môn (condylome)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-III",
+      "dvktCodes": [
+        "PH1313"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-154",
+      "aliases": [
+        "MO-154"
+      ],
+      "rowIndex": 154,
+      "sheetCode": "154",
+      "officialName": "Cắt u lành tính ống hậu môn (u cơ, polyp…)",
+      "normalizedName": "cắt u lành tính ống hậu môn (u cơ, polyp…)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "CA0888"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-155",
+      "aliases": [
+        "MO-155"
+      ],
+      "rowIndex": 155,
+      "sheetCode": "155",
+      "officialName": "Phẫu thuật điều trị táo bón do rối loạn co thắt cơ mu – trực tràng (Anismus)",
+      "normalizedName": "phẫu thuật điều trị táo bón do rối loạn co thắt cơ mu – trực tràng (anismus)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-156",
+      "aliases": [
+        "MO-156"
+      ],
+      "rowIndex": 156,
+      "sheetCode": "156",
+      "officialName": "Phẫu thuật điều trị đứt cơ thắt hậu môn",
+      "normalizedName": "phẫu thuật điều trị đứt cơ thắt hậu môn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-157",
+      "aliases": [
+        "MO-157"
+      ],
+      "rowIndex": 157,
+      "sheetCode": "157",
+      "officialName": "Phẫu thuật điều trị đại tiện mất tự chủ",
+      "normalizedName": "phẫu thuật điều trị đại tiện mất tự chủ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-158",
+      "aliases": [
+        "MO-158"
+      ],
+      "rowIndex": 158,
+      "sheetCode": "158",
+      "officialName": "Phẫu thuật cắt lọc, xử lý vết thương tầng sinh môn đơn giản",
+      "normalizedName": "phẫu thuật cắt lọc, xử lý vết thương tầng sinh môn đơn giản",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-159",
+      "aliases": [
+        "MO-159"
+      ],
+      "rowIndex": 159,
+      "sheetCode": "159",
+      "officialName": "Phẫu thuật cắt lọc, xử lý vết thương tầng sinh môn phức tạp",
+      "normalizedName": "phẫu thuật cắt lọc, xử lý vết thương tầng sinh môn phức tạp",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-160",
+      "aliases": [
+        "MO-160"
+      ],
+      "rowIndex": 160,
+      "sheetCode": "160",
+      "officialName": "Các phẫu thuật hậu môn khác",
+      "normalizedName": "các phẫu thuật hậu môn khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-161",
+      "aliases": [
+        "MO-161"
+      ],
+      "rowIndex": 161,
+      "sheetCode": "161",
+      "officialName": "Phẫu thuật điều trị thoát vị bẹn bằng phương pháp Bassini",
+      "normalizedName": "phẫu thuật điều trị thoát vị bẹn bằng phương pháp bassini",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2355",
+        "PH0952"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-162",
+      "aliases": [
+        "MO-162"
+      ],
+      "rowIndex": 162,
+      "sheetCode": "162",
+      "officialName": "Phẫu thuật điều trị thoát vị bẹn bằng phương pháp Shouldice",
+      "normalizedName": "phẫu thuật điều trị thoát vị bẹn bằng phương pháp shouldice",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2340",
+        "PH0957"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-163",
+      "aliases": [
+        "MO-163"
+      ],
+      "rowIndex": 163,
+      "sheetCode": "163",
+      "officialName": "Phẫu thuật điều trị thoát vị bẹn bằng phương pháp kết hợp Bassini và Shouldice",
+      "normalizedName": "phẫu thuật điều trị thoát vị bẹn bằng phương pháp kết hợp bassini và shouldice",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2357",
+        "PH0954"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-164",
+      "aliases": [
+        "MO-164"
+      ],
+      "rowIndex": 164,
+      "sheetCode": "164",
+      "officialName": "Phẫu thuật điều trị thoát vị bẹn bằng phương pháp Lichtenstein",
+      "normalizedName": "phẫu thuật điều trị thoát vị bẹn bằng phương pháp lichtenstein",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2358",
+        "PH0956"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-165",
+      "aliases": [
+        "MO-165"
+      ],
+      "rowIndex": 165,
+      "sheetCode": "165",
+      "officialName": "Phẫu thuật điều trị thoát vị bẹn tái phát",
+      "normalizedName": "phẫu thuật điều trị thoát vị bẹn tái phát",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH2346",
+        "PH0958"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-166",
+      "aliases": [
+        "MO-166"
+      ],
+      "rowIndex": 166,
+      "sheetCode": "166",
+      "officialName": "Phẫu thuật điều trị thoát vị bẹn 2 bên",
+      "normalizedName": "phẫu thuật điều trị thoát vị bẹn 2 bên",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH2366",
+        "PHA810"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-167",
+      "aliases": [
+        "MO-167"
+      ],
+      "rowIndex": 167,
+      "sheetCode": "167",
+      "officialName": "Phẫu thuật điều trị thoát vị đùi",
+      "normalizedName": "phẫu thuật điều trị thoát vị đùi",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH2349",
+        "PH0959"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-168",
+      "aliases": [
+        "MO-168"
+      ],
+      "rowIndex": 168,
+      "sheetCode": "168",
+      "officialName": "Phẫu thuật điều trị thoát vị vết mổ thành bụng",
+      "normalizedName": "phẫu thuật điều trị thoát vị vết mổ thành bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0961"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-169",
+      "aliases": [
+        "MO-169"
+      ],
+      "rowIndex": 169,
+      "sheetCode": "169",
+      "officialName": "Phẫu thuật điều trị thoát vị thành bụng khác",
+      "normalizedName": "phẫu thuật điều trị thoát vị thành bụng khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH0960"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-170",
+      "aliases": [
+        "MO-170"
+      ],
+      "rowIndex": 170,
+      "sheetCode": "170",
+      "officialName": "Phẫu thuật rò, nang ống rốn tràng, niệu rốn",
+      "normalizedName": "phẫu thuật rò, nang ống rốn tràng, niệu rốn",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": [
+        "PH1323"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-171",
+      "aliases": [
+        "MO-171"
+      ],
+      "rowIndex": 171,
+      "sheetCode": "171",
+      "officialName": "Phẫu thuật khâu lỗ thủng cơ hoành do vết thương",
+      "normalizedName": "phẫu thuật khâu lỗ thủng cơ hoành do vết thương",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-172",
+      "aliases": [
+        "MO-172"
+      ],
+      "rowIndex": 172,
+      "sheetCode": "172",
+      "officialName": "Phẫu thuật khâu vỡ cơ hoành",
+      "normalizedName": "phẫu thuật khâu vỡ cơ hoành",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-173",
+      "aliases": [
+        "MO-173"
+      ],
+      "rowIndex": 173,
+      "sheetCode": "173",
+      "officialName": "Phẫu thuật điều trị thoát vị cơ hoành",
+      "normalizedName": "phẫu thuật điều trị thoát vị cơ hoành",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1326"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-174",
+      "aliases": [
+        "MO-174"
+      ],
+      "rowIndex": 174,
+      "sheetCode": "174",
+      "officialName": "Phẫu thuật điều trị thoát vị khe hoành",
+      "normalizedName": "phẫu thuật điều trị thoát vị khe hoành",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1327"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-175",
+      "aliases": [
+        "MO-175"
+      ],
+      "rowIndex": 175,
+      "sheetCode": "175",
+      "officialName": "Phẫu thuật điều trị thoát vị hoành bẩm sinh (Bochdalek)",
+      "normalizedName": "phẫu thuật điều trị thoát vị hoành bẩm sinh (bochdalek)",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": [
+        "PH1328"
+      ]
+    },
+    {
+      "catalogEntryId": "MO-176",
+      "aliases": [
+        "MO-176"
+      ],
+      "rowIndex": 176,
+      "sheetCode": "176",
+      "officialName": "Phẫu thuật điều trị nhão cơ hoành",
+      "normalizedName": "phẫu thuật điều trị nhão cơ hoành",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-177",
+      "aliases": [
+        "MO-177"
+      ],
+      "rowIndex": 177,
+      "sheetCode": "177",
+      "officialName": "Phẫu thuật cắt u cơ hoành",
+      "normalizedName": "phẫu thuật cắt u cơ hoành",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-178",
+      "aliases": [
+        "MO-178"
+      ],
+      "rowIndex": 178,
+      "sheetCode": "178",
+      "officialName": "Các phẫu thuật cơ hoành khác",
+      "normalizedName": "các phẫu thuật cơ hoành khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-179",
+      "aliases": [
+        "MO-179"
+      ],
+      "rowIndex": 179,
+      "sheetCode": "179",
+      "officialName": "Phẫu thuật cắt u thành bụng",
+      "normalizedName": "phẫu thuật cắt u thành bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-180",
+      "aliases": [
+        "MO-180"
+      ],
+      "rowIndex": 180,
+      "sheetCode": "180",
+      "officialName": "Phẫu thuật khâu phục hồi thành bụng do toác vết mổ",
+      "normalizedName": "phẫu thuật khâu phục hồi thành bụng do toác vết mổ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-181",
+      "aliases": [
+        "MO-181"
+      ],
+      "rowIndex": 181,
+      "sheetCode": "181",
+      "officialName": "Khâu vết thương thành bụng",
+      "normalizedName": "khâu vết thương thành bụng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-182",
+      "aliases": [
+        "MO-182"
+      ],
+      "rowIndex": 182,
+      "sheetCode": "182",
+      "officialName": "Các phẫu thuật thành bụng khác",
+      "normalizedName": "các phẫu thuật thành bụng khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-II",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-183",
+      "aliases": [
+        "MO-183"
+      ],
+      "rowIndex": 183,
+      "sheetCode": "183",
+      "officialName": "Mở bụng thăm dò, lau rửa ổ bụng, đặt dẫn lưu",
+      "normalizedName": "mở bụng thăm dò, lau rửa ổ bụng, đặt dẫn lưu",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-184",
+      "aliases": [
+        "MO-184"
+      ],
+      "rowIndex": 184,
+      "sheetCode": "184",
+      "officialName": "Bóc phúc mạc douglas",
+      "normalizedName": "bóc phúc mạc douglas",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-185",
+      "aliases": [
+        "MO-185"
+      ],
+      "rowIndex": 185,
+      "sheetCode": "185",
+      "officialName": "Lấy mạc nối lớn và mạc nối nhỏ",
+      "normalizedName": "lấy mạc nối lớn và mạc nối nhỏ",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-186",
+      "aliases": [
+        "MO-186"
+      ],
+      "rowIndex": 186,
+      "sheetCode": "186",
+      "officialName": "Bóc phúc mạc bên trái",
+      "normalizedName": "bóc phúc mạc bên trái",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-187",
+      "aliases": [
+        "MO-187"
+      ],
+      "rowIndex": 187,
+      "sheetCode": "187",
+      "officialName": "Bóc phúc mạc bên phải",
+      "normalizedName": "bóc phúc mạc bên phải",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-188",
+      "aliases": [
+        "MO-188"
+      ],
+      "rowIndex": 188,
+      "sheetCode": "188",
+      "officialName": "Bóc phúc mạc phủ tạng",
+      "normalizedName": "bóc phúc mạc phủ tạng",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-189",
+      "aliases": [
+        "MO-189"
+      ],
+      "rowIndex": 189,
+      "sheetCode": "189",
+      "officialName": "Bóc phúc mạc kèm cắt các tạng khác",
+      "normalizedName": "bóc phúc mạc kèm cắt các tạng khác",
+      "approachGroup": "mo",
+      "procedureClass": "PT-ĐB",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-190",
+      "aliases": [
+        "MO-190"
+      ],
+      "rowIndex": 190,
+      "sheetCode": "190",
+      "officialName": "Lấy u phúc mạc",
+      "normalizedName": "lấy u phúc mạc",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    },
+    {
+      "catalogEntryId": "MO-191",
+      "aliases": [
+        "MO-191"
+      ],
+      "rowIndex": 191,
+      "sheetCode": "191",
+      "officialName": "Lấy u sau phúc mạc",
+      "normalizedName": "lấy u sau phúc mạc",
+      "approachGroup": "mo",
+      "procedureClass": "PT-I",
+      "dvktCodes": []
+    }
+  ]
+}

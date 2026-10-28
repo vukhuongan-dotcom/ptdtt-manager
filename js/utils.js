@@ -640,6 +640,8 @@ const Modal = {
     },
 
     close() {
+        const modalEl = document.getElementById('modal');
+        if (modalEl) modalEl.classList.remove('sap-modal-xl');
         const overlay = document.getElementById('modal-overlay');
         if (overlay) {
             overlay.classList.remove('active');

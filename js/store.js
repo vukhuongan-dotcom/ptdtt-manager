@@ -4,7 +4,7 @@ const PENDING_KEY = 'ptdtt_pending_v1';
 const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
 const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2610232230;
+const CLIENT_BUILD = 2610281755;
 
 const COLLECTION_SYNC_ORDER = [
     'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
@@ -951,6 +951,9 @@ const Store = {
                     this._data = nextData;
                     localStorage.setItem(STORE_KEY, newJson);
                     if (!quiet) console.log('[Store] Synced from server ✅');
+                    if (typeof App !== 'undefined' && App.updateNavVisibility) {
+                        App.updateNavVisibility();
+                    }
                     if (typeof App !== 'undefined' && App.renderCurrentPage) {
                         App.renderCurrentPage();
                     }
@@ -1021,8 +1024,14 @@ const Store = {
         if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
     },
 
-    // Generic CRUD
-    getAll(collection) { return this._data[collection] || []; },
+    // Generic CRUD (excludes synthetic [TEST] sandbox surgeries from global KPIs/stats/reports)
+    getAll(collection) {
+        const arr = this._data[collection] || [];
+        if (collection === 'surgeries' || collection === 'surgeriesTrash') {
+            return arr.filter(r => !r?.isTestSandboxCase);
+        }
+        return arr;
+    },
 
     // Trả về nhân sự đã bắt đầu làm việc (startDate <= hôm nay, hoặc không có startDate)
     getActiveStaff(referenceDate) {
@@ -1044,22 +1053,13 @@ const Store = {
         if (trash.length === 0) return [];
         const now = new Date();
         const valid = [];
-        const expiredIds = [];
         for (const item of trash) {
+            if (!item || typeof item !== 'object') continue;
             const deletedAt = new Date(item.deletedAt);
             const diffDays = (now - deletedAt) / (1000 * 60 * 60 * 24);
-            if (diffDays <= maxDays) {
+            if (!Number.isFinite(diffDays) || diffDays <= maxDays) {
                 valid.push(item);
-            } else if (item && item.id != null) {
-                expiredIds.push(item.id);
             }
-        }
-        if (expiredIds.length > 0 && this._canMutateSurgeries()) {
-            for (const id of expiredIds) {
-                this._deletedIds.add('surgeriesTrash:' + id);
-            }
-            this._data.surgeriesTrash = valid;
-            this.saveCollections(['surgeriesTrash']);
         }
         return valid;
     },

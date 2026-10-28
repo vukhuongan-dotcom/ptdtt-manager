@@ -22,27 +22,68 @@ log "💾 BẮT ĐẦU BACKUP HÀNG NGÀY"
 log "═══════════════════════════════════════"
 
 # ════════════════════════════════════
-# 1. LOCAL BACKUP
+# 1. LOCAL BACKUP (Atomic Snapshot under Shared Lock)
 # ════════════════════════════════════
 log "1/3 📁 Local backup..."
 
-# Backup runtime data, but never re-pack backup artifacts.
 BACKUP_FILE="$BACKUP_DIR/ptdtt_full_${DATE}.tar.gz"
-BACKUP_TARGETS=()
-shopt -s nullglob
-for path in "$APP_DIR"/data/*; do
-    base="${path##*/}"
-    [ "$base" = "backups" ] && continue
-    BACKUP_TARGETS+=("data/$base")
-done
-shopt -u nullglob
+STAGING_DIR="$(mktemp -d /tmp/ptdtt_backup_stage.XXXXXX)"
+cleanup_staging() { rm -rf "$STAGING_DIR" 2>/dev/null || true; }
+trap cleanup_staging EXIT
 
-if [ "${#BACKUP_TARGETS[@]}" -eq 0 ]; then
+mkdir -p "$STAGING_DIR/data"
+LOCK_FILE="$APP_DIR/data/.db.lock"
+touch "$LOCK_FILE" 2>/dev/null || true
+
+# Acquire shared lock (flock -s) when available so db.json and surgery_approval_logs.jsonl
+# are snapshotted at an exact transactionally consistent boundary (CORE-TC-12).
+copy_runtime_data() {
+    shopt -s nullglob
+    for path in "$APP_DIR"/data/*; do
+        base="${path##*/}"
+        [ "$base" = "backups" ] && continue
+        [ "$base" = "snapshots" ] && continue
+        cp -R "$path" "$STAGING_DIR/data/" 2>/dev/null || true
+    done
+    shopt -u nullglob
+}
+
+if command -v flock >/dev/null 2>&1; then
+    (
+        flock -s -w 15 9 || log "  ⚠️ Không lấy được shared lock sau 15s, tiếp tục snapshot best-effort"
+        copy_runtime_data
+    ) 9>"$LOCK_FILE"
+else
+    python3 -c '
+import fcntl, os, shutil, sys
+app_dir, stage_dir, lock_path = sys.argv[1], sys.argv[2], sys.argv[3]
+os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+with open(lock_path, "a+") as lf:
+    fcntl.flock(lf, fcntl.LOCK_SH)
+    try:
+        for name in os.listdir(os.path.join(app_dir, "data")):
+            if name in ("backups", "snapshots") or name.startswith("."):
+                continue
+            src = os.path.join(app_dir, "data", name)
+            dst = os.path.join(stage_dir, "data", name)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src, dst)
+    finally:
+        fcntl.flock(lf, fcntl.LOCK_UN)
+' "$APP_DIR" "$STAGING_DIR" "$LOCK_FILE"
+fi
+
+shopt -s nullglob
+STAGED_ITEMS=("$STAGING_DIR"/data/*)
+shopt -u nullglob
+if [ "${#STAGED_ITEMS[@]}" -eq 0 ]; then
     log "  ❌ Không tìm thấy dữ liệu để backup trong $APP_DIR/data"
     exit 1
 fi
 
-if tar -czf "$BACKUP_FILE" -C "$APP_DIR" "${BACKUP_TARGETS[@]}" 2>/dev/null; then
+if tar -czf "$BACKUP_FILE" -C "$STAGING_DIR" data 2>/dev/null; then
     BACKUP_SIZE=$(du -h "$BACKUP_FILE" 2>/dev/null | cut -f1)
     log "  ✅ Local: $BACKUP_FILE ($BACKUP_SIZE)"
 else
@@ -81,12 +122,10 @@ git worktree add "$BACKUP_WORKTREE" backup 2>/dev/null || {
     git worktree add "$BACKUP_WORKTREE" backup
 }
 
-# Copy runtime data to backup worktree, excluding generated backup artifacts.
+# Copy consistent staged runtime data to backup worktree
 mkdir -p "$BACKUP_WORKTREE/data"
 shopt -s nullglob
-for path in "$APP_DIR"/data/*; do
-    base="${path##*/}"
-    [ "$base" = "backups" ] && continue
+for path in "$STAGING_DIR"/data/*; do
     cp -R "$path" "$BACKUP_WORKTREE/data/" 2>/dev/null || true
 done
 shopt -u nullglob
@@ -121,12 +160,20 @@ DRIVE_BACKUP_DIR="$APP_DIR/data/backups"
 mkdir -p "$DRIVE_BACKUP_DIR"
 
 # Copy today's backup to a web-servable location (will be pulled by Mac cron)
-cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/latest_backup.tar.gz" 2>/dev/null || true
-# Also keep dated copy (max 7 in this dir to save disk)
-cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz" 2>/dev/null || true
-find "$DRIVE_BACKUP_DIR" -name "backup_*.tar.gz" -mtime +7 -delete 2>/dev/null
-
-log "  ✅ Backup sẵn sàng cho Google Drive pull"
+BACKUP_ENCRYPTION_KEY_FILE="${BACKUP_ENCRYPTION_KEY_FILE:-/etc/ptdtt/backup.key}"
+if [ -s "$BACKUP_ENCRYPTION_KEY_FILE" ] && command -v openssl >/dev/null 2>&1; then
+    openssl enc -aes-256-cbc -pbkdf2 -salt -pass "file:$BACKUP_ENCRYPTION_KEY_FILE" \
+        -in "$BACKUP_FILE" -out "$DRIVE_BACKUP_DIR/latest_backup.tar.gz.enc" 2>/dev/null || true
+    cp "$DRIVE_BACKUP_DIR/latest_backup.tar.gz.enc" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz.enc" 2>/dev/null || true
+    find "$DRIVE_BACKUP_DIR" -name "backup_*.tar.gz.enc" -mtime +7 -delete 2>/dev/null
+    log "  🔐 Backup encrypted (AES-256-CBC PBKDF2) sẵn sàng cho Google Drive pull"
+else
+    cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/latest_backup.tar.gz" 2>/dev/null || true
+    # Also keep dated copy (max 7 in this dir to save disk)
+    cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz" 2>/dev/null || true
+    find "$DRIVE_BACKUP_DIR" -name "backup_*.tar.gz" -mtime +7 -delete 2>/dev/null
+    log "  ✅ Backup sẵn sàng cho Google Drive pull"
+fi
 
 # ════════════════════════════════════
 # Summary

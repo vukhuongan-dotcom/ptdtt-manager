@@ -6,7 +6,7 @@
     <script>
         (function () {
             var SCHEMA_MIGRATION_VER = '2609281105';
-            var SW_BUILD_VER = '2610232230';
+            var SW_BUILD_VER = '2610281755';
             var needMigration = localStorage.getItem('ptdtt_cache_ver') !== SCHEMA_MIGRATION_VER;
             var needSwUpdate = navigator.onLine !== false && localStorage.getItem('ptdtt_sw_build') !== SW_BUILD_VER;
             if (!needMigration && !needSwUpdate) return;
@@ -44,7 +44,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
     <!-- P2.1: CSS bundle (25 files → 1 request). Build: bash build-css.sh -->
-    <link rel="stylesheet" href="css/app.bundle.css?v=2610232230">
+    <link rel="stylesheet" href="css/app.bundle.css?v=2610281755">
     <!-- U0 BUG-2: @keyframes shake + pulse chuyển vào base.css — xóa inline để tránh xung đột -->
     <!-- U0 Dark mode: set theme trước CSS bundle để tránh flash. Tôn trọng OS preference nếu chưa có saved theme -->
     <script>
@@ -165,6 +165,14 @@
                     </svg>
                     <span>Lịch mổ tuần</span>
                 </a>
+                <a href="#" class="nav-item" data-page="surgery-approval" id="nav-surgery-approval" style="display:none">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 11l3 3L22 4" />
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                    <span>Duyệt mổ khoa</span>
+                </a>
                 <a href="#" class="nav-item" data-page="surgery-stats" id="nav-surgery-stats">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 20V10" />
@@ -238,38 +246,39 @@
     </div>
 
     <!-- Core: defer — execute in order after DOM parsed -->
-    <script defer src="js/data.js?v=2610232230"></script>
-    <script defer src="js/store.js?v=2610232230"></script>
-    <script defer src="js/auth.js?v=2610232230"></script>
-    <script defer src="js/staff-photos.js?v=2610232230"></script>
-    <script defer src="js/utils.js?v=2610232230"></script>
+    <script defer src="js/data.js?v=2610281755"></script>
+    <script defer src="js/store.js?v=2610281755"></script>
+    <script defer src="js/auth.js?v=2610281755"></script>
+    <script defer src="js/staff-photos.js?v=2610281755"></script>
+    <script defer src="js/utils.js?v=2610281755"></script>
 
     <!-- Page modules: defer — loaded after DOM ready, in document order -->
     <script>
-        var REQUIRED_VER = '2610232230';
+        var REQUIRED_VER = '2610281755';
         if (typeof window !== 'undefined') window.REQUIRED_VER = REQUIRED_VER;
     </script>
-    <script defer src="js/surgery-metrics.js?v=2610232230"></script>
-    <script defer src="js/dashboard.js?v=2610232230"></script>
-    <script defer src="js/staff.js?v=2610232230"></script>
-    <script defer src="js/staff-tracking.js?v=2610232230"></script>
-    <script defer src="js/tasks.js?v=2610232230"></script>
-    <script defer src="js/plans.js?v=2610232230"></script>
-    <script defer src="js/patients.js?v=2610232230"></script>
-    <script defer src="js/schedule.js?v=2610232230"></script>
-    <script defer src="js/surgery.js?v=2610232230"></script>
-    <script defer src="js/emr.js?v=2610232230"></script>
-    <script defer src="js/surgery-stats.js?v=2610232230"></script>
-    <script defer src="js/research.js?v=2610232230"></script>
-    <script defer src="js/conferences.js?v=2610232230"></script>
-    <script defer src="js/reports.js?v=2610232230"></script>
-    <script defer src="js/rooms.js?v=2610232230"></script>
-    <script defer src="js/notifications.js?v=2610232230"></script>
-    <script defer src="js/search.js?v=2610232230"></script>
-    <script defer src="js/onboarding.js?v=2610232230"></script>
-    <script defer src="js/audit-log.js?v=2610232230"></script>
+    <script defer src="js/surgery-metrics.js?v=2610281755"></script>
+    <script defer src="js/dashboard.js?v=2610281755"></script>
+    <script defer src="js/staff.js?v=2610281755"></script>
+    <script defer src="js/staff-tracking.js?v=2610281755"></script>
+    <script defer src="js/tasks.js?v=2610281755"></script>
+    <script defer src="js/plans.js?v=2610281755"></script>
+    <script defer src="js/patients.js?v=2610281755"></script>
+    <script defer src="js/schedule.js?v=2610281755"></script>
+    <script defer src="js/surgery.js?v=2610281755"></script>
+    <script defer src="js/surgery-approval.js?v=2610281755"></script>
+    <script defer src="js/emr.js?v=2610281755"></script>
+    <script defer src="js/surgery-stats.js?v=2610281755"></script>
+    <script defer src="js/research.js?v=2610281755"></script>
+    <script defer src="js/conferences.js?v=2610281755"></script>
+    <script defer src="js/reports.js?v=2610281755"></script>
+    <script defer src="js/rooms.js?v=2610281755"></script>
+    <script defer src="js/notifications.js?v=2610281755"></script>
+    <script defer src="js/search.js?v=2610281755"></script>
+    <script defer src="js/onboarding.js?v=2610281755"></script>
+    <script defer src="js/audit-log.js?v=2610281755"></script>
     <!-- app.js must be last — initializes after all page modules -->
-    <script defer src="js/app.js?v=2610232230"></script>
+    <script defer src="js/app.js?v=2610281755"></script>
 
     <!-- Offline Banner -->
     <div id="offline-banner"

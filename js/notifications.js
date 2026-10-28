@@ -11,7 +11,12 @@ const Notifications = {
     getForCurrentUser() {
         const session = Auth.getSession();
         if (!session) return [];
-        return this.getAll().filter(n => n.toStaffId === session.staffId);
+        const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
+        return this.getAll().filter(n => {
+            if (!n || n.toStaffId !== session.staffId) return false;
+            if (n.sourceType === 'surgery_approval' && !showApproval) return false;
+            return true;
+        });
     },
 
     getUnreadCount() {
@@ -110,23 +115,81 @@ const Notifications = {
         }
     },
 
+    async _postNotifEndpoint(path, body) {
+        try {
+            const token = Auth.getToken();
+            if (!token) return null;
+            const idem = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? `notif_${crypto.randomUUID()}`
+                : `notif_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+            const resp = await fetch(path, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'X-Client-Build': String(CLIENT_BUILD),
+                    'Idempotency-Key': idem
+                },
+                body: JSON.stringify(body || {})
+            });
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            if (data && Array.isArray(data.items) && Store._data) {
+                Store._data.notifications = data.items;
+                if (Store._serverSyncedData) {
+                    Store._serverSyncedData.notifications = Store._clone(data.items);
+                }
+                if (data.revision != null) {
+                    if (!Store._serverRevisions) Store._serverRevisions = {};
+                    Store._serverRevisions.notifications = data.revision;
+                }
+                if (data.version) Store._serverVersion = data.version;
+                Store._lastEtag = null;
+                Store._saveLocal();
+            }
+            return data;
+        } catch (_) {
+            return null;
+        }
+    },
+
     markRead(notifId) {
-        Store.update('notifications', notifId, { read: true });
+        const list = Store._data?.notifications || [];
+        const item = list.find(n => n && n.id === notifId);
+        if (item) {
+            item.read = true;
+            Store._saveLocal();
+        }
         this.updateBell();
+        this._postNotifEndpoint('/api/notifications/mark-read', { ids: [notifId] }).then(() => {
+            this.updateBell();
+        });
     },
 
     markAllRead() {
         const mine = this.getForCurrentUser().filter(n => !n.read);
-        mine.forEach(n => Store.update('notifications', n.id, { read: true }));
+        mine.forEach(n => { n.read = true; });
+        Store._saveLocal();
         this.updateBell();
         this.refreshPanel();
+        this._postNotifEndpoint('/api/notifications/mark-read', { all: true }).then(() => {
+            this.updateBell();
+            if (this._panelOpen) this.refreshPanel();
+        });
     },
 
     deleteRead() {
-        const read = this.getForCurrentUser().filter(n => n.read);
-        read.forEach(n => Store.remove('notifications', n.id));
+        const readIds = new Set(this.getForCurrentUser().filter(n => n.read).map(n => n.id));
+        if (Store._data && Array.isArray(Store._data.notifications)) {
+            Store._data.notifications = Store._data.notifications.filter(n => !readIds.has(n?.id));
+            Store._saveLocal();
+        }
         this.updateBell();
         this.refreshPanel();
+        this._postNotifEndpoint('/api/notifications/delete-read', { ids: [...readIds] }).then(() => {
+            this.updateBell();
+            if (this._panelOpen) this.refreshPanel();
+        });
     },
 
     refreshPanel() {
@@ -203,18 +266,35 @@ const Notifications = {
     renderNotifItem(n) {
         const timeAgo = this.timeAgo(n.createdAt);
         const isAssigned = n.type === 'task_assigned';
-        const icon = isAssigned ? '📋' : n.type === 'task_completed' ? '🎉' : '✅';
+        const isApproval = n.sourceType === 'surgery_approval';
+        let icon = isAssigned ? '📋' : n.type === 'task_completed' ? '🎉' : '✅';
+        if (isApproval) {
+            const map = {
+                surgery_approved: '✅',
+                surgery_approved_with_exception: '⚡',
+                surgery_emergency_exception: '⚡',
+                surgery_returned_for_revision: '↩️',
+                surgery_post_approval_hold: '⏸️',
+                surgery_revoked: '🚫',
+                surgery_preapproved: '☑️',
+                surgery_ready_for_attending: '🩺',
+                surgery_submitted: '🚀'
+            };
+            icon = map[n.type] || '📋';
+        }
         const unreadClass = n.read ? '' : 'unread';
+        const safeMsg = isApproval ? Utils.escapeHtml(n.message || '') : n.message;
+        const safeCat = isApproval ? Utils.escapeHtml(n.category || '') : n.category;
 
         return `
         <div class="notif-item ${unreadClass}" onclick="Notifications.openNotif(${n.id})">
             <div class="notif-item-icon">${icon}</div>
             <div class="notif-item-content">
-                <div class="notif-item-msg">${n.message}</div>
-                ${n.category ? `<span class="notif-item-cat">${n.category}</span>` : ''}
+                <div class="notif-item-msg">${safeMsg}</div>
+                ${safeCat ? `<span class="notif-item-cat">${safeCat}</span>` : ''}
                 <div class="notif-item-time">${timeAgo}</div>
             </div>
-            ${!n.read && isAssigned ? '<div class="notif-item-dot"></div>' : ''}
+            ${!n.read && (isAssigned || isApproval) ? '<div class="notif-item-dot"></div>' : ''}
         </div>`;
     },
 
@@ -226,6 +306,17 @@ const Notifications = {
         const panel = document.getElementById('notif-panel');
         if (panel) panel.remove();
         this._panelOpen = false;
+
+        if (notif.sourceType === 'surgery_approval') {
+            this.markRead(notifId);
+            if (typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser()) {
+                App.navigate('surgery-approval');
+                if (notif.surgeryId) {
+                    setTimeout(() => SurgeryApprovalPage.openCaseModal(notif.surgeryId), 50);
+                }
+            }
+            return;
+        }
 
         if (notif.type === 'task_assigned' && !notif.read) {
             const task = Store.getById('tasks', notif.taskId);

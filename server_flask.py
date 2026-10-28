@@ -29,16 +29,16 @@ from functools import wraps
 
 # ────────────────────────────── Config ──────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR  = os.path.join(BASE_DIR, 'data')
+DATA_DIR  = os.environ.get('PTDTT_DATA_DIR') or os.path.join(BASE_DIR, 'data')
 DATA_FILE = os.path.join(DATA_DIR, 'db.json')
-LOG_DIR   = os.path.join(BASE_DIR, 'logs')
+LOG_DIR   = os.environ.get('PTDTT_LOG_DIR') or os.path.join(BASE_DIR, 'logs')
 AUTH_FILE = os.path.join(DATA_DIR, 'auth.json')
 JWT_SECRET = os.environ.get('JWT_SECRET')
 if not JWT_SECRET:
     raise RuntimeError('JWT_SECRET environment variable is required. Set it in /etc/systemd/system/ptdtt.service or .env')
 JWT_EXPIRY_HOURS = int(os.environ.get('JWT_EXPIRY_HOURS', '8'))
 PORT      = int(os.environ.get('PORT', 5000))
-MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2610091805'))
+MIN_CLIENT_BUILD = int(os.environ.get('MIN_CLIENT_BUILD', '2610281755'))
 PASSWORD_MIN_LENGTH = int(os.environ.get('PASSWORD_MIN_LENGTH', '10'))
 LOGIN_WINDOW_MINUTES = int(os.environ.get('LOGIN_WINDOW_MINUTES', '15'))
 LOGIN_MAX_ATTEMPTS = int(os.environ.get('LOGIN_MAX_ATTEMPTS', '5'))
@@ -85,23 +85,35 @@ def add_no_cache_headers(response):
         "base-uri 'self';"
     )
     if request.path.startswith('/api/'):
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Cache-Control'] = 'private, no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     return response
 
+from surgery_approval_engine import (
+    PROTECTED_APPROVAL_COLLECTIONS,
+    ApprovalEngineError,
+    filter_db_payload_for_user,
+    get_journal_path,
+    protect_and_reconcile_surgeries_put,
+    reconcile_journal_and_db,
+    resolve_live_user_fail_closed,
+)
+from surgery_approval_routes import ensure_approval_bootstrapped, register_surgery_approval_routes
+
 # Cross-process file lock (works across Gunicorn workers)
 import fcntl
-_DB_LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', '.db.lock')
+_DB_LOCK_FILE = os.path.join(DATA_DIR, '.db.lock')
 
 class _CrossProcessLock:
     """File-based lock using fcntl.flock — works across Gunicorn workers."""
-    def __init__(self, path):
+    def __init__(self, path=None):
         self._path = path
         self._fd = None
     def __enter__(self):
-        os.makedirs(os.path.dirname(self._path), exist_ok=True)
-        self._fd = open(self._path, 'a+')
+        lock_path = self._path or _DB_LOCK_FILE
+        os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+        self._fd = open(lock_path, 'a+')
         fcntl.flock(self._fd, fcntl.LOCK_EX)
         return self
     def __exit__(self, *args):
@@ -110,7 +122,7 @@ class _CrossProcessLock:
             self._fd.close()
             self._fd = None
 
-_data_lock = _CrossProcessLock(_DB_LOCK_FILE)
+_data_lock = _CrossProcessLock()
 
 # ────────────────────────────── Data helpers ──────────────────────────────
 def _ensure_data_dir():
@@ -164,6 +176,8 @@ def save_data(data):
         tmp = DATA_FILE + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp, DATA_FILE)
 
 class atomic_update:
@@ -190,6 +204,8 @@ class atomic_update:
                 tmp = DATA_FILE + '.tmp'
                 with open(tmp, 'w', encoding='utf-8') as f:
                     json.dump(self._data, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
                 os.replace(tmp, DATA_FILE)
         finally:
             fcntl.flock(self._fd, fcntl.LOCK_UN)
@@ -311,53 +327,69 @@ def _cleanup_old_logs(days=90):
 
 # ────────────────────────────── Auth Middleware ──────────────────────────────
 def _get_current_user():
-    """Extract and verify JWT from Authorization header.
+    """Extract and verify JWT from Authorization header (Fail-Closed).
     Returns payload dict with live user info, or None.
-    Validates: JWT signature, expiry, user exists, user not disabled."""
+    Sets request._auth_store_error = True if auth.json is missing or corrupted."""
+    request._auth_store_error = False
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return None
     payload = _verify_jwt(auth_header[7:])
     if not payload:
         return None
-    # Server-side validation: check user still exists and is active
+    if not os.path.isfile(AUTH_FILE):
+        request._auth_store_error = True
+        return None
     try:
-        auth_data = _load_auth()
-        username = payload.get('sub')
-        user = auth_data.get('users', {}).get(username)
-        if not user:
-            return None  # User deleted
-        if user.get('disabled'):
-            # Auto-activate if activeFrom date has passed
-            active_from = user.get('activeFrom')
-            if active_from:
-                from datetime import date
-                try:
-                    if date.today() >= date.fromisoformat(active_from):
-                        user['disabled'] = False
-                        user.pop('activeFrom', None)
-                        _save_auth(auth_data)
-                    else:
-                        return None  # Not yet active
-                except ValueError:
-                    return None
-            else:
-                return None  # User disabled by admin
-        # Enrich payload with live server data (not stale JWT claims)
-        payload['name'] = user.get('name', payload.get('name', ''))
-        payload['role'] = user.get('role', payload.get('role', ''))
-        payload['isAdmin'] = user.get('isAdmin', False)
-        payload['isSuperAdmin'] = user.get('isSuperAdmin', False)
-        payload['staffId'] = user.get('staffId', payload.get('staffId', 0))
+        with _auth_lock:
+            with open(AUTH_FILE, 'r', encoding='utf-8') as f:
+                auth_data = json.load(f)
+        if _sanitize_auth_payload(auth_data):
+            _save_auth(auth_data)
     except Exception:
-        pass  # If auth.json read fails, still allow JWT-only auth
+        request._auth_store_error = True
+        return None
+
+    username = payload.get('sub')
+    user = (auth_data.get('users') or {}).get(username) if isinstance(auth_data, dict) else None
+    if not isinstance(user, dict):
+        return None
+    if user.get('disabled'):
+        active_from = user.get('activeFrom')
+        if active_from:
+            from datetime import date
+            try:
+                if date.today() >= date.fromisoformat(active_from):
+                    user['disabled'] = False
+                    user.pop('activeFrom', None)
+                    _save_auth(auth_data)
+                else:
+                    return None
+            except ValueError:
+                return None
+        else:
+            return None
+    payload['name'] = user.get('name', payload.get('name', ''))
+    payload['role'] = user.get('role', payload.get('role', ''))
+    payload['isAdmin'] = user.get('isAdmin', False)
+    payload['isSuperAdmin'] = user.get('isSuperAdmin', False)
+    payload['staffId'] = user.get('staffId', payload.get('staffId', 0))
     return payload
 
+def _auth_store_503_response():
+    return jsonify({
+        'error': 'Kho tài khoản xác thực tạm thời không truy cập được (Fail-Closed).',
+        'code': 'AUTH_STORE_UNAVAILABLE',
+        'errorCode': 'AUTH_STORE_UNAVAILABLE',
+    }), 503
+
 def require_auth(f):
-    """Decorator: require valid JWT + active user for this endpoint"""
+    """Decorator: require valid JWT + active user for this endpoint (Fail-Closed)"""
     @wraps(f)
     def decorated(*args, **kwargs):
         payload = _get_current_user()
+        if getattr(request, '_auth_store_error', False):
+            return _auth_store_503_response()
         if not payload:
             return jsonify({'error': 'Authentication required'}), 401
         request._user = payload  # Attach user info to request
@@ -365,10 +397,12 @@ def require_auth(f):
     return decorated
 
 def require_admin(f):
-    """Decorator: require admin JWT for this endpoint"""
+    """Decorator: require admin JWT for this endpoint (Fail-Closed)"""
     @wraps(f)
     def decorated(*args, **kwargs):
         payload = _get_current_user()
+        if getattr(request, '_auth_store_error', False):
+            return _auth_store_503_response()
         if not payload:
             return jsonify({'error': 'Authentication required'}), 401
         if not payload.get('isAdmin') and not payload.get('isSuperAdmin'):
@@ -378,10 +412,12 @@ def require_admin(f):
     return decorated
 
 def require_superadmin(f):
-    """Decorator: require superadmin JWT for this endpoint"""
+    """Decorator: require superadmin JWT for this endpoint (Fail-Closed)"""
     @wraps(f)
     def decorated(*args, **kwargs):
         payload = _get_current_user()
+        if getattr(request, '_auth_store_error', False):
+            return _auth_store_503_response()
         if not payload:
             return jsonify({'error': 'Authentication required'}), 401
         if not payload.get('isSuperAdmin'):
@@ -820,41 +856,30 @@ def _authorize_and_prepare_items(user, collection, old_items, candidate_items, a
                 if is_surgery_week_locked(r.get('date', '')):
                     raise CollectionAuthError(403, f'Tuần của ngày {r.get("date")} đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền thêm ca.')
             for r in auth_diff['removed']:
+                if r.get('isTestSandboxCase') is True:
+                    continue
                 if is_surgery_week_locked(r.get('date', '')):
                     raise CollectionAuthError(403, f'Tuần của ngày {r.get("date")} đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa ca.')
             for old_r, new_r, _ckeys in auth_diff['modified']:
                 if is_surgery_week_locked(old_r.get('date', '')) or is_surgery_week_locked(new_r.get('date', '')):
                     raise CollectionAuthError(403, 'Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền sửa hoặc dời ngày.')
-        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+        stamped_surgeries = _stamp_audit_fields(user, old_items, candidate_items, collection)
+        return protect_and_reconcile_surgeries_put(
+            user=user,
+            old_items=old_items,
+            candidate_items=stamped_surgeries,
+            db=full_data,
+            data_dir=DATA_DIR,
+            base_dir=BASE_DIR,
+        )
 
-    # 9. surgeriesTrash
+    # 9. surgeriesTrash — direct bulk PUT disabled; must use atomic /api/surgeries/<id>/trash & /restore
     if collection == 'surgeriesTrash':
-        if not (_is_admin(user) or _is_doctor(user)):
-            raise CollectionAuthError(403, 'Chỉ Bác sĩ và Quản trị viên mới có quyền thao tác thùng rác lịch mổ.')
-        if not _is_superadmin(user):
-            for r in auth_diff['added']:
-                if is_surgery_week_locked(r.get('date', '')):
-                    raise CollectionAuthError(403, 'Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới được phép xóa.')
-            for old_r, new_r, _ckeys in auth_diff['modified']:
-                if is_surgery_week_locked(old_r.get('date', '')) or is_surgery_week_locked(new_r.get('date', '')):
-                    raise CollectionAuthError(403, 'Ca mổ trong thùng rác thuộc tuần đã khóa.')
-            now_utc = datetime.now(timezone.utc)
-            for old_r in auth_diff['removed']:
-                # Allow removal if auto-cleaning expired (> 7 days) OR if surgery date is not locked
-                expired = False
-                del_at = old_r.get('deletedAt')
-                if isinstance(del_at, str) and del_at:
-                    try:
-                        dt = datetime.fromisoformat(del_at.replace('Z', '+00:00'))
-                        if dt.tzinfo is None:
-                            dt = dt.replace(tzinfo=timezone.utc)
-                        if (now_utc - dt).total_seconds() > 7 * 86400:
-                            expired = True
-                    except ValueError:
-                        pass
-                if not expired and is_surgery_week_locked(old_r.get('date', '')):
-                    raise CollectionAuthError(403, 'Không thể khôi phục/xóa vĩnh viễn ca mổ thuộc tuần đã khóa.')
-        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+        raise CollectionAuthError(
+            403,
+            'Vui lòng sử dụng API nguyên tử /api/surgeries/<id>/trash hoặc /restore để bảo toàn trạng thái duyệt mổ.',
+            {'errorCode': 'USE_ATOMIC_TRASH_ENDPOINT'}
+        )
 
     # 10. shcmSchedule
     if collection == 'shcmSchedule':
@@ -919,27 +944,86 @@ def _authorize_and_prepare_items(user, collection, old_items, candidate_items, a
             raise CollectionAuthError(403, 'Chỉ Quản trị viên mới được phép xóa nhiều báo cáo lịch sử.')
         return _stamp_audit_fields(user, old_items, candidate_items, collection)
 
-    # 15. notifications
+    # 15. notifications (per-user scoped + strict protection against surgery_approval forgery/tampering)
     if collection == 'notifications':
-        if _is_admin(user):
-            return _stamp_audit_fields(user, old_items, candidate_items, collection)
         my_id = (user or {}).get('staffId')
-        tasks_by_id = {t.get('id'): t for t in full_data.get('tasks', []) if isinstance(t, dict) and _is_pos_int(t.get('id'))}
-        for old_n, new_n, ckeys in auth_diff['modified']:
+        is_sa = _is_superadmin(user)
+        def _is_visible_mine(rec):
+            return isinstance(rec, dict) and rec.get('toStaffId') == my_id and (is_sa or rec.get('isTestSandboxCase') is not True)
+
+        old_by_id = {r.get('id'): r for r in (old_items or []) if isinstance(r, dict) and _is_pos_int(r.get('id'))}
+        my_old = [r for r in (old_items or []) if _is_visible_mine(r)]
+        other_old = [copy.deepcopy(r) for r in (old_items or []) if isinstance(r, dict) and not _is_visible_mine(r)]
+
+        # Reject any attempt to touch another user's existing notification ID
+        for r in candidate_items:
+            rid = r.get('id')
+            if rid in old_by_id and not _is_visible_mine(old_by_id[rid]):
+                if _changed_field_keys(old_by_id[rid], r):
+                    raise CollectionAuthError(
+                        403,
+                        'Không được sửa thông báo của nhân sự khác.',
+                        {'errorCode': 'FORBIDDEN_NOTIFICATION_MUTATION'}
+                    )
+
+        ref_items = base_items if isinstance(base_items, list) else my_old
+        ref_mine = [r for r in ref_items if _is_visible_mine(r)]
+        cand_mine = [r for r in candidate_items if _is_visible_mine(r) and r.get('id') in old_by_id]
+        cand_added = [r for r in candidate_items if isinstance(r, dict) and r.get('id') not in old_by_id]
+
+        mine_delta = _compute_auth_diff(ref_mine, cand_mine, 'notifications')
+        for old_n, new_n, ckeys in mine_delta['modified']:
             if old_n.get('toStaffId') != my_id:
                 raise CollectionAuthError(403, 'Không được sửa thông báo của nhân sự khác.')
             if not ckeys.issubset({'read'}) or new_n.get('read') is not True:
                 raise CollectionAuthError(403, 'Chỉ được phép đánh dấu đã đọc thông báo của chính mình.')
-        for old_n in auth_diff['removed']:
-            if old_n.get('toStaffId') != my_id or not old_n.get('read'):
+
+        removed_mine_ids = set()
+        for old_n in mine_delta['removed']:
+            srv_n = old_by_id.get(old_n.get('id'), old_n)
+            if srv_n.get('toStaffId') != my_id or not srv_n.get('read'):
                 raise CollectionAuthError(403, 'Chỉ được xóa thông báo đã đọc của chính mình.')
-        for new_n in auth_diff['added']:
-            t = tasks_by_id.get(new_n.get('taskId'))
-            if (new_n.get('fromStaffId') != my_id
-                    or new_n.get('type') not in ('task_accepted', 'task_completed')
-                    or not t or t.get('assignee') != my_id):
-                raise CollectionAuthError(403, 'Nhân viên chỉ được tạo thông báo xác nhận/hoàn thành công việc của chính mình.')
-        return _stamp_audit_fields(user, old_items, candidate_items, collection)
+            removed_mine_ids.add(srv_n.get('id'))
+
+        tasks_by_id = {t.get('id'): t for t in full_data.get('tasks', []) if isinstance(t, dict) and _is_pos_int(t.get('id'))}
+        max_nid = _derive_safe_next_id('notifications', old_items, full_data) - 1
+        validated_added = []
+
+        for new_n in cand_added:
+            if new_n.get('sourceType') == 'surgery_approval' or str(new_n.get('type') or '').startswith('surgery_'):
+                raise CollectionAuthError(
+                    403,
+                    'Thông báo duyệt mổ chỉ được phát sinh tự động từ giao dịch máy chủ.',
+                    {'errorCode': 'FORBIDDEN_APPROVAL_NOTIFICATION_FORGERY'}
+                )
+            if not _is_admin(user):
+                t = tasks_by_id.get(new_n.get('taskId'))
+                if (new_n.get('fromStaffId') != my_id
+                        or new_n.get('type') not in ('task_accepted', 'task_completed')
+                        or not t or t.get('assignee') != my_id):
+                    raise CollectionAuthError(403, 'Nhân viên chỉ được tạo thông báo xác nhận/hoàn thành công việc của chính mình.')
+            rec_add = copy.deepcopy(new_n)
+            if rec_add.get('id') in old_by_id or any(x.get('id') == rec_add.get('id') for x in validated_added):
+                max_nid += 1
+                rec_add['id'] = max_nid
+            else:
+                max_nid = max(max_nid, int(rec_add['id']))
+            rec_add['updatedBy'] = (user or {}).get('sub') or 'unknown'
+            validated_added.append(rec_add)
+
+        cand_mine_by_id = {r.get('id'): r for r in cand_mine}
+        updated_my_old = []
+        for srv_n in my_old:
+            nid = srv_n.get('id')
+            if nid in removed_mine_ids:
+                continue
+            out_n = copy.deepcopy(srv_n)
+            if nid in cand_mine_by_id and cand_mine_by_id[nid].get('read') is True and not out_n.get('read'):
+                out_n['read'] = True
+                out_n['updatedBy'] = (user or {}).get('sub') or 'unknown'
+            updated_my_old.append(out_n)
+
+        return other_old + updated_my_old + validated_added
 
     # 16. tasks
     if collection == 'tasks':
@@ -1016,34 +1100,62 @@ def static_files(path):
 
 
 # ────────────────────────────── Data API ──────────────────────────────
-_STRIP_DB_FIELDS = {'customPasswords', 'customAdmins', 'disabledAccounts', '_recentMutations'}
+_STRIP_DB_FIELDS = {
+    'customPasswords', 'customAdmins', 'disabledAccounts', '_recentMutations',
+    '_approvalIdempotency', 'surgeryApprovalLogs', '_lastApprovalJournalSeq'
+}
 
 @app.route('/api/data', methods=['GET'])
 @require_auth
 def get_data():
-    """Return the entire JSON database (sensitive fields stripped, auth required)"""
+    """Return the JSON database filtered per authenticated user (Fail-Closed, per-user ETag)"""
     data = load_data()
+    try:
+        live_user = resolve_live_user_fail_closed(
+            request.headers.get('Authorization', ''),
+            _verify_jwt,
+            AUTH_FILE,
+            data,
+            _save_auth,
+        )
+    except ApprovalEngineError as e:
+        return jsonify(e.to_dict()), e.status_code
+
     revisions = data.get('_revisions', {})
-    safe_data = {k: v for k, v in data.items() if k not in _STRIP_DB_FIELDS}
+    safe_data = filter_db_payload_for_user(data, live_user, _STRIP_DB_FIELDS)
     safe_data['_revisions'] = {col: int(revisions.get(col, 1)) for col in WRITE_COLLECTIONS}
-    # P2.4: ETag — tránh trả về 956KB nếu data không đổi
+
     data_str = json.dumps(safe_data, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
-    etag = '"' + hashlib.md5(data_str.encode('utf-8')).hexdigest() + '"'
+    etag_seed = f"uid:{live_user.get('staffId')}:sa:{int(bool(live_user.get('isSuperAdmin')))}:" + data_str
+    etag = '"' + hashlib.md5(etag_seed.encode('utf-8')).hexdigest() + '"'
     if request.headers.get('If-None-Match') == etag:
-        return '', 304
+        resp_304 = make_response('', 304)
+        resp_304.headers['ETag'] = etag
+        resp_304.headers['Vary'] = 'Authorization'
+        resp_304.headers['Cache-Control'] = 'private, no-cache, no-store, must-revalidate'
+        return resp_304
     resp = make_response(data_str)
     resp.headers['Content-Type'] = 'application/json; charset=utf-8'
     resp.headers['ETag'] = etag
-    resp.headers['Cache-Control'] = 'no-store'
+    resp.headers['Vary'] = 'Authorization'
+    resp.headers['Cache-Control'] = 'private, no-cache, no-store, must-revalidate'
     return resp
 
 @app.route('/api/data', methods=['PUT'])
 @require_superadmin
 def put_data():
-    """Replace the entire JSON database (superadmin only)"""
+    """Replace non-protected JSON collections (protected surgery approval collections require /api/admin/disaster-restore)"""
     data = request.get_json(force=True)
     if not isinstance(data, dict):
         return jsonify({'error': 'Invalid database payload'}), 400
+    present_protected = sorted(set(data.keys()) & PROTECTED_APPROVAL_COLLECTIONS)
+    if present_protected:
+        return jsonify({
+            'error': 'Các collection thuộc hệ thống Duyệt mổ được bảo vệ chống ghi đè hàng loạt. Vui lòng dùng API chuyên biệt hoặc /api/admin/disaster-restore.',
+            'code': 'PROTECTED_COLLECTION_USE_DEDICATED_API',
+            'errorCode': 'PROTECTED_COLLECTION_USE_DEDICATED_API',
+            'protectedCollections': present_protected,
+        }), 403
     user = getattr(request, '_user', {}).get('sub', request.headers.get('X-User', 'unknown'))
     client_build = _client_build()
     if client_build < MIN_CLIENT_BUILD:
@@ -1104,13 +1216,24 @@ def download_image():
 @app.route('/api/data/surgeries', methods=['GET'])
 @require_auth
 def get_surgeries_filtered():
-    """Return surgeries filtered by optional date range.
-    P2.5: GET /api/data/surgeries?from=YYYY-MM-DD&to=YYYY-MM-DD
-    Falls back to all surgeries if no params provided.
-    Backwards-compatible: existing /api/data still returns all.
-    """
+    """Return surgeries filtered by optional date range (sandbox cases hidden from non-superadmin)."""
     data = load_data()
-    surgeries = data.get('surgeries', [])
+    try:
+        live_user = resolve_live_user_fail_closed(
+            request.headers.get('Authorization', ''),
+            _verify_jwt,
+            AUTH_FILE,
+            data,
+            _save_auth,
+        )
+    except ApprovalEngineError as e:
+        return jsonify(e.to_dict()), e.status_code
+
+    is_sa = bool(live_user.get('isSuperAdmin'))
+    surgeries = [
+        s for s in data.get('surgeries', [])
+        if isinstance(s, dict) and (is_sa or s.get('isTestSandboxCase') is not True)
+    ]
 
     from_date = request.args.get('from')
     to_date = request.args.get('to')
@@ -1131,11 +1254,34 @@ def get_surgeries_filtered():
 @app.route('/api/data/<collection>', methods=['GET'])
 @require_auth
 def get_collection(collection):
-    """Return a single collection (auth required)"""
+    """Return a single collection (per-user filtered for notifications & sandbox cases)"""
     if collection not in WRITE_COLLECTIONS:
         return jsonify({'error': f'Unknown collection "{collection}"'}), 404
     data = load_data()
-    items = data.get(collection, [])
+    try:
+        live_user = resolve_live_user_fail_closed(
+            request.headers.get('Authorization', ''),
+            _verify_jwt,
+            AUTH_FILE,
+            data,
+            _save_auth,
+        )
+    except ApprovalEngineError as e:
+        return jsonify(e.to_dict()), e.status_code
+
+    is_sa = bool(live_user.get('isSuperAdmin'))
+    raw_items = data.get(collection, [])
+    if collection == 'notifications':
+        my_id = live_user.get('staffId')
+        items = [
+            n for n in raw_items
+            if isinstance(n, dict) and n.get('toStaffId') == my_id and (is_sa or n.get('isTestSandboxCase') is not True)
+        ]
+    elif collection in ('surgeries', 'surgeriesTrash') and not is_sa:
+        items = [s for s in raw_items if isinstance(s, dict) and s.get('isTestSandboxCase') is not True]
+    else:
+        items = raw_items
+
     if request.args.get('meta') == '1':
         rev = int(data.get('_revisions', {}).get(collection, 1))
         next_id = data.get('nextIds', {}).get(collection)
@@ -1148,6 +1294,12 @@ def put_collection(collection):
     """Replace or atomically merge a single collection (auth + RBAC + revision control enforced)"""
     if collection not in WRITE_COLLECTIONS:
         return jsonify({'error': f'Collection "{collection}" is not writable via API'}), 403
+    if collection == 'surgeriesTrash':
+        return jsonify({
+            'error': 'Vui lòng sử dụng API nguyên tử /api/surgeries/<id>/trash hoặc /restore.',
+            'code': 'USE_ATOMIC_TRASH_ENDPOINT',
+            'errorCode': 'USE_ATOMIC_TRASH_ENDPOINT',
+        }), 403
 
     user_obj = getattr(request, '_user', {}) or {}
     username = user_obj.get('sub', request.headers.get('X-User', 'unknown'))
@@ -1203,11 +1355,35 @@ def put_collection(collection):
 
     try:
         with atomic_update() as data:
+            reconcile_journal_and_db(data, get_journal_path(DATA_DIR))
+            live_user = resolve_live_user_fail_closed(
+                request.headers.get('Authorization', ''),
+                _verify_jwt,
+                AUTH_FILE,
+                data,
+                _save_auth,
+            )
+            user_obj = live_user
+            username = live_user.get('sub', username)
+
             old_items = data.get(collection, [])
             if not isinstance(old_items, list):
                 old_items = []
             revs = data.setdefault('_revisions', {})
             server_rev = int(revs.get(collection, 1))
+
+            # Filter visible server items for per-user / sandbox comparisons
+            def _filter_visible(item_list):
+                if collection == 'notifications':
+                    return [
+                        n for n in item_list
+                        if isinstance(n, dict)
+                        and n.get('toStaffId') == live_user.get('staffId')
+                        and (live_user.get('isSuperAdmin') or n.get('isTestSandboxCase') is not True)
+                    ]
+                if collection == 'surgeries' and not live_user.get('isSuperAdmin'):
+                    return [s for s in item_list if isinstance(s, dict) and s.get('isTestSandboxCase') is not True]
+                return item_list
 
             # Step 1: Idempotency check for retried requests (V3-03)
             recent_list = data.setdefault('_recentMutations', {}).setdefault(collection, [])
@@ -1219,22 +1395,22 @@ def put_collection(collection):
                             'idempotentReplay': True,
                             'version': _get_file_version(),
                             'revision': server_rev,
-                            'items': old_items,
+                            'items': _filter_visible(old_items),
                             'nextId': data.get('nextIds', {}).get(collection),
                             'reassignedIds': entry.get('reassignedIds', {})
                         })
 
             # Step 2: Revision check & Server-side Atomic Merge (V3-03)
             reassigned_ids = {}
-            is_non_admin_staff_self_edit = (collection == 'staff' and not _is_admin(user_obj))
+            is_scoped_patch_edit = (collection == 'staff' and not _is_admin(user_obj)) or (collection == 'notifications')
+            visible_old_items = _filter_visible(old_items)
             has_diverged = (
                 (parsed_base_rev is not None and parsed_base_rev != server_rev)
-                or (isinstance(base_items, list) and base_items != old_items)
+                or (isinstance(base_items, list) and base_items != visible_old_items)
                 or (base_revision is not None and parsed_base_rev is None and base_items is None)
             )
 
-            if is_non_admin_staff_self_edit:
-                # Non-admin staff self-edit patches phone/email directly onto old_items inside _authorize_and_prepare_items
+            if is_scoped_patch_edit:
                 candidate_items = items
             elif has_diverged:
                 if parsed_force_rev is not None and parsed_force_rev == server_rev:
@@ -1249,7 +1425,7 @@ def put_collection(collection):
                             'conflictType': 'STALE_FORCE_OVERWRITE',
                             'serverRevision': server_rev,
                             'serverVersion': server_rev,
-                            'serverItems': old_items
+                            'serverItems': visible_old_items
                         }
                     )
                 elif isinstance(base_items, list):
@@ -1266,7 +1442,7 @@ def put_collection(collection):
                             'conflictType': 'MISSING_BASE_ITEMS',
                             'serverRevision': server_rev,
                             'serverVersion': server_rev,
-                            'serverItems': old_items
+                            'serverItems': visible_old_items
                         }
                     )
             else:
@@ -1284,7 +1460,7 @@ def put_collection(collection):
                 base_items=base_items
             )
 
-            # Recompute final structural diff after _authorize_and_prepare_items (e.g. staff self-edit patch)
+            # Recompute final structural diff after _authorize_and_prepare_items
             final_auth_diff = _compute_auth_diff(old_items, effective_items, collection)
             safe_next_id = _derive_safe_next_id(collection, effective_items, data)
             data[collection] = effective_items
@@ -1308,6 +1484,8 @@ def put_collection(collection):
                 if len(recent_list) > 50:
                     del recent_list[:-50]
 
+            response_items = _filter_visible(effective_items)
+
             # Build audit summary using diff_collection
             try:
                 summary_diff = diff_collection(old_items, effective_items, collection)
@@ -1327,6 +1505,13 @@ def put_collection(collection):
             except Exception:
                 diff_detail = {'count': len(effective_items), 'nextId': safe_next_id, 'revision': new_rev}
 
+    except ApprovalEngineError as app_err:
+        audit_log(username, f'collection.put.rejected.approval.{collection}', {
+            'status': app_err.status_code,
+            'error': app_err.message,
+            'errorCode': app_err.error_code
+        })
+        return jsonify(app_err.to_dict()), app_err.status_code
     except CollectionAuthError as auth_err:
         payload_err = {'error': auth_err.message}
         if auth_err.detail:
@@ -1336,7 +1521,12 @@ def put_collection(collection):
             if auth_err.status_code == 409 and 'serverItems' not in payload_err:
                 cur_db = load_data()
                 srv_rev = int(cur_db.get('_revisions', {}).get(collection, 1))
-                payload_err['serverItems'] = cur_db.get(collection, [])
+                raw_srv_items = cur_db.get(collection, [])
+                if collection == 'notifications':
+                    raw_srv_items = [n for n in raw_srv_items if isinstance(n, dict) and n.get('toStaffId') == user_obj.get('staffId')]
+                elif collection == 'surgeries' and not user_obj.get('isSuperAdmin'):
+                    raw_srv_items = [s for s in raw_srv_items if isinstance(s, dict) and s.get('isTestSandboxCase') is not True]
+                payload_err['serverItems'] = raw_srv_items
                 payload_err['serverRevision'] = srv_rev
                 payload_err['serverVersion'] = srv_rev
         audit_log(username, f'collection.put.rejected.{collection}', {
@@ -1351,7 +1541,7 @@ def put_collection(collection):
         'ok': True,
         'version': _get_file_version(),
         'revision': new_rev,
-        'items': effective_items,
+        'items': response_items,
         'nextId': safe_next_id,
         'reassignedIds': reassigned_ids
     })
@@ -2269,12 +2459,16 @@ def _normalize_legacy_db_ids():
             print('[DB] ✅ Normalized legacy collection IDs and nextIds counters in db.json')
 
 # ────────────────────────────── Init ──────────────────────────────
+import sys as _sys
+register_surgery_approval_routes(app, _sys.modules[__name__])
+
 _ensure_data_dir()
 _ensure_log_dir()
 _cleanup_old_logs(90)
 _normalize_legacy_db_ids()
 _init_auth_from_db()
 _purge_legacy_db_auth_fields()
+ensure_approval_bootstrapped(_sys.modules[__name__])
 
 # ── Start EMR background thread (works under both Gunicorn and direct run) ──
 _emr_bg_started = False

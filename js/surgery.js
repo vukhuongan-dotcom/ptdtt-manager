@@ -167,6 +167,12 @@ const SurgeryPage = {
     _filterType: 'all',
     _selectedDayStr: null,
     _mobileViewMode: 'day', // 'day' | 'week'
+    _showSandboxOnSchedule: false,
+
+    toggleSandboxSchedulePreview() {
+        this._showSandboxOnSchedule = !this._showSandboxOnSchedule;
+        App.renderCurrentPage();
+    },
 
     init() {
         const today = new Date();
@@ -203,7 +209,13 @@ const SurgeryPage = {
     getSurgeries() {
         const all = this.getAllSurgeries();
         const weekDates = this.getWeekDates().map(d => this.dateStr(d));
-        return all.filter(s => weekDates.includes(s.date));
+        const allowSandboxPreview = Boolean(
+            this._showSandboxOnSchedule
+            && typeof App !== 'undefined'
+            && App.isSuperAdmin
+            && App.isSuperAdmin()
+        );
+        return all.filter(s => weekDates.includes(s.date) && (!s.isTestSandboxCase || allowSandboxPreview));
     },
 
     getFilteredSurgeries(dateStr = null) {
@@ -289,6 +301,7 @@ const SurgeryPage = {
         // Doctors for filter dropdown
         const allStaff = Store.getAll('staff') || [];
         const doctors = allStaff.filter(s => (s.role || '').toLowerCase().includes('bác sĩ') || (s.role || '').toLowerCase().includes('trưởng khoa') || (s.role || '').toLowerCase().includes('phó trưởng khoa'));
+        const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
 
         return `
         <div class="surgery-sticky-header">
@@ -298,6 +311,9 @@ const SurgeryPage = {
                 <p class="page-subtitle">Lịch phẫu thuật khoa PT Đại trực tràng</p>
             </div>
             <div class="surg-header-actions">
+                ${showApproval ? `<button class="btn btn-secondary" onclick="App.navigate('surgery-approval')" aria-label="Mở Tab Duyệt mổ tại khoa">
+                    📋 Duyệt mổ khoa
+                </button>` : ''}
                 <button class="btn btn-secondary" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Tự động xóa vĩnh viễn sau 7 ngày)" aria-label="Thùng rác ca mổ đã hủy">
                     🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
                 </button>
@@ -312,6 +328,15 @@ const SurgeryPage = {
                 </button>` : ''}
             </div>
         </div>
+
+        ${showApproval ? `<div class="sap-scope-banner" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <span>🏥 <strong>Duyệt mổ nội bộ Khoa PTĐTT (Độc lập với HIS):</strong> Nhãn <strong>✅ Đã duyệt tại khoa</strong> xác nhận hoàn tất bước duyệt chuyên môn nội bộ tại khoa trước mổ.</span>
+            ${(typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin() && (Store._data?.surgeries || []).some(s => s.isTestSandboxCase)) ? `
+            <button type="button" id="surg-toggle-sandbox-preview" class="btn btn-secondary btn-sm"
+                onclick="SurgeryPage.toggleSandboxSchedulePreview()">
+                ${this._showSandboxOnSchedule ? '🙈 Ẩn ca [TEST] trên lịch' : '🧪 Xem trước ca [TEST] trên lịch'} (Không in vào ảnh PNG)
+            </button>` : ''}
+        </div>` : ''}
 
         ${locked ? `<div class="surg-locked-banner">
             🔒 <strong>Tuần này đã bị khoá</strong> — Dữ liệu lịch mổ sau 1 tuần không thể chỉnh sửa. Chỉ Super Admin mới có thể mở khoá.
@@ -437,11 +462,16 @@ const SurgeryPage = {
                                         <span class="surgery-card-surgeons">🔪 <strong>BS:</strong> ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                         ${s.duration ? `<span class="surg-card-duration">⏱ ${s.duration}p</span>` : ''}
                                     </div>
+                                    ${showApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                     ${canEdit ? `<div class="surg-card-actions">
+                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
-                                    </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
+                                    </div>` : `<div class="surg-card-actions-single">
+                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
+                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
+                                    </div>`}
                                 </div>
                             </div>`;
                         }).join('') : `<div class="surgery-empty">Không có ca mổ trong ngày này</div>`}
@@ -475,6 +505,7 @@ const SurgeryPage = {
                                     <span class="surgery-card-yob">${s.birthYear || ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
+                                ${showApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox" style="font-size:0.62rem;padding:1px 5px;">TEST</span> ' : ''}${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</div>
                                     ${s.duration ? `<div class="surg-card-duration">⏱ ${s.duration} phút</div>` : ''}
@@ -483,11 +514,16 @@ const SurgeryPage = {
                                     <div class="surgery-card-footer">
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                     </div>
+                                    ${showApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                     ${canEdit ? `<div class="surg-card-actions">
+                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Sửa ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action-danger" aria-label="Xoá ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
-                                    </div>` : `<div class="surg-card-actions-single"><button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button></div>`}
+                                    </div>` : `<div class="surg-card-actions-single">
+                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
+                                        <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
+                                    </div>`}
                                 </div>
                             </div>`;
             }).join('') : `<div class="surgery-empty">Không có ca mổ</div>`}
@@ -544,7 +580,8 @@ const SurgeryPage = {
 
     // ===== STATS HELPERS =====
     getWeeklyStats() {
-        const surgeries = this.getSurgeries();
+        const weekDates = this.getWeekDates().map(d => this.dateStr(d));
+        const surgeries = this.getAllSurgeries().filter(s => !s.isTestSandboxCase && weekDates.includes(s.date));
         const stats = { total: surgeries.length };
         Object.keys(SURGERY_TYPES).forEach(k => {
             stats[k] = surgeries.filter(s => s.surgeryType === k).length;
@@ -556,7 +593,7 @@ const SurgeryPage = {
         const all = this.getAllSurgeries();
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const todaySurgeries = all.filter(s => s.date === today);
+        const todaySurgeries = all.filter(s => !s.isTestSandboxCase && s.date === today);
         const stats = { total: todaySurgeries.length };
         Object.keys(SURGERY_TYPES).forEach(k => {
             stats[k] = todaySurgeries.filter(s => s.surgeryType === k).length;
@@ -570,6 +607,7 @@ const SurgeryPage = {
         const month = now.getMonth();
         const year = now.getFullYear();
         const monthSurgeries = all.filter(s => {
+            if (s.isTestSandboxCase) return false;
             const d = new Date(s.date);
             return d.getMonth() === month && d.getFullYear() === year;
         });
@@ -630,6 +668,10 @@ const SurgeryPage = {
                     <div class="surgery-detail-label">Đường mổ</div>
                     <div class="surgery-detail-value">${({ mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' })[s.approachType] || '—'}</div>
                 </div>
+                ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser()) ? `<div class="surgery-detail-row">
+                    <div class="surgery-detail-label">Duyệt mổ tại khoa</div>
+                    <div class="surgery-detail-value">${SurgeryApprovalPage.renderBadge(s) || 'Miễn trừ dữ liệu lịch sử'}</div>
+                </div>` : ''}
                 ${s.notes ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Ghi chú</div>
                     <div class="surgery-detail-value">${Utils.escapeHtml(s.notes)}</div>
@@ -644,6 +686,9 @@ const SurgeryPage = {
                 </div>` : ''}
             </div>
             <div class="modal-footer">
+                ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser() && s.approachType !== 'nsth') ? `
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Hồ sơ duyệt mổ</button>
+                ` : ''}
                 ${canEdit ? `
                     <button type="button" class="btn btn-danger" onclick="SurgeryPage.deleteSurgery(${s.id})">Xoá</button>
                     <button type="button" class="btn btn-secondary" onclick="Modal.close();SurgeryPage.openForm(${s.id})">Chỉnh sửa</button>
@@ -661,6 +706,11 @@ const SurgeryPage = {
         if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
         const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
         const staff = Store.getAll('staff').filter(st => st.role.includes('Bác sĩ') || st.role.includes('Trưởng khoa') || st.role.includes('Phó trưởng khoa'));
+        const mainSurgeonStaff = staff.filter(st => {
+            if (typeof SAP_TRAINEE_IDS !== 'undefined' && SAP_TRAINEE_IDS.has(Number(st.id))) return false;
+            const rl = String(st.role || '').toLowerCase();
+            return !rl.includes('học viên') && !rl.includes('nội trú');
+        });
         const extDocs = Store.getAll('externalDoctors') || [];
 
         const formKey = `surgery-${id || 'new'}`;
@@ -719,8 +769,8 @@ const SurgeryPage = {
                         <label class="form-label">BS mổ chính</label>
                         <select class="form-select" name="mainSurgeon">
                             <option value="">— Chọn —</option>
-                            <optgroup label="BS trong khoa">
-                            ${staff.map(st => `<option value="${st.id}" ${s?.mainSurgeon == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                            <optgroup label="BS chính trong khoa">
+                            ${mainSurgeonStaff.map(st => `<option value="${st.id}" ${s?.mainSurgeon == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
                             </optgroup>
                             ${extDocs.length ? `<optgroup label="BS ngoài khoa">
                             ${extDocs.map(d => `<option value="${d.id}" ${s?.mainSurgeon == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
@@ -1388,6 +1438,34 @@ const SurgeryPage = {
         }
     },
 
+    async _callAtomicTrashEndpoint(path, method = 'POST') {
+        const token = Auth.getToken();
+        const idem = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? `trash_${crypto.randomUUID()}`
+            : `trash_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const resp = await fetch(path, {
+            method,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'X-Client-Build': String(CLIENT_BUILD),
+                'Idempotency-Key': idem
+            },
+            body: method === 'DELETE' ? JSON.stringify({}) : JSON.stringify({})
+        });
+        let payload = {};
+        try { payload = await resp.json(); } catch (_) {}
+        if (!resp.ok) {
+            throw new Error(payload.error || `Lỗi máy chủ (HTTP ${resp.status})`);
+        }
+        if (payload.version) Store._serverVersion = payload.version;
+        if (payload.revisions && typeof payload.revisions === 'object') {
+            Store._serverRevisions = Object.assign(Store._serverRevisions || {}, payload.revisions);
+        }
+        Store._lastEtag = null;
+        return payload;
+    },
+
     async deleteSurgery(id) {
         const all = this.getAllSurgeries();
         const s = all.find(x => String(x.id) === String(id));
@@ -1405,23 +1483,25 @@ const SurgeryPage = {
         });
         if (!confirmed) return;
 
-        const session = Auth.getSession();
-        const trashItem = {
-            ...s,
-            deletedAt: new Date().toISOString(),
-            deletedBy: session ? { username: session.username, name: session.name } : { username: 'unknown', name: 'NĐT' }
-        };
+        try {
+            const res = await this._callAtomicTrashEndpoint(`/api/surgeries/${encodeURIComponent(id)}/trash`, 'POST');
+            const nextSurgeries = all.filter(x => String(x.id) !== String(id));
+            const nextTrash = (Store._data.surgeriesTrash || []).filter(x => String(x.id) !== String(id));
+            if (res.trashed) nextTrash.push(res.trashed);
+            Store._data.surgeries = nextSurgeries;
+            Store._data.surgeriesTrash = nextTrash;
+            if (Store._serverSyncedData) {
+                Store._serverSyncedData.surgeries = Store._clone(nextSurgeries);
+                Store._serverSyncedData.surgeriesTrash = Store._clone(nextTrash);
+            }
+            Store._saveLocal();
 
-        if (!Store._data.surgeriesTrash) Store._data.surgeriesTrash = [];
-        Store._data.surgeriesTrash.push(trashItem);
-        Store._deletedIds.add(id);
-
-        this.saveSurgeries(all.filter(x => String(x.id) !== String(id)));
-        Store.saveCollections(['surgeriesTrash', 'surgeries']);
-
-        if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
-        App.renderCurrentPage();
-        Toast.success(`Đã chuyển ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong> vào Thùng rác <button class="btn btn-sm btn-secondary" style="margin-left:8px;padding:2px 8px;font-size:0.75rem;" onclick="SurgeryPage.restoreSurgery('${s.id}')">↺ Hoàn tác ngay</button>`);
+            if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay')) Modal.close();
+            App.renderCurrentPage();
+            Toast.success(`Đã chuyển ca mổ của BN <strong>${Utils.toProperCase(s.patientName)}</strong> vào Thùng rác <button class="btn btn-sm btn-secondary" style="margin-left:8px;padding:2px 8px;font-size:0.75rem;" onclick="SurgeryPage.restoreSurgery('${s.id}')">↺ Hoàn tác ngay</button>`);
+        } catch (err) {
+            Toast.error('Không thể chuyển vào thùng rác: ' + err.message);
+        }
     },
 
     openTrashModal() {
@@ -1446,7 +1526,7 @@ const SurgeryPage = {
             const mainSurgeonName = s.mainSurgeon ? Store.getStaffName(s.mainSurgeon) : '—';
             const assistSurgeonName = s.assistSurgeon1 ? Store.getStaffName(s.assistSurgeon1) : '';
             const staffInfo = [mainSurgeonName, assistSurgeonName].filter(x => x && x !== '—').join(' & ');
-            const delUser = s.deletedBy?.name || 'NĐT';
+            const delUser = (typeof s.deletedBy === 'string' ? s.deletedBy : s.deletedBy?.name) || 'NĐT';
 
             return `
                 <tr>
@@ -1503,30 +1583,30 @@ const SurgeryPage = {
         `);
     },
 
-    restoreSurgery(id) {
+    async restoreSurgery(id) {
         const trash = Store.cleanSurgeriesTrash(7);
         const item = trash.find(x => String(x.id) === String(id));
         if (!item) return;
 
-        // Remove from trash
-        const newTrash = trash.filter(x => String(x.id) !== String(id));
-        Store._data.surgeriesTrash = newTrash;
+        try {
+            const res = await this._callAtomicTrashEndpoint(`/api/surgeries/${encodeURIComponent(id)}/restore`, 'POST');
+            const newTrash = (Store._data.surgeriesTrash || []).filter(x => String(x.id) !== String(id));
+            const allSurgeries = this.getAllSurgeries().filter(x => String(x.id) !== String(id));
+            if (res.restored) allSurgeries.push(res.restored);
+            Store._data.surgeriesTrash = newTrash;
+            Store._data.surgeries = allSurgeries;
+            if (Store._serverSyncedData) {
+                Store._serverSyncedData.surgeriesTrash = Store._clone(newTrash);
+                Store._serverSyncedData.surgeries = Store._clone(allSurgeries);
+            }
+            Store._saveLocal();
 
-        // Clean trash metadata before restoring
-        const restoredItem = { ...item };
-        delete restoredItem.deletedAt;
-        delete restoredItem.deletedBy;
-
-        // Add back to surgeries
-        const allSurgeries = this.getAllSurgeries();
-        allSurgeries.push(restoredItem);
-
-        this.saveSurgeries(allSurgeries);
-        Store.saveCollections(['surgeriesTrash', 'surgeries']);
-
-        Toast.success(`Đã hoàn tác khôi phục ca mổ của BN <strong>${Utils.toProperCase(restoredItem.patientName)}</strong>`);
-        Modal.close();
-        App.renderCurrentPage();
+            Toast.success(`Đã hoàn tác khôi phục ca mổ của BN <strong>${Utils.toProperCase(item.patientName)}</strong>`);
+            Modal.close();
+            App.renderCurrentPage();
+        } catch (err) {
+            Toast.error('Không thể khôi phục ca mổ: ' + err.message);
+        }
     },
 
     async permanentlyDeleteSurgery(id) {
@@ -1544,14 +1624,23 @@ const SurgeryPage = {
         });
         if (!confirmed) return;
 
-        Store._data.surgeriesTrash = trash.filter(x => String(x.id) !== String(id));
-        Store.saveCollections(['surgeriesTrash']);
-        Toast.success('Đã xóa vĩnh viễn ca mổ khỏi thùng rác');
-        this.openTrashModal();
-        App.renderCurrentPage();
+        try {
+            await this._callAtomicTrashEndpoint(`/api/surgeries-trash/${encodeURIComponent(id)}`, 'DELETE');
+            const newTrash = (Store._data.surgeriesTrash || []).filter(x => String(x.id) !== String(id));
+            Store._data.surgeriesTrash = newTrash;
+            if (Store._serverSyncedData) {
+                Store._serverSyncedData.surgeriesTrash = Store._clone(newTrash);
+            }
+            Store._saveLocal();
+            Toast.success('Đã xóa vĩnh viễn ca mổ khỏi thùng rác');
+            this.openTrashModal();
+            App.renderCurrentPage();
+        } catch (err) {
+            Toast.error('Không thể xóa vĩnh viễn: ' + err.message);
+        }
     },
 
-    // Auto-select approach when surgery type changes
+    // Auto-select approach when surgery type changes (allows Robot approach under any surgeryType!)
     _onSurgeryTypeChange(sel) {
         const approach = document.getElementById('surgery-approach');
         if (!approach) return;
@@ -1560,7 +1649,6 @@ const SurgeryPage = {
             approach.disabled = true;
         } else {
             approach.disabled = false;
-            if (approach.value === 'robot') approach.value = '';
         }
     },
 
@@ -1602,7 +1690,7 @@ const SurgeryPage = {
     async _exportImageForDate(targetDate) {
         const ds = this.dateStr(targetDate);
         const surgeries = this.getAllSurgeries();
-        const todaySurgeries = sortSurgeries(surgeries.filter(s => s.date === ds), targetDate);
+        const todaySurgeries = sortSurgeries(surgeries.filter(s => !s.isTestSandboxCase && s.date === ds), targetDate);
 
         const dateLabel = `${targetDate.getDate()}/${targetDate.getMonth() + 1}/${targetDate.getFullYear()}`;
         const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -1613,13 +1701,19 @@ const SurgeryPage = {
         Object.keys(SURGERY_TYPES).forEach(k => { typeCounts[k] = todaySurgeries.filter(s => s.surgeryType === k).length; });
 
         // Build surgery rows - complete info
+        const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
+        const totalCols = showApproval ? 10 : 9;
         let rows = '';
         if (todaySurgeries.length === 0) {
-            rows = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#333;font-style:italic;font-size:14px">Không có ca mổ hôm nay</td></tr>';
+            rows = `<tr><td colspan="${totalCols}" style="text-align:center;padding:24px;color:#333;font-style:italic;font-size:14px">Không có ca mổ hôm nay</td></tr>`;
         } else {
             todaySurgeries.forEach((s, i) => {
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                 const bgColor = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+                const approvalMeta = showApproval ? SurgeryApprovalPage.getApprovalBadgeMeta(s) : null;
+                const approvalCellHtml = showApproval
+                    ? `<td style="padding:12px 8px;text-align:center;font-size:12px;font-weight:700;color:${approvalMeta.isGreenTickValid ? '#14532d' : '#1e293b'}">${Utils.escapeHtml(approvalMeta.badgeLabel || '—')}</td>`
+                    : '';
                 rows += `<tr style="background:${bgColor};border-bottom:1px solid #cbd5e1">
                     <td style="padding:12px 10px;text-align:center;font-weight:700;color:#000;font-size:14px">${i + 1}</td>
                     <td style="padding:12px 10px;font-size:14px"><strong style="color:#000">${Utils.toProperCase(s.patientName)}</strong></td>
@@ -1630,12 +1724,13 @@ const SurgeryPage = {
                     <td style="padding:12px 10px;text-align:center"><span style="background:${typeInfo.color};color:${typeInfo.onColor};padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap">${typeInfo.label}</span></td>
                     <td style="padding:12px 10px;font-size:13px;color:#111">${Utils.getStaffName(s.mainSurgeon) || '—'}${s.assistSurgeon1 ? '<br><span style="color:#333;font-size:12px">Phụ: ' + Utils.getStaffName(s.assistSurgeon1) + '</span>' : ''}</td>
                     <td style="padding:12px 10px;text-align:center;font-size:13px;color:#000;font-weight:600">${s.duration ? s.duration + 'p' : '—'}</td>
+                    ${approvalCellHtml}
                 </tr>`;
                 // Notes row if exists
                 if (s.notes) {
                     rows += `<tr style="background:${bgColor};border-bottom:1px solid #cbd5e1">
                         <td style="padding:0"></td>
-                        <td colspan="8" style="padding:0 10px 10px;font-size:12px;color:#333"><em>📝 ${s.notes}</em></td>
+                        <td colspan="${totalCols - 1}" style="padding:0 10px 10px;font-size:12px;color:#333"><em>📝 ${s.notes}</em></td>
                     </tr>`;
                 }
             });
@@ -1652,10 +1747,12 @@ const SurgeryPage = {
             }
         });
 
+        const exportWidthPx = showApproval ? 1220 : 1100;
+        const scopeLegendText = showApproval ? (SurgeryApprovalPage.getConfig().scopeLegendText || '✅ Đã duyệt tại khoa: Xác nhận hoàn tất bước duyệt chuyên môn nội bộ tại Khoa PTĐTT (độc lập với tiến trình duyệt trên phần mềm HIS của Bệnh viện)') : '';
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `
-        <div id="surgery-export-target" style="width:1100px;padding:0;background:#fff;font-family:'Be Vietnam Pro','Noto Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:#0f172a;">
+        <div id="surgery-export-target" style="width:${exportWidthPx}px;padding:0;background:#fff;font-family:'Be Vietnam Pro','Noto Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:#0f172a;">
             <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
             <!-- Header with dark navy background for high contrast -->
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 36px;display:flex;justify-content:space-between;align-items:center">
@@ -1691,6 +1788,7 @@ const SurgeryPage = {
                             <th style="padding:12px 10px;text-align:center;color:#f1f5f9;font-size:13px;font-weight:700;width:85px">LOẠI</th>
                             <th style="padding:12px 10px;text-align:left;color:#f1f5f9;font-size:13px;font-weight:700;min-width:110px">Ê-KÍP MỔ</th>
                             <th style="padding:12px 10px;text-align:center;color:#f1f5f9;font-size:13px;font-weight:700;width:46px">TG</th>
+                            ${showApproval ? `<th style="padding:12px 8px;text-align:center;color:#f1f5f9;font-size:13px;font-weight:700;width:130px">DUYỆT KHOA</th>` : ''}
                         </tr>
                     </thead>
                     <tbody>
@@ -1698,6 +1796,8 @@ const SurgeryPage = {
                     </tbody>
                 </table>
             </div>
+
+            ${showApproval ? `<div style="padding:8px 36px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11.5px;color:#334155;font-weight:600;">${Utils.escapeHtml(scopeLegendText)}</div>` : ''}
 
             <!-- Footer -->
             <div style="padding:12px 36px;border-top:2px solid #cbd5e1;display:flex;justify-content:space-between;font-size:12px;color:#333;background:#f8fafc">
@@ -1711,7 +1811,7 @@ const SurgeryPage = {
         await Utils.loadScript('html2canvas');
 
         // 2K export: tính scale động để output luôn ≥ 2560px wide bất kể số ca
-        const TEMPLATE_WIDTH = 1100;   // px lógic của template
+        const TEMPLATE_WIDTH = exportWidthPx;   // px lógic của template
         const TARGET_2K_WIDTH = 2560;  // độ phân giải 2K (2560 × ?) 
         const minScale = Math.ceil(TARGET_2K_WIDTH / TEMPLATE_WIDTH); // = 3 (2640px)
         const EXPORT_SCALE = Math.max(minScale, 3); // luôn ≥ 3 → ≥ 2640px
