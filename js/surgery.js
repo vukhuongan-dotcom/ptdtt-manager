@@ -446,6 +446,7 @@ const SurgeryPage = {
                     <div class="surg-day-focus-list">
                         ${daySurgeries.length ? daySurgeries.map((s, idx) => {
                             const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                            const showCaseApproval = showApproval && SurgeryApprovalPage.isCaseApprovalEnabled(s);
                             return `
                             <div class="surgery-card surgery-expanded surg-mobile-full-card" data-surgery-id="${s.id}">
                                 <div class="surgery-card-compact-row">
@@ -462,14 +463,14 @@ const SurgeryPage = {
                                         <span class="surgery-card-surgeons">🔪 <strong>BS:</strong> ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                         ${s.duration ? `<span class="surg-card-duration">⏱ ${s.duration}p</span>` : ''}
                                     </div>
-                                    ${showApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
+                                    ${showCaseApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                     ${canEdit ? `<div class="surg-card-actions">
-                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
+                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
                                     </div>` : `<div class="surg-card-actions-single">
-                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
+                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                     </div>`}
                                 </div>
@@ -496,6 +497,7 @@ const SurgeryPage = {
                     <div class="surgery-day-body">
                         ${daySurgeries.length ? daySurgeries.map((s, idx) => {
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                const showCaseApproval = showApproval && SurgeryApprovalPage.isCaseApprovalEnabled(s);
                 return `
                             <div class="surgery-card surgery-compact" data-surgery-id="${s.id}" onclick="SurgeryPage.toggleCard(this, event)">
                                 <div class="surgery-card-compact-row">
@@ -505,7 +507,7 @@ const SurgeryPage = {
                                     <span class="surgery-card-yob">${s.birthYear || ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
-                                ${showApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox" style="font-size:0.62rem;padding:1px 5px;">TEST</span> ' : ''}${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
+                                ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox" style="font-size:0.62rem;padding:1px 5px;">TEST</span> ' : ''}${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</div>
                                     ${s.duration ? `<div class="surg-card-duration">⏱ ${s.duration} phút</div>` : ''}
@@ -514,14 +516,14 @@ const SurgeryPage = {
                                     <div class="surgery-card-footer">
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                     </div>
-                                    ${showApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
+                                    ${showCaseApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                     ${canEdit ? `<div class="surg-card-actions">
-                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
+                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Sửa ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action-danger" aria-label="Xoá ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
                                     </div>` : `<div class="surg-card-actions-single">
-                                        ${showApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
+                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                     </div>`}
                                 </div>
@@ -668,7 +670,7 @@ const SurgeryPage = {
                     <div class="surgery-detail-label">Đường mổ</div>
                     <div class="surgery-detail-value">${({ mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' })[s.approachType] || '—'}</div>
                 </div>
-                ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser()) ? `<div class="surgery-detail-row">
+                ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isCaseApprovalEnabled(s)) ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Duyệt mổ tại khoa</div>
                     <div class="surgery-detail-value">${SurgeryApprovalPage.renderBadge(s) || 'Miễn trừ dữ liệu lịch sử'}</div>
                 </div>` : ''}
@@ -686,7 +688,7 @@ const SurgeryPage = {
                 </div>` : ''}
             </div>
             <div class="modal-footer">
-                ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser() && s.approachType !== 'nsth') ? `
+                ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isCaseApprovalEnabled(s) && s.approachType !== 'nsth') ? `
                     <button type="button" class="btn btn-secondary" onclick="Modal.close();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Hồ sơ duyệt mổ</button>
                 ` : ''}
                 ${canEdit ? `
@@ -1701,7 +1703,7 @@ const SurgeryPage = {
         Object.keys(SURGERY_TYPES).forEach(k => { typeCounts[k] = todaySurgeries.filter(s => s.surgeryType === k).length; });
 
         // Build surgery rows - complete info
-        const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
+        const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser() && SurgeryApprovalPage.getConfig().sandboxOnlyMode === false;
         const totalCols = showApproval ? 10 : 9;
         let rows = '';
         if (todaySurgeries.length === 0) {

@@ -12,6 +12,7 @@ import fcntl
 import hashlib
 import json
 import os
+import random
 import re
 import unicodedata
 import uuid
@@ -43,6 +44,25 @@ SERVER_OWNED_SURGERY_FIELDS = {
     "lastJournalSeq",
     "_bulkUndoSnapshot",
 }
+
+APPROVAL_METADATA_FIELDS_TO_STRIP = (
+    "approval",
+    "preopChecklist",
+    "clinicalChips",
+    "clinicalClassification",
+    "podAssignment",
+    "archivedGroupData",
+    "caseRevision",
+    "schemaVersion",
+    "ruleVersion",
+    "lastJournalSeq",
+    "_bulkUndoSnapshot",
+    "previousApprovalStatus",
+    "interdisciplinaryCoordination",
+    "coordinatingAttendingStaffId",
+    "mainSurgeonStaffId",
+    "assistSurgeonStaffId",
+)
 
 TIER_A_SCHEDULE_FIELDS = (
     "date",
@@ -126,6 +146,7 @@ DEFAULT_SURGERY_APPROVAL_CONFIG = {
     "zeroHisCoupling": True,
     "ruleVersion": RULE_VERSION,
     "rolloutAccessMode": "superadmin_only",  # "superadmin_only" | "all_staff"
+    "sandboxOnlyMode": True,                 # True = Tab Duyệt mổ CHỈ dùng ca TEST giả lập (0% bệnh nhân thật)
     "checklistMode": "enforced_gate",        # "off" | "shadow_optional" | "enforced_gate"
     "rolloutEffectiveSurgeryDate": "2026-11-02",
     "nsthInternalPrecheckEnabled": False,
@@ -238,10 +259,36 @@ def get_approval_config(db: dict) -> dict:
                 cfg["slaConfig"].update(v)
             else:
                 cfg[k] = copy.deepcopy(v)
+        if "sandboxOnlyMode" not in stored:
+            cfg["sandboxOnlyMode"] = (cfg.get("rolloutAccessMode") == "superadmin_only")
+    cfg["sandboxOnlyMode"] = bool(cfg.get("sandboxOnlyMode", cfg.get("rolloutAccessMode") == "superadmin_only"))
     cfg["scope"] = "departmental_step1_only"
     cfg["zeroHisCoupling"] = True
     cfg["ruleVersion"] = RULE_VERSION
     return cfg
+
+
+def strip_approval_metadata_from_real_surgeries(db: dict) -> int:
+    """
+    Removes all approval-engine metadata from real patient records (isTestSandboxCase != True)
+    in surgeries and surgeriesTrash, preserving 100% of real clinical schedule fields untouched.
+    """
+    stripped_records = 0
+    for col_name in ("surgeries", "surgeriesTrash"):
+        items = (db or {}).get(col_name)
+        if not isinstance(items, list):
+            continue
+        for rec in items:
+            if not isinstance(rec, dict) or rec.get("isTestSandboxCase") is True:
+                continue
+            touched = False
+            for key in APPROVAL_METADATA_FIELDS_TO_STRIP:
+                if key in rec:
+                    rec.pop(key, None)
+                    touched = True
+            if touched:
+                stripped_records += 1
+    return stripped_records
 
 
 def load_procedure_catalog(data_dir: str, base_dir: str) -> dict:
@@ -1136,7 +1183,9 @@ def build_initial_unverified_structures(surgery: dict, catalog: dict, db: dict) 
 
 
 def initialize_new_surgery_record(rec: dict, catalog: dict, db: dict) -> dict:
-    """Initializes a brand-new or cloned surgery record cleanly."""
+    """Initializes a brand-new or cloned surgery record cleanly.
+    When sandboxOnlyMode is True, real surgeries (isTestSandboxCase != True) stay 100% free of approval metadata.
+    """
     rec = normalize_surgery_aliases(rec, None)
     for f in SERVER_OWNED_SURGERY_FIELDS:
         rec.pop(f, None)
@@ -1148,6 +1197,12 @@ def initialize_new_surgery_record(rec: dict, catalog: dict, db: dict) -> dict:
             "INVALID_MAIN_SURGEON",
             "Bác sĩ học viên / Bác sĩ nội trú chưa xếp cột không được đứng tên BS mổ chính.",
         )
+
+    cfg = get_approval_config(db)
+    if cfg.get("sandboxOnlyMode") is True and rec.get("isTestSandboxCase") is not True:
+        for k in APPROVAL_METADATA_FIELDS_TO_STRIP:
+            rec.pop(k, None)
+        return rec
 
     rec["schemaVersion"] = SCHEMA_VERSION
     rec["ruleVersion"] = RULE_VERSION
@@ -1304,6 +1359,12 @@ def protect_and_reconcile_surgeries_put(
 
         # Strip all server-owned fields from client payload and restore from old_r
         merged = copy.deepcopy(norm_new)
+        if cfg.get("sandboxOnlyMode") is True and merged.get("isTestSandboxCase") is not True and old_r.get("isTestSandboxCase") is not True:
+            for k in APPROVAL_METADATA_FIELDS_TO_STRIP:
+                merged.pop(k, None)
+            out_items.append(merged)
+            continue
+
         for sf in SERVER_OWNED_SURGERY_FIELDS:
             if sf in old_r:
                 merged[sf] = copy.deepcopy(old_r[sf])
@@ -1459,10 +1520,23 @@ def run_surgery_approval_migration(db: dict, data_dir: str, base_dir: str, *, fo
     count_before = len(surgeries)
     trash_before = len(trash)
 
-    counts = {"M1": 0, "M2": 0, "M3": 0, "M4": 0, "M5": 0, "alreadyMigrated": 0}
+    sandbox_only = bool(cfg.get("sandboxOnlyMode"))
+    stripped_real = strip_approval_metadata_from_real_surgeries(db) if sandbox_only else 0
+
+    counts = {
+        "M1": 0,
+        "M2": 0,
+        "M3": 0,
+        "M4": 0,
+        "M5": 0,
+        "alreadyMigrated": 0,
+        "strippedRealSurgeries": stripped_real,
+    }
 
     for s in surgeries:
         if not isinstance(s, dict):
+            continue
+        if sandbox_only and s.get("isTestSandboxCase") is not True:
             continue
         if not force and s.get("schemaVersion") == SCHEMA_VERSION and isinstance(s.get("approval"), dict) and s["approval"].get("status"):
             counts["alreadyMigrated"] += 1
@@ -1554,6 +1628,8 @@ def run_surgery_approval_migration(db: dict, data_dir: str, base_dir: str, *, fo
 
     for t in trash:
         if not isinstance(t, dict):
+            continue
+        if sandbox_only and t.get("isTestSandboxCase") is not True:
             continue
         if t.get("schemaVersion") != SCHEMA_VERSION:
             prev_st = ((t.get("approval") or {}).get("status")) or ("nsth_external_authority" if t.get("approachType") == "nsth" else "legacy_exempt")
@@ -2420,100 +2496,926 @@ def find_active_delegation_for_deputy(
 
 # ───────────────────────── Sandbox Seed & Cleanup (Zero-PHI) ─────────────────────────
 
+def _build_verified_checklist_for_sandbox(
+    attending_id: int,
+    trainee_id: int = None,
+    *,
+    benign: bool = False,
+    minor_anorectal_na_ck04: bool = False,
+    ck01_abnormal_note: str = None,
+    ck05_abnormal_note: str = None,
+) -> dict:
+    prep_id = trainee_id if is_pos_int(trainee_id) else attending_id
+    ck = {}
+    for code in CK_CODES:
+        if code == "CK-01" and ck01_abnormal_note:
+            ck[code] = {
+                "state": "verified_abnormal_planned",
+                "preparedByStaffId": prep_id,
+                "verifiedByStaffId": attending_id,
+                "clinicalPlanNote": ck01_abnormal_note,
+            }
+        elif code == "CK-04" and minor_anorectal_na_ck04:
+            ck[code] = {
+                "state": "not_applicable",
+                "preparedByStaffId": None,
+                "verifiedByStaffId": attending_id,
+            }
+        elif code == "CK-05" and benign:
+            ck[code] = {
+                "state": "not_applicable",
+                "preparedByStaffId": None,
+                "verifiedByStaffId": attending_id,
+                "autoDerivedFrom": "pathologyGroup=benign",
+            }
+        elif code == "CK-05" and ck05_abnormal_note:
+            ck[code] = {
+                "state": "verified_abnormal_planned",
+                "preparedByStaffId": prep_id,
+                "verifiedByStaffId": attending_id,
+                "clinicalPlanNote": ck05_abnormal_note,
+            }
+        else:
+            item = {
+                "state": "verified_ok",
+                "preparedByStaffId": None if code in ("CK-04", "CK-08") else prep_id,
+                "verifiedByStaffId": attending_id,
+            }
+            if code == "CK-02":
+                item["subChecks"] = {
+                    "preAnesthesiaExam": "verified_ok",
+                    "ecg": "verified_ok",
+                    "chestImaging": "verified_ok",
+                    "echo": "verified_ok" if not benign else "not_indicated",
+                }
+            ck[code] = item
+    return ck
+
+
+def _stamp_pod_for_sandbox(rec: dict, catalog: dict, ward_room: str, trainee_id: int = None, freeze_snapshot: bool = False):
+    r_info = get_pod_room_info(catalog, ward_room)
+    res_list = r_info.get("residentStaffIds") or []
+    prep_id = trainee_id if is_pos_int(trainee_id) else (res_list[0] if res_list else rec.get("mainSurgeon"))
+    pa = {
+        "wardRoom": ward_room,
+        "suggestedPodId": r_info.get("podId"),
+        "preparedByStaffId": prep_id,
+        "podSnapshot": {
+            "rosterPeriod": ((catalog.get("podRoster") or {}).get("rosterPeriod")) or "2026-10-05_2026-12-13",
+            "podId": r_info.get("podId"),
+            "wardRoom": ward_room,
+            "attendingStaffIds": r_info.get("attendingStaffIds", []),
+            "residentStaffIds": res_list,
+            "capturedAt": now_vn_iso(),
+        } if freeze_snapshot else None,
+    }
+    rec["podAssignment"] = pa
+
+
+def _finalize_classification_for_sandbox(
+    rec: dict,
+    catalog: dict,
+    db: dict,
+    *,
+    actor_id: int,
+    pathology_group: str,
+    catalog_entry_id: str,
+    proc_class: str,
+    declared_mode: str,
+    urgency_level: str = None,
+    over_column_ref: str = "",
+    semi_urgent_reason: str = "",
+    privilege_verified_by: int = None,
+):
+    cc = rec.setdefault("clinicalClassification", {})
+    cc["approachType"] = rec.get("approachType", "mo")
+    pg = cc.setdefault("pathologyGroup", {})
+    pg["confirmedValue"] = pathology_group
+    pg["confirmedByStaffId"] = actor_id
+    pc = cc.setdefault("procedureClass", {})
+    pc["confirmedCatalogEntryId"] = catalog_entry_id
+    pc["confirmedClass"] = proc_class
+    pc["confirmedByStaffId"] = actor_id
+    live_col = evaluate_column_compliance(
+        catalog,
+        db,
+        main_surgeon_id=rec.get("mainSurgeon"),
+        approach_type=rec.get("approachType", "mo"),
+        surgery_date=rec.get("date", ""),
+        confirmed_class=proc_class,
+        confirmed_catalog_id=catalog_entry_id,
+    )
+    col = {**live_col, "declaredMode": declared_mode}
+    if over_column_ref:
+        col["overColumnRef"] = over_column_ref
+    if is_pos_int(privilege_verified_by):
+        col["privilegeVerifiedByStaffId"] = privilege_verified_by
+    cc["columnCompliance"] = col
+    if urgency_level:
+        cc["urgencyLevel"] = urgency_level
+    if semi_urgent_reason:
+        cc["semiUrgentClinicalReason"] = semi_urgent_reason
+
+
 def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> list:
-    """Creates 5 Zero-PHI synthetic test cases (BN Giả Lập 01..05) for Superadmin canary testing."""
+    """
+    Generates 16 Randomized Comprehensive Zero-PHI Test Scenarios (100% synthetic, 0% real patients)
+    covering every surgical approach (Mổ mở, PTNS, Robot, NSTH), every surgeon column (ĐB, I, II, III,
+    Over-column II->I & III->II, Robot certified vs uncertified, External interdisciplinary),
+    all clinical modules (B1..B4), antithrombotic modes, and all 10 approval lifecycle states.
+    """
+    rng = random.SystemRandom()
     catalog = load_procedure_catalog(data_dir, base_dir)
+    cfg = get_approval_config(db)
+
     existing = (db.get("surgeries") or []) + (db.get("surgeriesTrash") or [])
     max_id = max([int(r["id"]) for r in existing if isinstance(r, dict) and is_pos_int(r.get("id"))], default=900000)
-    base_id = max(max_id + 1, 990001)
+    base_id = max(max_id + 1, int(db.get("_nextSandboxSurgeryId") or 0), 990001)
+
+    avail_staff = {int(s["id"]) for s in (db.get("staff") or []) if isinstance(s, dict) and is_pos_int(s.get("id"))}
+    ext_docs = [int(d["id"]) for d in (db.get("externalDoctors") or []) if isinstance(d, dict) and is_pos_int(d.get("id"))]
+
+    def pick_staff(pool):
+        valid = [x for x in pool if x in avail_staff] if avail_staff else list(pool)
+        return rng.choice(valid or list(pool))
+
+    trainee_pool = [16, 43, 44, 45, 46, 47, 48, 50]
+    rooms_pod1 = ["707", "718"]
+    rooms_pod2 = ["705", "706", "711", "712", "712A", "719"]
+    rooms_pod3 = ["708", "709", "710"]
+    all_rooms = rooms_pod1 + rooms_pod2 + rooms_pod3
+
+    synthetic_aliases = [
+        "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel",
+        "India", "Juliet", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa",
+        "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "Xray",
+    ]
+    rng.shuffle(synthetic_aliases)
 
     today = now_vn().date()
-    d_plus3 = (today + timedelta(days=3)).strftime("%Y-%m-%d")
-    d_plus4 = (today + timedelta(days=4)).strftime("%Y-%m-%d")
-    d_plus1 = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+    ts_now = now_vn_iso()
+    batch_tag = f"{rng.randint(100, 999)}"
 
-    raw_cases = [
-        {
-            "id": base_id,
-            "isTestSandboxCase": True,
-            "patientName": "Bệnh Nhân Giả Lập 01 - Rò Hậu Môn",
-            "birthYear": 1996,
-            "admissionId": "MOCK-NV-0101",
-            "date": d_plus3,
-            "duration": 60,
-            "surgeryType": "chuongtrinh",
-            "approachType": "mo",
-            "mainSurgeon": 8,
-            "assistSurgeon1": 44,
-            "diagnosis": "Rò hậu môn xuyên cơ thắt thấp",
-            "method": "Phẫu thuật điều trị rò hậu môn đơn giản",
-            "notes": "[Dữ liệu giả lập Zero-PHI để Superadmin kiểm thử quy trình duyệt mổ]",
-        },
-        {
-            "id": base_id + 1,
-            "isTestSandboxCase": True,
-            "patientName": "Bệnh Nhân Giả Lập 02 - Robot Sa Trực Tràng",
-            "birthYear": 1962,
-            "admissionId": "MOCK-NV-0102",
-            "date": d_plus4,
-            "duration": 180,
-            "surgeryType": "robot",
-            "approachType": "robot",
-            "mainSurgeon": 1,
-            "assistSurgeon1": 6,
-            "diagnosis": "Sa trực tràng toàn bộ độ III lành tính",
-            "method": "Phẫu thuật nội soi cố định trực tràng bằng lưới trong điều trị sa trực tràng",
-            "notes": "[Dữ liệu giả lập Zero-PHI — Robot lành tính CK-05 N/A]",
-        },
-        {
-            "id": base_id + 2,
-            "isTestSandboxCase": True,
-            "patientName": "Bệnh Nhân Giả Lập 03 - K Trực Tràng Giữa",
-            "birthYear": 1958,
-            "admissionId": "MOCK-NV-0103",
-            "date": d_plus4,
-            "duration": 210,
-            "surgeryType": "chuongtrinh",
-            "approachType": "noisoi",
-            "mainSurgeon": 2,
-            "assistSurgeon1": 46,
-            "diagnosis": "Ung thư trực tràng giữa sau hóa xạ toàn diện",
-            "method": "Phẫu thuật nội soi cắt trực tràng thấp+ nạo vét hạch",
-            "notes": "[Dữ liệu giả lập Zero-PHI — Duy trì Aspirin 81mg theo HC Tim mạch]",
-        },
-        {
-            "id": base_id + 3,
-            "isTestSandboxCase": True,
-            "patientName": "Bệnh Nhân Giả Lập 04 - Tắc Ruột Cấp Cứu",
-            "birthYear": 1951,
-            "admissionId": "MOCK-NV-0104",
-            "date": d_plus1,
-            "duration": 150,
-            "surgeryType": "bankhan",
-            "approachType": "mo",
-            "mainSurgeon": 4,
-            "assistSurgeon1": 43,
-            "diagnosis": "Tắc ruột quai kín do u đại tràng Sigma dọa vỡ manh tràng",
-            "method": "Cắt đoạn đại tràng, đóng đầu dưới, đưa đầu trên ra ngoài ổ bụng kiểu Hartmann",
-            "notes": "[Dữ liệu giả lập Zero-PHI — Kiểm thử cổng Ngoại lệ Cấp cứu]",
-        },
-        {
-            "id": base_id + 4,
-            "isTestSandboxCase": True,
-            "patientName": "Bệnh Nhân Giả Lập 05 - Đóng Hậu Môn Nhân Tạo",
-            "birthYear": 1970,
-            "admissionId": "MOCK-NV-0105",
-            "date": d_plus3,
-            "duration": 120,
-            "surgeryType": "yeucau",
-            "approachType": "noisoi",
-            "mainSurgeon": 8,
-            "assistSurgeon1": 50,
-            "diagnosis": "Hậu môn nhân tạo hồi tràng sau mổ cắt trước thấp",
-            "method": "Phẫu thuật nội soi đóng hậu môn nhân tạo",
-            "notes": "[Dữ liệu giả lập Zero-PHI — BS Cột II đề xuất vượt cột PTNS Loại I]",
-        },
-    ]
+    def d_off(min_d: int, max_d: int) -> str:
+        return (today + timedelta(days=rng.randint(min_d, max_d))).strftime("%Y-%m-%d")
 
-    initialized = [initialize_new_surgery_record(rc, catalog, db) for rc in raw_cases]
-    return initialized
+    def mock_nv(idx: int) -> str:
+        return f"MOCK-NV-{batch_tag}{idx:02d}"
+
+    def mock_name(idx: int, scenario_tag: str) -> str:
+        code = synthetic_aliases[(idx - 1) % len(synthetic_aliases)]
+        return f"Bệnh Nhân Giả Lập {idx:02d} ({code}-{batch_tag}) - {scenario_tag}"
+
+    cases = []
+
+    # ── CA TEST 01: Draft mới tinh — Mổ mở Cột II đúng cột, B1 Rò hậu môn đơn giản (để bấm thử từ đầu A->Z) ──
+    c01 = initialize_new_surgery_record({
+        "id": base_id,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-01_DRAFT_OPEN_COL2_FISTULA",
+        "patientName": mock_name(1, "Rò HM Đơn Giản [Mới tạo]"),
+        "birthYear": rng.randint(1982, 2001),
+        "admissionId": mock_nv(1),
+        "date": d_off(3, 5),
+        "duration": rng.choice([45, 60]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "mo",
+        "mainSurgeon": 8 if (not avail_staff or 8 in avail_staff) else pick_staff([7, 8, 9]),
+        "assistSurgeon1": 44 if (not avail_staff or 44 in avail_staff) else pick_staff(trainee_pool),
+        "diagnosis": "Rò hậu môn xuyên cơ thắt thấp chưa biến chứng",
+        "method": "Phẫu thuật điều trị rò hậu môn đơn giản",
+        "notes": "[CA TEST #01 — Mới khởi tạo: bấm mở để thử luồng HV rà sơ bộ -> BS chính xác nhận B1 MRI -> Trình -> Duyệt]",
+    }, catalog, db)
+    cases.append(c01)
+
+    # ── CA TEST 02: Draft mới tinh — Mổ mở Cột III đúng cột, Tiểu phẫu HM-TT (CK-04 CĐHA cho phép N/A) ──
+    ms02 = pick_staff([10, 11, 12])
+    c02 = initialize_new_surgery_record({
+        "id": base_id + 1,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-02_DRAFT_OPEN_COL3_MINOR",
+        "patientName": mock_name(2, "Trĩ Tắc Mạch [Cột III - Tiểu phẫu]"),
+        "birthYear": rng.randint(1975, 1999),
+        "admissionId": mock_nv(2),
+        "date": d_off(3, 6),
+        "duration": rng.choice([30, 45]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "mo",
+        "mainSurgeon": ms02,
+        "assistSurgeon1": pick_staff(trainee_pool),
+        "diagnosis": "Trĩ ngoại tắc mạch cấp giờ thứ 36",
+        "method": "Phẫu thuật lấy trĩ tắc mạch",
+        "notes": "[CA TEST #02 — Kiểm thử PTV Cột III đứng mổ mở PT-III đúng cột & mục CK-04 CĐHA Không áp dụng]",
+    }, catalog, db)
+    cases.append(c02)
+
+    # ── CA TEST 03: Ready for Attending (🩺 HV đã rà sơ bộ) — Mổ yêu cầu Cột I, Rò HM phức tạp tái phát + Đã chụp MRI đường rò ──
+    ms03 = pick_staff([6, 4])
+    tr03 = pick_staff(trainee_pool)
+    rm03 = rng.choice(["712A", "719", "706"])
+    c03 = initialize_new_surgery_record({
+        "id": base_id + 2,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-03_HV_PREPARED_COMPLEX_FISTULA_MRI",
+        "patientName": mock_name(3, "Rò HM Tái Phát Hình Móng Ngựa [HV đã rà]"),
+        "birthYear": rng.randint(1968, 1992),
+        "admissionId": mock_nv(3),
+        "date": d_off(3, 5),
+        "duration": rng.choice([75, 90]),
+        "surgeryType": "yeucau",
+        "approachType": "mo",
+        "mainSurgeon": ms03,
+        "assistSurgeon1": tr03,
+        "diagnosis": "Rò hậu môn phức tạp tái phát lần 2 đường rò hình móng ngựa",
+        "method": "Phẫu thuật điều trị rò hậu môn phức tạp",
+        "notes": "[CA TEST #03 — BS học viên đã rà sơ bộ CK-01..03/06/07 & chọn Đã chụp MRI đường rò; chờ BS chính xác nhận CK-04 & CK-08]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c03, catalog, rm03, trainee_id=tr03, freeze_snapshot=False)
+    _finalize_classification_for_sandbox(
+        c03, catalog, db, actor_id=tr03, pathology_group="benign_anorectal",
+        catalog_entry_id="MO-145", proc_class="PT-I", declared_mode="within_column", urgency_level="elective_service",
+    )
+    c03["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["diabetes"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
+        "contextChips": {
+            "fistulaContext": {
+                "fistulaClassification": "complex_or_recurrent_fistula",
+                "fistulaImaging": "mri_fistula_done",
+            }
+        },
+    }
+    for ck_c in ("CK-01", "CK-02", "CK-03", "CK-06", "CK-07"):
+        c03["preopChecklist"][ck_c]["state"] = "prepared_ok"
+        c03["preopChecklist"][ck_c]["preparedByStaffId"] = tr03
+    c03["preopChecklist"]["CK-02"]["subChecks"] = {
+        "preAnesthesiaExam": "prepared_ok", "ecg": "prepared_ok", "chestImaging": "prepared_ok", "echo": "prepared_ok",
+    }
+    c03["preopChecklist"]["CK-05"] = {"state": "not_applicable", "preparedByStaffId": None, "verifiedByStaffId": None, "autoDerivedFrom": "pathologyGroup=benign_anorectal"}
+    c03["caseRevision"] = 2
+    c03["approval"]["status"] = "ready_for_attending"
+    c03["approval"]["readyRequestedAt"] = ts_now
+    c03["approval"]["readyRequestedByStaffId"] = tr03
+    stamp_badge_fields(c03)
+    cases.append(c03)
+
+    # ── CA TEST 04: Submitted (⏳ Chờ BCN duyệt) — Phẫu thuật Robot lành tính sa trực tràng, PTV #1 có chứng chỉ Robot ──
+    tr04 = pick_staff(trainee_pool)
+    rm04 = rng.choice(rooms_pod1 + rooms_pod3)
+    c04 = initialize_new_surgery_record({
+        "id": base_id + 3,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-04_SUBMITTED_ROBOT_CERTIFIED_BENIGN",
+        "patientName": mock_name(4, "Robot Sa Trực Tràng Độ III [Chờ BCN duyệt]"),
+        "birthYear": rng.randint(1955, 1974),
+        "admissionId": mock_nv(4),
+        "date": d_off(3, 6),
+        "duration": rng.choice([180, 210]),
+        "surgeryType": "robot",
+        "approachType": "robot",
+        "mainSurgeon": 1,
+        "assistSurgeon1": pick_staff([6, 8]),
+        "diagnosis": "Sa trực tràng toàn bộ độ III lành tính",
+        "method": "Phẫu thuật nội soi cố định trực tràng bằng lưới trong điều trị sa trực tràng",
+        "notes": "[CA TEST #04 — Robot lành tính (CK-05 GPB tự động N/A), PTV #1 có chứng nhận Robot, dự trù lưới Mesh + dụng cụ Robot]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c04, catalog, rm04, trainee_id=tr04, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c04, catalog, db, actor_id=1, pathology_group="benign_colorectal_abdominal",
+        catalog_entry_id="PTNS-235", proc_class="PT-I", declared_mode="within_column", urgency_level="elective",
+    )
+    c04["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["hypertension"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["robot_instruments", "mesh", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
+        "contextChips": {
+            "benignAbdominalContext": {"subType": "rectal_prolapse", "bowelPrepPlan": "oral_mechanical_prep"}
+        },
+    }
+    c04["preopChecklist"] = _build_verified_checklist_for_sandbox(1, tr04, benign=True)
+    c04["caseRevision"] = 2
+    c04["approval"]["status"] = "submitted"
+    c04["approval"]["slaStatus"] = "on_time"
+    c04["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": 1, "actingForMainSurgeonReason": None}
+    stamp_badge_fields(c04)
+    cases.append(c04)
+
+    # ── CA TEST 05: Draft cảnh báo Robot — PTV Cột ĐB nhưng chưa có trong danh sách chứng nhận Robot hiện hành ──
+    ms05 = pick_staff([4, 5])
+    c05 = initialize_new_surgery_record({
+        "id": base_id + 4,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-05_DRAFT_ROBOT_UNCERTIFIED_ALERT",
+        "patientName": mock_name(5, "Robot K Đại Tràng Sigma [Cảnh báo Chứng chỉ Robot]"),
+        "birthYear": rng.randint(1952, 1978),
+        "admissionId": mock_nv(5),
+        "date": d_off(4, 6),
+        "duration": rng.choice([210, 240]),
+        "surgeryType": "robot",
+        "approachType": "robot",
+        "mainSurgeon": ms05,
+        "assistSurgeon1": pick_staff(trainee_pool),
+        "diagnosis": "Ung thư biểu mô tuyến đại tràng Sigma cT3N1M0",
+        "method": "Phẫu thuật nội soi cắt đại tràng chậu hông+ nạo vét hạch",
+        "notes": "[CA TEST #05 — Kiểm thử chặn tự động khi PTV chưa có chứng nhận mổ chính Robot tại khoa]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c05, catalog, rng.choice(rooms_pod3), trainee_id=c05.get("assistSurgeon1"), freeze_snapshot=False)
+    _finalize_classification_for_sandbox(
+        c05, catalog, db, actor_id=ms05, pathology_group="cancer_confirmed",
+        catalog_entry_id="PTNS-202", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
+    )
+    stamp_badge_fields(c05)
+    cases.append(c05)
+
+    # ── CA TEST 06: Preapproved (☑️ Đạt tiền duyệt Phó TK — Chờ Trưởng khoa) — K trực tràng giữa sau TNT + Duy trì Aspirin 81mg ──
+    ms06 = pick_staff([2, 4])
+    tr06 = pick_staff(trainee_pool)
+    rm06 = rng.choice(["718", "708"])
+    c06 = initialize_new_surgery_record({
+        "id": base_id + 5,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-06_PREAPPROVED_RECTAL_TNT_ASPIRIN",
+        "patientName": mock_name(6, "K Trực Tràng Giữa Sau TNT [Đã Tiền duyệt]"),
+        "birthYear": rng.randint(1950, 1972),
+        "admissionId": mock_nv(6),
+        "date": d_off(3, 6),
+        "duration": rng.choice([210, 240]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "noisoi",
+        "mainSurgeon": ms06,
+        "assistSurgeon1": tr06,
+        "diagnosis": "Ung thư trực tràng giữa sau hóa xạ toàn diện TNT (ycT3NxM0, CRM âm tính)",
+        "method": "Phẫu thuật nội soi cắt trực tràng thấp+ nạo vét hạch",
+        "notes": "[CA TEST #06 — Stent mạch vành duy trì Aspirin 81mg theo HC Tim mạch + dự kiến mở HMNT hồi tràng bảo vệ; Phó TK đã Tiền duyệt]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c06, catalog, rm06, trainee_id=tr06, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c06, catalog, db, actor_id=ms06, pathology_group="cancer_confirmed",
+        catalog_entry_id="PTNS-218", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
+    )
+    c06["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["hypertension", "cad_stent"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {
+            "confirmed": True,
+            "mode": "continued_per_plan",
+            "drugName": "Aspirin 81mg",
+            "bridgingAgent": "",
+            "lastDoseAt": "Uống sáng hôm trước mổ",
+            "approvingSpecialtyOrDoctor": "BS Nội Tim mạch & BS Gây mê hồi sức",
+            "planReferenceNote": "Stent phủ thuốc LAD — duy trì Aspirin 81mg chu phẫu, cầm máu kỹ bằng dao siêu âm",
+        },
+        "bloodAndDevices": {"confirmed": True, "values": ["prbc_reserved", "circular_linear_stapler", "icg", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "protective_temp_stoma_risk", "stomaNote": "Dự kiến mở HMNT hồi tràng quai bảo vệ miệng nối thấp"},
+        "contextChips": {
+            "cancerContext": {
+                "tumorLocation": ["rectum_mid"],
+                "isSynchronousMultiSite": False,
+                "preopHistology": "adenocarcinoma",
+                "clinicalStage": {
+                    "cT": "T3",
+                    "cN": "Nx",
+                    "cM": "M0",
+                    "stagingNote": "Sau TNT hóa xạ toàn diện — hạch mạc treo trực tràng thoái triển xơ hóa trên MRI tái đánh giá",
+                },
+                "crmStatus": "crm_clear",
+                "multimodalStatus": "post_tnt",
+                "mdtReviewStatus": "mdt_completed",
+            }
+        },
+    }
+    c06["preopChecklist"] = _build_verified_checklist_for_sandbox(ms06, tr06, benign=False)
+    c06["caseRevision"] = 3
+    c06["approval"]["status"] = "preapproved"
+    c06["approval"]["slaStatus"] = "on_time"
+    c06["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": ms06, "actingForMainSurgeonReason": None}
+    c06["approval"]["preapprovedSnapshot"] = {
+        "caseRevision": 3,
+        "preapprovedAt": ts_now,
+        "preapprovedByStaffId": DEPUTY_STAFF_ID,
+        "note": "Hồ sơ ung thư trực tràng sau TNT đầy đủ MRI đánh giá lại & hội chẩn Tim mạch, kính trình Trưởng khoa phê duyệt.",
+    }
+    stamp_badge_fields(c06)
+    cases.append(c06)
+
+    # ── CA TEST 07: Approved (✅ Đã duyệt tại khoa) — K đại tràng đồng thời đa ổ + Bắc cầu Enoxaparin + Thiếu máu đã bù máu ──
+    ms07 = pick_staff([1, 2, 4, 5])
+    tr07 = pick_staff(trainee_pool)
+    rm07 = rng.choice(all_rooms)
+    c07 = initialize_new_surgery_record({
+        "id": base_id + 6,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-07_APPROVED_SYNCHRONOUS_CANCER_BRIDGING",
+        "patientName": mock_name(7, "K Đại Tràng Đa Ổ Đồng Thời [✅ Đã duyệt khoa]"),
+        "birthYear": rng.randint(1948, 1968),
+        "admissionId": mock_nv(7),
+        "date": d_off(2, 5),
+        "duration": rng.choice([240, 270]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "noisoi",
+        "mainSurgeon": ms07,
+        "assistSurgeon1": tr07,
+        "diagnosis": "Ung thư biểu mô tuyến đồng thời đại tràng phải và đại tràng Sigma trên nền rung nhĩ mạn",
+        "method": "Phẫu thuật nội soi cắt toàn bộ đại tràng + nạo vét hạch",
+        "notes": "[CA TEST #07 — Đã duyệt tại khoa (Tích xanh hợp lệ 6 điều kiện): K đa ổ + Bắc cầu Lovenox + CK-01 bất thường đã truyền máu]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c07, catalog, rm07, trainee_id=tr07, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c07, catalog, db, actor_id=ms07, pathology_group="cancer_confirmed",
+        catalog_entry_id="PTNS-204", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
+    )
+    c07["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["afib_hf", "anemia_malnutrition"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {
+            "confirmed": True,
+            "mode": "bridging_per_plan",
+            "drugName": "Rivaroxaban 20mg",
+            "bridgingAgent": "Enoxaparin (Lovenox) 40mg TDD",
+            "lastDoseAt": "Ngưng Rivaroxaban trước mổ 72h, ngưng Lovenox trước mổ 24h",
+            "approvingSpecialtyOrDoctor": "Hội chẩn Tim mạch & Gây mê hồi sức",
+            "planReferenceNote": "Xét nghiệm đông máu sáng ngày mổ INR 1.08",
+        },
+        "bloodAndDevices": {"confirmed": True, "values": ["prbc_reserved", "circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
+        "contextChips": {
+            "cancerContext": {
+                "tumorLocation": ["right_colon", "sigmoid"],
+                "isSynchronousMultiSite": True,
+                "preopHistology": "adenocarcinoma",
+                "clinicalStage": {"cT": "T3", "cN": "N1", "cM": "M0", "stagingNote": ""},
+                "crmStatus": "not_applicable",
+                "multimodalStatus": "upfront_surgery",
+                "mdtReviewStatus": "mdt_completed",
+            }
+        },
+    }
+    c07["preopChecklist"] = _build_verified_checklist_for_sandbox(
+        ms07, tr07, benign=False,
+        ck01_abnormal_note="Hb lúc nhập viện 8.8 g/dL — đã truyền 02 ĐV HC lắng nâng Hb lên 10.9 g/dL, dự trù sẵn 02 ĐV tại phòng mổ",
+    )
+    c07["caseRevision"] = 3
+    c07["approval"]["status"] = "approved"
+    c07["approval"]["slaStatus"] = "on_time"
+    c07["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": ms07, "actingForMainSurgeonReason": None}
+    c07["approval"]["approvedSnapshot"] = {
+        "caseRevision": 3,
+        "approvedAt": ts_now,
+        "approvedByStaffId": CHIEF_STAFF_ID,
+        "approvalMode": "standard_chief",
+        "delegationId": None,
+        "note": "Đồng ý phẫu thuật cắt toàn bộ đại tràng nối hồi - trực tràng; kiểm tra lại đông máu sáng ngày mổ.",
+    }
+    stamp_badge_fields(c07)
+    cases.append(c07)
+
+    # ── CA TEST 08: Submitted (⏳ Chờ BCN duyệt) — Module B4 U dưới niêm GIST trực tràng không sinh thiết xuyên niêm ──
+    ms08 = pick_staff([5, 6, 4])
+    tr08 = pick_staff(trainee_pool)
+    c08 = initialize_new_surgery_record({
+        "id": base_id + 7,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-08_SUBMITTED_B4_GIST_SUBMUCOSAL",
+        "patientName": mock_name(8, "U Dưới Niêm GIST Trực Tràng [Module B4]"),
+        "birthYear": rng.randint(1956, 1980),
+        "admissionId": mock_nv(8),
+        "date": d_off(3, 6),
+        "duration": rng.choice([150, 180]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "noisoi",
+        "mainSurgeon": ms08,
+        "assistSurgeon1": tr08,
+        "diagnosis": "U mô đệm đường tiêu hóa (GIST) dưới niêm trực tràng thấp 3.5cm vỏ bao nguyên vẹn",
+        "method": "Phẫu thuật nội soi cắt trực tràng thấp",
+        "notes": "[CA TEST #08 — Module B4: U dưới niêm không sinh thiết xuyên niêm trước mổ để tránh vỡ vỏ bao gieo rắc u]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c08, catalog, rng.choice(rooms_pod2), trainee_id=tr08, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c08, catalog, db, actor_id=ms08, pathology_group="neoplasm_suspected_or_special",
+        catalog_entry_id="PTNS-217", proc_class="PT-I", declared_mode="within_column", urgency_level="elective",
+    )
+    c08["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "protective_temp_stoma_risk", "stomaNote": "Cân nhắc mở HMNT bảo vệ nếu miệng nối sát đường lược"},
+        "contextChips": {
+            "specialNeoplasmContext": {
+                "neoplasmCategory": "gist_submucosal",
+                "biopsyStatus": "submucosal_not_biopsied",
+                "extentEvaluation": "pelvic_mri_eus_done",
+                "mdtReviewStatus": "mdt_completed",
+            }
+        },
+    }
+    c08["preopChecklist"] = _build_verified_checklist_for_sandbox(
+        ms08, tr08, benign=False,
+        ck05_abnormal_note="Hình ảnh EUS & MRI tiểu khung điển hình GIST lớp cơ trực tràng vỏ bao nguyên vẹn — hội chẩn MDT thống nhất mổ cắt trọn không sinh thiết xuyên niêm",
+    )
+    c08["caseRevision"] = 2
+    c08["approval"]["status"] = "submitted"
+    c08["approval"]["slaStatus"] = "on_time"
+    c08["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": ms08, "actingForMainSurgeonReason": None}
+    stamp_badge_fields(c08)
+    cases.append(c08)
+
+    # ── CA TEST 09: Submitted (⏳ Chờ BCN xét Vượt Cột) — PTV Cột II đề xuất Vượt Cột lên PT-I (PTNS Đóng HMNT + B2 kiểm tra đầu dưới) ──
+    ms09 = pick_staff([7, 8, 9])
+    tr09 = pick_staff(trainee_pool)
+    c09 = initialize_new_surgery_record({
+        "id": base_id + 8,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-09_SUBMITTED_OVER_COLUMN_COL2_TO_PT1",
+        "patientName": mock_name(9, "PTNS Đóng HMNT [Cột II Đề xuất Vượt Cột PT-I]"),
+        "birthYear": rng.randint(1960, 1986),
+        "admissionId": mock_nv(9),
+        "date": d_off(3, 6),
+        "duration": rng.choice([90, 120]),
+        "surgeryType": "yeucau",
+        "approachType": "noisoi",
+        "mainSurgeon": ms09,
+        "assistSurgeon1": pick_staff([2, 4, 6]),
+        "diagnosis": "Hậu môn nhân tạo hồi tràng kiểu quai sau mổ cắt trước thấp 4 tháng",
+        "method": "Phẫu thuật nội soi đóng hậu môn nhân tạo",
+        "notes": "[CA TEST #09 — PTV Cột II đề xuất vượt cột thực hiện PTNS Loại I có BS Cột ĐB/I hỗ trợ; đã nội soi kiểm tra miệng nối thông tốt]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c09, catalog, rng.choice(["705", "706", "710", "707"]), trainee_id=tr09, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c09, catalog, db, actor_id=ms09, pathology_group="benign_colorectal_abdominal",
+        catalog_entry_id="PTNS-214", proc_class="PT-I", declared_mode="propose_over_column",
+        urgency_level="elective_service",
+        over_column_ref="Đề xuất BCN phê duyệt vượt cột ca đóng HMNT hồi tràng (có BS Cột ĐB/I cùng kíp hỗ trợ)",
+    )
+    c09["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["circular_linear_stapler"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "stoma_closure", "stomaNote": "Đóng HMNT hồi tràng quai nối máy Stapler thẳng"},
+        "contextChips": {
+            "benignAbdominalContext": {
+                "subType": "stoma_management",
+                "distalLimbCheck": "endoscopy_or_contrast_patent",
+                "bowelPrepPlan": "enema_only",
+            }
+        },
+    }
+    c09["preopChecklist"] = _build_verified_checklist_for_sandbox(ms09, tr09, benign=True)
+    c09["caseRevision"] = 2
+    c09["approval"]["status"] = "submitted"
+    c09["approval"]["slaStatus"] = "on_time"
+    c09["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": ms09, "actingForMainSurgeonReason": None}
+    stamp_badge_fields(c09)
+    cases.append(c09)
+
+    # ── CA TEST 10: Submitted (⏳ Chờ BCN xét Vượt Cột) — PTV Cột III đề xuất Vượt Cột PTNS PT-II (do PTNS có 0 kỹ thuật PT-III) ──
+    ms10 = pick_staff([10, 11, 12])
+    tr10 = pick_staff(trainee_pool)
+    c10 = initialize_new_surgery_record({
+        "id": base_id + 9,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-10_SUBMITTED_OVER_COLUMN_COL3_LAP_PT2",
+        "patientName": mock_name(10, "PTNS Ruột Thừa / Túi Thừa [Cột III Vượt Cột PTNS]"),
+        "birthYear": rng.randint(1978, 2003),
+        "admissionId": mock_nv(10),
+        "date": d_off(2, 4),
+        "duration": rng.choice([60, 75]),
+        "surgeryType": "bankhan",
+        "approachType": "noisoi",
+        "mainSurgeon": ms10,
+        "assistSurgeon1": pick_staff([6, 8]),
+        "diagnosis": "Viêm ruột thừa cấp mủ khu trú hố chậu phải",
+        "method": "Phẫu thuật nội soi cắt ruột thừa",
+        "notes": "[CA TEST #10 — Phụ lục PTNS không có kỹ thuật PT-III; PTV Cột III trình BCN xét duyệt thực hiện PTNS hạng II bán khẩn]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c10, catalog, rng.choice(["711", "712", "709", "718"]), trainee_id=tr10, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c10, catalog, db, actor_id=ms10, pathology_group="benign_colorectal_abdominal",
+        catalog_entry_id="PTNS-187", proc_class="PT-II", declared_mode="propose_over_column",
+        urgency_level="semi_urgent",
+        semi_urgent_reason="Đau khu trú HCP tăng dần, BC 14.8 G/L, CRP 68 mg/L, siêu âm/CT ruột thừa đường kính 11mm",
+        over_column_ref="PTV Cột III trình BCN duyệt thực hiện PTNS cắt ruột thừa (PT-II) có BS Cột I/II hỗ trợ tại phòng mổ",
+    )
+    c10["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["basic_instruments_only"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
+        "contextChips": {
+            "benignAbdominalContext": {"subType": "diverticulitis_appendicitis", "bowelPrepPlan": "no_prep_eras"}
+        },
+    }
+    c10["preopChecklist"] = _build_verified_checklist_for_sandbox(ms10, tr10, benign=True)
+    c10["caseRevision"] = 2
+    c10["approval"]["status"] = "submitted"
+    c10["approval"]["slaStatus"] = "semi_urgent_window"
+    c10["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": ms10, "actingForMainSurgeonReason": None}
+    stamp_badge_fields(c10)
+    cases.append(c10)
+
+    # ── CA TEST 11: Returned for Revision (↩️ BCN yêu cầu bổ sung) — Bán khẩn Áp-xe cạnh HM sâu trên nền ĐTĐ + Clopidogrel ──
+    ms11 = pick_staff([7, 8, 9])
+    tr11 = pick_staff(trainee_pool)
+    c11 = initialize_new_surgery_record({
+        "id": base_id + 10,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-11_RETURNED_BY_BCN_NEEDS_REVISION",
+        "patientName": mock_name(11, "Áp-Xe Khoang Ngồi Trực Tràng [↩️ BCN trả bổ sung]"),
+        "birthYear": rng.randint(1950, 1972),
+        "admissionId": mock_nv(11),
+        "date": d_off(1, 3),
+        "duration": rng.choice([45, 60]),
+        "surgeryType": "bankhan",
+        "approachType": "mo",
+        "mainSurgeon": ms11,
+        "assistSurgeon1": tr11,
+        "diagnosis": "Áp-xe cạnh hậu môn sâu lan khoang ngồi - trực tràng trên nền Đái tháo đường típ 2",
+        "method": "Phẫu thuật chích, dẫn lưu áp xe cạnh hậu môn đơn giản",
+        "notes": "[CA TEST #11 — BCN yêu cầu bổ sung khám tiền mê tim phổi & làm rõ thời điểm ngưng Clopidogrel trước khi trình lại]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c11, catalog, rng.choice(rooms_pod2), trainee_id=tr11, freeze_snapshot=False)
+    _finalize_classification_for_sandbox(
+        c11, catalog, db, actor_id=ms11, pathology_group="benign_anorectal",
+        catalog_entry_id="MO-142", proc_class="PT-II", declared_mode="within_column",
+        urgency_level="semi_urgent",
+        semi_urgent_reason="Áp-xe cạnh hậu môn căng đau, sốt 38.5°C trên bệnh nhân đái tháo đường cần dẫn lưu sớm",
+    )
+    c11["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["diabetes", "hypertension"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {
+            "confirmed": True,
+            "mode": "held_per_plan",
+            "drugName": "Clopidogrel 75mg",
+            "bridgingAgent": "",
+            "lastDoseAt": "Đã ngưng 5 ngày trước nhập viện",
+            "approvingSpecialtyOrDoctor": "BS Nội Tim mạch",
+            "planReferenceNote": "",
+        },
+        "bloodAndDevices": {"confirmed": True, "values": ["basic_instruments_only"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
+        "contextChips": {"fistulaContext": {"fistulaClassification": "not_fistula"}},
+    }
+    c11["preopChecklist"] = _build_verified_checklist_for_sandbox(ms11, tr11, benign=True)
+    c11["preopChecklist"]["CK-02"]["subChecks"]["echo"] = "unverified"
+    c11["caseRevision"] = 3
+    c11["approval"]["status"] = "returned_for_revision"
+    c11["approval"]["returnFeedback"] = {
+        "chips": [
+            "Thiếu khám tiền mê / thăm dò tim phổi",
+            "Chưa rõ kế hoạch ngưng/duy trì thuốc chống huyết khối",
+        ],
+        "note": "Đề nghị bổ sung kết quả Siêu âm tim tại mục CK-02 và kiểm tra đường huyết mao mạch < 10 mmol/L trước trình lại.",
+        "returnedAt": ts_now,
+        "returnedByStaffId": DEPUTY_STAFF_ID,
+    }
+    stamp_badge_fields(c11)
+    cases.append(c11)
+
+    # ── CA TEST 12: Emergency Exception Pending Ack (⚡ Ngoại lệ cấp cứu chờ BCN xác nhận) — Tắc ruột quai kín mổ Hartmann ──
+    ms12 = pick_staff([4, 5, 6])
+    tr12 = pick_staff(trainee_pool)
+    c12 = initialize_new_surgery_record({
+        "id": base_id + 11,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-12_EMERGENCY_EXCEPTION_HARTMANN",
+        "patientName": mock_name(12, "Tắc Ruột Quai Kín U Sigma [⚡ Ngoại lệ Cấp cứu]"),
+        "birthYear": rng.randint(1945, 1966),
+        "admissionId": mock_nv(12),
+        "date": d_off(0, 1),
+        "duration": rng.choice([150, 180]),
+        "surgeryType": "bankhan",
+        "approachType": "mo",
+        "mainSurgeon": ms12,
+        "assistSurgeon1": tr12,
+        "diagnosis": "Tắc ruột già quai kín do u đại tràng Sigma dọa vỡ manh tràng (đường kính manh tràng 10.5cm)",
+        "method": "Cắt đoạn đại tràng, đóng đầu dưới, đưa đầu trên ra ngoài ổ bụng kiểu Hartmann",
+        "notes": "[CA TEST #12 — Cổng Ngoại lệ Cấp cứu: BS trực khoa 08:00–18:00 đã báo điện thoại Trưởng khoa, chờ BCN bấm Xác nhận ngoại lệ]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c12, catalog, rng.choice(rooms_pod3), trainee_id=tr12, freeze_snapshot=False)
+    c12["clinicalClassification"]["urgencyLevel"] = "emergency_exception"
+    for ck_c in CK_CODES:
+        c12["preopChecklist"][ck_c]["state"] = "deferred_emergency"
+        c12["preopChecklist"][ck_c]["verifiedByStaffId"] = ms12
+    c12["caseRevision"] = 2
+    c12["approval"]["status"] = "emergency_exception_pending_ack"
+    c12["approval"]["slaStatus"] = "emergency_exempt"
+    c12["approval"]["deferredItems"] = list(CK_CODES)
+    c12["approval"]["emergencyException"] = {
+        "emergencyReasonNote": "Tắc ruột đại tràng quai kín dọa vỡ manh tràng đau phản ứng thành bụng HCP — chỉ định mổ cấp cứu khẩn giải áp & cắt đoạn Hartmann.",
+        "verbalConsultRecord": {
+            "contactedLeaderStaffId": CHIEF_STAFF_ID,
+            "contactChannel": "phone",
+            "contactedAt": ts_now,
+        },
+        "postOpFollowUpOwnerStaffId": ms12,
+        "submittedByStaffId": ms12,
+        "submittedAt": ts_now,
+    }
+    stamp_badge_fields(c12)
+    cases.append(c12)
+
+    # ── CA TEST 13: Submitted (⏳ Liên chuyên khoa) — PTV chính Ngoài khoa + BS chính Khoa PTĐTT điều phối ──
+    ext_surgeon_id = rng.choice([x for x in ext_docs if x != 116] or ext_docs or [111])
+    coord_id = pick_staff([2, 4])
+    tr13 = pick_staff(trainee_pool)
+    c13 = initialize_new_surgery_record({
+        "id": base_id + 12,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-13_SUBMITTED_INTERDISCIPLINARY_EXTERNAL_SURGEON",
+        "patientName": mock_name(13, "U Tiểu Khung Xâm Lấn Niệu Quản [Liên Chuyên Khoa]"),
+        "birthYear": rng.randint(1954, 1979),
+        "admissionId": mock_nv(13),
+        "date": d_off(3, 6),
+        "duration": rng.choice([210, 240]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "mo",
+        "mainSurgeon": ext_surgeon_id,
+        "assistSurgeon1": coord_id,
+        "diagnosis": "U sau phúc mạc tiểu khung tái phát dính niệu quản trái & đại tràng chậu hông",
+        "method": "Lấy u sau phúc mạc",
+        "notes": "[CA TEST #13 — PTV ngoài khoa phối hợp liên chuyên khoa Tiết niệu + BS chính Khoa PTĐTT điều phối hồ sơ]",
+    }, catalog, db)
+    c13["coordinatingAttendingStaffId"] = coord_id
+    c13["interdisciplinaryCoordination"] = {
+        "isInterdisciplinary": True,
+        "specialty": "Ngoại Tiết niệu & Ngoại Tiêu hóa",
+        "coordinatingAttendingStaffId": coord_id,
+        "planNote": "Phối hợp soi bàng quang đặt thông JJ niệu quản hai bên trước khi phẫu tích khối u tiểu khung",
+    }
+    _stamp_pod_for_sandbox(c13, catalog, rng.choice(rooms_pod1 + rooms_pod3), trainee_id=tr13, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c13, catalog, db, actor_id=coord_id, pathology_group="neoplasm_suspected_or_special",
+        catalog_entry_id="MO-191", proc_class="PT-I", declared_mode="external_surgeon_verify_privilege", urgency_level="elective",
+    )
+    c13["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["hypertension"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["prbc_reserved", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "protective_temp_stoma_risk", "stomaNote": "Dự phòng mở HMNT nếu phải cắt đoạn đại tràng Sigma dính u"},
+        "contextChips": {
+            "specialNeoplasmContext": {
+                "neoplasmCategory": "recurrent_pelvic_tumor",
+                "biopsyStatus": "biopsy_confirmed_special",
+                "extentEvaluation": "ct_mri_multiphase_done",
+                "mdtReviewStatus": "mdt_completed",
+            }
+        },
+    }
+    c13["preopChecklist"] = _build_verified_checklist_for_sandbox(coord_id, tr13, benign=False)
+    c13["caseRevision"] = 2
+    c13["approval"]["status"] = "submitted"
+    c13["approval"]["slaStatus"] = "on_time"
+    c13["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": coord_id, "actingForMainSurgeonReason": None}
+    stamp_badge_fields(c13)
+    cases.append(c13)
+
+    # ── CA TEST 14: Post-Approval Hold (⏸️ Tạm hoãn tại khoa sau khi duyệt) — sẵn sàng bấm Gỡ hoãn khôi phục tích xanh ──
+    ms14 = pick_staff([1, 2, 4, 5])
+    tr14 = pick_staff(trainee_pool)
+    c14 = initialize_new_surgery_record({
+        "id": base_id + 13,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-14_POST_APPROVAL_HOLD_ANESTHESIA",
+        "patientName": mock_name(14, "K Đại Tràng Phải [⏸️ Tạm hoãn sau duyệt]"),
+        "birthYear": rng.randint(1949, 1971),
+        "admissionId": mock_nv(14),
+        "date": d_off(2, 5),
+        "duration": rng.choice([180, 210]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "noisoi",
+        "mainSurgeon": ms14,
+        "assistSurgeon1": tr14,
+        "diagnosis": "Ung thư biểu mô tuyến đại tràng lên cT3N0M0 kèm cơn tăng huyết áp trước mổ",
+        "method": "Phẫu thuật nội soi cắt đại tràng phải + nạo vét hạch",
+        "notes": "[CA TEST #14 — Đã duyệt nhưng Gây mê đề nghị tạm hoãn tối ưu huyết áp; BCN có thể bấm Gỡ tạm hoãn để khôi phục tích xanh]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c14, catalog, rng.choice(all_rooms), trainee_id=tr14, freeze_snapshot=True)
+    _finalize_classification_for_sandbox(
+        c14, catalog, db, actor_id=ms14, pathology_group="cancer_confirmed",
+        catalog_entry_id="PTNS-194", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
+    )
+    c14["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["hypertension", "diabetes"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
+        "contextChips": {
+            "cancerContext": {
+                "tumorLocation": ["right_colon"],
+                "isSynchronousMultiSite": False,
+                "preopHistology": "adenocarcinoma",
+                "clinicalStage": {"cT": "T3", "cN": "N0", "cM": "M0", "stagingNote": ""},
+                "crmStatus": "not_applicable",
+                "multimodalStatus": "upfront_surgery",
+                "mdtReviewStatus": "mdt_completed",
+            }
+        },
+    }
+    c14["preopChecklist"] = _build_verified_checklist_for_sandbox(ms14, tr14, benign=False)
+    c14["caseRevision"] = 3
+    c14["approval"]["previousApprovedStatus"] = "approved"
+    c14["approval"]["status"] = "post_approval_hold"
+    c14["approval"]["slaStatus"] = "on_time"
+    c14["approval"]["approvedSnapshot"] = {
+        "caseRevision": 3,
+        "approvedAt": ts_now,
+        "approvedByStaffId": CHIEF_STAFF_ID,
+        "approvalMode": "standard_chief",
+        "delegationId": None,
+        "note": "Đã duyệt chuyên môn tại khoa.",
+    }
+    c14["approval"]["activeHold"] = {
+        "holdCategory": "anesthesia_hold",
+        "holdReason": "Huyết áp sáng trước mổ 185/105 mmHg — BS Gây mê đề nghị tạm hoãn 24–48h kiểm soát huyết áp nội khoa",
+        "heldAt": ts_now,
+        "heldByStaffId": ms14,
+        "caseRevisionAtHold": 3,
+    }
+    stamp_badge_fields(c14)
+    cases.append(c14)
+
+    # ── CA TEST 15: Reapproval Required (🔄 Chờ duyệt lại do thay đổi Tier A sau duyệt) ──
+    ms15 = pick_staff([1, 2, 4, 5])
+    tr15 = pick_staff(trainee_pool)
+    c15 = initialize_new_surgery_record({
+        "id": base_id + 14,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-15_REAPPROVAL_REQUIRED_AFTER_TIER_A_CHANGE",
+        "patientName": mock_name(15, "K Trực Tràng Thấp Đổi Lịch/PP [🔄 Chờ duyệt lại]"),
+        "birthYear": rng.randint(1951, 1975),
+        "admissionId": mock_nv(15),
+        "date": d_off(4, 6),
+        "duration": rng.choice([210, 240]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "noisoi",
+        "mainSurgeon": ms15,
+        "assistSurgeon1": tr15,
+        "diagnosis": "Ung thư trực tràng thấp sát ống hậu môn cT3bN1M0 (đổi lịch & kế hoạch HMNT sau hội chẩn lại MRI)",
+        "method": "Phẫu thuật nội soi cắt trực tràng thấp+ nạo vét hạch",
+        "notes": "[CA TEST #15 — Ca từng được duyệt nhưng thay đổi trường Tier A (dời ngày mổ & cập nhật CRM bị đe dọa) làm tự động thu hồi tích xanh]",
+    }, catalog, db)
+    _stamp_pod_for_sandbox(c15, catalog, rng.choice(rooms_pod1 + rooms_pod3), trainee_id=tr15, freeze_snapshot=False)
+    _finalize_classification_for_sandbox(
+        c15, catalog, db, actor_id=ms15, pathology_group="cancer_confirmed",
+        catalog_entry_id="PTNS-218", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
+    )
+    c15["clinicalChips"] = {
+        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
+        "bloodAndDevices": {"confirmed": True, "values": ["prbc_reserved", "circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
+        "stomaPlan": {"confirmed": True, "value": "planned_permanent_stoma", "stomaNote": "Nguy cơ chuyển APR mở HMNT vĩnh viễn nếu diện cắt dưới dương tính trên sinh thiết tức thì"},
+        "contextChips": {
+            "cancerContext": {
+                "tumorLocation": ["rectum_low"],
+                "isSynchronousMultiSite": False,
+                "preopHistology": "adenocarcinoma",
+                "clinicalStage": {"cT": "T3", "cN": "N1", "cM": "M0", "stagingNote": ""},
+                "crmStatus": "crm_threatened_or_positive",
+                "multimodalStatus": "post_long_course_crt",
+                "mdtReviewStatus": "mdt_completed",
+            }
+        },
+    }
+    c15["preopChecklist"] = _build_verified_checklist_for_sandbox(ms15, tr15, benign=False)
+    c15["caseRevision"] = 4
+    c15["approval"]["status"] = "reapproval_required"
+    c15["approval"]["lastApprovedSnapshot"] = {
+        "caseRevision": 3,
+        "approvedAt": ts_now,
+        "approvedByStaffId": CHIEF_STAFF_ID,
+        "approvalMode": "standard_chief",
+    }
+    c15["approval"]["approvedSnapshot"] = None
+    c15["approval"]["invalidationReason"] = "Thay đổi trường chuyên môn Tier A sau khi duyệt (date, kế hoạch HMNT & đánh giá CRM) — cần trình & duyệt lại"
+    stamp_badge_fields(c15)
+    cases.append(c15)
+
+    # ── CA TEST 16: NSTH External Authority (🔹 Thẩm quyền Khoa Nội soi tiêu hóa — ngoài luồng duyệt PTĐTT) ──
+    nsth_doc = 116 if 116 in ext_docs else (ext_docs[0] if ext_docs else pick_staff([6, 8]))
+    c16 = initialize_new_surgery_record({
+        "id": base_id + 15,
+        "isTestSandboxCase": True,
+        "scenarioCode": "SC-16_NSTH_EXTERNAL_AUTHORITY",
+        "patientName": mock_name(16, "Cắt Polyp Phẳng ESD Đại Tràng [🔹 Khoa NSTH]"),
+        "birthYear": rng.randint(1958, 1985),
+        "admissionId": mock_nv(16),
+        "date": d_off(2, 5),
+        "duration": rng.choice([60, 90]),
+        "surgeryType": "chuongtrinh",
+        "approachType": "nsth",
+        "mainSurgeon": nsth_doc,
+        "assistSurgeon1": None,
+        "diagnosis": "Polyp phẳng lớn đại tràng ngang LST-NG 25mm",
+        "method": "Cắt tách dưới niêm mạc qua nội soi ống mềm (ESD)",
+        "notes": "[CA TEST #16 — Đường mổ Nội soi tiêu hóa: hiển thị rõ nhãn Thẩm quyền Khoa NSTH, không tính vào cổng duyệt mổ Khoa PTĐTT]",
+    }, catalog, db)
+    cases.append(c16)
+
+    # Self-verify all routine submitted/preapproved/approved/held/reapproval cases against Gate 1+2 so 1-click BCN Approve ALWAYS succeeds!
+    bcn_actor = {"staffId": CHIEF_STAFF_ID, "isAdmin": True, "role": "Trưởng khoa"}
+    for sc in (c04, c06, c07, c08, c09, c10, c13, c14, c15):
+        validate_routine_submit_gate(sc, bcn_actor, {"actingForMainSurgeonReason": "BCN_APPROVAL_CHECK"}, catalog, db, cfg)
+    assert is_approval_green_tick_valid(c07) is True, "Sandbox SC-07 must satisfy 6-condition green tick predicate!"
+    db["_nextSandboxSurgeryId"] = base_id + len(cases) + 4
+
+    return cases

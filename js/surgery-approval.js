@@ -161,9 +161,12 @@ const SAP_SIMULATOR_ROLES = [
     { staffId: 0, label: '👤 Thực thi thật: Tài khoản hiện tại' },
     { staffId: 1, label: '🧪 Giả lập [TEST]: TS. BSCKII. Nguyễn Phú Hữu (Trưởng khoa #1)' },
     { staffId: 2, label: '🧪 Giả lập [TEST]: BSCKII. Vũ Khương An (Phó Trưởng khoa #2)' },
-    { staffId: 8, label: '🧪 Giả lập [TEST]: ThS. BSCKI. Giao Hữu Trường Quy (BS chính Cột II #8)' },
-    { staffId: 44, label: '🧪 Giả lập [TEST]: BSNT Học viên (BS học viên #44)' },
-    { staffId: 3, label: '🧪 Giả lập [TEST]: ThS. ĐD. Nguyễn Thị Thanh Thùy (ĐD Trưởng #3)' }
+    { staffId: 4, label: '🧪 Giả lập [TEST]: BS chính Cột ĐB (#4)' },
+    { staffId: 6, label: '🧪 Giả lập [TEST]: BS chính Cột I (#6)' },
+    { staffId: 8, label: '🧪 Giả lập [TEST]: BS chính Cột II (#8)' },
+    { staffId: 10, label: '🧪 Giả lập [TEST]: BS chính Cột III (#10)' },
+    { staffId: 44, label: '🧪 Giả lập [TEST]: BS học viên / BSNT (#44)' },
+    { staffId: 3, label: '🧪 Giả lập [TEST]: ThS. ĐD. Nguyễn Thị Ngọc Thùy (ĐD Trưởng #3)' }
 ];
 
 const SurgeryApprovalPage = {
@@ -186,10 +189,19 @@ const SurgeryApprovalPage = {
     // ── Canary Gate: Visible to Superadmin always, or all staff when rolloutAccessMode === 'all_staff' ──
     getConfig() {
         const cfg = Store._data?.surgeryApprovalConfig;
-        return (cfg && typeof cfg === 'object') ? cfg : {
+        if (cfg && typeof cfg === 'object') {
+            return {
+                ...cfg,
+                sandboxOnlyMode: typeof cfg.sandboxOnlyMode === 'boolean'
+                    ? cfg.sandboxOnlyMode
+                    : (cfg.rolloutAccessMode !== 'all_staff')
+            };
+        }
+        return {
             scope: 'departmental_step1_only',
             zeroHisCoupling: true,
             rolloutAccessMode: 'superadmin_only',
+            sandboxOnlyMode: true,
             checklistMode: 'enforced_gate',
             rolloutEffectiveSurgeryDate: '2026-11-02',
             nsthInternalPrecheckEnabled: false,
@@ -202,6 +214,15 @@ const SurgeryApprovalPage = {
         if (!session) return false;
         if (typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin()) return true;
         return this.getConfig().rolloutAccessMode === 'all_staff';
+    },
+
+    isCaseApprovalEnabled(surgery) {
+        if (!this.isFeatureVisibleForCurrentUser()) return false;
+        if (!surgery || typeof surgery !== 'object') return false;
+        if (this.getConfig().sandboxOnlyMode !== false) {
+            return surgery.isTestSandboxCase === true;
+        }
+        return true;
     },
 
     // ── Exact 6-Condition Green Tick Predicate & 12-Row Departmental Truth Table ──
@@ -493,22 +514,59 @@ const SurgeryApprovalPage = {
         App.renderCurrentPage();
     },
 
+    _getSimulatorRoleOptions() {
+        const staffMap = new Map((Store.getAll('staff') || []).map(st => [Number(st.id), st]));
+        const colTag = { 1: 'Trưởng khoa', 2: 'Phó Trưởng khoa', 3: 'ĐD Trưởng', 4: 'Cột ĐB', 5: 'Cột ĐB', 6: 'Cột I', 7: 'Cột II', 8: 'Cột II', 9: 'Cột II', 10: 'Cột III', 11: 'Cột III', 12: 'Cột III' };
+        const dynamicIds = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 43, 44, 46, 3];
+        const opts = [{ staffId: 0, label: '👤 Thực thi thật: Tài khoản hiện tại' }];
+        const seen = new Set([0]);
+        for (const sid of dynamicIds) {
+            const st = staffMap.get(sid);
+            if (!st && !SAP_SIMULATOR_ROLES.some(r => r.staffId === sid)) continue;
+            seen.add(sid);
+            const fullName = st ? `${st.title ? st.title + ' ' : ''}${st.name}` : (SAP_SIMULATOR_ROLES.find(r => r.staffId === sid)?.label.replace(/^🧪 Giả lập \[TEST\]:\s*/, '') || `Nhân sự #${sid}`);
+            const roleHint = colTag[sid] || (SAP_TRAINEE_IDS.has(sid) ? 'BS học viên' : '');
+            opts.push({
+                staffId: sid,
+                label: `🧪 Giả lập [TEST]: ${fullName}${roleHint && !fullName.includes('#') ? ` (${roleHint} #${sid})` : (!fullName.includes('#') ? ` (#${sid})` : '')}`
+            });
+        }
+        if (this._simulatedStaffId > 0 && !seen.has(Number(this._simulatedStaffId))) {
+            opts.push({ staffId: Number(this._simulatedStaffId), label: `🧪 Giả lập [TEST]: ${Utils.getStaffName(this._simulatedStaffId) || 'Nhân sự'} (#${this._simulatedStaffId})` });
+        }
+        return opts;
+    },
+
     // ── Superadmin Canary Control & Zero-PHI Sandbox Toolbar ──
     _renderCanaryToolbar(cfg) {
         const isLocked = cfg.rolloutAccessMode !== 'all_staff';
+        const sandboxOnly = cfg.sandboxOnlyMode !== false;
         const sandboxCount = (Store._data?.surgeries || []).filter(s => s && s.isTestSandboxCase === true).length;
+        const simOptions = this._getSimulatorRoleOptions();
 
         return `
         <div class="sap-canary-bar" id="sap-superadmin-toolbar">
-            <div class="sap-canary-header">
+            <div class="sap-canary-header" style="gap:8px;flex-wrap:wrap;">
                 <div class="sap-canary-title">
-                    🛡️ Bảng Điều Khiển Triển Khai Thử Nghiệm (Dành riêng Super Admin)
+                    🛡️ Bảng Điều Khiển Kiểm Thử Duyệt Mổ (Dành riêng Super Admin)
                 </div>
-                <span class="sap-canary-pill ${isLocked ? 'sap-canary-pill--locked' : 'sap-canary-pill--live'}">
-                    ${isLocked ? '🔒 Đang ẩn với nhân sự khác (Chỉ Super Admin thấy)' : '🌐 Đang mở toàn Khoa PTĐTT'}
-                </span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <span class="sap-canary-pill ${sandboxOnly ? 'sap-canary-pill--locked' : 'sap-canary-pill--live'}">
+                        ${sandboxOnly ? '🧪 CHỈ DÙNG CA TEST GIẢ LẬP (0% Bệnh nhân thật)' : '🏥 Đang kết nối Lịch mổ thật'}
+                    </span>
+                    <span class="sap-canary-pill ${isLocked ? 'sap-canary-pill--locked' : 'sap-canary-pill--live'}">
+                        ${isLocked ? '🔒 Ẩn với nhân sự khác' : '🌐 Mở toàn Khoa PTĐTT'}
+                    </span>
+                </div>
             </div>
             <div class="sap-canary-grid">
+                <div class="sap-canary-field">
+                    <label for="sap-cfg-sandbox-only">Nguồn dữ liệu Tab Duyệt mổ</label>
+                    <select id="sap-cfg-sandbox-only" class="sap-select" onchange="SurgeryApprovalPage.updateConfigField('sandboxOnlyMode', this.value === 'true')">
+                        <option value="true" ${sandboxOnly ? 'selected' : ''}>🧪 Chỉ dùng ca TEST (Ẩn & Khóa 100% BN thật)</option>
+                        <option value="false" ${!sandboxOnly ? 'selected' : ''}>🏥 Mở áp dụng trên Lịch mổ thật</option>
+                    </select>
+                </div>
                 <div class="sap-canary-field">
                     <label for="sap-cfg-rollout">Chế độ hiển thị (Rollout Gate)</label>
                     <select id="sap-cfg-rollout" class="sap-select" onchange="SurgeryApprovalPage.updateConfigField('rolloutAccessMode', this.value)">
@@ -527,13 +585,13 @@ const SurgeryApprovalPage = {
                 <div class="sap-canary-field">
                     <label for="sap-sim-role">Giả lập vai trò (chỉ áp dụng trên ca [TEST])</label>
                     <select id="sap-sim-role" class="sap-select" onchange="SurgeryApprovalPage.setSimulatedRole(this.value)">
-                        ${SAP_SIMULATOR_ROLES.map(r => `<option value="${r.staffId}" ${Number(this._simulatedStaffId) === r.staffId ? 'selected' : ''}>${Utils.escapeHtml(r.label)}</option>`).join('')}
+                        ${simOptions.map(r => `<option value="${r.staffId}" ${Number(this._simulatedStaffId) === r.staffId ? 'selected' : ''}>${Utils.escapeHtml(r.label)}</option>`).join('')}
                     </select>
                 </div>
             </div>
             <div class="sap-canary-actions">
-                <button type="button" class="sap-btn sap-btn--primary" id="sap-btn-seed-sandbox" onclick="SurgeryApprovalPage.seedSandboxCases()">
-                    🧪 Tạo 5 ca mẫu Zero-PHI ${sandboxCount > 0 ? `(Đang có ${sandboxCount} ca)` : ''}
+                <button type="button" class="sap-btn sap-btn--primary" id="sap-btn-seed-sandbox" onclick="SurgeryApprovalPage.seedSandboxCases(${sandboxCount > 0 ? 'true' : 'false'})">
+                    🎲 ${sandboxCount > 0 ? `Tạo mới ngẫu nhiên 16 ca TEST (Đang có ${sandboxCount} ca)` : 'Tạo ngẫu nhiên 16 ca TEST (Đủ mọi tình huống)'}
                 </button>
                 <button type="button" class="sap-btn sap-btn--danger" id="sap-btn-clean-sandbox" onclick="SurgeryApprovalPage.cleanupSandboxCases()" ${sandboxCount === 0 ? 'disabled' : ''}>
                     🧹 Xóa sạch ca mẫu [TEST]
@@ -549,6 +607,7 @@ const SurgeryApprovalPage = {
                 Store._data.surgeryApprovalConfig = res.config;
                 Store._saveLocal();
             }
+            await Store._syncFromServer(true);
             if (typeof App !== 'undefined' && App.updateNavVisibility) {
                 App.updateNavVisibility();
             }
@@ -569,19 +628,22 @@ const SurgeryApprovalPage = {
         if (this._openCaseId) {
             this._refreshOpenModal(this._openCaseId);
         }
-        const label = SAP_SIMULATOR_ROLES.find(r => r.staffId === this._simulatedStaffId)?.label || '';
+        const label = this._getSimulatorRoleOptions().find(r => r.staffId === this._simulatedStaffId)?.label || '';
         Toast.info(`Chế độ vai trò: ${label}`);
     },
 
-    async seedSandboxCases() {
+    async seedSandboxCases(replaceExisting = false) {
         try {
-            const res = await this._api('/api/surgery-approval/sandbox/seed', 'POST', {});
+            const res = await this._api('/api/surgery-approval/sandbox/seed', 'POST', { replaceExisting: Boolean(replaceExisting) });
             await Store._syncFromServer(true);
             App.renderCurrentPage();
+            const count = res.cases?.length || 16;
             if (res.alreadySeeded) {
-                Toast.info(`Đã có sẵn ${res.cases?.length || 5} ca mẫu [TEST] trong danh sách.`);
+                Toast.info(`Đã có sẵn ${count} ca mẫu [TEST] trong danh sách.`);
+            } else if (replaceExisting) {
+                Toast.success(`Đã làm mới ngẫu nhiên bộ ${count} ca TEST (0% bệnh nhân thật) đủ mọi tình huống!`);
             } else {
-                Toast.success(`Đã tạo ${res.cases?.length || 5} ca mẫu Zero-PHI ([TEST]) để kiểm thử!`);
+                Toast.success(`Đã khởi tạo ${count} ca TEST ngẫu nhiên Zero-PHI đủ mọi tình huống!`);
             }
         } catch (err) {
             Toast.error(err.message);
@@ -617,11 +679,21 @@ const SurgeryApprovalPage = {
     _getEligibleSurgeries(cfg) {
         const all = Store._data?.surgeries || [];
         const rolloutDate = cfg.rolloutEffectiveSurgeryDate || '2026-11-02';
+        const sandboxOnly = cfg.sandboxOnlyMode !== false;
         return all.filter(s => {
             if (!s || typeof s !== 'object') return false;
             const st = s.approval?.status;
             if (st === 'trashed_inactive') return false;
+            if (sandboxOnly) {
+                if (s.isTestSandboxCase !== true || !App.isSuperAdmin()) return false;
+                if (this._filters.scope === 'week' && typeof SurgeryPage !== 'undefined') {
+                    const weekDates = SurgeryPage.getWeekDates().map(d => SurgeryPage.dateStr(d));
+                    return weekDates.includes(s.date);
+                }
+                return true;
+            }
             if (s.isTestSandboxCase === true) return App.isSuperAdmin();
+            if (st === 'legacy_exempt') return false;
             if (this._filters.scope === 'week') {
                 if (typeof SurgeryPage !== 'undefined') {
                     const weekDates = SurgeryPage.getWeekDates().map(d => SurgeryPage.dateStr(d));
@@ -727,7 +799,7 @@ const SurgeryApprovalPage = {
                 <div style="font-size:2rem;margin-bottom:8px;">📋</div>
                 <h3 style="color:var(--text-heading);margin-bottom:6px;">Chưa có ca mổ nào khớp bộ lọc hiện tại</h3>
                 <p style="color:var(--text-secondary);font-size:0.88rem;">
-                    ${App.isSuperAdmin() ? 'Bấm nút <strong>"🧪 Tạo 5 ca mẫu Zero-PHI"</strong> phía trên để kiểm thử toàn bộ quy trình 1 chạm ngay lập tức.' : 'Các ca mổ dự kiến sẽ tự động hiển thị tại đây.'}
+                    ${App.isSuperAdmin() ? 'Bấm nút <strong>"🎲 Tạo ngẫu nhiên 16 ca TEST (Đủ mọi tình huống)"</strong> phía trên để kiểm thử toàn bộ quy trình 1 chạm ngay lập tức (0% bệnh nhân thật).' : 'Các ca mổ dự kiến sẽ tự động hiển thị tại đây.'}
                 </p>
             </div>`}
         </div>`;
@@ -1010,6 +1082,10 @@ const SurgeryApprovalPage = {
             Toast.error('Không tìm thấy ca mổ trên danh sách hiện tại.');
             return;
         }
+        if (this.getConfig().sandboxOnlyMode !== false && s.isTestSandboxCase !== true) {
+            Toast.info('Tab Duyệt mổ đang ở chế độ Chỉ dùng ca TEST giả lập — không thao tác trên bệnh nhân thật.');
+            return;
+        }
         this._openCaseId = Number(s.id);
         this._catalogQuery = '';
         this._activeActionDrawer = null;
@@ -1091,13 +1167,37 @@ const SurgeryApprovalPage = {
         }[sysCheck] || { cls: 'sap-alert--info', text: 'ℹ️ Vui lòng chọn kỹ thuật trong danh mục 309 PT để kiểm tra cột tự động.' };
 
         const attendingStaff = (Store.getAll('staff') || []).filter(st => SAP_ATTENDING_IDS.has(Number(st.id)));
+        const caseTraineeId = SAP_TRAINEE_IDS.has(Number(s.assistSurgeon1))
+            ? Number(s.assistSurgeon1)
+            : (SAP_TRAINEE_IDS.has(Number(pa.preparedByStaffId)) ? Number(pa.preparedByStaffId) : 44);
+        const caseAttendingId = isExternalMain
+            ? (SAP_ATTENDING_IDS.has(Number(s.coordinatingAttendingStaffId)) ? Number(s.coordinatingAttendingStaffId) : 2)
+            : (SAP_ATTENDING_IDS.has(Number(s.mainSurgeon)) ? Number(s.mainSurgeon) : 8);
 
         return `
         <div class="sap-modal-wrap" data-modal-case-id="${s.id}">
-            ${actor.isSimulated ? `
+            ${(App.isSuperAdmin() && s.isTestSandboxCase === true) ? `
+            <div class="sap-field-block" style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-color);">
+                <div class="sap-field-label" style="margin-bottom:6px;">
+                    🎭 Chuyển nhanh vai trò kiểm thử trên ca TEST này
+                    ${actor.isSimulated ? `<span class="sap-tag sap-tag--sandbox">Đang giả lập: ${Utils.escapeHtml((actor.title ? actor.title + ' ' : '') + actor.name)} (#${actor.staffId})</span>` : '<span class="sap-tag">Tài khoản thật (Super Admin)</span>'}
+                </div>
+                <div class="sap-chip-group">
+                    <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === 0 ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setSimulatedRole('0')">👤 Tài khoản thật</button>
+                    <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === caseTraineeId ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setSimulatedRole('${caseTraineeId}')">🩺 HV ca này (#${caseTraineeId})</button>
+                    <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === caseAttendingId ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setSimulatedRole('${caseAttendingId}')">🔪 ${isExternalMain ? 'BS điều phối' : 'PTV chính'} (#${caseAttendingId})</button>
+                    <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === 2 ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setSimulatedRole('2')">☑️ Phó TK (#2)</button>
+                    <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === 1 ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setSimulatedRole('1')">✅ Trưởng khoa (#1)</button>
+                </div>
+            </div>` : (actor.isSimulated ? `
             <div class="sap-alert sap-alert--info">
                 🧪 <strong>Đang thao tác dưới vai trò giả lập [TEST]:</strong> ${Utils.escapeHtml((actor.title ? actor.title + ' ' : '') + actor.name)} (#${actor.staffId})
-            </div>` : ''}
+            </div>` : '')}
 
             <div class="sap-case-banner">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from flask import jsonify, request
 
 from surgery_approval_engine import (
+    APPROVAL_METADATA_FIELDS_TO_STRIP,
     ATTENDING_STAFF_IDS,
     BCN_STAFF_IDS,
     CHIEF_STAFF_ID,
@@ -52,6 +53,7 @@ from surgery_approval_engine import (
     resolve_live_user_fail_closed,
     run_surgery_approval_migration,
     stamp_badge_fields,
+    strip_approval_metadata_from_real_surgeries,
     suggest_urgency_level,
     validate_routine_submit_gate,
     verify_approval_journal_chain,
@@ -241,6 +243,30 @@ def register_surgery_approval_routes(app, sf_mod):
                 allow_sandbox_delegation_sim=allow_sandbox_delegation_sim,
             )
 
+            case_approval_actions = {
+                "draft",
+                "request_verify",
+                "submit",
+                "submit_emergency",
+                "preapprove",
+                "approve",
+                "return",
+                "hold_post_approval",
+                "release_hold",
+                "revoke",
+            }
+            if (
+                action_key in case_approval_actions
+                and cfg.get("sandboxOnlyMode") is True
+                and target_surgery is not None
+                and target_surgery.get("isTestSandboxCase") is not True
+            ):
+                raise ApprovalEngineError(
+                    403,
+                    "SANDBOX_ONLY_MODE",
+                    "Tab Duyệt mổ đang ở chế độ Chỉ dùng ca TEST giả lập — không thao tác trên bệnh nhân thật.",
+                )
+
             idem_key = request.headers.get("Idempotency-Key", "")
             cached_status, cached_resp, scope_key = check_idempotency(
                 db,
@@ -364,15 +390,25 @@ def register_surgery_approval_routes(app, sf_mod):
             if not real_user.get("isSuperAdmin"):
                 raise ApprovalEngineError(403, "SUPERADMIN_REQUIRED", "Chỉ Super Admin mới có quyền cập nhật cấu hình Duyệt mổ.")
             new_cfg = copy.deepcopy(cfg)
+            remigrate = False
             if "rolloutAccessMode" in body:
                 if body["rolloutAccessMode"] not in ("superadmin_only", "all_staff"):
                     raise ApprovalEngineError(422, "INVALID_CONFIG", "rolloutAccessMode phải là 'superadmin_only' hoặc 'all_staff'.")
+                if body["rolloutAccessMode"] != cfg.get("rolloutAccessMode"):
+                    remigrate = True
+                    if "sandboxOnlyMode" not in body:
+                        new_cfg["sandboxOnlyMode"] = (body["rolloutAccessMode"] == "superadmin_only")
                 new_cfg["rolloutAccessMode"] = body["rolloutAccessMode"]
+            if "sandboxOnlyMode" in body:
+                if not isinstance(body["sandboxOnlyMode"], bool):
+                    raise ApprovalEngineError(422, "INVALID_CONFIG", "sandboxOnlyMode phải là kiểu boolean (true/false).")
+                if body["sandboxOnlyMode"] != cfg.get("sandboxOnlyMode"):
+                    remigrate = True
+                new_cfg["sandboxOnlyMode"] = body["sandboxOnlyMode"]
             if "checklistMode" in body:
                 if body["checklistMode"] not in ("off", "shadow_optional", "enforced_gate"):
                     raise ApprovalEngineError(422, "INVALID_CONFIG", "checklistMode phải là 'off', 'shadow_optional' hoặc 'enforced_gate'.")
                 new_cfg["checklistMode"] = body["checklistMode"]
-            remigrate = False
             if "rolloutEffectiveSurgeryDate" in body:
                 if not is_valid_iso_date(body["rolloutEffectiveSurgeryDate"]):
                     raise ApprovalEngineError(422, "INVALID_CONFIG", "rolloutEffectiveSurgeryDate phải có định dạng YYYY-MM-DD.")
@@ -396,6 +432,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     "surgeryId": None,
                     "summary": {
                         "rolloutAccessMode": new_cfg["rolloutAccessMode"],
+                        "sandboxOnlyMode": new_cfg.get("sandboxOnlyMode"),
                         "checklistMode": new_cfg["checklistMode"],
                         "rolloutEffectiveSurgeryDate": new_cfg["rolloutEffectiveSurgeryDate"],
                     },
@@ -1625,6 +1662,32 @@ def register_surgery_approval_routes(app, sf_mod):
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa.")
 
+            if cfg.get("sandboxOnlyMode") is True and rec.get("isTestSandboxCase") is not True:
+                for k_strip in APPROVAL_METADATA_FIELDS_TO_STRIP:
+                    rec.pop(k_strip, None)
+                rec["deletedAt"] = now_vn_iso()
+                rec["deletedBy"] = {
+                    "name": real_user.get("name") or real_user.get("username"),
+                    "username": real_user.get("username"),
+                    "staffId": real_user.get("staffId"),
+                }
+                rec["deletedByStaffId"] = real_user.get("staffId")
+                surgeries.pop(idx)
+                trash.append(rec)
+                revs = db.setdefault("_revisions", {})
+                revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
+                revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
+                return {
+                    "httpStatus": 200,
+                    "response": {
+                        "ok": True,
+                        "trashed": copy.deepcopy(rec),
+                        "surgeriesRevision": revs["surgeries"],
+                        "surgeriesTrashRevision": revs["surgeriesTrash"],
+                    },
+                    "wal": None,
+                }
+
             rev_before = int(rec.get("caseRevision", 1) or 1)
             rev_after = rev_before + 1
             prev_status = ((rec.get("approval") or {}).get("status")) or "draft_unsubmitted"
@@ -1695,6 +1758,29 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền khôi phục.")
+
+            if cfg.get("sandboxOnlyMode") is True and rec.get("isTestSandboxCase") is not True:
+                for k_strip in APPROVAL_METADATA_FIELDS_TO_STRIP:
+                    rec.pop(k_strip, None)
+                rec.pop("deletedAt", None)
+                rec.pop("deletedBy", None)
+                rec.pop("deletedByStaffId", None)
+                trash.pop(t_idx)
+                db["surgeries"] = [s for s in surgeries if not (isinstance(s, dict) and s.get("id") == sid)]
+                db["surgeries"].append(rec)
+                revs = db.setdefault("_revisions", {})
+                revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
+                revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
+                return {
+                    "httpStatus": 200,
+                    "response": {
+                        "ok": True,
+                        "restored": copy.deepcopy(rec),
+                        "surgeriesRevision": revs["surgeries"],
+                        "surgeriesTrashRevision": revs["surgeriesTrash"],
+                    },
+                    "wal": None,
+                }
 
             rev_before = int(rec.get("caseRevision", 1) or 1)
             rev_after = rev_before + 1
@@ -1786,6 +1872,16 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa vĩnh viễn.")
+
+            if cfg.get("sandboxOnlyMode") is True and rec.get("isTestSandboxCase") is not True:
+                trash.pop(t_idx)
+                revs = db.setdefault("_revisions", {})
+                revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
+                return {
+                    "httpStatus": 200,
+                    "response": {"ok": True, "deletedId": sid, "surgeriesTrashRevision": revs["surgeriesTrash"]},
+                    "wal": None,
+                }
 
             rev_before = int(rec.get("caseRevision", 1) or 1)
             trash.pop(t_idx)
@@ -1896,29 +1992,57 @@ def register_surgery_approval_routes(app, sf_mod):
         def _handler(db, body, real_user, actor, catalog, cfg):
             if not real_user.get("isSuperAdmin"):
                 raise ApprovalEngineError(403, "SUPERADMIN_REQUIRED", "Chỉ Super Admin mới được khởi tạo ca mẫu thử nghiệm.")
+            replace_existing = bool((body or {}).get("replaceExisting"))
             surgeries = db.setdefault("surgeries", [])
             existing_sandbox = [s for s in surgeries if isinstance(s, dict) and s.get("isTestSandboxCase") is True]
-            if existing_sandbox:
+            if existing_sandbox and not replace_existing:
                 return {
                     "httpStatus": 200,
                     "response": {"ok": True, "alreadySeeded": True, "cases": existing_sandbox},
                     "wal": None,
                 }
+
+            replaced_count = 0
+            if replace_existing:
+                before_s = len(db.get("surgeries") or [])
+                before_t = len(db.get("surgeriesTrash") or [])
+                db["surgeries"] = [s for s in (db.get("surgeries") or []) if not (isinstance(s, dict) and s.get("isTestSandboxCase") is True)]
+                db["surgeriesTrash"] = [t for t in (db.get("surgeriesTrash") or []) if not (isinstance(t, dict) and t.get("isTestSandboxCase") is True)]
+                db["notifications"] = [n for n in (db.get("notifications") or []) if not (isinstance(n, dict) and n.get("isTestSandboxCase") is True)]
+                replaced_count = (before_s - len(db["surgeries"])) + (before_t - len(db["surgeriesTrash"]))
+                surgeries = db["surgeries"]
+
+            if cfg.get("sandboxOnlyMode") is True:
+                strip_approval_metadata_from_real_surgeries(db)
+
             samples = build_sandbox_sample_surgeries(db, sf_mod.DATA_DIR, sf_mod.BASE_DIR)
             surgeries.extend(samples)
             revs = db.setdefault("_revisions", {})
             revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
+            if replace_existing:
+                revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
+                revs["notifications"] = int(revs.get("notifications", 1)) + 1
             db.setdefault("nextIds", {})["surgeries"] = max(
                 [int(r["id"]) for r in surgeries if isinstance(r, dict) and is_pos_int(r.get("id"))], default=0
             ) + 1
 
             return {
                 "httpStatus": 200,
-                "response": {"ok": True, "alreadySeeded": False, "cases": samples, "revision": revs["surgeries"]},
+                "response": {
+                    "ok": True,
+                    "alreadySeeded": False,
+                    "replacedCount": replaced_count,
+                    "cases": samples,
+                    "revision": revs["surgeries"],
+                },
                 "wal": {
-                    "action": "sandbox_seed_samples",
+                    "action": "sandbox_reseed_samples" if replace_existing else "sandbox_seed_samples",
                     "surgeryId": None,
-                    "summary": {"count": len(samples), "ids": [c["id"] for c in samples]},
+                    "summary": {
+                        "count": len(samples),
+                        "replacedCount": replaced_count,
+                        "ids": [c["id"] for c in samples],
+                    },
                     "committedStatePatch": {"patchKind": "sandbox_seed"},
                 },
             }
