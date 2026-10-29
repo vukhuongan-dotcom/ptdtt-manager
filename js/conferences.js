@@ -9,6 +9,30 @@ const CONF_REGIONS = {
 // Chỉ lưu hội nghị mà khoa có báo cáo
 const CONF_SEED_DATA = [
     {
+        name: "HNKHKT MỞ RỘNG BVĐK TP. CẦN THƠ 2026",
+        nameVi: "Hội nghị Khoa học Kỹ thuật Mở rộng năm 2026: Hội nhập và phát triển trong kỷ nguyên số",
+        dates: "22/10/2026",
+        startDate: "2026-10-22",
+        endDate: "2026-10-22",
+        location: "Cần Thơ",
+        venue: "Hội trường Trấn Giang A, Bệnh viện Đa khoa TP. Cần Thơ (Số 04 Châu Văn Liêm, P. An Lạc, Q. Ninh Kiều, TP. Cần Thơ)",
+        region: "domestic",
+        organizer: "Bệnh viện Đa khoa Thành phố Cần Thơ",
+        website: "https://bvcantho.vn",
+        note: "TS.BSCKII. Nguyễn Phú Hữu tham gia 2 vai trò: (1) Báo cáo viên Phiên Toàn thể (14:00 - 14:15); (2) Đồng Chủ tọa đoàn Phiên Ngoại khoa (15:00 - 17:30).",
+        presentations: [
+            {
+                date: "2026-10-22",
+                session: "Phiên Toàn thể (Hội trường Trấn Giang A)",
+                time: "14:00 - 14:15",
+                title: "Phẫu thuật robot điều trị ung thư đại trực tràng kinh nghiệm 10 năm",
+                presenter: "TS. BSCKII Nguyễn Phú Hữu",
+                language: "vi",
+                note: "Trưởng khoa Phẫu thuật Đại trực tràng BV Bình Dân, Phó Chủ tịch Chi hội Phẫu thuật Robot Việt Nam. Đồng thời là Đồng Chủ tọa đoàn Phiên Ngoại khoa (15:00 - 17:30)"
+            }
+        ]
+    },
+    {
         name: "HỘI NGHỊ NGOẠI TIÊU HÓA BV NHÂN DÂN 115 (2026)",
         nameVi: "Hội nghị Ngoại tiêu hóa Bệnh viện Nhân dân 115: Từ PTNS đến PT bằng Robot Hiện tại và Tương lai",
         dates: "09/09/2026",
@@ -161,7 +185,7 @@ const CONF_SEED_DATA = [
                 session: "Hội thảo: Nâng cao chăm sóc người bệnh PT Đại trực tràng có lỗ mở ra da",
                 time: "16:10–16:40",
                 title: "Kết quả chăm sóc viêm da quanh hậu môn nhân tạo mức độ trung bình tại Khoa PTĐTT Bệnh viện Bình Dân",
-                presenter: "CNĐD Nguyễn Thị Ngọc Thùy",
+                presenter: "ThS. ĐD. Nguyễn Thị Ngọc Thùy",
                 language: "vi",
                 note: ""
             },

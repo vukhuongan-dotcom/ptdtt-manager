@@ -47,7 +47,7 @@ const SAMPLE_STAFF = [
         "statusNote": "",
         "statusTo": "",
         "statusType": "active",
-        "title": "CNĐD",
+        "title": "ThS. ĐD",
         "dob": "1982-02-02",
         "gender": "Nữ"
     },
