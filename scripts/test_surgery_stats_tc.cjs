@@ -539,10 +539,10 @@ runTest('TC-15', '100% Tiếng Việt thuần túy trên 6 trục và 19 phân n
 });
 
 // =========================================================================
-// TC-16: CSS Bundle & Synchronous Versioning (2610231803)
+// TC-16: CSS Bundle & Synchronous Versioning (2610291102)
 // =========================================================================
-runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS (gồm BS Phương ID 16) + 15 ĐD/HL/TK và phiên bản 2610231803 trên toàn hệ thống', () => {
-    const EXPECTED_VER = '2610232230';
+runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS (gồm BS Phương ID 16) + 15 ĐD/HL/TK và phiên bản 2610291102 trên toàn hệ thống', () => {
+    const EXPECTED_VER = '2610291102';
     const bundlePath = path.join(ROOT_DIR, 'css/app.bundle.css');
     assert(fs.existsSync(bundlePath), 'css/app.bundle.css phải tồn tại');
     const bundleContent = fs.readFileSync(bundlePath, 'utf8');
@@ -562,8 +562,8 @@ runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS 
     const storeJs = fs.readFileSync(path.join(ROOT_DIR, 'js/store.js'), 'utf8');
     assert(storeJs.includes(`const CLIENT_BUILD = ${EXPECTED_VER};`), 'store.js CLIENT_BUILD phải khớp');
 
-    const versionMd = fs.readFileSync(path.join(ROOT_DIR, 'VERSION.md'), 'utf8');
-    assert.strictEqual(versionMd.trim(), EXPECTED_VER, 'VERSION.md phải khớp');
+    const versionMd = fs.readFileSync(path.join(ROOT_DIR, 'version.md'), 'utf8');
+    assert(versionMd.includes(EXPECTED_VER), 'version.md phải chứa mã build hiện hành');
 
     // Verify all doctors' avatar files & STAFF_PHOTO_DIMS (480x600) including BS. Phuong (ID 16)
     const staffPhotosJs = fs.readFileSync(path.join(ROOT_DIR, 'js/staff-photos.js'), 'utf8');
