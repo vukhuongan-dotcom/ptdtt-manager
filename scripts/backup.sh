@@ -149,31 +149,31 @@ cd "$APP_DIR"
 git worktree remove "$BACKUP_WORKTREE" --force 2>/dev/null || rm -rf "$BACKUP_WORKTREE"
 
 # ════════════════════════════════════
-# 3. GOOGLE DRIVE BACKUP (via SCP to Mac)
+# 3. STAGE VERIFIED PULL ARTIFACT OUTSIDE WEB ROOT (for authenticated Mac SSH pull)
 # ════════════════════════════════════
-log "3/3 ☁️ Google Drive backup..."
+log "3/3 🔐 Chuẩn bị artifact kéo qua SSH xác thực (ngoài web root)..."
 
-# Method: Push backup to a known path that Google Drive syncs
-# This requires the Mac to have an SSH key authorized on the VPS (or vice versa)
-# Alternative: place backup file in web-accessible temp path for Mac to pull
-DRIVE_BACKUP_DIR="$APP_DIR/data/backups"
-mkdir -p "$DRIVE_BACKUP_DIR"
+PULL_STAGE_DIR="$BACKUP_DIR/pull_ready"
+mkdir -p "$PULL_STAGE_DIR"
+chmod 0700 "$PULL_STAGE_DIR"
 
-# Copy today's backup to a web-servable location (will be pulled by Mac cron)
 BACKUP_ENCRYPTION_KEY_FILE="${BACKUP_ENCRYPTION_KEY_FILE:-/etc/ptdtt/backup.key}"
 if [ -s "$BACKUP_ENCRYPTION_KEY_FILE" ] && command -v openssl >/dev/null 2>&1; then
+    ARTIFACT_EXT="tar.gz.enc"
+    STAGE_TMP="$PULL_STAGE_DIR/.latest_backup.${ARTIFACT_EXT}.tmp.$$"
     openssl enc -aes-256-cbc -pbkdf2 -salt -pass "file:$BACKUP_ENCRYPTION_KEY_FILE" \
-        -in "$BACKUP_FILE" -out "$DRIVE_BACKUP_DIR/latest_backup.tar.gz.enc" 2>/dev/null || true
-    cp "$DRIVE_BACKUP_DIR/latest_backup.tar.gz.enc" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz.enc" 2>/dev/null || true
-    find "$DRIVE_BACKUP_DIR" -name "backup_*.tar.gz.enc" -mtime +7 -delete 2>/dev/null
-    log "  🔐 Backup encrypted (AES-256-CBC PBKDF2) sẵn sàng cho Google Drive pull"
+        -in "$BACKUP_FILE" -out "$STAGE_TMP"
 else
-    cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/latest_backup.tar.gz" 2>/dev/null || true
-    # Also keep dated copy (max 7 in this dir to save disk)
-    cp "$BACKUP_FILE" "$DRIVE_BACKUP_DIR/backup_${DAY_TAG}.tar.gz" 2>/dev/null || true
-    find "$DRIVE_BACKUP_DIR" -name "backup_*.tar.gz" -mtime +7 -delete 2>/dev/null
-    log "  ✅ Backup sẵn sàng cho Google Drive pull"
+    ARTIFACT_EXT="tar.gz"
+    STAGE_TMP="$PULL_STAGE_DIR/.latest_backup.${ARTIFACT_EXT}.tmp.$$"
+    cp -p "$BACKUP_FILE" "$STAGE_TMP"
 fi
+chmod 0600 "$STAGE_TMP"
+FINAL_PULL_FILE="$PULL_STAGE_DIR/latest_backup.${ARTIFACT_EXT}"
+mv -f "$STAGE_TMP" "$FINAL_PULL_FILE"
+sha256sum "$FINAL_PULL_FILE" | awk '{print $1}' > "${FINAL_PULL_FILE}.sha256"
+chmod 0600 "${FINAL_PULL_FILE}.sha256"
+log "  ✅ Sẵn sàng tại $FINAL_PULL_FILE (kèm .sha256, quyền 0600)"
 
 # ════════════════════════════════════
 # Summary

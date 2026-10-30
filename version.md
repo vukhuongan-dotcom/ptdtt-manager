@@ -56,6 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Fixed
+- Khôi phục đường truyền sao lưu xác thực qua SSH (`StrictHostKeyChecking=yes`) ngoài thư mục web, bổ sung kiểm thử giải nén `data/db.json` trong sandbox `0700` và bảo vệ bản sao lưu hợp lệ gần nhất (`LKG`) trên Local & Google Drive (`[BUG-199]`).
 - Gỡ bỏ và cách ly tệp stub/pointer thừa `docs/VERSION.md`, triệt tiêu trùng lặp cấu trúc và duy trì duy nhất 01 tệp SSoT `version.md` tại gốc dự án (`[BUG-198]`, build `v2610300355`).
 
 ---
