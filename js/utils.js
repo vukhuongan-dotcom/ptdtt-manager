@@ -211,14 +211,39 @@ const Utils = {
      */
     toProperCase(str) {
         if (!str || typeof str !== 'string') return str;
-        return str.trim()
+        const trimmed = str.trim();
+        if (!trimmed) return trimmed;
+        const hasLower = /\p{Ll}/u.test(trimmed);
+        const hasUpper = /\p{Lu}/u.test(trimmed);
+        const hasAnnotation = /[(\[\-\/]/.test(trimmed);
+        // Preserve ASCII uppercase acronyms/Roman numerals/TNM codes in annotated mixed-case strings (e.g. Cột III, PT-II, HV, TNT, GIST, ESD, NSTH, PP, cT3N1M0)
+        const preservedTokens = new Map();
+        let idx = 0;
+        const working = (hasLower && hasUpper && hasAnnotation)
+            ? trimmed.replace(/[A-Za-z][A-Za-z0-9]*/g, (word) => {
+                const upperCount = (word.match(/[A-Z]/g) || []).length;
+                if (upperCount >= 2 || (/[A-Z]/.test(word) && /\d/.test(word))) {
+                    const key = `\uE000${idx++}\uE001`;
+                    preservedTokens.set(key, word);
+                    return key;
+                }
+                return word;
+            })
+            : trimmed;
+
+        let out = working
             .toLowerCase()
-            .replace(/(^|[^\p{L}\p{N}])([\p{L}])/gu, (_, sep, ch) => sep + ch.toUpperCase())
-            .replace(/(^|[^\p{L}\p{N}])(ii|iii|iv|vii|viii|ix|ptns|hmnt|gpb|mri|crm|tme|bcn|eras|icu|test|đb|hm)(?=$|[^\p{L}\p{N}])/giu, (_, pre, tok) => pre + tok.toUpperCase())
+            .replace(/(^|[^\p{L}\p{N}\uE000\uE001])([\p{L}])/gu, (_, sep, ch) => sep + ch.toUpperCase())
+            .replace(/(^|[^\p{L}\p{N}])(ii|iii|iv|vii|viii|ix|ptns|hmnt|gpb|mri|crm|tme|bcn|eras|icu|test|đb|hm|hv|tnt|gist|esd|nsth|cđha)(?=$|[^\p{L}\p{N}])/giu, (_, pre, tok) => pre + tok.toUpperCase())
             .replace(/(^|[^\p{L}\p{N}])(cột|hạng|loại|độ|pt)([-\s]+)(i|ii|iii|iv|v|đb)(?=$|[^\p{L}\p{N}])/giu, (_, lead, pre, sep, rom) => {
                 const normPre = pre.toLowerCase() === 'pt' ? 'PT' : (pre.charAt(0).toUpperCase() + pre.slice(1).toLowerCase());
                 return `${lead}${normPre}${sep}${rom.toUpperCase()}`;
             });
+
+        for (const [key, val] of preservedTokens.entries()) {
+            out = out.split(key).join(val);
+        }
+        return out;
     },
 
     getStaffName(id) {
