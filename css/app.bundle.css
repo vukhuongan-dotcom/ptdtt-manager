@@ -7567,6 +7567,9 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 /* ── Desktop Right Slide-Over Drawer (1040px, 2-Column) & Mobile Full-Screen ── */
 #modal-overlay.sap-drawer-overlay.active {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1200 !important; /* Above .mobile-header (1001) & .network-status-banner (1002); below Search (9999) & Toast/Confirm (10000) */
     display: flex !important;
     justify-content: flex-end !important;
     align-items: stretch !important;
@@ -7576,8 +7579,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 #modal.sap-drawer-right {
     width: min(1040px, 96vw) !important;
     max-width: 1040px !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: 100% !important;
+    max-height: 100% !important;
     margin: 0 !important;
     border-radius: 16px 0 0 16px !important;
     display: flex !important;
@@ -7599,12 +7602,18 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 #modal.sap-drawer-right > .modal-header {
-    padding: 10px 16px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 30 !important;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+    padding-right: calc(16px + env(safe-area-inset-right, 0px)) !important;
+    padding-bottom: 10px !important;
+    padding-left: calc(16px + env(safe-area-inset-left, 0px)) !important;
     border-radius: 16px 0 0 0 !important;
     border-bottom: 1px solid var(--border-default);
     background: var(--surface-card);
     flex-shrink: 0;
-    min-height: 54px;
+    min-height: calc(56px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -7619,6 +7628,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 16px !important;
     font-weight: 700;
     color: var(--text-heading);
+    min-width: 0;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -7629,10 +7640,28 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     min-height: 44px !important;
     width: 44px !important;
     height: 44px !important;
-    display: inline-flex;
+    flex: 0 0 44px !important;
+    position: relative;
+    z-index: 31;
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    border-radius: 50% !important;
+    border: 1.5px solid var(--border-strong) !important;
+    background: var(--surface-2) !important;
+    color: var(--text-heading) !important;
+    font-size: 22px !important;
+    font-weight: 700;
+    line-height: 1;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+#modal.sap-drawer-right > .modal-header .modal-close:hover,
+#modal.sap-drawer-right > .modal-header .modal-close:active {
+    background: var(--danger) !important;
+    border-color: var(--danger) !important;
+    color: #FFFFFF !important;
 }
 
 #modal.sap-drawer-right > .modal-body {
@@ -9485,29 +9514,38 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 /* ── Mobile Full-Screen Case Drawer & Zero Horizontal Overflow (<= 959px / 390px) ── */
 @media (max-width: 959px) {
     #modal-overlay.sap-drawer-overlay.active {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1200 !important;
         align-items: stretch !important;
         justify-content: stretch !important;
+        padding: 0 !important;
     }
 
     #modal.sap-drawer-right {
-        width: 100vw !important;
-        max-width: 100vw !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
         border-radius: 0 !important;
+        border-top: none !important;
         margin: 0 !important;
     }
 
     #modal.sap-drawer-right > .modal-header {
         border-radius: 0 !important;
-        padding: 10px 12px !important;
+        padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+        padding-right: calc(12px + env(safe-area-inset-right, 0px)) !important;
+        padding-bottom: 8px !important;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px)) !important;
+        min-height: calc(56px + env(safe-area-inset-top, 0px)) !important;
     }
 
     .sap-mobile-stepper {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
-        padding: 8px 12px;
+        padding: 8px calc(12px + env(safe-area-inset-right, 0px)) 8px calc(12px + env(safe-area-inset-left, 0px));
         background: var(--surface-2);
         border-bottom: 1px solid var(--border-default);
         flex-shrink: 0;
@@ -9520,12 +9558,13 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         min-height: 0;
         overflow-y: auto;
         overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     .sap-left-rail {
         border-right: none;
         border-bottom: 1px solid var(--border-default);
-        padding: 10px 12px;
+        padding: 10px calc(12px + env(safe-area-inset-right, 0px)) 10px calc(12px + env(safe-area-inset-left, 0px));
         overflow: visible;
         flex-shrink: 0;
     }
@@ -9535,24 +9574,43 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 
     .sap-right-pane {
-        padding: 12px;
+        padding: 12px calc(12px + env(safe-area-inset-right, 0px)) 12px calc(12px + env(safe-area-inset-left, 0px));
         overflow: visible;
         flex-shrink: 0;
     }
 
     .sap-sticky-footer {
-        padding: 8px 12px;
+        flex-wrap: nowrap;
+        gap: 6px;
+        padding-top: 8px;
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
         padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    }
+
+    .sap-footer-left {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .sap-footer-left .sap-btn {
+        padding: 0 11px;
     }
 
     .sap-footer-right {
         flex: 1 1 auto;
+        min-width: 0;
+        flex-wrap: nowrap;
+        gap: 6px;
         justify-content: flex-end;
     }
 
     .sap-footer-right .sap-btn--primary,
     .sap-footer-right .sap-btn--success {
         flex: 1 1 auto;
+        min-width: 0;
+        padding: 0 12px;
     }
 
     .sap-filter-search-group {

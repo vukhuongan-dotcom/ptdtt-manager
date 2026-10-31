@@ -213,7 +213,12 @@ const Utils = {
         if (!str || typeof str !== 'string') return str;
         return str.trim()
             .toLowerCase()
-            .replace(/(^|[\s\-])(\S)/g, (_, sep, ch) => sep + ch.toUpperCase());
+            .replace(/(^|[^\p{L}\p{N}])([\p{L}])/gu, (_, sep, ch) => sep + ch.toUpperCase())
+            .replace(/(^|[^\p{L}\p{N}])(ii|iii|iv|vii|viii|ix|ptns|hmnt|gpb|mri|crm|tme|bcn|eras|icu|test|đb|hm)(?=$|[^\p{L}\p{N}])/giu, (_, pre, tok) => pre + tok.toUpperCase())
+            .replace(/(^|[^\p{L}\p{N}])(cột|hạng|loại|độ|pt)([-\s]+)(i|ii|iii|iv|v|đb)(?=$|[^\p{L}\p{N}])/giu, (_, lead, pre, sep, rom) => {
+                const normPre = pre.toLowerCase() === 'pt' ? 'PT' : (pre.charAt(0).toUpperCase() + pre.slice(1).toLowerCase());
+                return `${lead}${normPre}${sep}${rom.toUpperCase()}`;
+            });
     },
 
     getStaffName(id) {
