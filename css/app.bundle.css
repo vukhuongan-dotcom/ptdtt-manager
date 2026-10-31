@@ -7553,35 +7553,139 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 /* =====================================================================
    SURGERY APPROVAL MODULE — Khoa Phẫu thuật Đại trực tràng (BV Bình Dân)
+   UI/UX v2 (Crosscheck 31/10): Role-First Queue · 3-Step Right Drawer ·
+   BCN 1-Page Executive Summary · 6 Short Schedule Badges
    Brand Identity v1 (#1D2357 Navy / #1878B4 Ocean / #54A83C Leaf)
-   WCAG 2.1 AA (>= 4.5:1 Light & Dark) | Touch Targets >= 44x44px
+   WCAG 2.1 AA (>= 4.5:1 Light & Dark) | Touch Targets >= 44x44px | Font >= 13px
    ===================================================================== */
 
-.modal.sap-modal-xl {
-    max-width: 1060px;
-    width: 95%;
-    max-height: 90vh;
+.sap-ico {
+    display: inline-block;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
-/* ── Scope Disclaimer Banner (Zero HIS Coupling) ── */
-.sap-scope-banner {
+/* ── Desktop Right Slide-Over Drawer (1040px, 2-Column) & Mobile Full-Screen ── */
+#modal-overlay.sap-drawer-overlay.active {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+}
+
+#modal.sap-drawer-right {
+    width: min(1040px, 96vw) !important;
+    max-width: 1040px !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border-radius: 16px 0 0 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: var(--surface-1);
+    box-shadow: -8px 0 32px rgba(12, 16, 34, 0.24);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    #modal.sap-drawer-right {
+        animation: sapDrawerSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+}
+
+@keyframes sapDrawerSlideIn {
+    from { transform: translateX(36px); opacity: 0.85; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+#modal.sap-drawer-right > .modal-header {
+    padding: 10px 16px !important;
+    border-radius: 16px 0 0 0 !important;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--surface-card);
+    flex-shrink: 0;
+    min-height: 54px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 16px;
-    margin-bottom: 14px;
+    gap: 10px;
+}
+
+#modal.sap-drawer-right > .modal-header::before {
+    display: none !important;
+}
+
+#modal.sap-drawer-right > .modal-header .modal-title {
+    font-size: 16px !important;
+    font-weight: 700;
+    color: var(--text-heading);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#modal.sap-drawer-right > .modal-header .modal-close {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+#modal.sap-drawer-right > .modal-body {
+    padding: 0 !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* ── 1-Line Collapsible Scope Banner (BƯỚC 1.6) ── */
+.sap-scope-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
     border-radius: 10px;
     background: var(--brand-soft);
     border: 1px solid var(--border-default);
     border-left: 4px solid var(--brand-fill);
     color: var(--text-primary);
-    font-size: 0.85rem;
-    line-height: 1.45;
+    font-size: 13.5px;
+    line-height: 1.4;
 }
 
-.sap-scope-banner strong {
-    color: var(--text-heading);
+.sap-scope-compact-main {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+}
+
+.sap-scope-compact-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.sap-scope-detail {
+    margin-top: -6px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-default);
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
 }
 
 /* ── Superadmin Canary & Sandbox Toolbar ── */
@@ -7589,8 +7693,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: var(--surface-card);
     border: 1.5px solid var(--brand-fill);
     border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -7599,8 +7703,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 8px;
 }
 
 .sap-canary-title {
@@ -7608,7 +7711,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     align-items: center;
     gap: 8px;
     font-weight: 700;
-    font-size: 0.92rem;
+    font-size: 14px;
     color: var(--text-heading);
 }
 
@@ -7618,7 +7721,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     gap: 6px;
     padding: 4px 10px;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 13px;
     font-weight: 700;
 }
 
@@ -7651,6 +7754,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 10px;
     align-items: end;
+    margin-top: 10px;
 }
 
 .sap-canary-field {
@@ -7661,7 +7765,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .sap-canary-field label {
-    font-size: 0.78rem;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
 }
@@ -7670,22 +7774,32 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid var(--border-subtle);
 }
 
-/* ── Interactive Minimum 44x44px Touch Targets ── */
+/* ── Interactive Minimum 44x44px Touch Targets & >= 13px Font (BƯỚC 5) ── */
 .sap-btn,
+.sap-page .surg-header-actions .sap-btn,
 .sap-subtab-btn,
+.sap-filter-chip,
 .sap-chip,
 .sap-ck-btn,
+.sap-seg-btn,
+.sap-subswitch-btn,
+.sap-step-nav-btn,
+.sap-step-collapsed-bar,
+.sap-sched-badge,
+.sap-jump-link,
 .sap-select,
 .sap-input,
 .surg-approval-open-btn {
-    min-height: 44px;
+    min-height: 44px !important;
     min-width: 44px;
+    height: auto !important;
     box-sizing: border-box;
+    font-size: 13.5px;
 }
 
 .sap-btn {
@@ -7694,15 +7808,24 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     justify-content: center;
     gap: 6px;
     padding: 8px 14px;
-    border-radius: 9px;
+    border-radius: 10px;
     font-family: var(--font-body);
-    font-size: 0.86rem;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     border: 1px solid var(--border-default);
     background: var(--surface-1);
     color: var(--text-primary);
-    transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .sap-btn,
+    .sap-chip,
+    .sap-filter-chip,
+    .sap-seg-btn,
+    .sap-case-card {
+        transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
 }
 
 .sap-btn:hover:not(:disabled) {
@@ -7711,8 +7834,15 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .sap-btn:focus-visible,
+.sap-filter-chip:focus-visible,
 .sap-chip:focus-visible,
-.sap-ck-btn:focus-visible,
+.sap-seg-btn:focus-visible,
+.sap-subswitch-btn:focus-visible,
+.sap-step-nav-btn:focus-visible,
+.sap-step-collapsed-bar:focus-visible,
+.sap-sched-badge:focus-visible,
+.sap-case-card:focus-visible,
+.sap-jump-link:focus-visible,
 .sap-subtab-btn:focus-visible,
 .sap-select:focus-visible,
 .sap-input:focus-visible {
@@ -7722,6 +7852,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 .sap-btn:disabled,
 .sap-chip:disabled,
+.sap-seg-btn:disabled,
+.sap-subswitch-btn:disabled,
 .sap-ck-btn:disabled {
     opacity: 0.55;
     cursor: not-allowed;
@@ -7747,6 +7879,20 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 [data-theme="dark"] .sap-btn--primary:hover:not(:disabled) {
     background: #5867C0;
+    color: #FFFFFF;
+}
+
+.sap-btn--incomplete {
+    background: #28326B;
+    border-style: dashed;
+    border-width: 1.5px;
+    border-color: #8FA0F1;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .sap-btn--incomplete {
+    background: #2C3775;
+    border-color: #A6B4F7;
     color: #FFFFFF;
 }
 
@@ -7789,50 +7935,56 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #FFFFFF;
 }
 
+.sap-btn--ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-primary);
+    padding: 6px 10px;
+}
+
+.sap-btn--ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: var(--border-default);
+}
+
 .sap-select,
 .sap-input {
     width: 100%;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 9px;
     border: 1px solid var(--border-default);
     background: var(--surface-1);
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 0.88rem;
+    font-size: 14px;
 }
 
-.sap-textarea {
-    width: 100%;
-    min-height: 72px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-default);
-    background: var(--surface-1);
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: 0.88rem;
-    resize: vertical;
-    box-sizing: border-box;
+/* ── Top Row: Subtabs + Role Context Indicator (BƯỚC 1.1 & 1.5) ── */
+.sap-top-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
-/* ── Sub-navigation Tabs ── */
 .sap-subtabs {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 16px;
 }
 
 .sap-subtab-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: 7px;
+    padding: 8px 15px;
     border-radius: 10px;
     border: 1px solid var(--border-default);
     background: var(--surface-1);
     color: var(--text-primary);
-    font-size: 0.88rem;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
 }
@@ -7849,124 +8001,416 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: #8FA0F1;
 }
 
-/* ── KPI Strip ── */
-.sap-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
-    gap: 10px;
-    margin-bottom: 16px;
+.sap-role-context-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
 }
 
-.sap-kpi-card {
+.sap-role-context-bar strong {
+    color: var(--text-heading);
+}
+
+/* ── 1-Row Filter Chips + Search + "Lọc thêm ▾" (BƯỚC 1.2) ── */
+.sap-filter-toolbar {
     background: var(--surface-card);
     border: 1px solid var(--border-default);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 10px;
 }
 
-.sap-kpi-label {
-    font-size: 0.78rem;
+.sap-filter-row-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sap-filter-chips-wrap {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+}
+
+.sap-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-default);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sap-filter-chip:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.sap-filter-chip.is-active {
+    background: #1D2357;
+    color: #FFFFFF;
+    border-color: #1D2357;
+}
+
+[data-theme="dark"] .sap-filter-chip.is-active {
+    background: #4551A4;
+    color: #FFFFFF;
+    border-color: #8FA0F1;
+}
+
+.sap-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--surface-3);
+    color: var(--text-heading);
+}
+
+.sap-filter-chip.is-active .sap-filter-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+}
+
+.sap-filter-search-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 240px;
+    max-width: 380px;
+    min-width: 0;
+}
+
+.sap-filter-more-drawer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-default);
+    align-items: center;
+}
+
+.sap-filter-sub-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sap-filter-sub-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-right: 2px;
+}
+
+/* ── Sticky Date Groups & Compact 3-Line Clickable Case Cards (BƯỚC 1.3 & 1.4) ── */
+.sap-date-group {
+    margin-bottom: 16px;
+}
+
+.sap-date-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 14px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-heading);
+    box-shadow: var(--shadow-sm);
+}
+
+.sap-date-sticky-sub {
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
 }
 
-.sap-kpi-value {
-    font-family: var(--font-display);
-    font-size: 1.45rem;
-    font-weight: 700;
-    color: var(--text-heading);
-}
-
-/* ── Filter Bar ── */
-.sap-filters-card {
-    background: var(--surface-card);
-    border: 1px solid var(--border-default);
-    border-radius: 12px;
-    padding: 12px 14px;
-    margin-bottom: 16px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 10px;
-    align-items: end;
-}
-
-/* ── Case Cards List ── */
 .sap-case-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .sap-case-card {
     background: var(--surface-card);
     border: 1px solid var(--border-default);
     border-radius: 12px;
-    padding: 14px 16px;
+    padding: 11px 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    text-align: left;
+    min-width: 0;
+}
+
+.sap-case-card:hover {
+    border-color: var(--brand-fill);
+    background: var(--surface-1);
+    box-shadow: 0 4px 14px rgba(29, 35, 87, 0.1);
+}
+
+.sap-case-card--readonly {
+    cursor: default;
 }
 
 .sap-case-card--sandbox {
-    border-left: 4px solid #006095;
+    border-left: 4px solid #1878B4;
 }
 
-.sap-case-top {
+.sap-card-line1 {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
     gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
-.sap-case-patient {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-heading);
+.sap-card-patient {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-heading);
+    min-width: 0;
 }
 
-.sap-case-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 14px;
-    font-size: 0.84rem;
+.sap-card-yob {
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-secondary);
 }
 
-.sap-case-clinical {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: var(--surface-2);
-    font-size: 0.85rem;
-    color: var(--text-primary);
-}
-
-.sap-case-footer {
+.sap-card-badges {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 6px;
 }
 
+.sap-card-line2 {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    min-width: 0;
+}
+
+.sap-card-line2 strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.sap-card-line3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.sap-card-method {
+    flex: 1 1 220px;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sap-card-metrics {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
+/* Progress Pill & SLA Pill on Line 3 */
+.sap-progress-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--surface-2);
+    color: var(--text-heading);
+    border: 1px solid var(--border-default);
+}
+
+.sap-progress-bar-mini {
+    width: 36px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-3);
+    overflow: hidden;
+    display: inline-block;
+}
+
+.sap-progress-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #1878B4;
+}
+
+.sap-progress-bar-fill.is-done {
+    background: #316A20;
+}
+
+.sap-sla-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.sap-sla--normal {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border-color: var(--border-default);
+}
+
+.sap-sla--soon {
+    background: #FDE9D4;
+    color: #613B00;
+    border-color: #DC9536;
+}
+
+.sap-sla--overdue {
+    background: #FFE6E4;
+    color: #860011;
+    border-color: #EB4848;
+}
+
+.sap-sla--done {
+    background: #E0F3DC;
+    color: #1F520E;
+    border-color: #73BC61;
+}
+
+[data-theme="dark"] .sap-sla--soon {
+    background: #2B200F;
+    color: #F8D6AF;
+    border-color: #BF7900;
+}
+
+[data-theme="dark"] .sap-sla--overdue {
+    background: #33141A;
+    color: #FFCFCA;
+    border-color: #CB242D;
+}
+
+[data-theme="dark"] .sap-sla--done {
+    background: #13261A;
+    color: #C6E8BD;
+    border-color: #41822E;
+}
+
+/* Risk Flags for BCN Queue (BƯỚC 3.1) */
+.sap-risk-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.sap-risk-pill--danger {
+    background: #FFE6E4;
+    color: #860011;
+    border-color: #EB4848;
+}
+
+.sap-risk-pill--warn {
+    background: #FDE9D4;
+    color: #613B00;
+    border-color: #DC9536;
+}
+
+.sap-risk-pill--standard {
+    background: #E0F3DC;
+    color: #1F520E;
+    border-color: #73BC61;
+}
+
+[data-theme="dark"] .sap-risk-pill--danger {
+    background: #33141A;
+    color: #FFCFCA;
+    border-color: #CB242D;
+}
+
+[data-theme="dark"] .sap-risk-pill--warn {
+    background: #2B200F;
+    color: #F8D6AF;
+    border-color: #BF7900;
+}
+
+[data-theme="dark"] .sap-risk-pill--standard {
+    background: #13261A;
+    color: #C6E8BD;
+    border-color: #41822E;
+}
+
+/* ── Tags & Truth Table Badges (WCAG AA >= 4.5:1, Font >= 13px) ── */
 .sap-tag {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 9px;
+    padding: 2px 8px;
     border-radius: 6px;
-    font-size: 0.76rem;
+    font-size: 13px;
     font-weight: 600;
     background: var(--surface-3);
     color: var(--text-primary);
@@ -7979,20 +8423,31 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: #64AEE6;
 }
 
+.sap-tag--modified {
+    background: #FDE9D4;
+    color: #613B00;
+    border-color: #DC9536;
+}
+
 [data-theme="dark"] .sap-tag--sandbox {
     background: #0F2236;
     color: #C0E1FD;
     border-color: #1878B4;
 }
 
-/* ── Truth Table Badges (12-Row Departmental Truth Table, WCAG AA >= 4.5:1) ── */
+[data-theme="dark"] .sap-tag--modified {
+    background: #2B200F;
+    color: #F8D6AF;
+    border-color: #BF7900;
+}
+
 .sap-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 4px 10px;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 13px;
     font-weight: 700;
     line-height: 1.3;
     border: 1px solid transparent;
@@ -8000,8 +8455,23 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .sap-badge--compact {
-    padding: 2px 8px;
-    font-size: 0.73rem;
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+.sap-sched-badge {
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 6px 12px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    justify-content: center;
+}
+
+.sap-sched-badge:hover {
+    filter: brightness(0.96);
 }
 
 .sap-badge--approved {
@@ -8088,27 +8558,153 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: #7C4CD5;
 }
 
-/* ── Case Preparation & Approval Modal Sections ── */
-.sap-modal-wrap {
+/* ── 2-Column Case Drawer Shell (BƯỚC 2.1) ── */
+.sap-drawer-shell {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
 }
 
-.sap-case-banner {
+.sap-mobile-stepper {
+    display: none;
+}
+
+.sap-drawer-columns {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.sap-left-rail {
     background: var(--surface-2);
+    border-right: 1px solid var(--border-default);
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.sap-rail-summary {
+    background: var(--surface-card);
     border: 1px solid var(--border-default);
     border-radius: 12px;
-    padding: 14px 16px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    font-size: 13.5px;
 }
 
-.sap-alert {
-    padding: 12px 14px;
+.sap-rail-patient {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.35;
+}
+
+.sap-rail-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.sap-rail-meta strong {
+    color: var(--text-primary);
+}
+
+.sap-step-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sap-step-nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
     border-radius: 10px;
-    font-size: 0.86rem;
+    border: 1.5px solid var(--border-default);
+    background: var(--surface-card);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+}
+
+.sap-step-nav-btn:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.sap-step-nav-btn.is-current {
+    border-color: #1D2357;
+    background: var(--brand-soft);
+    color: var(--text-heading);
+}
+
+[data-theme="dark"] .sap-step-nav-btn.is-current {
+    border-color: #8FA0F1;
+}
+
+.sap-step-nav-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.sap-step-nav-pill--done {
+    background: #E0F3DC;
+    color: #1F520E;
+}
+
+.sap-step-nav-pill--todo {
+    background: #FDE9D4;
+    color: #613B00;
+}
+
+[data-theme="dark"] .sap-step-nav-pill--done {
+    background: #13261A;
+    color: #C6E8BD;
+}
+
+[data-theme="dark"] .sap-step-nav-pill--todo {
+    background: #2B200F;
+    color: #F8D6AF;
+}
+
+.sap-right-pane {
+    padding: 16px 18px 24px 18px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+/* ── Alerts, Auto-Collapsed Step Summary Bar & Step Sections ── */
+.sap-alert {
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
     line-height: 1.45;
     border: 1px solid transparent;
 }
@@ -8161,14 +8757,39 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-color: #41822E;
 }
 
+.sap-step-collapsed-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid #73BC61;
+    background: #E0F3DC;
+    color: #1F520E;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+}
+
+[data-theme="dark"] .sap-step-collapsed-bar {
+    background: #13261A;
+    color: #C6E8BD;
+    border-color: #41822E;
+}
+
 .sap-section {
     background: var(--surface-card);
     border: 1px solid var(--border-default);
     border-radius: 12px;
-    padding: 16px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
+    min-width: 0;
 }
 
 .sap-section--attending {
@@ -8193,7 +8814,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 .sap-section-title {
     font-family: var(--font-display);
-    font-size: 0.98rem;
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-heading);
     margin: 0;
@@ -8202,11 +8823,29 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .sap-field-block {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
+    padding: 6px;
+    margin: -6px;
+    border-radius: 10px;
+    min-width: 0;
+}
+
+.sap-field--returned-highlight,
+.sap-field--missing-focus {
+    background: #FFE6E4;
+    border: 2px solid #AC011A !important;
+    padding: 10px 12px;
+    margin: 0;
+}
+
+[data-theme="dark"] .sap-field--returned-highlight,
+[data-theme="dark"] .sap-field--missing-focus {
+    background: #33141A;
+    border-color: #EB4848 !important;
 }
 
 .sap-field-label {
-    font-size: 0.86rem;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--text-heading);
     display: flex;
@@ -8216,16 +8855,84 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .sap-field-sub {
-    font-size: 0.78rem;
+    font-size: 13px;
     font-weight: 400;
     color: var(--text-secondary);
+}
+
+/* Inline 1-Line Column Check Pill (BƯỚC 2.2 — NO huge green banner!) */
+.sap-col-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.sap-col-inline--ok {
+    background: #E0F3DC;
+    color: #1F520E;
+    border: 1px solid #73BC61;
+}
+
+.sap-col-inline--warn {
+    background: #FDE9D4;
+    color: #613B00;
+    border: 1px solid #DC9536;
+}
+
+.sap-col-inline--danger {
+    background: #FFE6E4;
+    color: #860011;
+    border-color: #EB4848;
+}
+
+[data-theme="dark"] .sap-col-inline--ok {
+    background: #13261A;
+    color: #C6E8BD;
+    border-color: #41822E;
+}
+
+[data-theme="dark"] .sap-col-inline--warn {
+    background: #2B200F;
+    color: #F8D6AF;
+    border-color: #BF7900;
+}
+
+[data-theme="dark"] .sap-col-inline--danger {
+    background: #33141A;
+    color: #FFCFCA;
+    border-color: #CB242D;
+}
+
+/* Per-Step Suggestion Confirmation Box (BƯỚC 2.6) */
+.sap-step-suggest-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px dashed var(--brand-fill);
+    background: var(--surface-2);
+    font-size: 13.5px;
+}
+
+.sap-step-suggest-text {
+    flex: 1 1 260px;
+    min-width: 0;
+    color: var(--text-primary);
+    line-height: 1.4;
 }
 
 /* ── 1-Tap Clinical Chips (Suggested vs Confirmed) ── */
 .sap-chip-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 7px;
 }
 
 .sap-chip {
@@ -8233,17 +8940,16 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
+    padding: 7px 13px;
     border-radius: 999px;
     border: 1.5px solid var(--border-default);
     background: var(--surface-1);
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 0.84rem;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
     text-align: left;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .sap-chip:hover:not(:disabled) {
@@ -8251,7 +8957,6 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: var(--brand-soft);
 }
 
-/* Unconfirmed auto-suggested state: dashed border + "Gợi ý" tag (NEVER looks confirmed!) */
 .sap-chip--suggested {
     border: 1.5px dashed var(--border-strong);
     background: var(--surface-2);
@@ -8262,7 +8967,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     display: inline-block;
     padding: 1px 6px;
     border-radius: 4px;
-    font-size: 0.7rem;
+    font-size: 13px;
     font-weight: 700;
     background: #FDE9D4;
     color: #613B00;
@@ -8273,7 +8978,6 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #F8D6AF;
 }
 
-/* Confirmed selected state: solid brand fill + white text */
 .sap-chip--selected {
     background: #1D2357;
     color: #FFFFFF;
@@ -8297,131 +9001,19 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #FFFFFF;
 }
 
-/* ── Pre-op Checklist Rows (CK-01..CK-08) ── */
-.sap-ck-list {
+/* ── Catalog Search + "Hay dùng" 90-day Frequent Chips (BƯỚC 2.8) ── */
+.sap-frequent-procs {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-.sap-ck-row {
-    background: var(--surface-2);
-    border: 1px solid var(--border-default);
-    border-radius: 10px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.sap-ck-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.sap-ck-info {
-    flex: 1 1 260px;
-    min-width: 0;
-}
-
-.sap-ck-code {
-    font-family: var(--font-mono);
-    font-size: 0.76rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--surface-3);
-    color: var(--text-heading);
-    margin-right: 6px;
-}
-
-.sap-ck-title {
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--text-heading);
-}
-
-.sap-ck-desc {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-top: 3px;
-}
-
-.sap-ck-controls {
-    display: flex;
-    flex-wrap: wrap;
     gap: 6px;
-}
-
-.sap-ck-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-default);
-    background: var(--surface-1);
-    color: var(--text-primary);
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.sap-ck-btn.is-active-ok {
-    background: #316A20;
-    color: #FFFFFF;
-    border-color: #316A20;
-}
-
-.sap-ck-btn.is-active-prep {
-    background: #006095;
-    color: #FFFFFF;
-    border-color: #006095;
-}
-
-.sap-ck-btn.is-active-warn {
-    background: #7E4F00;
-    color: #FFFFFF;
-    border-color: #7E4F00;
-}
-
-.sap-ck-btn.is-active-na {
-    background: #535A6E;
-    color: #FFFFFF;
-    border-color: #535A6E;
-}
-
-.sap-subchecks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--border-default);
-}
-
-.sap-subcheck-item {
-    background: var(--surface-1);
-    border: 1px solid var(--border-default);
-    border-radius: 8px;
     padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    border-radius: 9px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
 }
 
-.sap-subcheck-label {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--text-heading);
-}
-
-/* ── Catalog Search Results ── */
 .sap-catalog-results {
-    max-height: 220px;
+    max-height: 200px;
     overflow-y: auto;
     border: 1px solid var(--border-default);
     border-radius: 8px;
@@ -8438,7 +9030,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     background: transparent;
     color: var(--text-primary);
     text-align: left;
-    font-size: 0.84rem;
+    font-size: 13.5px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -8455,34 +9047,380 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-weight: 700;
 }
 
-/* ── Action Drawer inside Modal ── */
-.sap-action-drawer {
-    background: var(--surface-2);
-    border: 1.5px solid var(--brand);
+/* ── Step ③ Synced Strip (Mục 2.4) + 3-Segment Checklist Controls (BƯỚC 2.5) ── */
+.sap-synced-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 9px 12px;
     border-radius: 10px;
-    padding: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    font-size: 13px;
+}
+
+.sap-synced-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sap-synced-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #E0F3DC;
+    color: #1F520E;
+    border: 1px solid #73BC61;
+}
+
+.sap-synced-pill--pending {
+    background: #FDE9D4;
+    color: #613B00;
+    border-color: #DC9536;
+    cursor: pointer;
+}
+
+[data-theme="dark"] .sap-synced-pill {
+    background: #13261A;
+    color: #C6E8BD;
+    border-color: #41822E;
+}
+
+[data-theme="dark"] .sap-synced-pill--pending {
+    background: #2B200F;
+    color: #F8D6AF;
+    border-color: #BF7900;
+}
+
+/* 10-Second Floating Undo Bar (BƯỚC 2.7) */
+.sap-undo-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #1D2357;
+    color: #FFFFFF;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .sap-undo-bar {
+    background: #2C3775;
+    border: 1px solid #8FA0F1;
+}
+
+.sap-ck-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-.sap-modal-actions-bar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-default);
-}
-
-.sap-modal-actions-group {
-    display: flex;
-    flex-wrap: wrap;
     gap: 8px;
 }
 
-/* ── Audit Log Table ── */
+.sap-ck-row {
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sap-ck-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sap-ck-info {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.sap-ck-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-heading);
+}
+
+.sap-ck-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Segmented 3-Step Control: [Đạt] [Bất thường] [Không chỉ định/áp dụng] */
+.sap-seg-control {
+    display: inline-flex;
+    flex-wrap: wrap;
+    border-radius: 10px;
+    border: 1px solid var(--border-default);
+    background: var(--surface-1);
+    padding: 2px;
+    gap: 2px;
+    max-width: 100%;
+}
+
+.sap-seg-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 11px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.sap-seg-btn:hover:not(:disabled) {
+    background: var(--brand-soft);
+}
+
+.sap-seg-btn.is-ok {
+    background: #316A20;
+    color: #FFFFFF;
+}
+
+.sap-seg-btn.is-prep {
+    background: #006095;
+    color: #FFFFFF;
+}
+
+.sap-seg-btn.is-warn {
+    background: #7E4F00;
+    color: #FFFFFF;
+}
+
+.sap-seg-btn.is-na {
+    background: #535A6E;
+    color: #FFFFFF;
+}
+
+/* 1-Row Cardiopulmonary Switches: Khám tiền mê · ECG · X-quang ngực · Siêu âm tim */
+.sap-subswitches-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--border-default);
+}
+
+.sap-subswitch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sap-subswitch-btn.is-ok {
+    background: #E0F3DC;
+    color: #1F520E;
+    border-color: #73BC61;
+}
+
+.sap-subswitch-btn.is-na {
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    border-color: var(--border-strong);
+}
+
+[data-theme="dark"] .sap-subswitch-btn.is-ok {
+    background: #13261A;
+    color: #C6E8BD;
+    border-color: #41822E;
+}
+
+/* ── BCN 1-Page Executive Summary & Yellow Diff Box (BƯỚC 3.2 & 3.3) ── */
+.sap-exec-card {
+    background: var(--surface-card);
+    border: 1.5px solid var(--border-default);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sap-exec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+}
+
+.sap-exec-box {
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 11px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 13.5px;
+}
+
+.sap-exec-box-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.sap-reapproval-diff {
+    background: #FDE9D4;
+    border: 2px solid #DC9536;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #422700;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13.5px;
+}
+
+[data-theme="dark"] .sap-reapproval-diff {
+    background: #2B200F;
+    border-color: #BF7900;
+    color: #F8D6AF;
+}
+
+.sap-diff-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .sap-diff-row {
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.sap-diff-old {
+    text-decoration: line-through;
+    opacity: 0.85;
+}
+
+.sap-diff-new {
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #FFE082;
+    color: #3B2200;
+}
+
+[data-theme="dark"] .sap-diff-new {
+    background: #613B00;
+    color: #FFF4DC;
+}
+
+/* Vietnamese 422 Missing Items Jump List (BƯỚC 2.10) */
+.sap-jump-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.sap-jump-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #EB4848;
+    background: var(--surface-card);
+    color: var(--text-heading);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sap-jump-link:hover {
+    background: var(--brand-soft);
+}
+
+/* ── Sticky Safe-Area Bottom Action Bar + Overflow Menu "⋯" (BƯỚC 2.9) ── */
+.sap-sticky-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface-card);
+    border-top: 1px solid var(--border-default);
+    box-shadow: 0 -4px 16px rgba(12, 16, 34, 0.08);
+    position: relative;
+    z-index: 8;
+}
+
+.sap-footer-left,
+.sap-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sap-more-wrap {
+    position: relative;
+}
+
+.sap-more-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 240px;
+    background: var(--surface-card);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 10px 28px rgba(12, 16, 34, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 20;
+}
+
+.sap-more-menu .sap-btn {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+/* ── Audit Log Table & Weekly Schedule 1-Line Footer Legend (BƯỚC 4.1) ── */
 .sap-log-table-wrap {
     overflow-x: auto;
     border: 1px solid var(--border-default);
@@ -8493,7 +9431,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 .sap-log-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.82rem;
+    font-size: 13px;
 }
 
 .sap-log-table th,
@@ -8512,77 +9450,127 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 .sap-hash-mono {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: 13px;
     color: var(--text-secondary);
     word-break: break-all;
 }
 
-/* ── Integration inside Lịch mổ tuần cards ── */
-.surg-card-approval-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-}
-
-.surg-approval-open-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--brand);
-    background: var(--brand-soft);
-    color: var(--text-heading);
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.surg-approval-open-btn:hover {
-    background: var(--brand-soft-strong);
-}
-
 .surgery-card-compact-approval {
-    padding: 0 10px 6px 10px;
+    padding: 2px 10px 6px 10px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
-/* ── Mobile Responsive Guard (320px - 768px, Zero Horizontal Overflow) ── */
-@media (max-width: 768px) {
-    .modal.sap-modal-xl {
-        width: calc(100vw - 16px);
-        max-width: calc(100vw - 16px);
-        max-height: 92vh;
+.sap-schedule-footer-legend {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+}
+
+.sap-schedule-footer-hint {
+    color: var(--text-secondary);
+}
+
+/* ── Mobile Full-Screen Case Drawer & Zero Horizontal Overflow (<= 959px / 390px) ── */
+@media (max-width: 959px) {
+    #modal-overlay.sap-drawer-overlay.active {
+        align-items: stretch !important;
+        justify-content: stretch !important;
     }
 
-    .sap-scope-banner {
+    #modal.sap-drawer-right {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    #modal.sap-drawer-right > .modal-header {
+        border-radius: 0 !important;
+        padding: 10px 12px !important;
+    }
+
+    .sap-mobile-stepper {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        padding: 8px 12px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border-default);
+        flex-shrink: 0;
+    }
+
+    .sap-drawer-columns {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .sap-canary-grid,
-    .sap-filters-card,
-    .sap-case-clinical,
-    .sap-subchecks-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .sap-modal-actions-bar,
-    .sap-modal-actions-group,
-    .sap-canary-actions {
-        width: 100%;
-    }
-
-    .sap-modal-actions-group .sap-btn,
-    .sap-canary-actions .sap-btn {
         flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .sap-left-rail {
+        border-right: none;
+        border-bottom: 1px solid var(--border-default);
+        padding: 10px 12px;
+        overflow: visible;
+        flex-shrink: 0;
+    }
+
+    .sap-left-rail .sap-step-nav {
+        display: none;
+    }
+
+    .sap-right-pane {
+        padding: 12px;
+        overflow: visible;
+        flex-shrink: 0;
+    }
+
+    .sap-sticky-footer {
+        padding: 8px 12px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .sap-footer-right {
+        flex: 1 1 auto;
+        justify-content: flex-end;
+    }
+
+    .sap-footer-right .sap-btn--primary,
+    .sap-footer-right .sap-btn--success {
+        flex: 1 1 auto;
+    }
+
+    .sap-filter-search-group {
+        max-width: 100%;
+        flex: 1 1 100%;
+    }
+}
+
+/* ── Reduced Motion Accessibility Guard (BƯỚC 5) ── */
+@media (prefers-reduced-motion: reduce) {
+    #modal.sap-drawer-right,
+    .sap-btn,
+    .sap-chip,
+    .sap-filter-chip,
+    .sap-seg-btn,
+    .sap-case-card {
+        animation: none !important;
+        transition: none !important;
     }
 }
 /* ===== SURGERY STATISTICS ===== */

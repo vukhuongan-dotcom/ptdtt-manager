@@ -328,7 +328,12 @@ const SurgeryPage = {
             </div>
             <div class="surg-header-actions">
                 ${showApproval ? `<button class="btn btn-secondary" onclick="App.navigate('surgery-approval')" aria-label="Mở Tab Duyệt mổ tại khoa">
-                    📋 Duyệt mổ khoa
+                    <span aria-hidden="true">📋</span> Duyệt mổ khoa
+                </button>` : ''}
+                ${(showApproval && typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin() && (Store._data?.surgeries || []).some(s => s.isTestSandboxCase)) ? `
+                <button type="button" id="surg-toggle-sandbox-preview" class="btn btn-secondary"
+                    onclick="SurgeryPage.toggleSandboxSchedulePreview()">
+                    <span aria-hidden="true">${this._showSandboxOnSchedule ? '🙈' : '🧪'}</span> ${this._showSandboxOnSchedule ? 'Ẩn ca [TEST]' : 'Xem ca [TEST]'}
                 </button>` : ''}
                 <button class="btn btn-secondary" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Tự động xóa vĩnh viễn sau 7 ngày)" aria-label="Thùng rác ca mổ đã hủy">
                     🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
@@ -344,15 +349,6 @@ const SurgeryPage = {
                 </button>` : ''}
             </div>
         </div>
-
-        ${showApproval ? `<div class="sap-scope-banner" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <span>🏥 <strong>Duyệt mổ nội bộ Khoa PTĐTT (Độc lập với HIS):</strong> Nhãn <strong>✅ Đã duyệt tại khoa</strong> xác nhận hoàn tất bước duyệt chuyên môn nội bộ tại khoa trước mổ.</span>
-            ${(typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin() && (Store._data?.surgeries || []).some(s => s.isTestSandboxCase)) ? `
-            <button type="button" id="surg-toggle-sandbox-preview" class="btn btn-secondary btn-sm"
-                onclick="SurgeryPage.toggleSandboxSchedulePreview()">
-                ${this._showSandboxOnSchedule ? '🙈 Ẩn ca [TEST] trên lịch' : '🧪 Xem trước ca [TEST] trên lịch'} (Không in vào ảnh PNG)
-            </button>` : ''}
-        </div>` : ''}
 
         ${locked ? `<div class="surg-locked-banner">
             🔒 <strong>Tuần này đã bị khoá</strong> — Dữ liệu lịch mổ sau 1 tuần không thể chỉnh sửa. Chỉ Super Admin mới có thể mở khoá.
@@ -479,14 +475,12 @@ const SurgeryPage = {
                                         <span class="surgery-card-surgeons">🔪 <strong>BS:</strong> ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                         ${s.duration ? `<span class="surg-card-duration">⏱ ${s.duration}p</span>` : ''}
                                     </div>
-                                    ${showCaseApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
+                                    ${showCaseApproval ? `<div class="surgery-card-compact-approval" style="padding:6px 0 0 0;">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
                                     ${canEdit ? `<div class="surg-card-actions">
-                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
                                     </div>` : `<div class="surg-card-actions-single">
-                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                     </div>`}
                                 </div>
@@ -523,7 +517,7 @@ const SurgeryPage = {
                                     <span class="surgery-card-yob">${s.birthYear || ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
-                                ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox" style="font-size:0.62rem;padding:1px 5px;">TEST</span> ' : ''}${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
+                                ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</div>
                                     ${s.duration ? `<div class="surg-card-duration">⏱ ${s.duration} phút</div>` : ''}
@@ -532,14 +526,11 @@ const SurgeryPage = {
                                     <div class="surgery-card-footer">
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                     </div>
-                                    ${showCaseApproval ? `<div style="margin-top:6px;">${SurgeryApprovalPage.renderBadge(s, true)}</div>` : ''}
                                     ${canEdit ? `<div class="surg-card-actions">
-                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Sửa ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                         <button class="btn btn-secondary btn-sm btn-card-action-danger" aria-label="Xoá ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
                                     </div>` : `<div class="surg-card-actions-single">
-                                        ${showCaseApproval && s.approachType !== 'nsth' ? `<button class="btn btn-secondary btn-sm btn-card-action surg-approval-open-btn" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Duyệt mổ</button>` : ''}
                                         <button class="btn btn-secondary btn-sm btn-card-action" aria-label="Xem chi tiết ca mổ của bệnh nhân ${Utils.toProperCase(s.patientName)}" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
                                     </div>`}
                                 </div>
@@ -551,6 +542,16 @@ const SurgeryPage = {
         }).join('')}
         </div>
         </div><!-- end .surgery-scroll-zone -->
+        ${showApproval ? `<div class="sap-schedule-footer-legend" role="note">
+            <strong>Chú giải (Bước 1 nội bộ Khoa PTĐTT, độc lập HIS):</strong>
+            <span><span aria-hidden="true">✅</span> Đã duyệt</span> ·
+            <span><span aria-hidden="true">⏳</span> Chờ duyệt</span> ·
+            <span><span aria-hidden="true">📝</span> Chưa trình</span> ·
+            <span><span aria-hidden="true">↩️</span> Trả về</span> ·
+            <span><span aria-hidden="true">⏸️</span> Tạm hoãn</span> ·
+            <span><span aria-hidden="true">⚡</span> Ngoại lệ</span>
+            <span class="sap-schedule-footer-hint">(Bấm vào nhãn trên thẻ để mở thẳng hồ sơ duyệt ca mổ)</span>
+        </div>` : ''}
         `;
     },
 
@@ -1728,9 +1729,9 @@ const SurgeryPage = {
             todaySurgeries.forEach((s, i) => {
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                 const bgColor = i % 2 === 0 ? '#ffffff' : '#f8fafc';
-                const approvalMeta = showApproval ? SurgeryApprovalPage.getApprovalBadgeMeta(s) : null;
+                const approvalMeta = showApproval ? SurgeryApprovalPage.getScheduleShortBadgeMeta(s) : null;
                 const approvalCellHtml = showApproval
-                    ? `<td style="padding:12px 8px;text-align:center;font-size:12px;font-weight:700;color:${approvalMeta.isGreenTickValid ? '#14532d' : '#1e293b'}">${Utils.escapeHtml(approvalMeta.badgeLabel || '—')}</td>`
+                    ? `<td style="padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:${approvalMeta && approvalMeta.isGreenTickValid ? '#14532d' : '#1e293b'};white-space:nowrap">${approvalMeta && approvalMeta.shortLabel ? Utils.escapeHtml(approvalMeta.icon + ' ' + approvalMeta.shortLabel) : '—'}</td>`
                     : '';
                 rows += `<tr style="background:${bgColor};border-bottom:1px solid #cbd5e1">
                     <td style="padding:12px 10px;text-align:center;font-weight:700;color:#000;font-size:14px">${i + 1}</td>
@@ -1766,7 +1767,7 @@ const SurgeryPage = {
         });
 
         const exportWidthPx = showApproval ? 1220 : 1100;
-        const scopeLegendText = showApproval ? (SurgeryApprovalPage.getConfig().scopeLegendText || '✅ Đã duyệt tại khoa: Xác nhận hoàn tất bước duyệt chuyên môn nội bộ tại Khoa PTĐTT (độc lập với tiến trình duyệt trên phần mềm HIS của Bệnh viện)') : '';
+        const scopeLegendText = showApproval ? 'Chú giải (Bước 1 nội bộ Khoa PTĐTT, độc lập HIS): ✅ Đã duyệt · ⏳ Chờ duyệt · 📝 Chưa trình · ↩️ Trả về · ⏸️ Tạm hoãn · ⚡ Ngoại lệ' : '';
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `

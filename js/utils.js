@@ -641,11 +641,14 @@ const Modal = {
 
     close() {
         const modalEl = document.getElementById('modal');
-        if (modalEl) modalEl.classList.remove('sap-modal-xl');
+        if (modalEl) modalEl.classList.remove('sap-modal-xl', 'sap-drawer-right');
         const overlay = document.getElementById('modal-overlay');
         if (overlay) {
-            overlay.classList.remove('active');
+            overlay.classList.remove('active', 'sap-drawer-overlay');
             overlay.setAttribute('aria-hidden', 'true');
+        }
+        if (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage._onModalClosed === 'function') {
+            try { SurgeryApprovalPage._onModalClosed(); } catch (_) {}
         }
         // Remove any open duplicate confirmation sub-dialog
         const dupDialog = document.getElementById('surgery-duplicate-dialog');

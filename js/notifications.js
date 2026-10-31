@@ -312,7 +312,7 @@ const Notifications = {
             if (typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser()) {
                 App.navigate('surgery-approval');
                 if (notif.surgeryId) {
-                    setTimeout(() => SurgeryApprovalPage.openCaseModal(notif.surgeryId), 50);
+                    setTimeout(() => SurgeryApprovalPage.openCaseModal(notif.surgeryId, { notifType: notif.type || '' }), 50);
                 }
             }
             return;
