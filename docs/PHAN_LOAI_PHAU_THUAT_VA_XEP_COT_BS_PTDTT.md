@@ -2,10 +2,10 @@
 
 > **Cơ sở pháp lý & Dữ liệu gốc (SSoT):**
 > 1. `BVBD_PHÂN LOẠI PHẪU THUẬT_nhóm NGOẠI TIÊU HOÁ.xls` (`309` dòng kỹ thuật: `118` Phẫu thuật nội soi + `191` dòng Phẫu thuật mở — Danh mục DVKT Bệnh viện Bình Dân đối chiếu Thông tư 50/2014/TT-BYT).
-> 2. `Quyết định số 1073/QĐ-BVBD` ngày 12/06/2024 của Giám đốc Bệnh viện Bình Dân ban hành Quy chế xếp cột Bác sĩ phẫu thuật, thủ thuật.
-> 3. `KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx` (Hội đồng xếp cột Bệnh viện Bình Dân phê duyệt năm 2026 cho `11` Bác sĩ Khoa Phẫu thuật Đại trực tràng).
+> 2. `Quyết định số 1073/QĐ-BVBD` ngày 12/06/2024 của Giám đốc Bệnh viện Bình Dân ban hành Quy chế xếp cột Bác sĩ phẫu thuật, thủ thuật *(đã xác nhận còn nguyên hiệu lực, chưa có văn bản thay thế)*.
+> 3. `KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx` (Hội đồng xếp cột Bệnh viện Bình Dân phê duyệt năm 2026 cho `11` Bác sĩ Khoa Phẫu thuật Đại trực tràng — **thời hạn hiệu lực 01 năm `01/01/2026 – 31/12/2026`, mỗi năm Bệnh viện tổ chức xếp cột bác sĩ lại**).
 > 4. `29.12.2025_DMKT - MÃ PHẪU THUẬT KHOA PTĐTT.xlsx` (Bảng mã DVKT nội bộ tham chiếu của Khoa Phẫu thuật Đại trực tràng).
-> 5. **Chỉ đạo nghiệp vụ:** `BSCKII. Vũ Khương An` — Phó Trưởng khoa Phẫu thuật Đại trực tràng cập nhật vào Brain dự án ngày `28/10/2026`.
+> 5. **Chỉ đạo nghiệp vụ:** `BSCKII. Vũ Khương An` — Phó Trưởng khoa Phẫu thuật Đại trực tràng cập nhật vào Brain dự án ngày `28/10/2026` và bổ sung quy tắc kiểm soát vượt cột theo tính chất ca mổ ngày `31/10/2026`.
 
 ---
 
@@ -24,42 +24,48 @@ Quyền đứng tên **Phẫu thuật viên chính (`BS mổ chính` / `mainSurg
 2. **Trục 2 — Đúng thứ bậc Cột chuyên môn (`Cột ĐB` > `Cột I` > `Cột II` > `Cột III`):**
    - Bác sĩ chính được Hội đồng Bệnh viện xếp ở **cột nào** thì đương nhiên đủ điều kiện đứng tên **BS mổ chính** cho phẫu thuật thuộc **loại tương ứng cột đó và tất cả các loại thấp hơn** (nguyên tắc bao hàm từ cao xuống thấp theo Thông tư 50/2014/TT-BYT và Mục IV Quyết định 1073/QĐ-BVBD):
 
-| Cột của Bác sĩ chính | Mổ chính ĐÚNG CỘT (Tự động hợp lệ) | Mổ chính CẦN DUYỆT VƯỢT CỘT (Theo từng DVKT cụ thể) | Phạm vi Thủ thuật đi kèm |
+| Cột của Bác sĩ chính | Mổ chương trình & Mổ yêu cầu (ĐÚNG CỘT — Tuyệt đối không vượt cột) | Mổ bán khẩn do BCN khoa cân nhắc (Chỉ được vượt tối đa 01 cột khi không có nhân sự phù hợp) | Phạm vi Thủ thuật đi kèm |
 |:---:|:---|:---|:---|
-| **Cột Đặc biệt (`Cột ĐB`)** | **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** | Không *(trừ Phẫu thuật Robot cần chứng nhận riêng)* | Thủ thuật các loại (`ĐB, I, II, III`) |
-| **Cột I (`Cột 1`)** | **`PT-I`, `PT-II`, `PT-III`** | **`PT-ĐB`** | Thủ thuật từ loại `ĐB` trở xuống |
-| **Cột II (`Cột 2`)** | **`PT-II`, `PT-III`** | **`PT-ĐB`, `PT-I`** | Thủ thuật từ loại `I` trở xuống |
-| **Cột III (`Cột 3`)** | **`PT-III`** | **`PT-ĐB`, `PT-I`, `PT-II`** | Thủ thuật từ loại `II` trở xuống |
+| **Cột Đặc biệt (`Cột ĐB`)** | **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** | Không áp dụng vượt cột *(PT Robot cần chứng nhận riêng)* | Thủ thuật các loại (`ĐB, I, II, III`) |
+| **Cột I (`Cột 1`)** | **`PT-I`, `PT-II`, `PT-III`** *(Cấm vượt lên `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-ĐB`** *(vượt 01 cột)* | Thủ thuật từ loại `ĐB` trở xuống |
+| **Cột II (`Cột 2`)** | **`PT-II`, `PT-III`** *(Cấm vượt lên `PT-I`, `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-I`** *(vượt 01 cột; **tuyệt đối cấm** vượt 02 cột lên `PT-ĐB`)* | Thủ thuật từ loại `I` trở xuống |
+| **Cột III (`Cột 3`)** | **`PT-III`** *(Cấm vượt lên `PT-II`, `PT-I`, `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-II`** *(vượt 01 cột; **tuyệt đối cấm** vượt 02–03 cột lên `PT-I`, `PT-ĐB`)* | Thủ thuật từ loại `II` trở xuống |
 | **Chưa xếp cột** *(BSNT / BS Học viên)* | **Không được đứng tên `BS mổ chính`** | Không áp dụng | Tham gia phụ mổ & chuẩn bị hồ sơ tiền phẫu |
 
-### 2. Quy chế Xét Vượt Cột & Hậu Kiểm An Toàn (`Quyết định 1073/QĐ-BVBD` Mục III)
+### 2. Quy chế Kiểm Soát Vượt Cột Theo Tính Chất Ca Mổ & Thời Hạn Xếp Cột Hàng Năm
 
-- **Không vượt cột tràn lan theo hạng:** Quyền mổ vượt cột **chỉ được xét duyệt đích danh theo từng Dịch vụ Kỹ thuật (DVKT) cụ thể** khi Ban Chủ nhiệm khoa đánh giá bác sĩ nắm vững quy trình kỹ thuật và đảm bảo an toàn người bệnh.
-- **Trạng thái kiểm soát trên hệ thống `PTDTT Manager` (`Tab Duyệt mổ`):**
-  1. `Đúng cột`: Hạng phẫu thuật ≤ Cột hiện tại của `BS mổ chính` (theo đúng đường Mổ mở / Mổ nội soi).
-  2. `Vượt cột đã duyệt`: Hạng phẫu thuật cao hơn cột hiện tại nhưng bác sĩ đã có quyết định phê duyệt vượt cột của Bệnh viện cho đúng mã DVKT đó.
-  3. `Đề xuất vượt cột`: Ca mổ vượt cột chưa nằm trong danh mục vượt cột thường quy của bác sĩ → hệ thống bật cảnh báo nổi bật để Phó Trưởng khoa thẩm định tiền duyệt và Trưởng khoa quyết định phê duyệt hoặc yêu cầu đổi `BS mổ chính` đúng cột.
-- **Chế độ hậu kiểm & thu hồi:** Ban Chủ nhiệm khoa báo cáo kết quả thực hiện kỹ thuật vượt cột về Phòng Kế hoạch tổng hợp **mỗi 06 tháng/lần**. Trong vòng 01 năm, nếu xảy ra biến chứng mức độ **3, 4, 5 theo phân độ Clavien-Dindo** hoặc tỷ lệ biến chứng cao bất thường do lỗi kỹ thuật, quyền vượt cột bị xem xét thu hồi.
+1. **Thời hạn hiệu lực bảng xếp cột bác sĩ (`01 năm`):**
+   - Bảng xếp cột bác sĩ chính tại Khoa Phẫu thuật Đại trực tràng (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`) có **thời hạn 01 năm (`2026`)**. Mỗi năm Bệnh viện Bình Dân sẽ tổ chức xét duyệt và xếp cột bác sĩ lại.
+2. **Nguyên tắc Mổ chương trình & Mổ yêu cầu (`urgencyLevel = "elective"` hoặc `"elective_service"`):**
+   - **TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP VƯỢT CỘT.**
+   - Bác sĩ ở cột nào chỉ được phép đứng `BS mổ chính` cho phẫu thuật từ loại tương ứng cột đó trở xuống (ví dụ: `Cột I` chỉ được phép mổ `PT-I`, `PT-II`, `PT-III`; `Cột II` chỉ được phép mổ `PT-II`, `PT-III`).
+   - Hệ thống `PTDTT Manager` chặn cứng (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`) không cho gửi duyệt ca mổ chương trình hoặc mổ yêu cầu nếu hạng phẫu thuật cao hơn cột hiện tại của `BS mổ chính`.
+3. **Nguyên tắc Mổ bán khẩn (`urgencyLevel = "semi_urgent"`):**
+   - **Do Ban Chủ nhiệm khoa (`Trưởng khoa` / `Phó Trưởng khoa`) cân nhắc quyết định.**
+   - **Chỉ được phép vượt tối đa 01 cột (`columnStepDelta = 1`)** nếu tại thời điểm mổ bán khẩn đó không có nhân sự cột trên phù hợp (ví dụ: bác sĩ `Cột II` có thể được Ban Chủ nhiệm khoa cân nhắc cho mổ phẫu thuật loại I `PT-I`; bác sĩ `Cột III` có thể được cân nhắc cho mổ `PT-II`).
+   - Nếu vượt từ **02 cột trở lên** (`columnStepDelta >= 2`, ví dụ `Cột II` xếp mổ `PT-ĐB` hoặc `Cột III` xếp mổ `PT-I`/`PT-ĐB`), hệ thống chặn cứng (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP`) ngay cả khi là mổ bán khẩn.
+4. **Chế độ hậu kiểm & thu hồi (`Quyết định 1073/QĐ-BVBD` Mục III):**
+   - Ban Chủ nhiệm khoa báo cáo kết quả thực hiện kỹ thuật vượt cột về Phòng Kế hoạch tổng hợp **mỗi 06 tháng/lần**. Trong vòng 01 năm, nếu xảy ra biến chứng mức độ **3, 4, 5 theo phân độ Clavien-Dindo** hoặc tỷ lệ biến chứng cao bất thường do lỗi kỹ thuật, quyền vượt cột bị xem xét thu hồi.
 
 ---
 
-## II. BẢNG PHÂN CỘT CHÍNH THỨC NĂM 2026 CỦA BÁC SĨ KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG
+## II. BẢNG PHÂN CỘT CHÍNH THỨC NĂM 2026 CỦA BÁC SĨ KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG (THỜI HẠN 01 NĂM)
 
 ### 1. Khối 11 Bác sĩ Cơ hữu (Ban Chủ nhiệm & Bác sĩ chính — Có quyền đứng `BS mổ chính`)
 
-| STT | `staffId` (`db.json`) | Học hàm / Học vị & Họ tên | Chức vụ | Cột Mổ mở (2026) | Cột Mổ nội soi (2026) | PT Robot | Loại phẫu thuật được đứng `BS mổ chính` ĐÚNG CỘT |
-|:---:|:---:|:---|:---|:---:|:---:|:---:|:---|
-| 01 | `1` | **TS. BSCKII. Nguyễn Phú Hữu** | Trưởng khoa | **Đặc biệt** | **Đặc biệt** | **Có (`x`)** | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** + **PT Robot** |
-| 02 | `2` | **BSCKII. Vũ Khương An** | Phó Trưởng khoa | **Đặc biệt** | **Đặc biệt** | — | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** |
-| 03 | `4` | **BSCKII. Vũ Ngọc Anh Tuấn** | Bác sĩ chính | **Đặc biệt** | **Đặc biệt** | — | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** |
-| 04 | `5` | **BSCKII. Bùi Hồng Minh Hậu** | Bác sĩ chính | **Đặc biệt** | **Đặc biệt** | — | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** |
-| 05 | `6` | **BSCKII. Võ Chí Nguyện** | Bác sĩ chính | **I** | **I** | — | Mổ mở & PTNS: **`PT-I`, `PT-II`, `PT-III`** *(`PT-ĐB` cần duyệt vượt cột)* |
-| 06 | `7` | **ThS. BSCKI. Phạm Vĩnh Phú** *(DB: `BSCKI`)* | Bác sĩ chính | **II** | **II** | — | Mổ mở & PTNS: **`PT-II`, `PT-III`** *(`PT-I`, `PT-ĐB` cần duyệt vượt cột)* |
-| 07 | `8` | **ThS. BSCKI. Giao Hữu Trường Quy** *(DB: `BSCKI`)* | Bác sĩ chính | **II** | **II** | — | Mổ mở & PTNS: **`PT-II`, `PT-III`** *(`PT-I`, `PT-ĐB` cần duyệt vượt cột)* |
-| 08 | `9` | **ThS. BSCKI. Trịnh Hoàng Minh Đức** *(DB: `BSCKI`)* | Bác sĩ chính | **II** | **II** | — | Mổ mở & PTNS: **`PT-II`, `PT-III`** *(`PT-I`, `PT-ĐB` cần duyệt vượt cột)* |
-| 09 | `10` | **BSCKI. Trần Như Đức** | Bác sĩ chính | **III** | **III** | — | Mổ mở: **`PT-III`** (`07` kỹ thuật); PTNS: `0` kỹ thuật `PT-III` *(từ `PT-II` trở lên cần duyệt vượt cột)* |
-| 10 | `11` | **BSCKI. Lê Văn Hoan** | Bác sĩ chính | **III** | **III** | — | Mổ mở: **`PT-III`** (`07` kỹ thuật); PTNS: `0` kỹ thuật `PT-III` *(từ `PT-II` trở lên cần duyệt vượt cột)* |
-| 11 | `12` | **BSCKI. Phạm Thị Tuyết Minh** | Bác sĩ chính | **III** | **III** | — | Mổ mở: **`PT-III`** (`07` kỹ thuật); PTNS: `0` kỹ thuật `PT-III` *(từ `PT-II` trở lên cần duyệt vượt cột)* |
+| STT | `staffId` (`db.json`) | Học hàm / Học vị & Họ tên | Chức vụ | Năm ra trường / Ký HĐ (Thâm niên 2026) | Cột Mổ mở (2026) | Cột Mổ nội soi (2026) | PT Robot | Phạm vi đứng `BS mổ chính` (Chương trình/Yêu cầu vs Bán khẩn) |
+|:---:|:---:|:---|:---|:---:|:---:|:---:|:---:|:---|
+| 01 | `1` | **TS. BSCKII. Nguyễn Phú Hữu** | Trưởng khoa | `2005` / `2009` (`17` năm) | **Đặc biệt** | **Đặc biệt** | **Có (`x`)** | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** + **PT Robot** |
+| 02 | `2` | **BSCKII. Vũ Khương An** | Phó Trưởng khoa | `2016` / `2017` (`09` năm) | **Đặc biệt** | **Đặc biệt** | — | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** |
+| 03 | `4` | **BSCKII. Vũ Ngọc Anh Tuấn** | Bác sĩ điều trị | `2008` / `2009` (`17` năm) | **Đặc biệt** | **Đặc biệt** | — | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** |
+| 04 | `5` | **BSCKII. Bùi Hồng Minh Hậu** | Bác sĩ điều trị | `2013` / `2014` (`12` năm) | **Đặc biệt** | **Đặc biệt** | — | Mổ mở & PTNS: **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** |
+| 05 | `6` | **BSCKII. Võ Chí Nguyện** | Bác sĩ điều trị | `2014` / `2020` (`06` năm) | **I** | **I** | — | Chương trình/YC: **`PT-I`, `PT-II`, `PT-III`**; Bán khẩn: BCN cân nhắc tối đa **`PT-ĐB`** *(+1 cột)* |
+| 06 | `7` | **ThS. BSCKI. Phạm Vĩnh Phú** *(DB: `BSCKI`)* | Bác sĩ điều trị | `2019` / `2023` (`03` năm) | **II** | **II** | — | Chương trình/YC: **`PT-II`, `PT-III`**; Bán khẩn: BCN cân nhắc tối đa **`PT-I`** *(+1 cột, cấm `PT-ĐB`)* |
+| 07 | `8` | **ThS. BSCKI. Giao Hữu Trường Quy** *(DB: `BSCKI`)* | Bác sĩ điều trị | `2019` / `2023` (`03` năm) | **II** | **II** | — | Chương trình/YC: **`PT-II`, `PT-III`**; Bán khẩn: BCN cân nhắc tối đa **`PT-I`** *(+1 cột, cấm `PT-ĐB`)* |
+| 08 | `9` | **ThS. BSCKI. Trịnh Hoàng Minh Đức** *(DB: `BSCKI`)* | Bác sĩ điều trị | `2020` / `2024` (`02` năm) | **II** | **II** | — | Chương trình/YC: **`PT-II`, `PT-III`**; Bán khẩn: BCN cân nhắc tối đa **`PT-I`** *(+1 cột, cấm `PT-ĐB`)* |
+| 09 | `10` | **BSCKI. Trần Như Đức** | Bác sĩ điều trị | `2021` / `2025` (`01` năm) | **III** | **III** | — | Chương trình/YC: **`PT-III`** (`07` kỹ thuật Mổ mở); Bán khẩn: BCN cân nhắc tối đa **`PT-II`** *(+1 cột, cấm `PT-I`, `PT-ĐB`)* |
+| 10 | `11` | **BSCKI. Lê Văn Hoan** | Bác sĩ điều trị | `2021` / `2025` (`01` năm) | **III** | **III** | — | Chương trình/YC: **`PT-III`** (`07` kỹ thuật Mổ mở); Bán khẩn: BCN cân nhắc tối đa **`PT-II`** *(+1 cột, cấm `PT-I`, `PT-ĐB`)* |
+| 11 | `12` | **BSCKI. Phạm Thị Tuyết Minh** | Bác sĩ điều trị | `2021` / `2025` (`01` năm) | **III** | **III** | — | Chương trình/YC: **`PT-III`** (`07` kỹ thuật Mổ mở); Bán khẩn: BCN cân nhắc tối đa **`PT-II`** *(+1 cột, cấm `PT-I`, `PT-ĐB`)* |
 
 > **Ghi chú đồng bộ dữ liệu nhân sự:** Trong bảng kết quả xếp cột năm 2026 của Phòng KHTH và tài liệu lịch khám ngoại trú chuẩn hóa (19/10/2026), 03 bác sĩ `Phạm Vĩnh Phú` (`id: 7`), `Giao Hữu Trường Quy` (`id: 8`), `Trịnh Hoàng Minh Đức` (`id: 9`) có học vị đầy đủ là `ThS. BSCKI.`. Trong `data/db.json` hiện đang lưu trường `title` ngắn gọn là `BSCKI`.
 

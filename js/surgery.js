@@ -182,6 +182,22 @@ const SurgeryPage = {
         this.currentWeekStart.setHours(0, 0, 0, 0);
     },
 
+    _jumpToDate(isoDateStr) {
+        if (!isoDateStr || typeof isoDateStr !== 'string') return;
+        const parts = isoDateStr.split('T')[0].split('-');
+        if (parts.length !== 3) return;
+        const target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        if (isNaN(target.getTime())) return;
+        const day = target.getDay();
+        this.currentWeekStart = new Date(target);
+        this.currentWeekStart.setDate(target.getDate() - (day === 0 ? 6 : day - 1));
+        this.currentWeekStart.setHours(0, 0, 0, 0);
+        this._selectedDayStr = isoDateStr.split('T')[0];
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
+        }
+    },
+
     getWeekDates() {
         if (!this.currentWeekStart) this.init();
         return Array.from({ length: 7 }, (_, i) => {

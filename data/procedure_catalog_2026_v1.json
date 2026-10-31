@@ -4,10 +4,19 @@
   "scope": "departmental_step1_only",
   "zeroHisCoupling": true,
   "privilegeMatrix": {
-    "privilegeMatrixVersion": "BVBD-PTDTT-2026.v1",
-    "privilegeMatrix2026Status": "pending_signed_decision",
-    "sourceDocStatus": "pending_signed_council_decision_verification",
-    "regulationRef": "QĐ 1073/QĐ-BVBD (12/06/2024) — đã đối chiếu bản PDF scan, chờ xác nhận chưa bị thay thế",
+    "privilegeMatrixVersion": "BVBD-PTDTT-2026.v2",
+    "privilegeMatrix2026Status": "confirmed_active_2026",
+    "sourceDocStatus": "confirmed_official_2026_excel_and_qd1073",
+    "regulationRef": "QĐ 1073/QĐ-BVBD (12/06/2024 — đã xác nhận hiệu lực, chưa có thay thế) & KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx",
+    "validityPeriodYears": 1,
+    "renewalCycle": "annual_hospital_review",
+    "renewalPolicy": "Thời hạn 01 năm (01/01/2026 – 31/12/2026). Mỗi năm Bệnh viện Bình Dân xếp cột bác sĩ lại.",
+    "overColumnPolicy": {
+      "electiveAndServiceMaxOverSteps": 0,
+      "electiveAndServiceRule": "Nguyên tắc mổ chương trình & mổ yêu cầu không được phép vượt cột (ví dụ Cột I chỉ được phép mổ phẫu thuật loại I trở xuống: PT-I, PT-II, PT-III).",
+      "semiUrgentMaxOverSteps": 1,
+      "semiUrgentRule": "Mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc, chỉ được phép vượt tối đa 01 cột (ví dụ Cột II có thể được BCN cân nhắc cho mổ PT-I) nếu tại thời điểm đó không có nhân sự phù hợp."
+    },
     "effectiveFrom": "2026-01-01",
     "effectiveTo": "2026-12-31",
     "attendingStaffIds": [
@@ -45,66 +54,121 @@
     "attendingColumns": {
       "1": {
         "name": "TS. BSCKII. Nguyễn Phú Hữu",
+        "position": "Trưởng khoa",
+        "academicDegree": "TS.BS.CKII",
+        "graduationYear": 2005,
+        "contractYear": 2009,
+        "seniorityYears2026": 17,
         "open": "DB",
         "lap": "DB",
         "robot": true
       },
       "2": {
         "name": "BSCKII. Vũ Khương An",
+        "position": "Phó trưởng khoa",
+        "academicDegree": "BS.CKII",
+        "graduationYear": 2016,
+        "contractYear": 2017,
+        "seniorityYears2026": 9,
         "open": "DB",
         "lap": "DB",
         "robot": false
       },
       "4": {
         "name": "BSCKII. Vũ Ngọc Anh Tuấn",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "BS.CKII",
+        "graduationYear": 2008,
+        "contractYear": 2009,
+        "seniorityYears2026": 17,
         "open": "DB",
         "lap": "DB",
         "robot": false
       },
       "5": {
         "name": "BSCKII. Bùi Hồng Minh Hậu",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "BS.CKII",
+        "graduationYear": 2013,
+        "contractYear": 2014,
+        "seniorityYears2026": 12,
         "open": "DB",
         "lap": "DB",
         "robot": false
       },
       "6": {
         "name": "BSCKII. Võ Chí Nguyện",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "BS.CKII",
+        "graduationYear": 2014,
+        "contractYear": 2020,
+        "seniorityYears2026": 6,
         "open": "I",
         "lap": "I",
         "robot": false
       },
       "7": {
         "name": "ThS. BSCKI. Phạm Vĩnh Phú",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "ThS.BS.CKI",
+        "graduationYear": 2019,
+        "contractYear": 2023,
+        "seniorityYears2026": 3,
         "open": "II",
         "lap": "II",
         "robot": false
       },
       "8": {
         "name": "ThS. BSCKI. Giao Hữu Trường Quy",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "ThS.BS.CKI",
+        "graduationYear": 2019,
+        "contractYear": 2023,
+        "seniorityYears2026": 3,
         "open": "II",
         "lap": "II",
         "robot": false
       },
       "9": {
         "name": "ThS. BSCKI. Trịnh Hoàng Minh Đức",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "ThS.BS.CKI",
+        "graduationYear": 2020,
+        "contractYear": 2024,
+        "seniorityYears2026": 2,
         "open": "II",
         "lap": "II",
         "robot": false
       },
       "10": {
         "name": "BSCKI. Trần Như Đức",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "BS.CKI",
+        "graduationYear": 2021,
+        "contractYear": 2025,
+        "seniorityYears2026": 1,
         "open": "III",
         "lap": "III",
         "robot": false
       },
       "11": {
         "name": "BSCKI. Lê Văn Hoan",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "BS.CKI",
+        "graduationYear": 2021,
+        "contractYear": 2025,
+        "seniorityYears2026": 1,
         "open": "III",
         "lap": "III",
         "robot": false
       },
       "12": {
         "name": "BSCKI. Phạm Thị Tuyết Minh",
+        "position": "Bác sĩ điều trị",
+        "academicDegree": "BS.CKI",
+        "graduationYear": 2021,
+        "contractYear": 2025,
+        "seniorityYears2026": 1,
         "open": "III",
         "lap": "III",
         "robot": false

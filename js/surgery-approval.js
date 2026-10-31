@@ -1154,13 +1154,30 @@ const SurgeryApprovalPage = {
 
         const sysCheck = col.systemCheck || 'within_column';
         const baseColLabel = col.surgeonBaseColumn2026 ? `Cột ${col.surgeonBaseColumn2026}` : (col.surgeonColumn || 'Cột BS');
+        const stepDelta = Number(col.columnStepDelta || 0);
+        const isElectiveOrService = (urgVal === 'elective' || urgVal === 'elective_service');
+        let overColBanner = {
+            cls: 'sap-alert--warning',
+            text: `⚠️ Mổ bán khẩn vượt 01 cột (${baseColLabel} → ${pc.confirmedClass || ''}): Do Ban Chủ nhiệm khoa cân nhắc khi tại thời điểm đó không có nhân sự phù hợp.`
+        };
+        if (isElectiveOrService) {
+            overColBanner = {
+                cls: 'sap-alert--danger',
+                text: `⛔ Nguyên tắc Mổ chương trình & Mổ yêu cầu KHÔNG ĐƯỢC PHÉP VƯỢT CỘT (${baseColLabel} chỉ được mổ từ loại tương ứng trở xuống, không được mổ ${pc.confirmedClass || ''}). Vui lòng phân công BS mổ chính đúng cột.`
+            };
+        } else if (urgVal === 'semi_urgent' && stepDelta > 1) {
+            overColBanner = {
+                cls: 'sap-alert--danger',
+                text: `⛔ Mổ bán khẩn chỉ được BCN cân nhắc vượt tối đa 01 cột (${baseColLabel} không được vượt ${stepDelta} cột lên ${pc.confirmedClass || ''}). Vui lòng đổi BS mổ chính.`
+            };
+        }
         const sysCheckBanner = {
-            within_column: { cls: 'sap-alert--success', text: `✅ Đúng cột phẫu thuật (${baseColLabel} vs ${pc.confirmedClass || pc.suggestedClass || 'Hạng PT'}).` },
+            within_column: { cls: 'sap-alert--success', text: `✅ Đúng cột phẫu thuật (${baseColLabel} vs ${pc.confirmedClass || pc.suggestedClass || 'Hạng PT'} — Bảng xếp cột BS 2026 thời hạn 01 năm).` },
             approved_over_column_matched: { cls: 'sap-alert--info', text: '☑️ Có trong danh mục DVKT vượt cột đã cấu hình.' },
-            over_column: { cls: 'sap-alert--warning', text: `⚠️ Kỹ thuật (${pc.confirmedClass || ''}) cao hơn cột hiện tại của BS mổ chính (${baseColLabel}) — bắt buộc chọn Đề xuất vượt cột hoặc đổi PTV chính.` },
+            over_column: overColBanner,
             robot_certification_required: { cls: 'sap-alert--danger', text: '🤖 Phẫu thuật Robot: BS mổ chính chưa nằm trong danh sách chứng nhận mổ chính Robot tại khoa — vui lòng trình BCN xét duyệt chứng chỉ.' },
             external_surgeon_verify_privilege: { cls: 'sap-alert--info', text: '🤝 BS ngoài khoa / Liên chuyên khoa đứng mổ chính — bắt buộc chọn BS chính Khoa PTĐTT phụ trách phối hợp.' },
-            matrix_expired_manual_verify: { cls: 'sap-alert--warning', text: '⚠️ Ma trận phân cột đã qua kỳ hiệu lực — BCN xác minh thủ công khi duyệt.' },
+            matrix_expired_manual_verify: { cls: 'sap-alert--warning', text: '⚠️ Bảng xếp cột bác sĩ đã qua kỳ hiệu lực 01 năm — BCN xác minh thủ công khi duyệt.' },
             unclassified_manual_verify: { cls: 'sap-alert--info', text: 'ℹ️ Kỹ thuật chưa xếp loại / phối hợp liên khoa — BCN xét duyệt thủ công theo thuyết minh.' },
             invalid_trainee_main_surgeon: { cls: 'sap-alert--danger', text: '⛔ Bác sĩ nội trú / BS học viên không được đứng tên BS mổ chính.' },
             trainee_not_allowed_main: { cls: 'sap-alert--danger', text: '⛔ Bác sĩ nội trú / BS học viên không được đứng tên BS mổ chính.' }
@@ -1335,8 +1352,8 @@ const SurgeryApprovalPage = {
                     <div class="sap-chip-group">
                         ${[
                             { mode: 'within_column', label: 'Đúng cột phẫu thuật' },
-                            { mode: 'approved_over_column', label: 'DVKT vượt cột đã được duyệt' },
-                            { mode: 'propose_over_column', label: 'Đề xuất vượt cột trình BCN xét duyệt' }
+                            { mode: 'approved_over_column', label: 'BCN đã xác nhận vượt cột' },
+                            { mode: 'propose_over_column', label: 'Trình BCN cân nhắc vượt 01 cột (Bán khẩn)' }
                         ].map(m => {
                             const sel = col.declaredMode === m.mode;
                             return `<button type="button" class="sap-chip ${sel ? 'sap-chip--selected' : ''}"
@@ -1346,6 +1363,11 @@ const SurgeryApprovalPage = {
                             </button>`;
                         }).join('')}
                     </div>
+                    ${(sysCheck === 'over_column' && urgVal === 'semi_urgent' && (!stepDelta || stepDelta === 1)) || col.declaredMode === 'propose_over_column' ? `
+                    <input type="text" class="sap-input" id="sap-over-column-ref"
+                        placeholder="Ghi rõ lý do tại thời điểm bán khẩn không có nhân sự cột trên phù hợp để BCN cân nhắc..."
+                        value="${Utils.escapeHtml(col.overColumnRef || '')}"
+                        onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { columnCompliance: { overColumnRef: this.value } } })">` : ''}
 
                     ${isExternalMain ? `
                     <div class="sap-canary-field" style="margin-top:6px;">

@@ -150,8 +150,10 @@ DEFAULT_SURGERY_APPROVAL_CONFIG = {
     "checklistMode": "enforced_gate",        # "off" | "shadow_optional" | "enforced_gate"
     "rolloutEffectiveSurgeryDate": "2026-11-02",
     "nsthInternalPrecheckEnabled": False,
-    "privilegeMatrixVersion": "BVBD-PTDTT-2026.v1",
-    "privilegeMatrix2026Status": "pending_signed_decision",
+    "privilegeMatrixVersion": "BVBD-PTDTT-2026.v2",
+    "privilegeMatrix2026Status": "confirmed_active_2026",
+    "privilegeValidityYears": 1,
+    "privilegeRenewalCycle": "annual_hospital_review",
     "onCallDutyHours": "08:00-18:00",
     "scopeLegendText": "✅ Đã duyệt tại khoa: Xác nhận hoàn tất bước duyệt chuyên môn nội bộ tại Khoa PTĐTT (độc lập với tiến trình duyệt trên phần mềm HIS của Bệnh viện)",
     "slaConfig": {
@@ -299,8 +301,10 @@ def load_procedure_catalog(data_dir: str, base_dir: str) -> dict:
         return {
             "catalogVersion": "2026.v1",
             "privilegeMatrix": {
-                "privilegeMatrixVersion": "BVBD-PTDTT-2026.v1",
-                "privilegeMatrix2026Status": "pending_signed_decision",
+                "privilegeMatrixVersion": "BVBD-PTDTT-2026.v2",
+                "privilegeMatrix2026Status": "confirmed_active_2026",
+                "validityPeriodYears": 1,
+                "renewalCycle": "annual_hospital_review",
                 "effectiveFrom": "2026-01-01",
                 "effectiveTo": "2026-12-31",
                 "attendingColumns": {
@@ -1017,8 +1021,10 @@ def evaluate_column_compliance(
     ext_ids = {d.get("id") for d in (db.get("externalDoctors") or []) if isinstance(d, dict) and is_pos_int(d.get("id"))}
 
     res = {
-        "privilegeMatrixVersion": matrix.get("privilegeMatrixVersion", "BVBD-PTDTT-2026.v1"),
+        "privilegeMatrixVersion": matrix.get("privilegeMatrixVersion", "BVBD-PTDTT-2026.v2"),
+        "validityPeriodYears": int(matrix.get("validityPeriodYears", 1) or 1),
         "surgeonBaseColumn2026": None,
+        "columnStepDelta": 0,
         "robotCertified": bool(main_surgeon_id in robot_ids),
         "systemCheck": "unverified",
     }
@@ -1065,6 +1071,8 @@ def evaluate_column_compliance(
 
     s_rank = COLUMN_RANK.get(base_col, 0)
     p_rank = COLUMN_RANK.get(confirmed_class, 99)
+    step_delta = max(0, p_rank - s_rank) if (1 <= s_rank <= 4 and 1 <= p_rank <= 4) else None
+    res["columnStepDelta"] = step_delta
     if s_rank >= p_rank:
         res["systemCheck"] = "within_column"
     else:
@@ -1887,6 +1895,29 @@ def validate_routine_submit_gate(surgery: dict, actor: dict, payload: dict, cata
                     422,
                     "OVER_COLUMN_PROOF_REQUIRED",
                     "Kỹ thuật chưa có trong danh mục DVKT vượt cột đã cấu hình; vui lòng chọn 'Đề xuất vượt cột' để BCN xét duyệt.",
+                )
+        urgency_for_col = cc.get("urgencyLevel") or suggest_urgency_level(surgery.get("surgeryType"))
+        base_col_str = live_col.get("surgeonBaseColumn2026") or "hiện tại"
+        step_delta = live_col.get("columnStepDelta")
+        if urgency_for_col in ("elective", "elective_service"):
+            raise ApprovalEngineError(
+                422,
+                "OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE",
+                f"Nguyên tắc mổ chương trình và mổ yêu cầu không được phép vượt cột (BS mổ chính Cột {base_col_str} chỉ được phép mổ từ loại tương ứng trở xuống, không được mổ {conf_class}). Vui lòng phân công BS mổ chính đúng cột.",
+            )
+        if urgency_for_col == "semi_urgent":
+            if not isinstance(step_delta, int) or step_delta > 1:
+                raise ApprovalEngineError(
+                    422,
+                    "OVER_COLUMN_EXCEEDS_MAX_ONE_STEP",
+                    f"Mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (BS Cột {base_col_str} không được vượt {step_delta} cột lên {conf_class}).",
+                )
+            over_ref = str(col_obj.get("overColumnRef") or "").strip()
+            if len(over_ref) < 5 and col_obj.get("privilegeVerifiedByStaffId") not in BCN_STAFF_IDS:
+                raise ApprovalEngineError(
+                    422,
+                    "OVER_COLUMN_JUSTIFICATION_REQUIRED",
+                    "Ca mổ bán khẩn xin vượt 01 cột bắt buộc ghi rõ lý do tại thời điểm đó không có nhân sự cột trên phù hợp để Ban Chủ nhiệm khoa cân nhắc.",
                 )
     elif sys_check == "matrix_expired_manual_verify":
         if decl_mode not in ("matrix_expired_manual_verify", "propose_over_column"):
@@ -3020,32 +3051,33 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
     stamp_badge_fields(c08)
     cases.append(c08)
 
-    # ── CA TEST 09: Submitted (⏳ Chờ BCN xét Vượt Cột) — PTV Cột II đề xuất Vượt Cột lên PT-I (PTNS Đóng HMNT + B2 kiểm tra đầu dưới) ──
+    # ── CA TEST 09: Submitted (⏳ Chờ BCN cân nhắc Vượt 01 Cột Bán khẩn) — PTV Cột II trình BCN cân nhắc vượt 01 cột lên PT-I khi không có nhân sự phù hợp ──
     ms09 = pick_staff([7, 8, 9])
     tr09 = pick_staff(trainee_pool)
     c09 = initialize_new_surgery_record({
         "id": base_id + 8,
         "isTestSandboxCase": True,
         "scenarioCode": "SC-09_SUBMITTED_OVER_COLUMN_COL2_TO_PT1",
-        "patientName": mock_name(9, "PTNS Đóng HMNT [Cột II Đề xuất Vượt Cột PT-I]"),
+        "patientName": mock_name(9, "Bán Khẩn Đóng HMNT [Cột II Vượt 01 Cột PT-I]"),
         "birthYear": rng.randint(1960, 1986),
         "admissionId": mock_nv(9),
-        "date": d_off(3, 6),
+        "date": d_off(1, 3),
         "duration": rng.choice([90, 120]),
-        "surgeryType": "yeucau",
+        "surgeryType": "bankhan",
         "approachType": "noisoi",
         "mainSurgeon": ms09,
         "assistSurgeon1": pick_staff([2, 4, 6]),
-        "diagnosis": "Hậu môn nhân tạo hồi tràng kiểu quai sau mổ cắt trước thấp 4 tháng",
+        "diagnosis": "Bán tắc ruột tại quai hậu môn nhân tạo hồi tràng kèm rối loạn điện giải sau mổ cắt trước thấp 4 tháng",
         "method": "Phẫu thuật nội soi đóng hậu môn nhân tạo",
-        "notes": "[CA TEST #09 — PTV Cột II đề xuất vượt cột thực hiện PTNS Loại I có BS Cột ĐB/I hỗ trợ; đã nội soi kiểm tra miệng nối thông tốt]",
+        "notes": "[CA TEST #09 — Mổ bán khẩn: tại thời điểm đó không có BS Cột I/ĐB phù hợp; PTV Cột II trình BCN khoa cân nhắc duyệt vượt 01 cột thực hiện PTNS Loại I]",
     }, catalog, db)
     _stamp_pod_for_sandbox(c09, catalog, rng.choice(["705", "706", "710", "707"]), trainee_id=tr09, freeze_snapshot=True)
     _finalize_classification_for_sandbox(
         c09, catalog, db, actor_id=ms09, pathology_group="benign_colorectal_abdominal",
         catalog_entry_id="PTNS-214", proc_class="PT-I", declared_mode="propose_over_column",
-        urgency_level="elective_service",
-        over_column_ref="Đề xuất BCN phê duyệt vượt cột ca đóng HMNT hồi tràng (có BS Cột ĐB/I cùng kíp hỗ trợ)",
+        urgency_level="semi_urgent",
+        semi_urgent_reason="Bán tắc ruột tại chân HMNT hồi tràng kèm mất nước điện giải tiến triển cần mổ bán khẩn giải quyết trong ngày",
+        over_column_ref="Tại thời điểm mổ bán khẩn không có BS Cột I/ĐB phù hợp — trình Ban Chủ nhiệm khoa cân nhắc duyệt vượt 01 cột (Cột II -> PT-I)",
     )
     c09["clinicalChips"] = {
         "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
@@ -3063,19 +3095,19 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
     c09["preopChecklist"] = _build_verified_checklist_for_sandbox(ms09, tr09, benign=True)
     c09["caseRevision"] = 2
     c09["approval"]["status"] = "submitted"
-    c09["approval"]["slaStatus"] = "on_time"
+    c09["approval"]["slaStatus"] = "semi_urgent_window"
     c09["approval"]["submittedSnapshot"] = {"caseRevision": 2, "submittedAt": ts_now, "submittedByStaffId": ms09, "actingForMainSurgeonReason": None}
     stamp_badge_fields(c09)
     cases.append(c09)
 
-    # ── CA TEST 10: Submitted (⏳ Chờ BCN xét Vượt Cột) — PTV Cột III đề xuất Vượt Cột PTNS PT-II (do PTNS có 0 kỹ thuật PT-III) ──
+    # ── CA TEST 10: Submitted (⏳ Chờ BCN cân nhắc Vượt 01 Cột Bán khẩn) — PTV Cột III trình BCN cân nhắc vượt 01 cột PTNS PT-II ──
     ms10 = pick_staff([10, 11, 12])
     tr10 = pick_staff(trainee_pool)
     c10 = initialize_new_surgery_record({
         "id": base_id + 9,
         "isTestSandboxCase": True,
         "scenarioCode": "SC-10_SUBMITTED_OVER_COLUMN_COL3_LAP_PT2",
-        "patientName": mock_name(10, "PTNS Ruột Thừa / Túi Thừa [Cột III Vượt Cột PTNS]"),
+        "patientName": mock_name(10, "PTNS Ruột Thừa Bán Khẩn [Cột III Vượt 01 Cột PT-II]"),
         "birthYear": rng.randint(1978, 2003),
         "admissionId": mock_nv(10),
         "date": d_off(2, 4),
@@ -3086,7 +3118,7 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         "assistSurgeon1": pick_staff([6, 8]),
         "diagnosis": "Viêm ruột thừa cấp mủ khu trú hố chậu phải",
         "method": "Phẫu thuật nội soi cắt ruột thừa",
-        "notes": "[CA TEST #10 — Phụ lục PTNS không có kỹ thuật PT-III; PTV Cột III trình BCN xét duyệt thực hiện PTNS hạng II bán khẩn]",
+        "notes": "[CA TEST #10 — Mổ bán khẩn: tại thời điểm đó không có BS Cột I/II phù hợp; PTV Cột III trình BCN khoa cân nhắc duyệt vượt 01 cột thực hiện PTNS hạng II]",
     }, catalog, db)
     _stamp_pod_for_sandbox(c10, catalog, rng.choice(["711", "712", "709", "718"]), trainee_id=tr10, freeze_snapshot=True)
     _finalize_classification_for_sandbox(
@@ -3094,7 +3126,7 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-187", proc_class="PT-II", declared_mode="propose_over_column",
         urgency_level="semi_urgent",
         semi_urgent_reason="Đau khu trú HCP tăng dần, BC 14.8 G/L, CRP 68 mg/L, siêu âm/CT ruột thừa đường kính 11mm",
-        over_column_ref="PTV Cột III trình BCN duyệt thực hiện PTNS cắt ruột thừa (PT-II) có BS Cột I/II hỗ trợ tại phòng mổ",
+        over_column_ref="Tại thời điểm mổ bán khẩn không có BS Cột I/II phù hợp — PTV Cột III trình Ban Chủ nhiệm khoa cân nhắc duyệt vượt 01 cột thực hiện PTNS cắt ruột thừa (Cột III -> PT-II)",
     )
     c10["clinicalChips"] = {
         "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
