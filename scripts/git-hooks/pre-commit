@@ -1,0 +1,6 @@
+#!/bin/bash
+# PTDTT Manager — Git Pre-Commit Hook (JS/Python Syntax + Dual SSoT + Schema v3.1 Gate)
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec python3 "$REPO_ROOT/scripts/register_bug_feat.py" --repo-root "$REPO_ROOT" verify --staged-gate --syntax-and-schema-only

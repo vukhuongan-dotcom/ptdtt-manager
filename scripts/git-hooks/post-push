@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SYNC_SCRIPT="$REPO_ROOT/scripts/sync-drive-mirror.sh"
+
+if [ -x "$SYNC_SCRIPT" ]; then
+    "$SYNC_SCRIPT" push || printf '[PTDTT] WARNING: Drive mirror sync failed after push.\n' >&2
+fi

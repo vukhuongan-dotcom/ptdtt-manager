@@ -1,0 +1,6 @@
+#!/bin/bash
+# PTDTT Manager — Git Commit-Msg Hook (Auto-Registry Gate 100% for BUG/FEAT & Production Code)
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec python3 "$REPO_ROOT/scripts/register_bug_feat.py" --repo-root "$REPO_ROOT" verify --staged-gate --commit-msg-file "$1"

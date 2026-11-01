@@ -149,6 +149,10 @@ Mỗi khi Agent thực hiện bất kỳ việc **SỬA LỖI (BUG)** hoặc **P
 6. **Đồng bộ song hành 100%:** Luôn ghi đồng thời vào cả 2 file:
    - `docs/BUG_FIX_REGISTRY.md`
    - `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`
+7. **Công cụ thực thi tự động & Chốt chặn Git Hook (`scripts/register_bug_feat.py`, `.git/hooks/pre-commit` & `commit-msg` — Kiện toàn 01/11/2026):**
+   - Trước khi chạy `git commit` cho bất kỳ thay đổi mã nguồn hoặc `fix:`/`feat:` nào, chạy `python3 scripts/register_bug_feat.py add --kind {BUG|FEAT} --scope "..." --title "..." --context "..." --solution "..." --build <YYMMDDHHMM> --version-note "..."` để tự động cấp số `STT` + mã định danh tăng dần, cập nhật bảng thống kê đầu trang, ghi dòng changelog vào `version.md` và nhân bản khớp mã băm `SHA-256` sang cả 2 tệp SSoT.
+   - Sau khi `git commit`, chạy `python3 scripts/register_bug_feat.py backfill-sha` để gắn liên kết commit GitHub thực tế vào dòng vừa tạo.
+   - Bộ Git Hooks (`.git/hooks/pre-commit` & `.git/hooks/commit-msg`, cài đặt từ `scripts/install-git-hooks.sh`) tự động kiểm tra cú pháp JS/Python, khớp `SHA-256` Dual SSoT và chặn cứng mọi commit sửa mã nguồn / `fix:` / `feat:` nếu thiếu dòng ghi sổ mới hoặc thiếu `version.md`.
 
 > ⚠️ **Quy chuẩn thực thi:** Thao tác ghi nhận này diễn ra đồng thời với bước commit và auto-deploy, đảm bảo tri thức kỹ thuật được tích lũy liên tục vào Brain của dự án, ngăn chặn triệt để nguy cơ tái diễn lỗi cũ trong tương lai.
 
