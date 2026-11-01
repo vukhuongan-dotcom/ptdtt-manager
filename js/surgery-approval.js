@@ -1,7 +1,7 @@
 // ===== DEPARTMENTAL ONLINE SURGERY APPROVAL MODULE (STEP 1 INTERNAL — ZERO HIS COUPLING) =====
 // UI/UX v2 (Crosscheck 31/10):
 //  - BƯỚC 1: Role-first "Việc của tôi" queue, 1-row filter chips, sticky date groups, 3-line clickable cards, compact scope banner
-//  - BƯỚC 2: 2-column Right Drawer (1040px Desktop) / Full-screen Mobile (390px), 3 clinical steps with auto-collapse,
+//  - BƯỚC 2: 2-column Right Drawer (min(1560px, 96vw) Desktop) / Full-screen Mobile (390px), 3 clinical steps with auto-collapse,
 //            Mục 2.4 chip->checklist deduplication (5 independent rows), 3-segment controls, 10s Undo bar, 90-day frequent procedures,
 //            sticky safe-area bottom bar with "Trình duyệt (còn N mục)" jump-scroll & Vietnamese 422 error links
 //  - BƯỚC 3: BCN 1-Page Executive Summary ("xem ngoại lệ trước"), Risk Flags, Yellow Re-approval Diff, "Duyệt & mở ca kế tiếp", Red returned fields
@@ -1783,7 +1783,7 @@ const SurgeryApprovalPage = {
         } catch (_) {}
     },
 
-    // ── BƯỚC 2.1, 3.2, 4.2: Open Case Right Drawer (Desktop 1040px 2-Col / Mobile 100vw Full-Screen) ──
+    // ── BƯỚC 2.1, 3.2, 4.2: Open Case Right Drawer (Desktop min(1560px, 96vw) 2-Col / Mobile 100vw Full-Screen) ──
     async openCaseModal(surgeryId, opts = {}) {
         await this.ensureCatalogLoaded();
         const s = this._getCaseById(surgeryId);
@@ -2402,7 +2402,7 @@ const SurgeryApprovalPage = {
             </div>
 
             <div class="sap-drawer-columns">
-                <!-- Left Sticky Rail (280px Desktop) -->
+                <!-- Left Sticky Rail (385-420px Desktop) -->
                 <aside class="sap-left-rail" aria-label="Tóm tắt ca mổ và điều hướng bước">
                     <div class="sap-rail-summary">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">

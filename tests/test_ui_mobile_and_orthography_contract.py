@@ -112,7 +112,7 @@ console.log(JSON.stringify({ ok: failures.length === 0, failures }));
         reg_a = BUG_REGISTRY.read_text(encoding="utf-8")
         reg_b = BUG_REGISTRY_MIRROR.read_text(encoding="utf-8")
         self.assertEqual(reg_a, reg_b, "docs/BUG_FIX_REGISTRY.md and PROJECT_CONTEXT mirror must be 100% identical")
-        for token in ("RCA-016", "RCA-017", "`BUG-202`", "`BUG-203`", "`BUG-204`", "`FEAT-205`", "4a95998", "84dfc26"):
+        for token in ("RCA-016", "RCA-017", "`BUG-202`", "`BUG-203`", "`BUG-204`", "`FEAT-205`", "`BUG-206`", "4a95998", "84dfc26", "e291d75"):
             self.assertIn(token, reg_a, f"Missing {token} in BUG_FIX_REGISTRY.md")
 
     def test_bug204_all_sandbox_context_enums_and_wal_actions_localized_in_vietnamese(self) -> None:
@@ -225,6 +225,22 @@ console.log(JSON.stringify(sandbox.out));
         self.assertNotIn("<select", catalog_section.lower())
         self.assertIn(".sap-catalog-results--browse", sap_css)
         self.assertIn(".sap-catalog-group-header", sap_css)
+
+    def test_bug206_laptop_drawer_wide_anti_line_wrap_and_mobile_untouched(self) -> None:
+        sap_css = SURGERY_APPROVAL_CSS.read_text(encoding="utf-8")
+        bundle_css = BUNDLE_CSS.read_text(encoding="utf-8")
+
+        # Desktop drawer & left rail widened to prevent orphan word wrapping on laptops
+        self.assertIn("width: min(1560px, 96vw) !important;", sap_css)
+        self.assertIn("max-width: 1560px !important;", sap_css)
+        self.assertIn("grid-template-columns: clamp(385px, 28.5vw, 420px) minmax(0, 1fr);", sap_css)
+        self.assertIn("@media (min-width: 960px)", sap_css)
+        self.assertIn("grid-template-columns: clamp(385px, 28.5vw, 420px) minmax(0, 1fr);", bundle_css)
+
+        # Mobile @media (max-width: 959px) full-screen single-column rules must remain 100% intact
+        mobile_block = sap_css.split("@media (max-width: 959px)", 1)[1]
+        self.assertIn("width: 100% !important;", mobile_block)
+        self.assertIn("flex-direction: column;", mobile_block)
 
 
 if __name__ == "__main__":

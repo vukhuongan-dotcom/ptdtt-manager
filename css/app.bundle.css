@@ -7565,7 +7565,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     flex-shrink: 0;
 }
 
-/* ── Desktop Right Slide-Over Drawer (1040px, 2-Column) & Mobile Full-Screen ── */
+/* ── Desktop Right Slide-Over Drawer (min(1560px, 96vw), 2-Column) & Mobile Full-Screen ── */
 #modal-overlay.sap-drawer-overlay.active {
     position: fixed !important;
     inset: 0 !important;
@@ -7577,8 +7577,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 #modal.sap-drawer-right {
-    width: min(1040px, 96vw) !important;
-    max-width: 1040px !important;
+    width: min(1560px, 96vw) !important;
+    max-width: 1560px !important;
     height: 100% !important;
     max-height: 100% !important;
     margin: 0 !important;
@@ -8603,7 +8603,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 .sap-drawer-columns {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: clamp(385px, 28.5vw, 420px) minmax(0, 1fr);
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
@@ -9434,6 +9434,22 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.02em;
+}
+
+/* ── Desktop / Laptop Wide Anti-Line-Wrap Layout (>= 960px Only — Zero Mobile Impact, BUG-206) ── */
+@media (min-width: 960px) {
+    .sap-step-nav-btn > span:first-child {
+        white-space: nowrap;
+    }
+
+    .sap-exec-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .sap-right-pane {
+        padding: 18px 22px 26px 22px;
+    }
 }
 
 .sap-reapproval-diff {
