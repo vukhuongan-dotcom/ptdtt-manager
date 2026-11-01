@@ -85,6 +85,14 @@ ESD, ERCP, "nội soi tiêu hóa", "nội soi nong", "cắt polyp qua ngã hậu
 - **Nội soi tiêu hóa (NSTH):** Tím Violet `#7C4CD5` (`--surgery-nsth-bg` / `--surgery-nsth-fg`) — Chữ trắng.
 - **Robot:** Navy đậm `#333C83` (`--surgery-robot-bg` / `--surgery-robot-fg`) — Chữ trắng.
 
+### 5. Quy Chuẩn Lớp Phủ Di Động Toàn Màn Hình & Chính Tả Thuật Ngữ Y Khoa (`RCA-016` / `RCA-017`)
+- **Thang `z-index` chuẩn toàn hệ thống (Cấm đè lớp trên Mobile `<= 768px`):**
+  - `.sidebar` (`100` Desktop / `1000` Mobile bottom-nav) $\le$ `.modal-overlay` bottom-sheet (`1000`) $<$ `.mobile-header` (`1001`) $<$ `.network-status-banner` (`1002`) $<$ **Full-Screen Drawer `#modal-overlay.sap-drawer-overlay.active` (`1200`)** $<$ `#search` / `#idle-warning-bar` (`9999`) $<$ `#notifications` / `#toast-container` / Confirm Dialog (`10000–10001`).
+  - Mọi Drawer/Panel mở toàn màn hình trên di động **BẮT BUỘC** đặt `position: fixed; inset: 0; z-index >= 1200`, khung con dùng `width: 100%; height: 100%; max-height: 100%` (tuyệt đối không dùng `100dvh` trần gây tràn mép trên khi thanh địa chỉ trình duyệt mở), và `.modal-header` **BẮT BUỘC** có đệm `padding-top: calc(... + env(safe-area-inset-top, 0px))` để không chìm dưới Dynamic Island / tai thỏ iOS (`viewport-fit=cover`).
+  - Khi kiểm thử Playwright trên di động, **BẮT BUỘC** xác minh `document.elementFromPoint(cx, cy)` trúng nút đóng `.modal-close` (`>= 44×44px`) và gọi `.click()` thật (cấm dùng `force: true` hoặc gọi tắt `Modal.close()` bằng JS).
+- **Bảo toàn Chữ số La Mã & Từ viết tắt Y khoa trong `Utils.toProperCase()` (`BUG-203`):**
+  - Mọi hàm chuẩn hóa tên/tiêu đề hiển thị trên UI phải nhận diện ranh giới từ sau dấu ngoặc `(`, `[`, `/` và giữ nguyên chữ in hoa cho chữ số La Mã (`I, II, III, IV, V`) cùng danh mục viết tắt chuyên môn (`PT-I..IV`, `PT-ĐB`, `PTNS`, `HM`, `HMNT`, `HV`, `BCN`, `TNT`, `GIST`, `PP`, `ESD`, `NSTH`, `GPB`, `MRI`, `CĐHA`, mã `TNM`), đồng thời không làm biến dạng tên riêng tiếng Việt (như `Nguyễn Thị Tường Vi`, `Lê Văn An`).
+
 ---
 
 ## Quy tắc Vận hành & Triển khai (Deployment Protocol)

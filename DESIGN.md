@@ -81,3 +81,6 @@ All 110/110 color pairs have been verified for WCAG AA contrast (≥ 4.5:1 for b
   - Primary button glow: `var(--shadow-glow-primary)`
 - **Focus Rings:**
   - `:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }`
+- **Z-Index Elevation Scale & Mobile Safe-Area Contract (`BUG-202`):**
+  - `100` (Desktop `.sidebar`) → `1000` (Mobile bottom `.sidebar` & bottom-sheet `.modal-overlay`) → `1001` (Fixed `.mobile-header`) → `1002` (`.network-status-banner`) → `1200` (Full-screen Case Drawer `#modal-overlay.sap-drawer-overlay.active`) → `9999` (Global Search & `#idle-warning-bar`) → `10000–10001` (Notifications, Toasts & Confirm Dialogs).
+  - Full-screen mobile drawers must lock to `position: fixed; inset: 0` with `height: 100%; max-height: 100%` (never raw `100dvh`) and apply `env(safe-area-inset-top/right/bottom/left, 0px)` with `>= 44 × 44 px` unobstructed close controls.
