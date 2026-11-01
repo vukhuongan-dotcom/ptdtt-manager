@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611010019`
+> 📌 **Current Build Stamp:** `2611010920`
 
 ---
 
@@ -56,10 +56,12 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- Bổ sung bộ duyệt cuộn dọc toàn bộ **309 kỹ thuật phẫu thuật Ngoại tiêu hóa BVBD** ngay tại Bước ① Tab Duyệt mổ (`#sap-f-catalog`) cho người dùng không nhớ từ khóa: tự động mở ngay khi chạm vào ô tìm kiếm (bảo toàn 100% focus/bàn phím di động) hoặc bấm nút `📋 Danh sách 309 kỹ thuật ▾`, hỗ trợ chip lọc nhanh theo đường mổ (`Mổ mở 191` / `Nội soi 118`) và phân hạng (`PT-ĐB`, `PT-I..III`) với `0` thẻ `<select>`, tiêu đề nhóm dính đầu khi cuộn và tìm kiếm tiếng Việt không dấu (`[FEAT-205]`, build `v2611010920`).
 - Tối ưu toàn diện UI/UX Tab Duyệt mổ tại khoa (`Crosscheck 31/10`, bảo toàn 100% logic máy chủ & cô lập Canary `sandboxOnlyMode`): hàng đợi `"Việc của tôi"` theo vai trò với 1 hàng chip lọc có số đếm, gom nhóm theo ngày mổ dính đầu trang và thẻ ca 3 dòng gọn; Drawer trượt phải 2 cột `1040px` trên Desktop / toàn màn hình 1 cột trên Mobile `390px` theo 3 bước tư duy lâm sàng tự thu gọn, khử trùng lặp Chip Bước ② sang `CK-03/05/07` (`✓ theo mục ②`), điều khiển phân đoạn 3 nấc, thanh Hoàn tác 10 giây, gợi ý 5 kỹ thuật hay dùng 90 ngày, màn Tóm tắt 1 trang BCN kèm khung vàng so sánh `Cũ → Mới` và nút `Duyệt & mở ca kế tiếp`, cùng 6 nhãn ngắn trên `Lịch mổ tuần` giảm `52,6%` số chạm ca lành tính HM và `44,4%` ca K trực tràng (`[FEAT-201]`, build `v2610312358`).
 - Xác nhận hiệu lực `Quyết định 1073/QĐ-BVBD` (`12/06/2024` — chưa có văn bản thay thế) và bảng xếp cột bác sĩ chính Khoa PTĐTT năm 2026 (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`, thời hạn 01 năm, mỗi năm Bệnh viện xếp cột lại); bổ sung kiểm soát vượt cột theo tính chất mổ: mổ chương trình & mổ yêu cầu không được phép vượt cột (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`), mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP` nếu vượt từ 02 cột trở lên) (`[FEAT-200]`, build `v2610312158`).
 
 ### Fixed
+- Việt hóa 100% toàn bộ mã ngữ cảnh lâm sàng (`SAP_CONTEXT_ENUM_LABELS` cho `B1..B4` gồm `stoma_management` → `"Quản lý / Đóng hậu môn nhân tạo"`, `diverticulitis_appendicitis`, `rectal_prolapse`, `right_colon`, `adenocarcinoma`, `gist_submucosal`, `recurrent_pelvic_tumor`, `mri_fistula_done`...), kênh hội chẩn cấp cứu (`phone` → `"Điện thoại trực tiếp"`), trạng thái hoãn bảng kiểm cấp cứu (`deferred_emergency`), mã hạng `unclassified` và toàn bộ 26 mã hành động trong tab `Nhật ký duyệt` (`SAP_WAL_ACTION_LABELS`) trên cả 16 kịch bản Sandbox mà không thay đổi bất kỳ dòng code máy chủ nào (`[BUG-204]`, build `v2611010920`).
 - Khắc phục triệt để lỗi chính tả biến dạng chữ hoa chữ số La Mã và từ viết tắt y khoa trong `Utils.toProperCase()` (`[Cột III Vượt 01 Cột PT-II]`, `PTNS`, `HV`, `TNT`, `GIST`, `PP`, `ESD`, `NSTH`, `CĐHA`, mã `TNM`), nhận diện đúng ranh giới sau dấu ngoặc `(`, `[`, `/` mà không làm ảnh hưởng tên riêng tiếng Việt (`[BUG-203]`, commit `84dfc26`, build `v2611010019`).
 - Khắc phục triệt để lỗi nút đóng (`×`) của Drawer hồ sơ ca Duyệt mổ bị che khuất / đẩy cao lên không bấm được trên giao diện di động (`z-index: 1200` vượt lên trên `.mobile-header` `1001`, cố định `inset: 0; height: 100%` chống tràn `100dvh` trên iOS/Android, bổ sung đệm `env(safe-area-inset-top)` chống tai thỏ/Dynamic Island và gom gọn thanh hành động đáy 1 hàng) (`[BUG-202]`, commit `4a95998`, build `v2611010015`).
 - Khôi phục đường truyền sao lưu xác thực qua SSH (`StrictHostKeyChecking=yes`) ngoài thư mục web, bổ sung kiểm thử giải nén `data/db.json` trong sandbox `0700` và bảo vệ bản sao lưu hợp lệ gần nhất (`LKG`) trên Local & Google Drive (`[BUG-199]`).

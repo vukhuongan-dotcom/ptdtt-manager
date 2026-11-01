@@ -213,6 +213,134 @@ const SAP_GATE_REASON_MAP = {
     'CK-05_NA_ONLY_FOR_BENIGN': { step: 2, fieldId: 'sap-f-context-module', label: 'Nhóm bệnh này cần BS chính xác nhận thông tin chuyên môn ở Bước ②' }
 };
 
+// SSoT từ điển Việt hóa 100% các mã ngữ cảnh lâm sàng (B1..B4), kênh hội chẩn cấp cứu & nhật ký duyệt (BUG-204)
+const SAP_CONTEXT_ENUM_LABELS = {
+    // Module B1: Lành tính hậu môn – trực tràng
+    not_fistula: 'Không phải rò hậu môn (Trĩ / Nứt kẽ / Áp-xe)',
+    simple_fistula: 'Rò hậu môn đơn giản',
+    complex_or_recurrent_fistula: 'Rò hậu môn phức tạp / tái phát',
+    mri_fistula_done: 'Đã chụp MRI đường rò',
+    pelvic_mri_done: 'Đã chụp MRI đường rò',
+    endoanal_us_done: 'Đã siêu âm lòng trực tràng – hậu môn',
+    not_indicated_simple: 'Không chỉ định MRI (rò thấp/đơn giản)',
+    pending_or_contraindicated: 'Chưa chụp / Chống chỉ định MRI',
+    other_note: 'Hình ảnh học khác',
+    // Module B2: Lành tính đại trực tràng – ổ bụng / Đóng HMNT
+    stoma_management: 'Quản lý / Đóng hậu môn nhân tạo',
+    stoma_closure: 'Đóng hậu môn nhân tạo',
+    stoma_closure_reversal: 'Đóng hậu môn nhân tạo / Lập lại lưu thông',
+    diverticular_or_ibd: 'Túi thừa / Viêm ruột (IBD)',
+    diverticular_ibd_volvulus: 'Túi thừa / Viêm ruột / Xoắn đại tràng',
+    diverticulitis_appendicitis: 'Viêm túi thừa / Viêm ruột thừa',
+    rectal_prolapse: 'Sa trực tràng',
+    rectal_prolapse_pelvic_floor: 'Sa trực tràng / Sàn chậu',
+    benign_stricture_fistula: 'Hẹp / Rò đại trực tràng lành tính',
+    other_benign_abdominal: 'Lành tính đại trực tràng – ổ bụng khác',
+    benign_polyposis_other: 'Polyp lành tính lớn / Bệnh lý lành tính khác',
+    full_mechanical_prep: 'Chuẩn bị đại tràng cơ học đầy đủ',
+    oral_mechanical_prep: 'Chuẩn bị đại tràng cơ học đường uống',
+    mechanical_oral_abx: 'Chuẩn bị đại tràng cơ học + Kháng sinh uống',
+    enema_only: 'Thụt tháo tại chỗ',
+    eras_no_prep: 'ERAS không chuẩn bị ruột cơ học',
+    no_prep_eras: 'ERAS không chuẩn bị ruột cơ học',
+    eras_no_mechanical: 'ERAS không chuẩn bị ruột cơ học',
+    endoscopy_or_contrast_patent: 'Nội soi / X-quang cản quang thông tốt',
+    confirmed_patent: 'Đã chụp/soi kiểm tra thông suốt đầu dưới',
+    stricture_planned_resection: 'Có hẹp miệng nối — dự kiến cắt nối lại',
+    // Module B3: Ung thư đại trực tràng – ống hậu môn
+    right_colon: 'Đại tràng phải',
+    cecum_right_colon: 'Đại tràng phải',
+    transverse_colon: 'Đại tràng ngang',
+    left_colon: 'Đại tràng trái',
+    sigmoid: 'Đại tràng chậu hông (Sigma)',
+    sigmoid_colon: 'Đại tràng chậu hông (Sigma)',
+    rectum_upper: 'Trực tràng cao',
+    rectum_high: 'Trực tràng cao',
+    rectum_mid: 'Trực tràng giữa',
+    rectum_low: 'Trực tràng thấp',
+    anal_canal: 'Ống hậu môn',
+    adenocarcinoma: 'Carcinôm tuyến (Adenocarcinoma)',
+    adenocarcinoma_well_mod: 'Carcinôm tuyến biệt hóa tốt/vừa',
+    mucinous_signet: 'Carcinôm nhầy / tế bào nhẫn',
+    adenocarcinoma_poor_mucinous_signet: 'Carcinôm tuyến kém / nhầy / tế bào nhẫn',
+    scc: 'Carcinôm tế bào gai (SCC)',
+    neuroendocrine_gist_other: 'Thần kinh nội tiết / GIST / Khác',
+    upfront_surgery: 'Mổ kỳ đầu',
+    post_neoadjuvant_crt: 'Sau hóa xạ trị tiền phẫu (CRT)',
+    post_long_course_crt: 'Sau hóa xạ trị tiền phẫu dài ngày (CRT)',
+    post_tnt: 'Sau điều trị tân bổ trợ toàn diện (TNT)',
+    post_systemic_chemo: 'Sau hóa trị toàn thân',
+    mdt_completed: 'Đã hội chẩn Ung bướu / MDT',
+    standard_guideline_no_mdt_needed: 'Phác đồ chuẩn thường quy (không cần MDT)',
+    not_required_standard: 'Phác đồ chuẩn thường quy (không cần MDT)',
+    mdt_pending: 'Đang chờ kết luận MDT',
+    department_board_reviewed: 'Đã thông qua giao ban chuyên môn khoa',
+    crm_clear: 'CRM âm tính (> 1mm)',
+    crm_threatened_or_positive: 'CRM bị đe dọa / dương tính (≤ 1mm)',
+    unknown_no_pelvic_mri: 'Chưa có MRI tiểu khung',
+    not_applicable: 'Không áp dụng',
+    // Module B4: U tân sinh đặc thù / nghi ác chưa GPB
+    gist_or_submucosal: 'GIST / U dưới niêm mạc',
+    gist_submucosal: 'GIST / U dưới niêm mạc',
+    gist_net: 'U mô đệm (GIST) / Thần kinh nội tiết (NET)',
+    net: 'U thần kinh nội tiết (NET)',
+    giant_polyp_dysplasia: 'Polyp lớn loạn sản cao',
+    large_villous_polyp: 'Polyp u tuyến lớn nguy cơ hóa ác',
+    presacral_retroperitoneal_tumor: 'U trước xương cùng / sau phúc mạc',
+    presacral_retroperitoneal_pelvic: 'U trước xương cùng / sau phúc mạc vùng chậu',
+    recurrent_pelvic_tumor: 'U tiểu khung / sau phúc mạc tái phát',
+    suspected_malignancy_biopsy_negative: 'U nghi ác sinh thiết âm tính / hẹp',
+    biopsy_confirmed_special: 'Đã có GPB / Hóa mô miễn dịch',
+    positive_specific: 'Đã có GPB / Hóa mô miễn dịch xác định',
+    submucosal_not_biopsied: 'U dưới niêm / trước xương cùng không sinh thiết',
+    stenotic_or_bleeding_failed_biopsy: 'Hẹp khít / chảy máu sinh thiết chưa ra u',
+    negative_inconclusive_with_reason: 'Sinh thiết âm tính / Không sinh thiết trước mổ',
+    localized_resectable: 'Khu trú — cắt trọn được R0',
+    adjacent_organ_involvement: 'Xâm lấn tạng lân cận — phối hợp đa tạng',
+    pelvic_mri_eus_done: 'Đã đánh giá MRI tiểu khung & Siêu âm nội soi (EUS)',
+    ct_mri_multiphase_done: 'Đã chụp CT / MRI đa thì đánh giá xâm lấn'
+};
+
+const SAP_EMERGENCY_CHANNEL_LABELS = {
+    phone: 'Điện thoại trực tiếp',
+    in_person: 'Báo cáo trực tiếp tại viện',
+    zalo_duty: 'Tin nhắn trực BCN'
+};
+
+const SAP_WAL_ACTION_LABELS = {
+    save_draft: 'Lưu cập nhật hồ sơ chuẩn bị',
+    bulk_confirm_routine: 'Xác nhận nhanh các mục thường quy',
+    undo_bulk_confirm: 'Hoàn tác xác nhận nhanh',
+    change_pathology_group: 'Điều chỉnh nhóm bệnh lý chuyên khoa',
+    request_attending_verify: 'Học viên gửi mời BS chính xác nhận',
+    submit_routine: 'BS chính trình duyệt mổ tại khoa',
+    submit_emergency_exception: 'Ghi nhận cổng Ngoại lệ Cấp cứu',
+    preapprove_deputy: 'Phó Trưởng khoa Tiền duyệt hồ sơ',
+    return_for_revision: 'BCN trả hồ sơ yêu cầu bổ sung',
+    approve_routine: 'BCN phê duyệt mổ tại khoa',
+    approve_emergency_exception: 'BCN xác nhận Ngoại lệ Cấp cứu',
+    hold_post_approval: 'Đặt Tạm hoãn tại khoa sau duyệt',
+    release_post_approval_hold: 'Gỡ Tạm hoãn & khôi phục duyệt khoa',
+    revoke_approval: 'BCN thu hồi phê duyệt tại khoa',
+    create_delegation: 'Cấp ủy quyền phê duyệt mổ BCN',
+    revoke_delegation: 'Thu hồi ủy quyền phê duyệt mổ BCN',
+    update_approval_config: 'Cập nhật cấu hình Duyệt mổ tại khoa',
+    move_to_trash: 'Chuyển ca mổ vào thùng rác',
+    restore_from_trash: 'Khôi phục ca mổ từ thùng rác',
+    purge_from_trash: 'Xóa vĩnh viễn ca mổ khỏi thùng rác',
+    sandbox_seed_samples: 'Khởi tạo bộ 16 ca mẫu [TEST]',
+    sandbox_reseed_samples: 'Làm mới bộ 16 ca mẫu [TEST]',
+    sandbox_cleanup_samples: 'Dọn dẹp toàn bộ ca mẫu [TEST]',
+    disaster_restore_reconciled: 'Đồng bộ khôi phục dữ liệu dự phòng',
+    tier_a_schedule_edit: 'Cập nhật thông tin lịch mổ',
+    tier_a_schedule_edit_invalidated_approval: 'Sửa lịch mổ sau duyệt — chuyển Chờ duyệt lại',
+    tier_a_schedule_edit_requires_resubmit: 'Sửa lịch mổ sau trình — cần trình lại',
+    tier_a_draft_edit_invalidated_approval: 'Sửa hồ sơ trọng yếu sau duyệt — chuyển Chờ duyệt lại',
+    tier_a_draft_edit_requires_resubmit: 'Sửa hồ sơ trọng yếu sau trình — cần trình lại',
+    schedule_switch_to_nsth: 'Chuyển sang thẩm quyền Khoa NSTH',
+    schedule_switch_from_nsth_to_surgical: 'Chuyển từ NSTH sang luồng duyệt Khoa PTĐTT'
+};
+
 const SurgeryApprovalPage = {
     _subtab: 'cases', // 'cases' | 'delegations' | 'logs'
     _filters: {
@@ -230,6 +358,9 @@ const SurgeryApprovalPage = {
     _logsState: null,
     _openCaseId: null,
     _catalogQuery: '',
+    _catalogBrowseOpen: false,
+    _catalogApproachFilter: 'all',
+    _catalogRankFilter: 'all',
     _activeActionDrawer: null,
     _moreActionsOpen: false,
     _bcnViewMode: 'summary', // 'summary' | 'steps' (BƯỚC 3.2)
@@ -545,6 +676,27 @@ const SurgeryApprovalPage = {
         return payload;
     },
 
+    _normViSearch(str) {
+        return String(str || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .trim();
+    },
+
+    _formatRankCode(code) {
+        if (!code) return '—';
+        if (code === 'unclassified') return 'Chưa phân loại';
+        if (code === 'PT-DB') return 'PT-ĐB';
+        return String(code);
+    },
+
+    _formatColumnCode(col) {
+        if (!col) return '—';
+        return col === 'DB' ? 'ĐB' : String(col);
+    },
+
     async ensureCatalogLoaded() {
         if (this._catalogData) return this._catalogData;
         if (this._catalogLoading) return this._catalogLoading;
@@ -553,13 +705,25 @@ const SurgeryApprovalPage = {
                 if (res && res.catalog) {
                     const cat = res.catalog;
                     if (Array.isArray(cat.procedures)) {
-                        cat.procedures = cat.procedures.map(p => ({
-                            ...p,
-                            id: p.id || p.catalogEntryId || '',
-                            name: p.name || p.officialName || '',
-                            rankCode: p.rankCode || p.procedureClass || 'unclassified',
-                            rankLabel: p.rankLabel || (p.procedureClass === 'unclassified' ? 'Chưa phân loại' : (p.procedureClass || '—'))
-                        }));
+                        cat.procedures = cat.procedures.map(p => {
+                            const id = p.id || p.catalogEntryId || '';
+                            const name = p.name || p.officialName || '';
+                            const rankCode = p.rankCode || p.procedureClass || 'unclassified';
+                            const rankLabel = p.rankLabel || (rankCode === 'unclassified' ? 'Chưa phân loại' : (rankCode || '—'));
+                            const approachGroup = p.approachGroup || (String(id).startsWith('PTNS') ? 'noisoi' : 'mo');
+                            const approachLabel = approachGroup === 'noisoi' ? 'Nội soi' : 'Mổ mở';
+                            const _searchNorm = this._normViSearch(`${name} ${rankLabel} ${approachLabel} ${id}`);
+                            return {
+                                ...p,
+                                id,
+                                name,
+                                rankCode,
+                                rankLabel,
+                                approachGroup,
+                                approachLabel,
+                                _searchNorm
+                            };
+                        });
                     }
                     this._catalogData = cat;
                 }
@@ -1547,7 +1711,7 @@ const SurgeryApprovalPage = {
                                 ${(e.actor?.isSimulated || e.actor?.simulatedBySuperAdminStaffId) ? '<br><span class="sap-tag sap-tag--sandbox">Giả lập TEST</span>' : ''}
                             </td>
                             <td>
-                                <strong>${Utils.escapeHtml(e.action || '')}</strong>
+                                <strong>${Utils.escapeHtml(SAP_WAL_ACTION_LABELS[e.action] || e.action || '')}</strong>
                                 ${e.surgeryId ? `<br>Hồ sơ #${e.surgeryId}` : ''}
                             </td>
                             <td class="sap-hash-mono">${Utils.escapeHtml((e.entryHash || '').slice(0, 20))}…</td>
@@ -1565,6 +1729,10 @@ const SurgeryApprovalPage = {
 
     _onModalClosed() {
         this._openCaseId = null;
+        this._catalogQuery = '';
+        this._catalogBrowseOpen = false;
+        this._catalogApproachFilter = 'all';
+        this._catalogRankFilter = 'all';
         this._moreActionsOpen = false;
         this._activeActionDrawer = null;
         this._highlightFieldId = null;
@@ -1630,6 +1798,9 @@ const SurgeryApprovalPage = {
         this._captureApprovedSnapshotIfAny(s);
         this._openCaseId = s.id;
         this._catalogQuery = '';
+        this._catalogBrowseOpen = false;
+        this._catalogApproachFilter = 'all';
+        this._catalogRankFilter = 'all';
         this._activeActionDrawer = null;
         this._moreActionsOpen = false;
         this._highlightFieldId = null;
@@ -1858,7 +2029,7 @@ const SurgeryApprovalPage = {
             if (!['not_fistula', 'simple_fistula', 'complex_or_recurrent_fistula'].includes(b1.fistulaClassification)) {
                 missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa phân loại bệnh lý hậu môn / đường rò', code: 'B1_FISTULA_CLASSIFICATION_REQUIRED' });
             } else if (['simple_fistula', 'complex_or_recurrent_fistula'].includes(b1.fistulaClassification)) {
-                if (!['mri_fistula_done', 'endoanal_us_done', 'not_indicated_simple', 'other_note'].includes(b1.fistulaImaging)) {
+                if (!['mri_fistula_done', 'pelvic_mri_done', 'endoanal_us_done', 'not_indicated_simple', 'other_note'].includes(b1.fistulaImaging)) {
                     missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa xác nhận hình ảnh học đường rò (MRI / siêu âm)', code: 'B1_FISTULA_IMAGING_REQUIRED' });
                 } else if (b1.fistulaClassification === 'complex_or_recurrent_fistula' && b1.fistulaImaging === 'not_indicated_simple' && !String(b1.missingMriReason || '').trim()) {
                     missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa ghi lý do rò phức tạp chưa chụp MRI', code: 'B1_COMPLEX_FISTULA_MISSING_MRI_REASON' });
@@ -1867,7 +2038,7 @@ const SurgeryApprovalPage = {
         }
         if (pgVal === 'benign_colorectal_abdominal' || stoma.value === 'stoma_closure') {
             const b2 = ctx.benignAbdominalContext || {};
-            if (stoma.value === 'stoma_closure' && !['endoscopy_or_contrast_patent', 'stricture_planned_resection'].includes(b2.distalLimbCheck)) {
+            if (stoma.value === 'stoma_closure' && !['endoscopy_or_contrast_patent', 'confirmed_patent', 'stricture_planned_resection'].includes(b2.distalLimbCheck)) {
                 missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa xác nhận lưu thông đầu dưới trước đóng HMNT', code: 'B2_DISTAL_LIMB_CHECK_REQUIRED' });
             }
             if (pgVal === 'benign_colorectal_abdominal' && (!b2.subType || !b2.bowelPrepPlan)) {
@@ -2366,7 +2537,7 @@ const SurgeryApprovalPage = {
         if (isAutoCollapsed && this._expandedSteps[1] !== true) {
             return `
             <button type="button" id="sap-step-card-1" class="sap-step-collapsed-bar" onclick="SurgeryApprovalPage.toggleStepExpand(${s.id}, 1)">
-                <span>${this._ico('✓')} Bước ① Phân loại: ${Utils.escapeHtml(`${pgShort} · ${pcObj.confirmedClass || ''} · ${colSummaryShort} · ${urgShort}`)}</span>
+                <span>${this._ico('✓')} Bước ① Phân loại: ${Utils.escapeHtml(`${pgShort} · ${this._formatRankCode(pcObj.confirmedClass)} · ${colSummaryShort} · ${urgShort}`)}</span>
                 <span>Mở sửa ▾</span>
             </button>`;
         }
@@ -2375,18 +2546,14 @@ const SurgeryApprovalPage = {
         const catalogProcs = this._catalogData?.procedures || [];
         const effSuggestedProc = !pcObj.confirmedCatalogEntryId ? this._inferSuggestedCatalogProc(s) : null;
         const topProcs = this._getTopProceduresForSurgeon(s, catalogProcs);
-        const q = (this._catalogQuery || '').trim().toLowerCase();
-        const filteredProcs = q
-            ? catalogProcs.filter(p => (p.name || '').toLowerCase().includes(q) || (p.rankLabel || '').toLowerCase().includes(q)).slice(0, 20)
-            : [];
         const selectedProc = catalogProcs.find(p => p.id === pcObj.confirmedCatalogEntryId) || effSuggestedProc;
 
         // Inline 1-line Column Verification Pill (BƯỚC 2.2: NO big green banner when OK!)
         const sysCheck = colObj.systemCheck || 'within_column';
-        const baseCol = colObj.surgeonBaseColumn2026 || 'Chưa cấu hình';
+        const baseCol = this._formatColumnCode(colObj.surgeonBaseColumn2026 || 'Chưa cấu hình');
         let inlineColHtml = '';
         if (pcObj.confirmedClass || pcObj.suggestedClass) {
-            const rankStr = pcObj.confirmedClass || pcObj.suggestedClass;
+            const rankStr = this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass);
             if (sysCheck === 'within_column' || sysCheck === 'approved_over_column_matched') {
                 inlineColHtml = `<span class="sap-col-inline sap-col-inline--ok">${this._ico('✓')} <span>${Utils.escapeHtml(rankStr)} · Đúng cột (BS Cột ${Utils.escapeHtml(baseCol)})</span></span>`;
             } else if (sysCheck === 'over_column') {
@@ -2516,20 +2683,22 @@ const SurgeryApprovalPage = {
                 </div>` : ''}
 
                 ${canEdit ? `
-                <input type="search" class="sap-input" placeholder="Gõ tìm trong 309 kỹ thuật (tên phẫu thuật, cắt trực tràng, rò hậu môn, Longo, Robot...)"
-                    aria-label="Tìm kiếm trong danh mục 309 phẫu thuật"
-                    value="${Utils.escapeHtml(this._catalogQuery)}"
-                    oninput="SurgeryApprovalPage.onCatalogSearchInput(${s.id}, this.value)">
+                <div class="sap-catalog-search-row">
+                    <input id="sap-catalog-search-input" type="search" class="sap-input"
+                        placeholder="Gõ từ khóa (có/không dấu) hoặc chạm để cuộn chọn trong ${catalogProcs.length || 309} kỹ thuật..."
+                        aria-label="Tìm kiếm hoặc cuộn chọn trong danh mục 309 phẫu thuật"
+                        value="${Utils.escapeHtml(this._catalogQuery)}"
+                        onfocus="SurgeryApprovalPage.openCatalogBrowser(${s.id}, true)"
+                        oninput="SurgeryApprovalPage.onCatalogSearchInput(${s.id}, this.value)">
+                    <button type="button" class="sap-btn ${this._catalogBrowseOpen ? 'sap-btn--primary' : ''}"
+                        id="sap-btn-toggle-catalog-browse"
+                        aria-expanded="${Boolean(this._catalogBrowseOpen)}"
+                        onclick="SurgeryApprovalPage.toggleCatalogBrowser(${s.id})">
+                        ${this._ico('📋')} <span id="sap-btn-toggle-catalog-label">${this._catalogBrowseOpen ? 'Thu gọn danh sách ▴' : `Danh sách ${catalogProcs.length || 309} kỹ thuật ▾`}</span>
+                    </button>
+                </div>
                 <div id="sap-catalog-results-box">
-                    ${filteredProcs.length > 0 ? `
-                    <div class="sap-catalog-results">
-                        ${filteredProcs.map(p => `
-                        <button type="button" class="sap-catalog-option ${pcObj.confirmedCatalogEntryId === p.id ? 'is-selected' : ''}"
-                            onclick="SurgeryApprovalPage.selectCatalogEntry(${s.id}, '${p.id}', '${p.rankCode}')">
-                            <span>${Utils.escapeHtml(p.name)}</span>
-                            <span class="sap-tag">${Utils.escapeHtml(p.rankLabel)}</span>
-                        </button>`).join('')}
-                    </div>` : ''}
+                    ${this._renderCatalogBrowserBoxHtml(s)}
                 </div>` : ''}
 
                 ${pcObj.confirmedClass === 'unclassified' ? `
@@ -2540,7 +2709,7 @@ const SurgeryApprovalPage = {
 
                 ${sysCheck === 'over_column' && (urg === 'elective' || urg === 'elective_service') ? `
                 <div class="sap-alert sap-alert--danger">
-                    <strong>Nguyên tắc xếp cột BS 2026:</strong> Mổ chương trình và mổ yêu cầu không được phép vượt cột (BS Cột <strong>${Utils.escapeHtml(baseCol)}</strong> không mổ hạng <strong>${Utils.escapeHtml(pcObj.confirmedClass || pcObj.suggestedClass || '')}</strong>). Vui lòng phân công lại BS mổ chính đúng cột trên Lịch mổ tuần.
+                    <strong>Nguyên tắc xếp cột BS 2026:</strong> Mổ chương trình và mổ yêu cầu không được phép vượt cột (BS Cột <strong>${Utils.escapeHtml(baseCol)}</strong> không mổ hạng <strong>${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}</strong>). Vui lòng phân công lại BS mổ chính đúng cột trên Lịch mổ tuần.
                 </div>` : ''}
 
                 ${sysCheck === 'over_column' && urg === 'semi_urgent' && Number(colObj.columnStepDelta || 9) === 1 ? `
@@ -2719,11 +2888,11 @@ const SurgeryApprovalPage = {
                 ${['simple_fistula', 'complex_or_recurrent_fistula'].includes(b1.fistulaClassification) ? `
                 <div class="sap-chip-group" style="margin-top:6px;">
                     ${[
-                        { v: 'mri_fistula_done', l: 'Đã chụp MRI đường rò' },
-                        { v: 'endoanal_us_done', l: 'Đã siêu âm lòng trực tràng' },
-                        { v: 'not_indicated_simple', l: 'Không chỉ định MRI (rò thấp/đơn giản)' },
-                        { v: 'other_note', l: 'Hình ảnh khác' }
-                    ].map(o => `<button type="button" class="sap-chip ${b1.fistulaImaging === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'mri_fistula_done', syn: ['pelvic_mri_done'], l: 'Đã chụp MRI đường rò' },
+                        { v: 'endoanal_us_done', syn: [], l: 'Đã siêu âm lòng trực tràng' },
+                        { v: 'not_indicated_simple', syn: [], l: 'Không chỉ định MRI (rò thấp/đơn giản)' },
+                        { v: 'other_note', syn: [], l: 'Hình ảnh khác' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b1.fistulaImaging === o.v || o.syn.includes(b1.fistulaImaging)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'fistulaContext', { fistulaImaging: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
                 ${b1.fistulaClassification === 'complex_or_recurrent_fistula' && b1.fistulaImaging === 'not_indicated_simple' ? `
@@ -2743,30 +2912,30 @@ const SurgeryApprovalPage = {
                 <div class="sap-filter-sub-label">Phân nhóm bệnh lý:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'stoma_closure', l: 'Đóng hậu môn nhân tạo' },
-                        { v: 'diverticular_or_ibd', l: 'Túi thừa / Viêm ruột (IBD)' },
-                        { v: 'rectal_prolapse_pelvic_floor', l: 'Sa trực tràng / Sàn chậu' },
-                        { v: 'benign_stricture_fistula', l: 'Hẹp / Rò đại trực tràng lành tính' },
-                        { v: 'other_benign_abdominal', l: 'Lành tính ổ bụng khác' }
-                    ].map(o => `<button type="button" class="sap-chip ${b2.subType === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'stoma_closure', syn: ['stoma_management', 'stoma_closure_reversal'], l: 'Quản lý / Đóng hậu môn nhân tạo' },
+                        { v: 'diverticular_or_ibd', syn: ['diverticulitis_appendicitis', 'diverticular_ibd_volvulus'], l: 'Túi thừa / Viêm ruột / Ruột thừa' },
+                        { v: 'rectal_prolapse_pelvic_floor', syn: ['rectal_prolapse'], l: 'Sa trực tràng / Sàn chậu' },
+                        { v: 'benign_stricture_fistula', syn: [], l: 'Hẹp / Rò đại trực tràng lành tính' },
+                        { v: 'other_benign_abdominal', syn: ['benign_polyposis_other'], l: 'Lành tính ổ bụng khác' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b2.subType === o.v || o.syn.includes(b2.subType)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'benignAbdominalContext', { subType: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
                 <div class="sap-filter-sub-label">Chuẩn bị đại tràng:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'full_mechanical_prep', l: 'Chuẩn bị đại tràng cơ học đầy đủ' },
-                        { v: 'enema_only', l: 'Thụt tháo trực tràng' },
-                        { v: 'eras_no_prep', l: 'ERAS không chuẩn bị ruột cơ học' }
-                    ].map(o => `<button type="button" class="sap-chip ${b2.bowelPrepPlan === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'full_mechanical_prep', syn: ['oral_mechanical_prep', 'mechanical_oral_abx'], l: 'Chuẩn bị đại tràng cơ học đầy đủ' },
+                        { v: 'enema_only', syn: [], l: 'Thụt tháo trực tràng' },
+                        { v: 'eras_no_prep', syn: ['no_prep_eras', 'eras_no_mechanical'], l: 'ERAS không chuẩn bị ruột cơ học' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b2.bowelPrepPlan === o.v || o.syn.includes(b2.bowelPrepPlan)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'benignAbdominalContext', { bowelPrepPlan: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>` : ''}
-                ${stomaVal === 'stoma_closure' || b2.subType === 'stoma_closure' ? `
+                ${stomaVal === 'stoma_closure' || ['stoma_closure', 'stoma_management', 'stoma_closure_reversal'].includes(b2.subType) ? `
                 <div class="sap-filter-sub-label">Kiểm tra lưu thông đầu dưới trước đóng HMNT:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'endoscopy_or_contrast_patent', l: 'Nội soi / X-quang cản quang thông tốt' },
-                        { v: 'stricture_planned_resection', l: 'Có hẹp miệng nối — dự kiến cắt nối lại' }
-                    ].map(o => `<button type="button" class="sap-chip ${b2.distalLimbCheck === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'endoscopy_or_contrast_patent', syn: ['confirmed_patent'], l: 'Nội soi / X-quang cản quang thông tốt' },
+                        { v: 'stricture_planned_resection', syn: [], l: 'Có hẹp miệng nối — dự kiến cắt nối lại' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b2.distalLimbCheck === o.v || o.syn.includes(b2.distalLimbCheck)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'benignAbdominalContext', { distalLimbCheck: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>` : ''}
             </div>`;
@@ -2778,32 +2947,32 @@ const SurgeryApprovalPage = {
             const st = b3.clinicalStage || {};
             const isRectal = locs.some(l => String(l).startsWith('rectum_') || l === 'anal_canal');
             const locOpts = [
-                { v: 'right_colon', l: 'Đại tràng phải' },
-                { v: 'transverse_colon', l: 'Đại tràng ngang' },
-                { v: 'left_colon', l: 'Đại tràng trái' },
-                { v: 'sigmoid', l: 'Đại tràng chậu hông (Sigma)' },
-                { v: 'rectum_upper', l: 'Trực tràng cao' },
-                { v: 'rectum_mid', l: 'Trực tràng giữa' },
-                { v: 'rectum_low', l: 'Trực tràng thấp' },
-                { v: 'anal_canal', l: 'Ống hậu môn' }
+                { v: 'right_colon', syn: ['cecum_right_colon'], l: 'Đại tràng phải' },
+                { v: 'transverse_colon', syn: [], l: 'Đại tràng ngang' },
+                { v: 'left_colon', syn: [], l: 'Đại tràng trái' },
+                { v: 'sigmoid', syn: ['sigmoid_colon'], l: 'Đại tràng chậu hông (Sigma)' },
+                { v: 'rectum_upper', syn: ['rectum_high'], l: 'Trực tràng cao' },
+                { v: 'rectum_mid', syn: [], l: 'Trực tràng giữa' },
+                { v: 'rectum_low', syn: [], l: 'Trực tràng thấp' },
+                { v: 'anal_canal', syn: [], l: 'Ống hậu môn' }
             ];
             return `
             <div class="${wrapperClass}" id="sap-f-context-module">
                 <div class="sap-field-label">${this._ico('🎗️')} Hồ sơ Ung thư Đại trực tràng – Ống hậu môn (GPB, cTNM, CRM, MDT)</div>
                 <div class="sap-filter-sub-label">Vị trí u (chọn ≥ 2 nếu u đồng thời đa ổ):</div>
                 <div class="sap-chip-group">
-                    ${locOpts.map(o => `<button type="button" class="sap-chip ${locs.includes(o.v) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                    ${locOpts.map(o => `<button type="button" class="sap-chip ${(locs.includes(o.v) || o.syn.some(x => locs.includes(x))) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.toggleCancerLocation(${s.id}, '${o.v}')">${o.l}</button>`).join('')}
                 </div>
 
                 <div class="sap-filter-sub-label">Giải phẫu bệnh trước mổ:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'adenocarcinoma', l: 'Carcinôm tuyến (Adenocarcinoma)' },
-                        { v: 'mucinous_signet', l: 'Carcinôm nhầy / tế bào nhẫn' },
-                        { v: 'scc', l: 'Carcinôm tế bào gai (SCC)' },
-                        { v: 'neuroendocrine_gist_other', l: 'Thần kinh nội tiết / GIST / Khác' }
-                    ].map(o => `<button type="button" class="sap-chip ${b3.preopHistology === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'adenocarcinoma', syn: ['adenocarcinoma_well_mod'], l: 'Carcinôm tuyến (Adenocarcinoma)' },
+                        { v: 'mucinous_signet', syn: ['adenocarcinoma_poor_mucinous_signet'], l: 'Carcinôm nhầy / tế bào nhẫn' },
+                        { v: 'scc', syn: [], l: 'Carcinôm tế bào gai (SCC)' },
+                        { v: 'neuroendocrine_gist_other', syn: [], l: 'Thần kinh nội tiết / GIST / Khác' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b3.preopHistology === o.v || o.syn.includes(b3.preopHistology)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { preopHistology: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
 
@@ -2811,18 +2980,27 @@ const SurgeryApprovalPage = {
                 <div style="display:flex;flex-direction:column;gap:6px;">
                     <div class="sap-chip-group">
                         <span class="sap-filter-sub-label" style="min-width:32px;">cT:</span>
-                        ${['cT1', 'cT2', 'cT3', 'cT4a', 'cT4b', 'Tx'].map(v => `<button type="button" class="sap-chip ${st.cT === v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cT', '${v}')">${v}</button>`).join('')}
+                        ${['cT1', 'cT2', 'cT3', 'cT4a', 'cT4b', 'Tx'].map(v => {
+                            const shortV = v.replace(/^c/, '');
+                            return `<button type="button" class="sap-chip ${(st.cT === v || st.cT === shortV) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cT', '${v}')">${v}</button>`;
+                        }).join('')}
                     </div>
                     <div class="sap-chip-group">
                         <span class="sap-filter-sub-label" style="min-width:32px;">cN:</span>
-                        ${['cN0', 'cN1', 'cN2', 'Nx'].map(v => `<button type="button" class="sap-chip ${st.cN === v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cN', '${v}')">${v}</button>`).join('')}
+                        ${['cN0', 'cN1', 'cN2', 'Nx'].map(v => {
+                            const shortV = v.replace(/^c/, '');
+                            return `<button type="button" class="sap-chip ${(st.cN === v || st.cN === shortV) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cN', '${v}')">${v}</button>`;
+                        }).join('')}
                     </div>
                     <div class="sap-chip-group">
                         <span class="sap-filter-sub-label" style="min-width:32px;">cM:</span>
-                        ${['cM0', 'cM1a', 'cM1b', 'Mx'].map(v => `<button type="button" class="sap-chip ${st.cM === v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cM', '${v}')">${v}</button>`).join('')}
+                        ${['cM0', 'cM1a', 'cM1b', 'Mx'].map(v => {
+                            const shortV = v.replace(/^c/, '');
+                            return `<button type="button" class="sap-chip ${(st.cM === v || st.cM === shortV) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cM', '${v}')">${v}</button>`;
+                        }).join('')}
                     </div>
                 </div>
                 ${[st.cT, st.cN, st.cM].some(x => ['Tx', 'Nx', 'Mx'].includes(x)) ? `
@@ -2850,21 +3028,21 @@ const SurgeryApprovalPage = {
                 <div class="sap-filter-sub-label">Điều trị đa mô thức trước mổ:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'upfront_surgery', l: 'Mổ kỳ đầu (Upfront surgery)' },
-                        { v: 'post_neoadjuvant_crt', l: 'Sau hóa xạ trị tiền phẫu (CRT)' },
-                        { v: 'post_tnt', l: 'Sau điều trị tân bổ trợ toàn diện (TNT)' },
-                        { v: 'post_systemic_chemo', l: 'Sau hóa trị toàn thân' }
-                    ].map(o => `<button type="button" class="sap-chip ${b3.multimodalStatus === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'upfront_surgery', syn: [], l: 'Mổ kỳ đầu' },
+                        { v: 'post_neoadjuvant_crt', syn: ['post_long_course_crt'], l: 'Sau hóa xạ trị tiền phẫu (CRT)' },
+                        { v: 'post_tnt', syn: [], l: 'Sau điều trị tân bổ trợ toàn diện (TNT)' },
+                        { v: 'post_systemic_chemo', syn: [], l: 'Sau hóa trị toàn thân' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b3.multimodalStatus === o.v || o.syn.includes(b3.multimodalStatus)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { multimodalStatus: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
 
                 <div class="sap-filter-sub-label">Hội chẩn Ung bướu / Đa chuyên khoa (MDT):</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'mdt_completed', l: 'Đã hội chẩn MDT / Ung bướu' },
-                        { v: 'standard_guideline_no_mdt_needed', l: 'Phác đồ chuẩn thường quy (không cần MDT)' },
-                        { v: 'mdt_pending', l: 'Đang chờ kết luận MDT' }
-                    ].map(o => `<button type="button" class="sap-chip ${b3.mdtReviewStatus === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'mdt_completed', syn: [], l: 'Đã hội chẩn MDT / Ung bướu' },
+                        { v: 'standard_guideline_no_mdt_needed', syn: ['not_required_standard'], l: 'Phác đồ chuẩn thường quy (không cần MDT)' },
+                        { v: 'mdt_pending', syn: [], l: 'Đang chờ kết luận MDT' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b3.mdtReviewStatus === o.v || o.syn.includes(b3.mdtReviewStatus)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { mdtReviewStatus: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
             </div>`;
@@ -2878,21 +3056,21 @@ const SurgeryApprovalPage = {
                 <div class="sap-filter-sub-label">Phân nhóm tổn thương:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'gist_or_submucosal', l: 'GIST / U dưới niêm mạc' },
-                        { v: 'net', l: 'U thần kinh nội tiết (NET)' },
-                        { v: 'giant_polyp_dysplasia', l: 'Polyp lớn loạn sản cao' },
-                        { v: 'presacral_retroperitoneal_tumor', l: 'U trước xương cùng / sau phúc mạc' },
-                        { v: 'suspected_malignancy_biopsy_negative', l: 'U nghi ác sinh thiết âm tính / hẹp' }
-                    ].map(o => `<button type="button" class="sap-chip ${b4.neoplasmCategory === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'gist_or_submucosal', syn: ['gist_submucosal'], l: 'GIST / U dưới niêm mạc' },
+                        { v: 'net', syn: ['gist_net'], l: 'U thần kinh nội tiết (NET)' },
+                        { v: 'giant_polyp_dysplasia', syn: ['large_villous_polyp'], l: 'Polyp lớn loạn sản cao' },
+                        { v: 'presacral_retroperitoneal_tumor', syn: ['presacral_retroperitoneal_pelvic', 'recurrent_pelvic_tumor'], l: 'U trước xương cùng / tiểu khung – sau phúc mạc' },
+                        { v: 'suspected_malignancy_biopsy_negative', syn: [], l: 'U nghi ác sinh thiết âm tính / hẹp' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b4.neoplasmCategory === o.v || o.syn.includes(b4.neoplasmCategory)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'specialNeoplasmContext', { neoplasmCategory: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
                 <div class="sap-filter-sub-label">Tình trạng sinh thiết trước mổ:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'biopsy_confirmed_special', l: 'Đã có GPB / Hóa mô miễn dịch' },
-                        { v: 'submucosal_not_biopsied', l: 'U dưới niêm / trước xương cùng không sinh thiết' },
-                        { v: 'stenotic_or_bleeding_failed_biopsy', l: 'Hẹp khít / chảy máu sinh thiết chưa ra u' }
-                    ].map(o => `<button type="button" class="sap-chip ${b4.biopsyStatus === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'biopsy_confirmed_special', syn: ['positive_specific'], l: 'Đã có GPB / Hóa mô miễn dịch' },
+                        { v: 'submucosal_not_biopsied', syn: [], l: 'U dưới niêm / trước xương cùng không sinh thiết' },
+                        { v: 'stenotic_or_bleeding_failed_biopsy', syn: ['negative_inconclusive_with_reason'], l: 'Hẹp khít / chảy máu sinh thiết chưa ra u' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b4.biopsyStatus === o.v || o.syn.includes(b4.biopsyStatus)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'specialNeoplasmContext', { biopsyStatus: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
                 ${b4.biopsyStatus === 'stenotic_or_bleeding_failed_biopsy' ? `
@@ -2903,9 +3081,9 @@ const SurgeryApprovalPage = {
                 <div class="sap-filter-sub-label">Đánh giá lan rộng trên CT / MRI:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'localized_resectable', l: 'Khu trú — cắt trọn được R0' },
-                        { v: 'adjacent_organ_involvement', l: 'Xâm lấn tạng lân cận — cần phối hợp đa tạng' }
-                    ].map(o => `<button type="button" class="sap-chip ${b4.extentEvaluation === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        { v: 'localized_resectable', syn: ['pelvic_mri_eus_done'], l: 'Khu trú — đã đánh giá MRI / EUS cắt trọn R0' },
+                        { v: 'adjacent_organ_involvement', syn: ['ct_mri_multiphase_done'], l: 'Xâm lấn / dính tạng lân cận (CT / MRI đa thì)' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b4.extentEvaluation === o.v || o.syn.includes(b4.extentEvaluation)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'specialNeoplasmContext', { extentEvaluation: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
                 <div class="sap-filter-sub-label">Hội chẩn chuyên môn:</div>
@@ -3038,9 +3216,11 @@ const SurgeryApprovalPage = {
 
         const verifiedName = it.verifiedByStaffId ? Utils.getStaffName(it.verifiedByStaffId) : '';
         const prepName = it.preparedByStaffId ? Utils.getStaffName(it.preparedByStaffId) : '';
-        const statusByText = verifiedName
-            ? `BS xác nhận: ${verifiedName}`
-            : (prepName ? `HV rà sơ bộ: ${prepName} (chờ BS chính)` : 'Chưa xác nhận');
+        const statusByText = st === 'deferred_emergency'
+            ? '⚡ Hoãn bổ sung sau mổ (ngoại lệ cấp cứu)'
+            : (verifiedName
+                ? `BS xác nhận: ${verifiedName}`
+                : (prepName ? `HV rà sơ bộ: ${prepName} (chờ BS chính)` : 'Chưa xác nhận'));
 
         const isOkActive = isTrainee ? st === 'prepared_ok' : st === 'verified_ok';
         const isPrepBadge = !isTrainee && st === 'prepared_ok';
@@ -3124,12 +3304,18 @@ const SurgeryApprovalPage = {
         const urgLabel = SAP_URGENCY_OPTIONS.find(u => u.value === (cc.urgencyLevel || 'elective'))?.label || cc.urgencyLevel;
         const procName = (this._catalogData?.procedures || []).find(p => p.id === (pcObj.confirmedCatalogEntryId || pcObj.suggestedCatalogEntryId))?.name || s.method || '—';
 
+        const syncedCkTitles = {
+            'CK-03': 'Bệnh nền & Thuốc chống huyết khối',
+            'CK-05': 'Giải phẫu bệnh & Giai đoạn u',
+            'CK-07': 'Dự trù máu & thiết bị đặc thù'
+        };
         const riskFlags = this._computeCaseRiskFlags(s, cfg);
         const abnItems = [];
         for (const [code, it] of Object.entries(ck)) {
             if (it && it.state === 'verified_abnormal_planned') {
                 const title = SAP_CK_INDEPENDENT_ITEMS.find(m => m.code === code)?.title
-                    || (code === 'CK-03' ? 'Bệnh nền & Thuốc chống huyết khối' : code);
+                    || syncedCkTitles[code]
+                    || 'Mục kiểm tra tiền phẫu';
                 abnItems.push({ title, note: it.clinicalPlanNote || 'Chưa ghi kế hoạch' });
             }
         }
@@ -3138,52 +3324,12 @@ const SurgeryApprovalPage = {
         const showDiff = st === 'reapproval_required' || Boolean(app.lastApprovedSnapshot);
         const diffRows = showDiff ? this._computeReapprovalDiffRows(s) : [];
 
-        // Special context summary (100% Vietnamese labels, zero raw enum strings — BƯỚC 2.3)
-        const ctxEnumMap = {
-            cecum_right_colon: 'Đại tràng phải',
-            transverse_colon: 'Đại tràng ngang',
-            left_colon: 'Đại tràng trái',
-            sigmoid_colon: 'Đại tràng chậu hông (Sigma)',
-            rectum_high: 'Trực tràng cao',
-            rectum_mid: 'Trực tràng giữa',
-            rectum_low: 'Trực tràng thấp',
-            anal_canal: 'Ống hậu môn',
-            adenocarcinoma_well_mod: 'Carcinôm tuyến biệt hóa tốt/vừa',
-            adenocarcinoma_poor_mucinous_signet: 'Carcinôm tuyến kém / nhầy / tế bào nhẫn',
-            scc: 'Carcinôm tế bào gai (SCC)',
-            neuroendocrine_gist_other: 'Thần kinh nội tiết / GIST / Khác',
-            upfront_surgery: 'Mổ kỳ đầu',
-            post_neoadjuvant_crt: 'Sau hóa xạ trị tiền phẫu (CRT)',
-            post_tnt: 'Sau tân bổ trợ toàn diện (TNT)',
-            post_systemic_chemo: 'Sau hóa trị toàn thân',
-            mdt_completed: 'Đã hội chẩn MDT',
-            not_required_standard: 'Phác đồ chuẩn thường quy',
-            department_board_reviewed: 'Đã thông qua giao ban khoa',
-            not_fistula: 'Không phải rò hậu môn (Trĩ / Nứt kẽ / Áp-xe)',
-            simple_fistula: 'Rò hậu môn đơn giản',
-            complex_or_recurrent_fistula: 'Rò hậu môn phức tạp / tái phát',
-            pelvic_mri_done: 'Đã chụp MRI đường rò',
-            endoanal_us_done: 'Đã siêu âm lòng hậu môn',
-            not_indicated_simple: 'Không chỉ định MRI (rò đơn giản)',
-            pending_or_contraindicated: 'Chưa chụp / Chống chỉ định MRI',
-            diverticular_ibd_volvulus: 'Túi thừa / Viêm ruột / Xoắn đại tràng',
-            rectal_prolapse_pelvic_floor: 'Sa trực tràng / Sàn chậu',
-            stoma_closure_reversal: 'Đóng hậu môn nhân tạo / Lập lại lưu thông',
-            benign_polyposis_other: 'Polyp lành tính lớn / Bệnh lý lành tính khác',
-            mechanical_oral_abx: 'Chuẩn bị đại tràng cơ học + Kháng sinh uống',
-            enema_only: 'Thụt tháo tại chỗ',
-            eras_no_mechanical: 'ERAS không chuẩn bị cơ học',
-            confirmed_patent: 'Đã chụp/soi kiểm tra thông suốt đầu dưới',
-            gist_net: 'U mô đệm (GIST) / Thần kinh nội tiết (NET)',
-            presacral_retroperitoneal_pelvic: 'U trước xương cùng / Sau phúc mạc vùng chậu',
-            suspected_malignancy_biopsy_negative: 'U nghi ác tính nhưng sinh thiết chưa ra tế bào K',
-            large_villous_polyp: 'Polyp u tuyến lớn nguy cơ hóa ác',
-            positive_specific: 'Đã có giải phẫu bệnh / hóa mô miễn dịch xác định',
-            negative_inconclusive_with_reason: 'Sinh thiết âm tính / Không sinh thiết trước mổ',
-            localized_resectable: 'Khu trú — cắt trọn được R0',
-            adjacent_organ_involvement: 'Xâm lấn tạng lân cận — phối hợp đa tạng'
+        // Special context summary (100% Vietnamese labels via SSoT SAP_CONTEXT_ENUM_LABELS, zero raw enum strings — BƯỚC 2.3 & BUG-204)
+        const trCtx = v => {
+            if (!v) return '—';
+            if (SAP_CONTEXT_ENUM_LABELS[v]) return SAP_CONTEXT_ENUM_LABELS[v];
+            return String(v).replace(/_/g, ' ');
         };
-        const trCtx = v => ctxEnumMap[v] || v || '—';
         const ctxLines = [];
         const ctx = chips.contextChips || {};
         if (pgVal === 'cancer_confirmed') {
@@ -3200,7 +3346,8 @@ const SurgeryApprovalPage = {
             ctxLines.push(`Phân loại HM: ${trCtx(b1.fistulaClassification)}${b1.fistulaImaging ? ` · Hình ảnh: ${trCtx(b1.fistulaImaging)}` : ''}`);
         } else if (pgVal === 'benign_colorectal_abdominal') {
             const b2 = ctx.benignAbdominalContext || {};
-            ctxLines.push(`Phân nhóm: ${trCtx(b2.subType)} · Chuẩn bị ruột: ${trCtx(b2.bowelPrepPlan)}`);
+            const distalTxt = b2.distalLimbCheck ? ` · Đầu dưới: ${trCtx(b2.distalLimbCheck)}` : '';
+            ctxLines.push(`Phân nhóm: ${trCtx(b2.subType)} · Chuẩn bị ruột: ${trCtx(b2.bowelPrepPlan)}${distalTxt}`);
         } else if (pgVal === 'neoplasm_suspected_or_special') {
             const b4 = ctx.specialNeoplasmContext || {};
             ctxLines.push(`U đặc thù: ${trCtx(b4.neoplasmCategory)} · Sinh thiết: ${trCtx(b4.biopsyStatus)} · Lan rộng: ${trCtx(b4.extentEvaluation)}`);
@@ -3248,7 +3395,7 @@ const SurgeryApprovalPage = {
                 <strong>${this._ico('⚡')} Hồ sơ Ngoại lệ Cấp cứu:</strong> ${Utils.escapeHtml(app.emergencyException.emergencyReasonNote || '')}
                 <div style="margin-top:4px;font-size:13px;">
                     Đã hội chẩn với: <strong>${Utils.escapeHtml(Utils.getStaffName(app.emergencyException.verbalConsultRecord?.contactedLeaderStaffId) || 'BCN')}</strong>
-                    (${Utils.escapeHtml(app.emergencyException.verbalConsultRecord?.contactChannel || '')} lúc ${Utils.escapeHtml(app.emergencyException.verbalConsultRecord?.contactedAt || '')})
+                    (${Utils.escapeHtml(SAP_EMERGENCY_CHANNEL_LABELS[app.emergencyException.verbalConsultRecord?.contactChannel] || app.emergencyException.verbalConsultRecord?.contactChannel || 'Điện thoại trực tiếp')} lúc ${Utils.escapeHtml((app.emergencyException.verbalConsultRecord?.contactedAt || '').replace('T', ' ').slice(0, 16))})
                     · BS hoàn tất sau mổ: <strong>${Utils.escapeHtml(Utils.getStaffName(app.emergencyException.postOpFollowUpOwnerStaffId) || '')}</strong>
                 </div>
             </div>` : ''}
@@ -3258,8 +3405,18 @@ const SurgeryApprovalPage = {
                     <div class="sap-exec-box-title">1. Phân loại & Tuân thủ Cột 2026</div>
                     <div><strong>Tính chất:</strong> ${Utils.escapeHtml(urgLabel)}</div>
                     <div><strong>Nhóm bệnh:</strong> ${Utils.escapeHtml(pgLabel)}</div>
-                    <div><strong>Kỹ thuật:</strong> [${Utils.escapeHtml(pcObj.confirmedClass || pcObj.suggestedClass || '—')}] ${Utils.escapeHtml(procName)}</div>
-                    <div><strong>Xếp cột BS chính:</strong> Cột ${Utils.escapeHtml(colObj.surgeonBaseColumn2026 || '—')} — <strong>${colObj.systemCheck === 'over_column' ? `⚠️ Vượt cột (${Utils.escapeHtml(colObj.overColumnRef || 'cần BCN xem xét')})` : '✓ Đúng cột'}</strong></div>
+                    <div><strong>Kỹ thuật:</strong> [${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}] ${Utils.escapeHtml(procName)}</div>
+                    <div><strong>Xếp cột BS chính:</strong> Cột ${Utils.escapeHtml(this._formatColumnCode(colObj.surgeonBaseColumn2026))} — <strong>${
+                        colObj.systemCheck === 'over_column'
+                            ? `⚠️ Vượt cột (${Utils.escapeHtml(colObj.overColumnRef || 'cần BCN xem xét')})`
+                            : (colObj.systemCheck === 'external_surgeon_verify_privilege'
+                                ? '🤝 PTV ngoài khoa (BCN đối chiếu quyền mổ)'
+                                : (colObj.systemCheck === 'ambiguous_procedure_class'
+                                    ? '⚠️ Kỹ thuật chưa phân loại (BCN xem xét)'
+                                    : (colObj.systemCheck === 'robot_certification_required'
+                                        ? '⛔ Chưa có chứng nhận PTV Robot'
+                                        : '✓ Đúng cột')))
+                    }</strong></div>
                 </div>
 
                 <div class="sap-exec-box">
@@ -3319,7 +3476,9 @@ const SurgeryApprovalPage = {
             const fields = raw.split(':')[1].split(',').map(k => map[k.trim()] || k.trim()).join(', ');
             return `Đã thay đổi trên Lịch mổ: ${fields}`;
         }
-        return map[raw] || raw;
+        return (map[raw] || raw)
+            .replace(/\bTier A\b/gi, 'trọng yếu')
+            .replace(/\(date,/gi, '(ngày mổ,');
     },
 
     _computeReapprovalDiffRows(s) {
@@ -3763,25 +3922,233 @@ const SurgeryApprovalPage = {
         await this.patchDraft(sid, payload);
     },
 
-    onCatalogSearchInput(sid, query) {
-        this._catalogQuery = query;
+    _getFilteredCatalogProcedures(s) {
+        const allProcs = this._catalogData?.procedures || [];
+        const qNorm = this._normViSearch(this._catalogQuery);
+        const qTokens = qNorm ? qNorm.split(/\s+/).filter(Boolean) : [];
+        const appFilter = this._catalogApproachFilter || 'all';
+        const rankFilter = this._catalogRankFilter || 'all';
+
+        const matched = allProcs.filter(p => {
+            if (appFilter !== 'all' && p.approachGroup !== appFilter) return false;
+            if (rankFilter !== 'all' && p.rankCode !== rankFilter) return false;
+            if (qTokens.length > 0) {
+                const hay = p._searchNorm || this._normViSearch(`${p.name} ${p.rankLabel} ${p.approachLabel}`);
+                for (const tk of qTokens) {
+                    if (!hay.includes(tk)) return false;
+                }
+            }
+            return true;
+        });
+
+        return { allProcs, matched, qNorm };
+    },
+
+    _renderCatalogOptionHtml(s, p, idx, pcObj) {
+        const isSelected = pcObj.confirmedCatalogEntryId === p.id;
+        return `
+        <button type="button" class="sap-catalog-option ${isSelected ? 'is-selected' : ''}"
+            onclick="SurgeryApprovalPage.selectCatalogEntry(${s.id}, '${p.id}', '${p.rankCode}')">
+            <span class="sap-catalog-opt-name"><span class="sap-catalog-opt-idx">${idx}.</span> ${Utils.escapeHtml(p.name)}</span>
+            <span class="sap-catalog-opt-badges">
+                <span class="sap-tag sap-tag--subtle">${Utils.escapeHtml(p.approachLabel || (p.approachGroup === 'noisoi' ? 'Nội soi' : 'Mổ mở'))}</span>
+                <span class="sap-tag">${Utils.escapeHtml(p.rankLabel)}</span>
+            </span>
+        </button>`;
+    },
+
+    _renderCatalogBrowserBoxHtml(s) {
+        const hasQuery = Boolean((this._catalogQuery || '').trim());
+        if (!hasQuery && !this._catalogBrowseOpen) return '';
+
+        const pcObj = s.clinicalClassification?.procedureClass || {};
+        const { allProcs, matched, qNorm } = this._getFilteredCatalogProcedures(s);
+        const totalCount = allProcs.length || 309;
+        const moCount = allProcs.filter(p => p.approachGroup === 'mo').length;
+        const nsCount = allProcs.filter(p => p.approachGroup === 'noisoi').length;
+        const appFilter = this._catalogApproachFilter || 'all';
+        const rankFilter = this._catalogRankFilter || 'all';
+        const hasActiveFilter = Boolean(qNorm || appFilter !== 'all' || rankFilter !== 'all');
+
+        const approachChips = [
+            { val: 'all', label: `Tất cả (${totalCount})` },
+            { val: 'mo', label: `Mổ mở (${moCount})` },
+            { val: 'noisoi', label: `Nội soi (${nsCount})` }
+        ];
+        const rankChips = [
+            { val: 'all', label: 'Mọi hạng' },
+            { val: 'PT-ĐB', label: 'PT-ĐB' },
+            { val: 'PT-I', label: 'PT-I' },
+            { val: 'PT-II', label: 'PT-II' },
+            { val: 'PT-III', label: 'PT-III' }
+        ];
+
+        let listBodyHtml = '';
+        if (matched.length === 0) {
+            listBodyHtml = `
+            <div class="sap-catalog-empty">
+                <div>Không tìm thấy kỹ thuật phù hợp${hasQuery ? ` với từ khóa <strong>"${Utils.escapeHtml(this._catalogQuery.trim())}"</strong>` : ''}.</div>
+                <button type="button" class="sap-btn sap-btn--primary"
+                    onclick="SurgeryApprovalPage.clearCatalogSearchAndBrowse(${s.id})">
+                    Xem toàn bộ ${totalCount} kỹ thuật
+                </button>
+            </div>`;
+        } else if (!qNorm && appFilter === 'all') {
+            const preferNs = s.approachType === 'noisoi' || s.approachType === 'robot';
+            const nsItems = matched.filter(p => p.approachGroup === 'noisoi');
+            const moItems = matched.filter(p => p.approachGroup === 'mo');
+            const groups = preferNs
+                ? [
+                    { key: 'noisoi', title: 'Phẫu thuật Nội soi / Robot', items: nsItems },
+                    { key: 'mo', title: 'Phẫu thuật Mở', items: moItems }
+                ]
+                : [
+                    { key: 'mo', title: 'Phẫu thuật Mở', items: moItems },
+                    { key: 'noisoi', title: 'Phẫu thuật Nội soi / Robot', items: nsItems }
+                ];
+            let runningIdx = 0;
+            listBodyHtml = `
+            <div class="sap-catalog-results sap-catalog-results--browse" role="listbox" aria-label="Danh sách 309 kỹ thuật phẫu thuật">
+                ${groups.filter(g => g.items.length > 0).map(g => `
+                    <div class="sap-catalog-group-header">${Utils.escapeHtml(g.title)} (${g.items.length} kỹ thuật)</div>
+                    ${g.items.map(p => {
+                        runningIdx += 1;
+                        return this._renderCatalogOptionHtml(s, p, runningIdx, pcObj);
+                    }).join('')}
+                `).join('')}
+            </div>`;
+        } else {
+            listBodyHtml = `
+            <div class="sap-catalog-results sap-catalog-results--browse" role="listbox" aria-label="Danh sách kỹ thuật phẫu thuật">
+                ${matched.map((p, i) => this._renderCatalogOptionHtml(s, p, i + 1, pcObj)).join('')}
+            </div>`;
+        }
+
+        return `
+        <div class="sap-catalog-browser" id="sap-catalog-browser-panel">
+            <div class="sap-catalog-browser-toolbar">
+                <div class="sap-chip-group" role="group" aria-label="Lọc theo đường tiếp cận phẫu thuật">
+                    ${approachChips.map(c => `
+                    <button type="button" class="sap-chip ${appFilter === c.val ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setCatalogBrowseFilter(${s.id}, 'approach', '${c.val}')">
+                        <span>${Utils.escapeHtml(c.label)}</span>
+                    </button>`).join('')}
+                </div>
+                <div class="sap-chip-group" role="group" aria-label="Lọc theo phân hạng phẫu thuật">
+                    ${rankChips.map(c => `
+                    <button type="button" class="sap-chip ${rankFilter === c.val ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setCatalogBrowseFilter(${s.id}, 'rank', '${c.val}')">
+                        <span>${Utils.escapeHtml(c.label)}</span>
+                    </button>`).join('')}
+                </div>
+            </div>
+            <div class="sap-catalog-browser-meta">
+                <span>Hiển thị <strong>${matched.length}</strong> / ${totalCount} kỹ thuật · Cuộn dọc để chọn</span>
+                <div class="sap-catalog-browser-meta-actions">
+                    ${hasActiveFilter ? `
+                    <button type="button" class="sap-btn sap-btn--ghost"
+                        onclick="SurgeryApprovalPage.clearCatalogSearchAndBrowse(${s.id})">Đặt lại lọc</button>` : ''}
+                    <button type="button" class="sap-btn sap-btn--ghost"
+                        onclick="SurgeryApprovalPage.closeCatalogBrowser(${s.id})">Thu gọn ▴</button>
+                </div>
+            </div>
+            ${listBodyHtml}
+        </div>`;
+    },
+
+    _syncCatalogBrowserDom(sid, scrollSelectedIntoView = false) {
         const s = this._getCaseById(sid);
         const box = document.getElementById('sap-catalog-results-box');
         if (!s || !box) return;
-        const pcObj = s.clinicalClassification?.procedureClass || {};
-        const q = (query || '').trim().toLowerCase();
-        const procs = q
-            ? (this._catalogData?.procedures || []).filter(p => (p.name || '').toLowerCase().includes(q) || (p.rankLabel || '').toLowerCase().includes(q)).slice(0, 20)
-            : [];
-        box.innerHTML = procs.length > 0 ? `
-            <div class="sap-catalog-results">
-                ${procs.map(p => `
-                <button type="button" class="sap-catalog-option ${pcObj.confirmedCatalogEntryId === p.id ? 'is-selected' : ''}"
-                    onclick="SurgeryApprovalPage.selectCatalogEntry(${s.id}, '${p.id}', '${p.rankCode}')">
-                    <span>${Utils.escapeHtml(p.name)}</span>
-                    <span class="sap-tag">${Utils.escapeHtml(p.rankLabel)}</span>
-                </button>`).join('')}
-            </div>` : '';
+        box.innerHTML = this._renderCatalogBrowserBoxHtml(s);
+
+        const toggleBtn = document.getElementById('sap-btn-toggle-catalog-browse');
+        const toggleLbl = document.getElementById('sap-btn-toggle-catalog-label');
+        const totalCount = (this._catalogData?.procedures || []).length || 309;
+        const isOpen = Boolean(this._catalogBrowseOpen || (this._catalogQuery || '').trim());
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('sap-btn--primary', isOpen);
+            toggleBtn.setAttribute('aria-expanded', String(isOpen));
+        }
+        if (toggleLbl) {
+            toggleLbl.textContent = isOpen ? 'Thu gọn danh sách ▴' : `Danh sách ${totalCount} kỹ thuật ▾`;
+        }
+
+        if (scrollSelectedIntoView && isOpen) {
+            const listEl = box.querySelector('.sap-catalog-results');
+            const selEl = listEl ? listEl.querySelector('.sap-catalog-option.is-selected') : null;
+            if (listEl && selEl) {
+                listEl.scrollTop = Math.max(0, selEl.offsetTop - listEl.offsetTop - 48);
+            }
+        }
+    },
+
+    openCatalogBrowser(sid, fromFocus = false) {
+        const alignRowIfButton = () => {
+            if (!fromFocus) {
+                const rowEl = document.querySelector('#sap-f-catalog .sap-catalog-search-row');
+                if (rowEl && typeof rowEl.scrollIntoView === 'function') {
+                    rowEl.scrollIntoView({ block: 'start', behavior: 'instant' });
+                }
+            }
+        };
+        if (!this._catalogData) {
+            this.ensureCatalogLoaded().then(() => {
+                this._catalogBrowseOpen = true;
+                this._syncCatalogBrowserDom(sid, true);
+                alignRowIfButton();
+            });
+            return;
+        }
+        if (fromFocus && this._catalogBrowseOpen) return;
+        this._catalogBrowseOpen = true;
+        this._syncCatalogBrowserDom(sid, true);
+        alignRowIfButton();
+    },
+
+    closeCatalogBrowser(sid) {
+        this._catalogBrowseOpen = false;
+        this._catalogQuery = '';
+        const inputEl = document.getElementById('sap-catalog-search-input');
+        if (inputEl) inputEl.value = '';
+        this._syncCatalogBrowserDom(sid, false);
+    },
+
+    toggleCatalogBrowser(sid) {
+        const currentlyOpen = Boolean(this._catalogBrowseOpen || (this._catalogQuery || '').trim());
+        if (currentlyOpen) {
+            this.closeCatalogBrowser(sid);
+        } else {
+            this.openCatalogBrowser(sid, false);
+        }
+    },
+
+    setCatalogBrowseFilter(sid, filterType, val) {
+        this._catalogBrowseOpen = true;
+        if (filterType === 'approach') {
+            this._catalogApproachFilter = val || 'all';
+        } else if (filterType === 'rank') {
+            this._catalogRankFilter = val || 'all';
+        }
+        this._syncCatalogBrowserDom(sid, false);
+    },
+
+    clearCatalogSearchAndBrowse(sid) {
+        this._catalogQuery = '';
+        this._catalogApproachFilter = 'all';
+        this._catalogRankFilter = 'all';
+        this._catalogBrowseOpen = true;
+        const inputEl = document.getElementById('sap-catalog-search-input');
+        if (inputEl) inputEl.value = '';
+        this._syncCatalogBrowserDom(sid, false);
+    },
+
+    onCatalogSearchInput(sid, query) {
+        this._catalogQuery = query || '';
+        if ((this._catalogQuery || '').trim()) {
+            this._catalogBrowseOpen = true;
+        }
+        this._syncCatalogBrowserDom(sid, false);
     },
 
     _defaultDeclaredColumnMode(s, rankCode) {
@@ -3797,6 +4164,9 @@ const SurgeryApprovalPage = {
         const s = this._getCaseById(sid);
         if (!s) return;
         this._catalogQuery = '';
+        this._catalogBrowseOpen = false;
+        this._catalogApproachFilter = 'all';
+        this._catalogRankFilter = 'all';
         const declaredMode = this._defaultDeclaredColumnMode(s, rankCode);
         await this.patchDraft(sid, {
             clinicalClassification: {

@@ -539,10 +539,10 @@ runTest('TC-15', '100% Tiếng Việt thuần túy trên 6 trục và 19 phân n
 });
 
 // =========================================================================
-// TC-16: CSS Bundle & Synchronous Versioning (2611010019)
+// TC-16: CSS Bundle & Synchronous Versioning (2611010920)
 // =========================================================================
-runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS (gồm BS Phương ID 16) + 15 ĐD/HL/TK và phiên bản 2611010019 trên toàn hệ thống', () => {
-    const EXPECTED_VER = '2611010019';
+runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS (gồm BS Phương ID 16) + 15 ĐD/HL/TK và phiên bản 2611010920 trên toàn hệ thống', () => {
+    const EXPECTED_VER = '2611010920';
     const bundlePath = path.join(ROOT_DIR, 'css/app.bundle.css');
     assert(fs.existsSync(bundlePath), 'css/app.bundle.css phải tồn tại');
     const bundleContent = fs.readFileSync(bundlePath, 'utf8');

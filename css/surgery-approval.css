@@ -300,7 +300,7 @@
     .sap-filter-chip,
     .sap-seg-btn,
     .sap-case-card {
-        transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
 }
 
@@ -1477,7 +1477,7 @@
     color: #FFFFFF;
 }
 
-/* ── Catalog Search + "Hay dùng" 90-day Frequent Chips (BƯỚC 2.8) ── */
+/* ── Catalog Search + "Hay dùng" 90-day Frequent Chips + Full 309-Procedure Browser (BƯỚC 2.8 & FEAT-205) ── */
 .sap-frequent-procs {
     display: flex;
     flex-direction: column;
@@ -1488,14 +1488,97 @@
     border: 1px solid var(--border-subtle);
 }
 
+.sap-catalog-search-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sap-catalog-search-row .sap-input {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.sap-catalog-search-row .sap-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.sap-catalog-browser {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sap-catalog-browser-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sap-catalog-browser-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+    padding: 2px 2px 0;
+}
+
+.sap-catalog-browser-meta-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.sap-catalog-empty {
+    padding: 14px 12px;
+    border-radius: 8px;
+    background: var(--surface-1);
+    border: 1px dashed var(--border-default);
+    color: var(--text-primary);
+    font-size: 13.5px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
 .sap-catalog-results {
-    max-height: 200px;
+    max-height: 220px;
     overflow-y: auto;
     border: 1px solid var(--border-default);
     border-radius: 8px;
     background: var(--surface-1);
     display: flex;
     flex-direction: column;
+}
+
+.sap-catalog-results--browse {
+    max-height: 320px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.sap-catalog-group-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-heading);
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--border-default);
 }
 
 .sap-catalog-option {
@@ -1505,6 +1588,7 @@
     border-bottom: 1px solid var(--border-subtle);
     background: transparent;
     color: var(--text-primary);
+    font-family: var(--font-body);
     text-align: left;
     font-size: 13.5px;
     cursor: pointer;
@@ -1514,6 +1598,11 @@
     gap: 10px;
 }
 
+.sap-catalog-option:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+}
+
 .sap-catalog-option:hover {
     background: var(--brand-soft);
 }
@@ -1521,6 +1610,33 @@
 .sap-catalog-option.is-selected {
     background: var(--brand-soft-strong);
     font-weight: 700;
+}
+
+.sap-catalog-opt-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.38;
+}
+
+.sap-catalog-opt-idx {
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-right: 4px;
+}
+
+.sap-catalog-opt-badges {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sap-tag--subtle {
+    background: var(--surface-2);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 /* ── Step ③ Synced Strip (Mục 2.4) + 3-Segment Checklist Controls (BƯỚC 2.5) ── */
@@ -2064,6 +2180,26 @@
         max-width: 100%;
         flex: 1 1 100%;
     }
+
+    .sap-catalog-search-row .sap-btn {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+
+    .sap-catalog-results--browse {
+        max-height: 44vh;
+        min-height: 220px;
+    }
+
+    .sap-catalog-option {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .sap-catalog-opt-name {
+        flex: 1 1 100%;
+    }
 }
 
 /* ── Reduced Motion Accessibility Guard (BƯỚC 5) ── */
@@ -2073,7 +2209,8 @@
     .sap-chip,
     .sap-filter-chip,
     .sap-seg-btn,
-    .sap-case-card {
+    .sap-case-card,
+    .sap-catalog-option {
         animation: none !important;
         transition: none !important;
     }
