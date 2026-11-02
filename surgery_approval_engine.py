@@ -1007,6 +1007,23 @@ def lookup_catalog_entry(catalog: dict, entry_id: str):
     return None
 
 
+def _normalize_method_for_catalog_match(s: str) -> str:
+    txt = normalize_vn_text(s)
+    if not txt:
+        return ""
+    txt = re.sub(r"\s*\+\s*", " + ", txt)
+    txt = re.sub(r"\s*[–—-]\s*", " - ", txt)
+    txt = txt.replace("phẫu thuật robot", "phẫu thuật nội soi").replace("robot ", "phẫu thuật nội soi ")
+    txt = txt.replace("đại tràng sigma", "đại tràng chậu hông")
+    txt = re.sub(r"\bsigma\b", "chậu hông", txt)
+    txt = txt.replace("cắt trước thấp trực tràng", "cắt trực tràng thấp")
+    txt = re.sub(r"\(\s*lar\s*\)", "", txt)
+    txt = re.sub(r"\+\s*tme\b", "+ nạo vét hạch", txt)
+    txt = re.sub(r"\bhmnt\b", "hậu môn nhân tạo", txt)
+    txt = re.sub(r"\s+", " ", txt).strip()
+    return txt
+
+
 def suggest_procedure_from_method(catalog: dict, method: str, approach_type: str):
     """
     Matches free-text method against 309-procedure catalog.
@@ -1022,10 +1039,14 @@ def suggest_procedure_from_method(catalog: dict, method: str, approach_type: str
     group = "noisoi" if approach_type in ("noisoi", "robot") else "mo"
     group_procs = [p for p in (catalog.get("procedures") or []) if p.get("approachGroup") == group]
 
-    # Normalize Robot wording for matching against laparoscopic equivalents
-    search_norm = norm.replace("phau thuat robot", "phau thuat noi soi").replace("robot ", "phau thuat noi soi ")
+    # Normalize Robot wording & colorectal clinical synonyms for matching against Catalog 309 equivalents
+    search_norm = _normalize_method_for_catalog_match(method)
 
-    exact = [p for p in group_procs if p.get("normalizedName") == norm or p.get("normalizedName") == search_norm]
+    exact = [
+        p for p in group_procs
+        if p.get("normalizedName") == norm
+        or _normalize_method_for_catalog_match(p.get("officialName") or p.get("normalizedName", "")) == search_norm
+    ]
     if exact:
         classes = {p["procedureClass"] for p in exact}
         if len(classes) == 1:
@@ -1034,11 +1055,30 @@ def suggest_procedure_from_method(catalog: dict, method: str, approach_type: str
 
     substr_matches = [
         p for p in group_procs
-        if (norm in p.get("normalizedName", "")) or (search_norm in p.get("normalizedName", "")) or (p.get("normalizedName", "") in norm and len(p.get("normalizedName", "")) >= 12)
+        if (norm in p.get("normalizedName", ""))
+        or (search_norm and search_norm in _normalize_method_for_catalog_match(p.get("officialName") or p.get("normalizedName", "")))
+        or (p.get("normalizedName", "") in norm and len(p.get("normalizedName", "")) >= 12)
+        or (
+            _normalize_method_for_catalog_match(p.get("officialName") or p.get("normalizedName", "")) in search_norm
+            and len(_normalize_method_for_catalog_match(p.get("officialName") or p.get("normalizedName", ""))) >= 14
+        )
     ]
     if len(substr_matches) == 1:
         return substr_matches[0]["catalogEntryId"], substr_matches[0]["procedureClass"], substr_matches
     if len(substr_matches) > 1:
+        # Prefer the longest (most specific) officialName match when e.g. '+ nạo vét hạch' contains base procedure
+        ranked_substr = sorted(
+            substr_matches,
+            key=lambda x: len(_normalize_method_for_catalog_match(x.get("officialName") or x.get("normalizedName", ""))),
+            reverse=True,
+        )
+        top_len = len(_normalize_method_for_catalog_match(ranked_substr[0].get("officialName") or ranked_substr[0].get("normalizedName", "")))
+        top_ties = [
+            x for x in ranked_substr
+            if len(_normalize_method_for_catalog_match(x.get("officialName") or x.get("normalizedName", ""))) == top_len
+        ]
+        if len({x["procedureClass"] for x in top_ties}) == 1 and top_len >= 18:
+            return top_ties[0]["catalogEntryId"], top_ties[0]["procedureClass"], ranked_substr[:10]
         classes = {p["procedureClass"] for p in substr_matches}
         if len(classes) == 1 and len(norm) >= 18:
             return substr_matches[0]["catalogEntryId"], substr_matches[0]["procedureClass"], substr_matches[:10]

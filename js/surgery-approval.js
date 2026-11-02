@@ -884,7 +884,7 @@ const SurgeryApprovalPage = {
     },
 
     _formatRankCode(code) {
-        if (!code) return '—';
+        if (!code || code === 'unknown_ambiguous') return 'Chưa chọn kỹ thuật';
         if (code === 'unclassified') return 'Chưa phân loại';
         if (code === 'PT-DB') return 'PT-ĐB';
         return String(code);
@@ -1874,7 +1874,7 @@ const SurgeryApprovalPage = {
                 <span aria-hidden="true">·</span>
                 <span>${Utils.escapeHtml(approachLabel)}</span>
                 <span aria-hidden="true">·</span>
-                <span><strong>${Utils.escapeHtml(pcClass === 'unclassified' ? 'Chưa phân loại' : pcClass)}</strong></span>
+                <span><strong>${Utils.escapeHtml(pcClass === 'Chưa xếp hạng' ? pcClass : this._formatRankCode(pcClass))}</strong></span>
             </div>
             <div class="sap-card-line3">
                 <div class="sap-card-method" title="${Utils.escapeHtml(s.method || '')}">
@@ -2673,14 +2673,21 @@ const SurgeryApprovalPage = {
             .filter(Boolean);
 
         // Pad up to 5 with procedures matching suggestedId, method keywords & surgeon's column
-        const suggestedId = s.clinicalClassification?.procedureClass?.suggestedCatalogEntryId;
+        const pcMeta = s.clinicalClassification?.procedureClass || {};
+        const suggestedId = pcMeta.suggestedCatalogEntryId || pcMeta.suggestedCatalogCode;
         if (suggestedId && procMap.has(suggestedId) && !result.some(p => p.id === suggestedId)) {
             result.unshift(procMap.get(suggestedId));
         }
         const rankMap = { 'PT-ĐB': 4, 'PT-DB': 4, 'PT-I': 3, 'PT-II': 2, 'PT-III': 1 };
         const colStr = s.clinicalClassification?.columnCompliance?.surgeonBaseColumn2026 || '';
         const colRank = ({ 'ĐB': 4, 'DB': 4, 'I': 3, '1': 3, 'II': 2, '2': 2, 'III': 1, '3': 1 })[colStr] || 4;
-        const mTokens = String(s.method || '').toLowerCase().split(/[\s,()/+-]+/).filter(w => w.length >= 2);
+        const expandedMethod = String(s.method || '')
+            .toLowerCase()
+            .replace(/\bsigma\b/g, 'chậu hông')
+            .replace(/cắt trước thấp trực tràng/g, 'cắt trực tràng thấp')
+            .replace(/\+\s*tme\b/g, '+ nạo vét hạch')
+            .replace(/\bhmnt\b/g, 'hậu môn nhân tạo');
+        const mTokens = expandedMethod.split(/[\s,()/+-]+/).filter(w => w.length >= 2);
         const scored = catalogProcs
             .filter(p => !result.some(r => r.id === p.id))
             .filter(p => p.rankCode !== 'unclassified' && (rankMap[p.rankCode] || 1) <= colRank)
@@ -2707,14 +2714,21 @@ const SurgeryApprovalPage = {
         const catalogProcs = this._catalogData?.procedures || [];
         if (!catalogProcs.length) return null;
         const pcObj = s.clinicalClassification?.procedureClass || {};
-        if (pcObj.suggestedCatalogEntryId) {
-            const exact = catalogProcs.find(p => p.id === pcObj.suggestedCatalogEntryId);
+        const sugCode = pcObj.suggestedCatalogEntryId || pcObj.suggestedCatalogCode;
+        if (sugCode) {
+            const exact = catalogProcs.find(p => p.id === sugCode);
             if (exact) return exact;
         }
         const rankMap = { 'PT-ĐB': 4, 'PT-DB': 4, 'PT-I': 3, 'PT-II': 2, 'PT-III': 1 };
         const colStr = s.clinicalClassification?.columnCompliance?.surgeonBaseColumn2026 || '';
         const colRank = ({ 'ĐB': 4, 'DB': 4, 'PT-I': 3, 'I': 3, '1': 3, 'II': 2, '2': 2, 'III': 1, '3': 1 })[colStr] || 4;
-        const mTokens = String(s.method || '').toLowerCase().split(/[\s,()/+-]+/).filter(w => w.length >= 2);
+        const expandedMethod = String(s.method || '')
+            .toLowerCase()
+            .replace(/\bsigma\b/g, 'chậu hông')
+            .replace(/cắt trước thấp trực tràng/g, 'cắt trực tràng thấp')
+            .replace(/\+\s*tme\b/g, '+ nạo vét hạch')
+            .replace(/\bhmnt\b/g, 'hậu môn nhân tạo');
+        const mTokens = expandedMethod.split(/[\s,()/+-]+/).filter(w => w.length >= 2);
         if (!mTokens.length) return null;
         let best = null;
         let bestScore = 0;
@@ -3085,9 +3099,12 @@ const SurgeryApprovalPage = {
         // Inline 1-line Column Verification Pill (BƯỚC 2.2: NO big green banner when OK!)
         const sysCheck = colObj.systemCheck || 'within_column';
         const baseCol = this._formatColumnCode(colObj.surgeonBaseColumn2026 || 'Chưa cấu hình');
+        const effectiveRankRaw = pcObj.confirmedClass
+            || (pcObj.suggestedClass && pcObj.suggestedClass !== 'unknown_ambiguous' ? pcObj.suggestedClass : null)
+            || (effSuggestedProc?.rankCode && effSuggestedProc.rankCode !== 'unclassified' ? effSuggestedProc.rankCode : null);
         let inlineColHtml = '';
-        if (pcObj.confirmedClass || pcObj.suggestedClass) {
-            const rankStr = this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass);
+        if (pcObj.confirmedClass) {
+            const rankStr = this._formatRankCode(pcObj.confirmedClass);
             if (sysCheck === 'within_column' || sysCheck === 'approved_over_column_matched') {
                 inlineColHtml = `<span class="sap-col-inline sap-col-inline--ok">${this._ico('✓')} <span>${Utils.escapeHtml(rankStr)} · Đúng cột (BS Cột ${Utils.escapeHtml(baseCol)})</span></span>`;
             } else if (sysCheck === 'over_column') {
@@ -3098,6 +3115,16 @@ const SurgeryApprovalPage = {
             } else {
                 inlineColHtml = `<span class="sap-col-inline sap-col-inline--warn">${this._ico('⚠️')} <span>${Utils.escapeHtml(rankStr)} · BCN kiểm tra quyền mổ</span></span>`;
             }
+        } else if (effectiveRankRaw) {
+            const rankStr = this._formatRankCode(effectiveRankRaw);
+            const rankMap = { 'PT-ĐB': 4, 'PT-DB': 4, 'PT-I': 3, 'PT-II': 2, 'PT-III': 1 };
+            const colRank = ({ 'ĐB': 4, 'DB': 4, 'I': 3, '1': 3, 'II': 2, '2': 2, 'III': 1, '3': 1 })[colObj.surgeonBaseColumn2026 || ''] || 0;
+            const previewWithin = colRank >= (rankMap[effectiveRankRaw] || 9);
+            inlineColHtml = previewWithin
+                ? `<span class="sap-col-inline sap-col-inline--ok">${this._ico('✨')} <span>Gợi ý ${Utils.escapeHtml(rankStr)} · Phù hợp BS Cột ${Utils.escapeHtml(baseCol)} (chờ xác nhận)</span></span>`
+                : `<span class="sap-col-inline sap-col-inline--warn">${this._ico('⚠️')} <span>Gợi ý ${Utils.escapeHtml(rankStr)} · BS Cột ${Utils.escapeHtml(baseCol)} (chờ xác nhận)</span></span>`;
+        } else {
+            inlineColHtml = `<span class="sap-col-inline">${this._ico('📋')} <span>Chờ chọn kỹ thuật · BS Cột ${Utils.escapeHtml(baseCol)}</span></span>`;
         }
 
         const isExternalMain = s.mainSurgeon && !SAP_ATTENDING_IDS.has(Number(s.mainSurgeon)) && !SAP_TRAINEE_IDS.has(Number(s.mainSurgeon));

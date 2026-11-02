@@ -862,11 +862,19 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
             self.assertNotIn("approval", real_after)
             self.assertNotIn("isTestSandboxCase", real_after)
 
-            # Sandbox case gets [TEST] prefix + full approval draft initialization + WAL hash chain
+            # Sandbox case gets [TEST] prefix + full approval draft initialization + exact Catalog 309 Sigma->Chậu hông suggestion + WAL hash chain
             self.assertTrue(sbx_after.get("isTestSandboxCase"))
             self.assertEqual(sbx_after["patientName"], "[TEST] Nguyễn Văn Minh")
             self.assertEqual(sbx_after["approval"]["status"], "draft_unsubmitted")
             self.assertEqual(sbx_after["caseRevision"], 1)
+            self.assertEqual(
+                sbx_after["clinicalClassification"]["procedureClass"]["suggestedCatalogCode"],
+                "PTNS-202",
+            )
+            self.assertEqual(
+                sbx_after["clinicalClassification"]["procedureClass"]["suggestedClass"],
+                "PT-ĐB",
+            )
             self.assertIsNotNone(sbx_after.get("preopChecklist"))
             self.assertIsNotNone(sbx_after.get("clinicalChips"))
             ok_chain, entries, err = eng.verify_approval_journal_chain(eng.get_journal_path(data_dir))
