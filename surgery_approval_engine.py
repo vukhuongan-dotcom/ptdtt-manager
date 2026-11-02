@@ -157,7 +157,7 @@ VALID_ANTITHROMBOTIC_MODES = {
     "none_confirmed",
     "continued_per_plan",
     "held_per_plan",
-    "bridging_per_plan",
+    "bridging_per_plan",  # Dự trữ (shelved trên UI theo chỉ đạo 02/11/2026 — giữ nguyên schema backend để bật lại sau này)
     "unheld_urgent_risk",
 }
 VALID_BLOOD_DEVICES = {
@@ -3421,14 +3421,14 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
     stamp_badge_fields(c06)
     cases.append(c06)
 
-    # ── CA TEST 07: Approved (✅ Đã duyệt tại khoa) — K đại tràng đồng thời đa ổ + Bắc cầu Enoxaparin + Thiếu máu đã bù máu ──
+    # ── CA TEST 07: Approved (✅ Đã duyệt tại khoa) — K đại tràng đồng thời đa ổ + Đã ngưng kháng đông đủ ngày + Thiếu máu đã bù máu ──
     ms07 = pick_staff([1, 2, 4, 5])
     tr07 = pick_staff(trainee_pool)
     rm07 = rng.choice(all_rooms)
     c07 = initialize_new_surgery_record({
         "id": base_id + 6,
         "isTestSandboxCase": True,
-        "scenarioCode": "SC-07_APPROVED_SYNCHRONOUS_CANCER_BRIDGING",
+        "scenarioCode": "SC-07_APPROVED_SYNCHRONOUS_CANCER_HELD_ANTICOAG",
         "patientName": mock_name(7, "K Đại Tràng Đa Ổ Đồng Thời [✅ Đã duyệt khoa]"),
         "birthYear": rng.randint(1948, 1968),
         "admissionId": mock_nv(7),
@@ -3440,7 +3440,7 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         "assistSurgeon1": tr07,
         "diagnosis": "Ung thư biểu mô tuyến đồng thời đại tràng phải và đại tràng Sigma trên nền rung nhĩ mạn",
         "method": "Phẫu thuật nội soi cắt toàn bộ đại tràng + nạo vét hạch",
-        "notes": "[CA TEST #07 — Đã duyệt tại khoa (Tích xanh hợp lệ 6 điều kiện): K đa ổ + Bắc cầu Lovenox + CK-01 bất thường đã truyền máu]",
+        "notes": "[CA TEST #07 — Đã duyệt tại khoa (Tích xanh hợp lệ 6 điều kiện): K đa ổ + Đã ngưng Rivaroxaban đủ 72h + CK-01 bất thường đã truyền máu]",
     }, catalog, db)
     _stamp_pod_for_sandbox(c07, catalog, rm07, trainee_id=tr07, freeze_snapshot=True)
     _finalize_classification_for_sandbox(
@@ -3458,10 +3458,10 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         },
         "antithromboticPlan": {
             "confirmed": True,
-            "mode": "bridging_per_plan",
+            "mode": "held_per_plan",
             "drugName": "Rivaroxaban 20mg",
-            "bridgingAgent": "Enoxaparin (Lovenox) 40mg TDD",
-            "lastDoseAt": "Ngưng Rivaroxaban trước mổ 72h, ngưng Lovenox trước mổ 24h",
+            "bridgingAgent": "",
+            "lastDoseAt": "Ngưng Rivaroxaban trước mổ 72 giờ theo hội chẩn",
             "approvingSpecialtyOrDoctor": "Hội chẩn Tim mạch & Gây mê hồi sức",
             "planReferenceNote": "Xét nghiệm đông máu sáng ngày mổ INR 1.08",
         },

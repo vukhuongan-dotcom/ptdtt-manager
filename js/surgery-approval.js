@@ -114,7 +114,8 @@ const SAP_ANTITHROMBOTIC_MODES = [
     { value: 'none_confirmed', label: 'Không dùng thuốc chống huyết khối' },
     { value: 'continued_per_plan', label: 'Tiếp tục duy trì theo hội chẩn' },
     { value: 'held_per_plan', label: 'Đã ngưng đủ ngày theo kế hoạch' },
-    { value: 'bridging_per_plan', label: 'Bắc cầu Heparin / LMWH' },
+    // Lựa chọn dự trữ (shelved: true) — tạm cất trên giao diện, giữ nguyên 100% schema & logic để bật lại sau này khi Khoa sử dụng
+    { value: 'bridging_per_plan', label: 'Bắc cầu Heparin / LMWH', shelved: true },
     { value: 'unheld_urgent_risk', label: 'Chưa ngưng đủ ngày (chỉ bán khẩn/cấp cứu)' }
 ];
 
@@ -3529,7 +3530,7 @@ const SurgeryApprovalPage = {
                 <div class="${fieldCls('sap-f-antithrombotic')}" id="sap-f-antithrombotic">
                     <div class="sap-field-label">Thuốc chống huyết khối (Kháng đông / Kháng kết tập tiểu cầu)</div>
                     <div class="sap-chip-group">
-                        ${SAP_ANTITHROMBOTIC_MODES.map(m => {
+                        ${SAP_ANTITHROMBOTIC_MODES.filter(m => !m.shelved).map(m => {
                             const isConf = anti.confirmed && anti.mode === m.value;
                             const isSugg = !anti.confirmed && eff2.antiMode === m.value;
                             const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');

@@ -89,7 +89,7 @@ def _make_isolated_flask_env(tmp_dir: pathlib.Path):
     sf_mod._DB_LOCK_FILE = str(data_dir / ".db.lock")
     sf_mod.MIN_CLIENT_BUILD = 2610312158
     sf_mod.WRITE_COLLECTIONS = {"surgeries", "surgeriesTrash", "notifications"}
-    sf_mod._client_build = lambda: int(request.headers.get("X-Client-Build", "2611021115"))
+    sf_mod._client_build = lambda: int(request.headers.get("X-Client-Build", "2611021215"))
     sf_mod._verify_jwt = lambda token: {"sub": "anvk", "tv": 1} if token == "test-token-anvk" else None
     sf_mod._save_auth = lambda payload: auth_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     sf_mod._get_file_version = lambda: "test-ver"
@@ -539,7 +539,7 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
             client = app.test_client()
             base_headers = {
                 "Authorization": "Bearer test-token-anvk",
-                "X-Client-Build": "2611021115",
+                "X-Client-Build": "2611021215",
             }
 
             # Seed 16 sandbox scenarios
@@ -709,7 +709,7 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
             client = app.test_client()
             trainee_headers = {
                 "Authorization": "Bearer test-token-anvk",
-                "X-Client-Build": "2611021146",
+                "X-Client-Build": "2611021215",
                 "X-Simulate-Staff-Id": "44",
             }
             seed_res = client.post(
@@ -717,7 +717,7 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
                 json={},
                 headers={
                     "Authorization": "Bearer test-token-anvk",
-                    "X-Client-Build": "2611021146",
+                    "X-Client-Build": "2611021215",
                     "X-Idempotency-Key": "seed-bug210",
                 },
             )
@@ -773,6 +773,21 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
                     headers={**trainee_headers, "X-Idempotency-Key": f"tr-forbid-{ep}"},
                 )
                 self.assertEqual(ep_res.status_code, 403, f"{ep} must return 403 for trainee, got {ep_res.status_code}")
+
+    def test_11_shelved_bridging_antithrombotic_mode_hidden_on_ui_preserved_in_schema(self):
+        js_src = (REPO_ROOT / "js" / "surgery-approval.js").read_text(encoding="utf-8")
+        self.assertIn("{ value: 'bridging_per_plan', label: 'Bắc cầu Heparin / LMWH', shelved: true }", js_src)
+        self.assertIn("SAP_ANTITHROMBOTIC_MODES.filter(m => !m.shelved).map", js_src)
+        self.assertIn("bridging_per_plan", eng.VALID_ANTITHROMBOTIC_MODES)
+
+        cases = eng.build_sandbox_sample_surgeries(self.db, str(REPO_ROOT / "data"), str(REPO_ROOT))
+        self.assertEqual(len(cases), 16)
+        for c in cases:
+            anti_mode = ((c.get("clinicalChips") or {}).get("antithromboticPlan") or {}).get("mode")
+            self.assertNotEqual(anti_mode, "bridging_per_plan", f"Sandbox case {c.get('scenarioCode')} still uses shelved bridging_per_plan")
+        c07 = cases[6]
+        self.assertEqual(c07["approval"]["status"], "approved")
+        self.assertTrue(c07["approval"]["isApprovalGreenTickValid"])
 
 
 if __name__ == "__main__":
