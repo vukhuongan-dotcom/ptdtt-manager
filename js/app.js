@@ -281,9 +281,9 @@ const App = {
         }
     },
 
-    // === Idle Auto-Logout (5 minutes) ===
-    IDLE_TIMEOUT: 5 * 60 * 1000, // 5 minutes in ms
-    IDLE_WARNING: 4 * 60 * 1000, // warn at 4 min
+    // === Idle Auto-Logout (10 minutes) ===
+    IDLE_TIMEOUT: 10 * 60 * 1000, // 10 minutes in ms
+    IDLE_WARNING: 9 * 60 * 1000,  // warn at 9 min (1 phút trước khi đăng xuất)
     _idleTimer: null,
     _idleWarned: false,
     _IDLE_KEY: 'ptdtt_lastActivity',
@@ -341,7 +341,7 @@ const App = {
 
         const idle = Date.now() - this._getLastActivity();
 
-        // Logout khi không hoạt động sau 5 phút (IDLE_TIMEOUT = 5 * 60 * 1000)
+        // Logout khi không hoạt động sau 10 phút (IDLE_TIMEOUT = 10 * 60 * 1000)
         if (idle >= this.IDLE_TIMEOUT) {
             if (this._idleTimer) { clearInterval(this._idleTimer); this._idleTimer = null; }
             localStorage.removeItem(this._IDLE_KEY);
@@ -350,7 +350,7 @@ const App = {
             setTimeout(() => {
                 const err = document.getElementById('login-error');
                 if (err) {
-                    err.textContent = '⏰ Phiên đăng nhập đã hết hạn do không hoạt động (5 phút).';
+                    err.textContent = '⏰ Phiên đăng nhập đã hết hạn do không hoạt động (10 phút).';
                     err.style.display = 'block';
                     err.style.color = '#f59e0b';
                 }
@@ -358,7 +358,7 @@ const App = {
             return;
         }
 
-        // Warning at 4 min (1 min before logout)
+        // Warning at 9 min (1 min before logout)
         if (idle >= this.IDLE_WARNING && !this._idleWarned) {
             this._idleWarned = true;
             this._showIdleWarning();
