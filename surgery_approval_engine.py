@@ -731,7 +731,7 @@ def resolve_effective_actor(
     *,
     allow_sandbox_delegation_sim: bool = False,
 ) -> dict:
-    """Allows X-Simulate-Staff-Id STRICTLY when real_user.isSuperAdmin == True AND (target_surgery.isTestSandboxCase == True OR sandbox delegation test in superadmin_only mode)."""
+    """Allows X-Simulate-Staff-Id STRICTLY when real_user.isSuperAdmin == True AND (target_surgery.isTestSandboxCase == True OR sandbox delegation test in Canary/Demo sandbox mode)."""
     if not simulate_header or not str(simulate_header).strip():
         return real_user
     try:
@@ -747,7 +747,10 @@ def resolve_effective_actor(
 
     cfg = get_approval_config(db)
     is_valid_sandbox_target = isinstance(target_surgery, dict) and target_surgery.get("isTestSandboxCase") is True
-    is_valid_del_sim = bool(allow_sandbox_delegation_sim and cfg.get("rolloutAccessMode") == "superadmin_only")
+    is_valid_del_sim = bool(
+        allow_sandbox_delegation_sim
+        and (cfg.get("rolloutAccessMode") == "superadmin_only" or cfg.get("sandboxOnlyMode") is True)
+    )
     if not (is_valid_sandbox_target or is_valid_del_sim):
         raise ApprovalEngineError(
             403,

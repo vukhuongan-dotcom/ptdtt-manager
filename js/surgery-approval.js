@@ -811,6 +811,94 @@ const SurgeryApprovalPage = {
         };
     },
 
+    _isTraineeActor(actor) {
+        const sid = Number(actor?.staffId || 0);
+        const role = String(actor?.role || '').toLowerCase();
+        return SAP_TRAINEE_IDS.has(sid) || role.includes('học viên') || role.includes('nội trú');
+    },
+
+    _isAttendingActor(actor) {
+        const sid = Number(actor?.staffId || 0);
+        if (SAP_ATTENDING_IDS.has(sid)) return true;
+        const role = String(actor?.role || '');
+        return (role.includes('Bác sĩ chính') || role.includes('Trưởng khoa') || role.includes('Phó trưởng khoa'))
+            && !this._isTraineeActor(actor);
+    },
+
+    _canActorEditCases(actor) {
+        const sid = Number(actor?.staffId || 0);
+        return this._isTraineeActor(actor) || this._isAttendingActor(actor) || SAP_BCN_IDS.has(sid);
+    },
+
+    _isSamePodAttending(s, staffId) {
+        const sid = Number(staffId || 0);
+        if (!sid || !s) return false;
+        const rooms = this._catalogData?.podRoster?.rooms || {};
+        const wardRoom = s.podAssignment?.wardRoom || '';
+        const rmInfo = rooms[wardRoom];
+        if (rmInfo && Array.isArray(rmInfo.attendingStaffIds) && rmInfo.attendingStaffIds.map(Number).includes(sid)) {
+            return true;
+        }
+        const mainId = Number(s.mainSurgeon || 0);
+        if (!wardRoom || wardRoom === 'unassigned') {
+            const mainPods = new Set(
+                Object.values(rooms)
+                    .filter(r => Array.isArray(r.attendingStaffIds) && r.attendingStaffIds.map(Number).includes(mainId))
+                    .map(r => Number(r.podId))
+            );
+            return Object.values(rooms).some(
+                r => mainPods.has(Number(r.podId)) && Array.isArray(r.attendingStaffIds) && r.attendingStaffIds.map(Number).includes(sid)
+            );
+        }
+        return false;
+    },
+
+    _canActorSubmitCase(s, actor) {
+        if (!s || !actor) return false;
+        const sid = Number(actor.staffId || 0);
+        if (SAP_BCN_IDS.has(sid)) return true;
+        if (!this._isAttendingActor(actor)) return false;
+        if (sid === Number(s.mainSurgeon || 0) || sid === Number(s.coordinatingAttendingStaffId || 0)) return true;
+        if (sid === Number(s.assistSurgeon1 || 0)) return true;
+        return this._isSamePodAttending(s, sid);
+    },
+
+    _canActorHoldCase(s, actor) {
+        if (!s || !actor) return false;
+        const sid = Number(actor.staffId || 0);
+        if (SAP_BCN_IDS.has(sid)) return true;
+        if (!this._isAttendingActor(actor)) return false;
+        if (sid === Number(s.mainSurgeon || 0) || sid === Number(s.coordinatingAttendingStaffId || 0)) return true;
+        return this._isSamePodAttending(s, sid);
+    },
+
+    _renderOwnRolePermissionSummary(actor) {
+        const sid = Number(actor?.staffId || 0);
+        const fullName = actor?.title ? `${actor.title} ${actor.name}` : (actor?.name || '');
+        if (sid === SAP_CHIEF_ID) {
+            return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-default);font-size:13px;color:var(--text-secondary);">
+                <strong>${this._ico('🛡️')} Quyền tài khoản của bạn (${Utils.escapeHtml(fullName)} — Trưởng khoa):</strong>
+                Được chuẩn bị/trình ca của mình, lập Ủy quyền BCN cho Phó TK, xem Nhật ký duyệt và Phê duyệt chính thức tại khoa. <em>(Tài khoản cá nhân chỉ kiểm thử đúng quyền thực tế của mình, không giả lập nhân sự khác).</em>
+            </div>`;
+        }
+        if (this._isTraineeActor(actor)) {
+            return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-default);font-size:13px;color:var(--text-secondary);">
+                <strong>${this._ico('🎓')} Quyền tài khoản của bạn (${Utils.escapeHtml(fullName)} — Bác sĩ học viên / BSNT):</strong>
+                ✅ Được tạo ca [TEST], nhập nháp Bước ①–②, đánh dấu rà sơ bộ Bước ③ và bấm <em>Gửi BS chính xác nhận</em> · 🔒 Bị khóa (403): Không xác nhận Phim gốc (CK-04) / Cam kết PT (CK-08), không bấm Trình duyệt hoặc Phê duyệt BCN, không giả lập tài khoản khác.
+            </div>`;
+        }
+        if (this._isAttendingActor(actor)) {
+            return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-default);font-size:13px;color:var(--text-secondary);">
+                <strong>${this._ico('🩺')} Quyền tài khoản của bạn (${Utils.escapeHtml(fullName)} — Bác sĩ chính):</strong>
+                ✅ Được tạo ca [TEST] đứng tên mình, xác nhận Bước ①–②–③ (gồm CK-04 & CK-08 trên ca mình phụ trách) và bấm <em>Trình duyệt mổ</em> (hoặc trình thay khi đứng Phụ mổ 1 / cùng khu vực POD) · 🔒 Bị khóa (403): Không Tiền duyệt / Phê duyệt BCN, không trình ca của BS khu vực khác, không giả lập tài khoản khác.
+            </div>`;
+        }
+        return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-default);font-size:13px;color:var(--text-secondary);">
+            <strong>${this._ico('👀')} Quyền tài khoản của bạn (${Utils.escapeHtml(fullName)} — Chế độ Chỉ xem):</strong>
+            ✅ Xem danh sách ca mổ, trạng thái duyệt khoa, dự trù máu/vật tư/HMNT và bảng kiểm tiền phẫu · 🔒 Bị khóa (403): Không tạo/chỉnh sửa hồ sơ bác sĩ, không trình duyệt hoặc phê duyệt, không giả lập tài khoản khác.
+        </div>`;
+    },
+
     _hasActiveDelegationForDeputy() {
         const dels = Store._data?.approvalDelegations || [];
         const nowMs = Date.now();
@@ -1242,12 +1330,14 @@ const SurgeryApprovalPage = {
                     <div class="sap-canary-title">
                         ${this._ico('🧪')} <span>Chế độ Demo trên bệnh nhân giả [TEST] đến hết Chủ nhật 08/11/2026 — Dự kiến Thứ Hai 09/11/2026 áp dụng thực tế cho nhóm bệnh nhân mổ chương trình có lịch mổ (0% đụng bệnh nhân thật)</span>
                     </div>
+                    ${this._canActorEditCases(actor) ? `
                     <div style="display:flex;flex-wrap:wrap;gap:8px;">
                         <button type="button" class="sap-btn sap-btn--primary" onclick="App.navigate('surgery'); setTimeout(() => { if (typeof SurgeryPage !== 'undefined') SurgeryPage.openForm(0, null, { sandbox: true }); }, 80);">
                             ${this._ico('📅')} <span>+ Tạo ca giả lập từ Lịch mổ</span>
                         </button>
-                    </div>
+                    </div>` : ''}
                 </div>
+                ${this._renderOwnRolePermissionSummary(actor)}
             </div>` : '')}
 
             <div class="sap-top-nav-row">
@@ -1677,6 +1767,10 @@ const SurgeryApprovalPage = {
     },
 
     setSimulatedRole(staffIdStr) {
+        if (typeof App === 'undefined' || !App.isSuperAdmin || !App.isSuperAdmin()) {
+            this._simulatedStaffId = 0;
+            return;
+        }
         this._simulatedStaffId = parseInt(staffIdStr, 10) || 0;
         this._logsState = null;
         if (this._openCaseId) {
@@ -2257,7 +2351,9 @@ const SurgeryApprovalPage = {
         const session = Auth.getSession() || {};
         const cfg = this.getConfig();
         const isSimulating = Number(this._simulatedStaffId || 0) > 0 && Number(this._simulatedStaffId) !== Number(session.staffId || 0);
-        const isSandboxDel = App.isSuperAdmin() && cfg.rolloutAccessMode === 'superadmin_only' && (Number(session.staffId) !== SAP_CHIEF_ID || isSimulating);
+        const isSandboxDel = App.isSuperAdmin()
+            && (cfg.rolloutAccessMode === 'superadmin_only' || cfg.sandboxOnlyMode !== false)
+            && (Number(session.staffId) !== SAP_CHIEF_ID || isSimulating);
         const body = {
             effectiveFrom: f.get('effectiveFrom'),
             effectiveTo: f.get('effectiveTo'),
@@ -3213,7 +3309,7 @@ const SurgeryApprovalPage = {
         const cfg = this.getConfig();
         const actor = this.getEffectiveActor(s);
         const isActorBcn = SAP_BCN_IDS.has(actor.staffId);
-        const canEdit = SAP_TRAINEE_IDS.has(actor.staffId) || SAP_ATTENDING_IDS.has(actor.staffId) || isActorBcn || actor.isSuperAdmin;
+        const canEdit = this._canActorEditCases(actor);
         const missing = this._computeMissingRequirements(s, actor);
         const step1Miss = missing.filter(m => m.step === 1);
         const step2Miss = missing.filter(m => m.step === 2);
@@ -5025,19 +5121,21 @@ const SurgeryApprovalPage = {
     // ── BƯỚC 2.9 & 3.4: Sticky Safe-Area Bottom Action Bar (1 Primary + 1 Secondary + "⋯" Overflow Menu) ──
     _renderStickyFooterHtml(s, cfg, actor, missing) {
         const st = s.approval?.status || 'draft_unsubmitted';
-        const isTrainee = SAP_TRAINEE_IDS.has(actor.staffId);
-        const isAttending = SAP_ATTENDING_IDS.has(actor.staffId);
+        const isTrainee = this._isTraineeActor(actor);
+        const isAttending = this._isAttendingActor(actor);
         const isBcn = SAP_BCN_IDS.has(actor.staffId);
         const isChief = actor.staffId === SAP_CHIEF_ID;
         const isDeputy = actor.staffId === SAP_DEPUTY_ID;
         const hasDel = this._hasActiveDelegationForDeputy();
+        const canSubmitThisCase = this._canActorSubmitCase(s, actor);
+        const canHoldThisCase = this._canActorHoldCase(s, actor);
 
         // Overflow menu items ("⋯") — QĐ3: Ngoại lệ cấp cứu để đợt sau
         const moreItems = [];
         if (isTrainee && ['draft_unsubmitted', 'returned_for_revision', 'resubmit_required'].includes(st)) {
             moreItems.push({ label: '🩺 Báo BS chính xác nhận', fn: `SurgeryApprovalPage.requestAttendingVerify(${s.id})` });
         }
-        if ((isAttending || isBcn) && ['approved', 'approved_with_exception'].includes(st)) {
+        if (canHoldThisCase && ['approved', 'approved_with_exception'].includes(st)) {
             moreItems.push({ label: '⏸️ Tạm hoãn tại khoa', fn: `SurgeryApprovalPage.toggleActionDrawer(${s.id}, 'hold')` });
         }
         if ((isChief || (isDeputy && hasDel)) && ['approved', 'approved_with_exception', 'post_approval_hold', 'preapproved'].includes(st)) {
@@ -5097,7 +5195,12 @@ const SurgeryApprovalPage = {
                 </button>`;
             }
         } else if ((isAttending || isBcn) && !['approved', 'approved_with_exception', 'post_approval_hold'].includes(st)) {
-            if (missing.length > 0) {
+            if (!canSubmitThisCase) {
+                primaryBtnHtml = `
+                <button type="button" class="sap-btn" id="sap-btn-primary-action" disabled title="Chỉ PTV chính, BS phụ mổ 1 trên lịch mổ hoặc BS chính cùng khu vực POD mới có quyền trình ca này">
+                    ${this._ico('🔒')} <span>Chỉ PTV chính / Phụ 1 / BS cùng POD trình</span>
+                </button>`;
+            } else if (missing.length > 0) {
                 primaryBtnHtml = `
                 <button type="button" class="sap-btn sap-btn--incomplete" id="sap-btn-primary-action"
                     onclick="SurgeryApprovalPage.jumpToFirstMissing(${s.id})">
@@ -5110,7 +5213,7 @@ const SurgeryApprovalPage = {
                     ${this._ico('🚀')} <span>Trình duyệt</span>
                 </button>`;
             }
-        } else if ((isAttending || isBcn) && st === 'approved') {
+        } else if (canHoldThisCase && st === 'approved') {
             primaryBtnHtml = `
             <button type="button" class="sap-btn sap-btn--warning" id="sap-btn-primary-action"
                 onclick="SurgeryApprovalPage.toggleActionDrawer(${s.id}, 'hold')">

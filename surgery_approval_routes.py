@@ -59,6 +59,7 @@ from surgery_approval_engine import (
     is_pos_int,
     is_same_pod_attending,
     is_strict_int,
+    is_trainee_user,
     is_valid_iso_date,
     load_or_init_journal_checkpoint,
     load_procedure_catalog,
@@ -656,6 +657,12 @@ def register_surgery_approval_routes(app, sf_mod):
     @app.route("/api/surgery-approval/<int:sid>/request-verify", methods=["POST"])
     def request_attending_verify(sid):
         def _handler(db, body, real_user, actor, catalog, cfg):
+            if not (is_trainee_user(actor) or is_attending_user(actor)):
+                raise ApprovalEngineError(
+                    403,
+                    "FORBIDDEN",
+                    "Chỉ Bác sĩ học viên, Bác sĩ chính và Ban Chủ nhiệm mới được gửi xác nhận hồ sơ duyệt mổ.",
+                )
             surgery = _find_surgery_or_404(db, sid)
             _require_in_phase1_scope(surgery, cfg)
             _require_expected_revision(body, surgery)
@@ -1675,7 +1682,7 @@ def register_surgery_approval_routes(app, sf_mod):
             if cfg.get("rolloutAccessMode") == "superadmin_only" and not real_user.get("isSuperAdmin"):
                 raise ApprovalEngineError(403, "CANARY_SUPERADMIN_ONLY", "Chế độ thử nghiệm Super Admin.")
             dels = db.get("approvalDelegations") or []
-            if not real_user.get("isSuperAdmin"):
+            if not can_user_access_sandbox(real_user, db):
                 dels = [d for d in dels if isinstance(d, dict) and d.get("isTestSandboxDelegation") is not True]
             return jsonify({"delegations": dels})
         except ApprovalEngineError as e:
@@ -1684,12 +1691,13 @@ def register_surgery_approval_routes(app, sf_mod):
     @app.route("/api/surgery-approval/delegations", methods=["POST"])
     def create_approval_delegation():
         def _handler(db, body, real_user, actor, catalog, cfg):
-            # Allow Chief (staffId=1) OR Superadmin explicitly creating a [TEST] sandbox delegation ONLY in superadmin_only mode
+            # Allow Chief (staffId=1) OR Superadmin explicitly creating a [TEST] sandbox delegation in Canary/Demo sandbox mode
             is_sim = bool(actor.get("isSimulated") or actor.get("simulatedBySuperAdminStaffId"))
+            in_sandbox_cfg = (cfg.get("rolloutAccessMode") == "superadmin_only" or cfg.get("sandboxOnlyMode") is True)
             is_sandbox_del = bool(
                 (body.get("isTestSandboxDelegation") or is_sim)
                 and real_user.get("isSuperAdmin")
-                and cfg.get("rolloutAccessMode") == "superadmin_only"
+                and in_sandbox_cfg
             )
             if (actor.get("staffId") != CHIEF_STAFF_ID or is_sim) and not is_sandbox_del:
                 raise ApprovalEngineError(403, "CHIEF_ONLY", "Chỉ Trưởng khoa (TS. BSCKII. Nguyễn Phú Hữu) mới có quyền lập Ủy quyền duyệt mổ.")
@@ -1754,7 +1762,7 @@ def register_surgery_approval_routes(app, sf_mod):
             can_revoke = (actor.get("staffId") == CHIEF_STAFF_ID and not is_sim) or (
                 target.get("isTestSandboxDelegation")
                 and real_user.get("isSuperAdmin")
-                and cfg.get("rolloutAccessMode") == "superadmin_only"
+                and (cfg.get("rolloutAccessMode") == "superadmin_only" or cfg.get("sandboxOnlyMode") is True)
             )
             if not can_revoke:
                 raise ApprovalEngineError(403, "CHIEF_ONLY", "Chỉ Trưởng khoa mới có quyền thu hồi ủy quyền duyệt mổ.")
@@ -1800,11 +1808,15 @@ def register_surgery_approval_routes(app, sf_mod):
 
             sim_hdr = request.headers.get("X-Simulate-Staff-Id", "").strip()
             effective_staff_id = real_user.get("staffId")
-            if sim_hdr and real_user.get("isSuperAdmin"):
+            if sim_hdr:
                 try:
-                    effective_staff_id = int(sim_hdr)
+                    req_sim_id = int(sim_hdr)
                 except ValueError:
                     raise ApprovalEngineError(400, "INVALID_SIMULATED_STAFF", "X-Simulate-Staff-Id không hợp lệ.")
+                if req_sim_id != real_user.get("staffId"):
+                    if not real_user.get("isSuperAdmin"):
+                        raise ApprovalEngineError(403, "FORBIDDEN", "Chỉ Super Admin mới có quyền giả lập vai trò thử nghiệm.")
+                    effective_staff_id = req_sim_id
 
             if effective_staff_id not in BCN_STAFF_IDS:
                 raise ApprovalEngineError(

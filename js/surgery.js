@@ -743,6 +743,13 @@ const SurgeryPage = {
         const extDocs = Store.getAll('externalDoctors') || [];
         const canSandbox = this.canUseSandboxSchedule();
         const isSandboxDefault = s ? Boolean(s.isTestSandboxCase) : Boolean(opts && opts.sandbox && canSandbox);
+        const curSession = (typeof Auth !== 'undefined' && Auth.getSession) ? (Auth.getSession() || {}) : {};
+        const curSid = Number(curSession.staffId || 0);
+        const curRoleLc = String(curSession.role || '').toLowerCase();
+        const isCurTrainee = (typeof SAP_TRAINEE_IDS !== 'undefined' && SAP_TRAINEE_IDS.has(curSid))
+            || curRoleLc.includes('học viên') || curRoleLc.includes('nội trú');
+        const defaultMainSurgeonId = s ? s.mainSurgeon : ((isSandboxDefault && !isCurTrainee && mainSurgeonStaff.some(st => Number(st.id) === curSid)) ? curSid : '');
+        const defaultAssistSurgeonId = s ? s.assistSurgeon1 : ((isSandboxDefault && isCurTrainee && staff.some(st => Number(st.id) === curSid)) ? curSid : '');
 
         const formKey = `surgery-${id || (isSandboxDefault ? 'new-sandbox' : 'new')}`;
         const modalTitle = s
@@ -826,10 +833,10 @@ const SurgeryPage = {
                         <select class="form-select" name="mainSurgeon">
                             <option value="">— Chọn —</option>
                             <optgroup label="BS chính trong khoa">
-                            ${mainSurgeonStaff.map(st => `<option value="${st.id}" ${s?.mainSurgeon == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                            ${mainSurgeonStaff.map(st => `<option value="${st.id}" ${defaultMainSurgeonId == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
                             </optgroup>
                             ${extDocs.length ? `<optgroup label="BS ngoài khoa">
-                            ${extDocs.map(d => `<option value="${d.id}" ${s?.mainSurgeon == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
+                            ${extDocs.map(d => `<option value="${d.id}" ${defaultMainSurgeonId == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
                             </optgroup>` : ''}
                         </select>
                     </div>
@@ -838,10 +845,10 @@ const SurgeryPage = {
                         <select class="form-select" name="assistSurgeon1">
                             <option value="">— Chọn —</option>
                             <optgroup label="BS trong khoa">
-                            ${staff.map(st => `<option value="${st.id}" ${s?.assistSurgeon1 == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                            ${staff.map(st => `<option value="${st.id}" ${defaultAssistSurgeonId == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
                             </optgroup>
                             ${extDocs.length ? `<optgroup label="BS ngoài khoa">
-                            ${extDocs.map(d => `<option value="${d.id}" ${s?.assistSurgeon1 == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
+                            ${extDocs.map(d => `<option value="${d.id}" ${defaultAssistSurgeonId == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
                             </optgroup>` : ''}
                         </select>
                     </div>
@@ -928,48 +935,65 @@ const SurgeryPage = {
         }
         const weekDates = this.getWeekDates();
         const thursdayStr = weekDates[3] ? this.dateStr(weekDates[3]) : new Date().toISOString().split('T')[0];
-        const samples = [
+        const session = (typeof Auth !== 'undefined' && Auth.getSession) ? (Auth.getSession() || {}) : {};
+        const simId = (typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin() && typeof SurgeryApprovalPage !== 'undefined')
+            ? Number(SurgeryApprovalPage._simulatedStaffId || 0)
+            : 0;
+        const mySid = simId > 0 ? simId : Number(session.staffId || 0);
+        const myStaffObj = Store.getById('staff', mySid);
+        const myRoleLc = String((myStaffObj && myStaffObj.role) || session.role || '').toLowerCase();
+        const isTrainee = (typeof SAP_TRAINEE_IDS !== 'undefined' && SAP_TRAINEE_IDS.has(mySid))
+            || myRoleLc.includes('học viên') || myRoleLc.includes('nội trú');
+        const traineeDefaultAttending = { 45: 4, 46: 5, 16: 6, 44: 6, 50: 8, 43: 7, 47: 9, 48: 10 };
+        const attendingDefaultTrainee = { 1: 45, 2: 44, 4: 45, 5: 46, 6: 44, 7: 43, 8: 50, 9: 47, 10: 48, 11: 45, 12: 44 };
+        const effMainId = isTrainee ? (traineeDefaultAttending[mySid] || 4) : (mySid > 0 && mySid !== 3 ? mySid : 4);
+        const effAssistId = isTrainee ? mySid : (attendingDefaultTrainee[effMainId] || 45);
+        const isCol3Surgeon = [10, 11, 12].includes(effMainId);
+        const uniqTag = String(Date.now()).slice(-4);
+
+        const samples = isCol3Surgeon ? [
             {
-                patientName: '[TEST] Nguyễn Văn Minh',
+                patientName: `[TEST] Lê Hoàng Khôi ${uniqTag}`,
+                birthYear: 1981,
+                admissionId: `TEST-${effMainId}-${uniqTag}`,
+                surgeryType: 'chuongtrinh',
+                approachType: 'mo',
+                date: thursdayStr,
+                duration: 60,
+                mainSurgeon: effMainId,
+                assistSurgeon1: effAssistId,
+                diagnosis: 'Rò hậu môn thấp đơn giản',
+                method: 'Phẫu thuật cắt đường rò hậu môn đơn giản',
+                notes: 'Ca giả lập tự kiểm thử đúng phân quyền cá nhân (Cột III - PT-III)'
+            }
+        ] : [
+            {
+                patientName: `[TEST] Nguyễn Văn Minh ${uniqTag}`,
                 birthYear: 1964,
-                admissionId: 'TEST-261101',
+                admissionId: `TEST-${effMainId}-${uniqTag}`,
                 surgeryType: 'chuongtrinh',
                 approachType: 'noisoi',
                 date: thursdayStr,
                 duration: 150,
-                mainSurgeon: 4,
-                assistSurgeon1: 45,
+                mainSurgeon: effMainId,
+                assistSurgeon1: effAssistId,
                 diagnosis: 'Ung thư đại tràng Sigma cT3N1M0',
                 method: 'Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch',
-                notes: 'Ca giả lập thực hành quy trình Lịch mổ → Tab Duyệt mổ (Tổ 1: P.706)'
+                notes: 'Ca giả lập tự kiểm thử đúng phân quyền cá nhân từ Lịch mổ → Tab Duyệt mổ'
             },
             {
-                patientName: '[TEST] Trần Thị Thu Hà',
+                patientName: `[TEST] Trần Thị Thu Hà ${uniqTag}`,
                 birthYear: 1968,
-                admissionId: 'TEST-261102',
+                admissionId: `TEST-${effMainId}-${uniqTag}`,
                 surgeryType: 'chuongtrinh',
-                approachType: 'noisoi',
-                date: thursdayStr,
-                duration: 180,
-                mainSurgeon: 6,
-                assistSurgeon1: 44,
-                diagnosis: 'Ung thư trực tràng 1/3 giữa sau hóa xạ tiền phẫu (ycT2N0M0)',
-                method: 'Phẫu thuật nội soi cắt trước thấp trực tràng (LAR) + TME',
-                notes: 'Ca giả lập thực hành quy trình Lịch mổ → Tab Duyệt mổ (Tổ 2: P.710)'
-            },
-            {
-                patientName: '[TEST] Lê Hoàng Khôi',
-                birthYear: 1981,
-                admissionId: 'TEST-261103',
-                surgeryType: 'dichvu',
                 approachType: 'mo',
                 date: thursdayStr,
                 duration: 60,
-                mainSurgeon: 8,
-                assistSurgeon1: 43,
-                diagnosis: 'Rò hậu môn xuyên cơ thắt cao phức tạp tái phát',
-                method: 'Phẫu thuật cắt đường rò hậu môn + đặt Seton dẫn lưu',
-                notes: 'Ca giả lập thực hành quy trình Lịch mổ → Tab Duyệt mổ (Tổ 3: P.718)'
+                mainSurgeon: effMainId,
+                assistSurgeon1: effAssistId,
+                diagnosis: 'Rò hậu môn thấp đơn giản',
+                method: 'Phẫu thuật cắt đường rò hậu môn đơn giản',
+                notes: 'Ca giả lập tự kiểm thử đúng phân quyền cá nhân từ Lịch mổ → Tab Duyệt mổ'
             }
         ];
         const sample = samples[this._sampleSandboxIdx % samples.length];

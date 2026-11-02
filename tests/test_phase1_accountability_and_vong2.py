@@ -198,6 +198,18 @@ def _setup_isolated_server_env(tmp_dir: pathlib.Path, *, sandbox_only: bool = Fa
             "mustChangePassword": False,
             "sessionEpoch": 1,
         },
+        "ntnthuy": {
+            "passwordHash": _pw_hash("ThuyStrong2026"),
+            "name": "Nguyễn Thị Ngọc Thùy",
+            "title": "CNĐD.",
+            "role": "Điều dưỡng trưởng",
+            "staffId": 3,
+            "isAdmin": True,
+            "isSuperAdmin": False,
+            "disabled": False,
+            "mustChangePassword": False,
+            "sessionEpoch": 1,
+        },
     }
     auth_file = data_dir / "auth.json"
     auth_file.write_text(json.dumps({"users": users}, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -289,13 +301,15 @@ def _build_complete_routine_draft_payload(
 class Phase1AccountabilityAndVong2Tests(unittest.TestCase):
     """Comprehensive contract & adversarial verification suite for Phase 1 + Crosscheck Vòng 2."""
 
-    def _hdr(self, token: str, idem: str | None = None) -> dict:
+    def _hdr(self, token: str, idem: str | None = None, sim_staff_id: int | None = None) -> dict:
         h = {
             "Authorization": f"Bearer {token}",
             "X-Client-Build": "2611021947",
         }
         if idem:
             h["X-Idempotency-Key"] = idem
+        if sim_staff_id is not None:
+            h["X-Simulate-Staff-Id"] = str(sim_staff_id)
         return h
 
     def _login_token(self, client, username: str, password: str) -> dict:
@@ -447,6 +461,64 @@ class Phase1AccountabilityAndVong2Tests(unittest.TestCase):
             saved_after_seed = json.loads((data_dir / "db.json").read_text(encoding="utf-8"))
             real_after = next(s for s in saved_after_seed["surgeries"] if s["id"] == 501)
             self.assertNotIn("approval", real_after)
+
+            # BUG-218: Non-SuperAdmin accounts test ONLY their own role; X-Simulate-Staff-Id is strictly 403 FORBIDDEN
+            sbx_case = next(s for s in saved_after_seed["surgeries"] if s.get("isTestSandboxCase") is True)
+            sbx_id = sbx_case["id"]
+            sbx_rev = sbx_case.get("caseRevision", 1)
+            tok_quy = self._login_token(client, "ghtquy", "QuyStrong2026")["token"]
+            tok_thuy = self._login_token(client, "ntnthuy", "ThuyStrong2026")["token"]
+
+            sim_denied_draft = client.post(
+                f"/api/surgery-approval/{sbx_id}/draft",
+                json={"expectedCaseRevision": sbx_rev},
+                headers=self._hdr(tok_quy, "non-sa-sim-1", sim_staff_id=1),
+            )
+            self.assertEqual(sim_denied_draft.status_code, 403)
+            self.assertEqual(sim_denied_draft.get_json().get("code"), "FORBIDDEN")
+
+            sim_denied_logs = client.get(
+                "/api/surgery-approval/logs",
+                headers=self._hdr(tok_quy, sim_staff_id=1),
+            )
+            self.assertEqual(sim_denied_logs.status_code, 403)
+            self.assertEqual(sim_denied_logs.get_json().get("code"), "FORBIDDEN")
+
+            # Read-only nursing role is blocked 403 on request-verify even when omitting "draft"
+            ro_denied_rv = client.post(
+                f"/api/surgery-approval/{sbx_id}/request-verify",
+                json={"expectedCaseRevision": sbx_rev},
+                headers=self._hdr(tok_thuy, "ro-rv-1"),
+            )
+            self.assertEqual(ro_denied_rv.status_code, 403)
+            self.assertEqual(ro_denied_rv.get_json().get("code"), "FORBIDDEN")
+
+            # SuperAdmin CAN simulate roles and create/revoke [TEST] sandbox delegations in Demo mode (all_staff + sandboxOnlyMode=True)
+            from datetime import timedelta as _td
+            now_dt = eng.now_vn()
+            eff_from = (now_dt - _td(hours=1)).isoformat(timespec="seconds")
+            eff_to = (now_dt + _td(hours=6)).isoformat(timespec="seconds")
+            sa_del_create = client.post(
+                "/api/surgery-approval/delegations",
+                json={
+                    "effectiveFrom": eff_from,
+                    "effectiveTo": eff_to,
+                    "scope": "all_departmental_surgeries",
+                    "reason": "Kiểm thử ủy quyền mẫu [TEST] trong vai trò xây dựng phần mềm",
+                    "isTestSandboxDelegation": True,
+                },
+                headers=self._hdr(tok_an, "sa-del-sbx-1", sim_staff_id=1),
+            )
+            self.assertEqual(sa_del_create.status_code, 200, sa_del_create.get_data(as_text=True))
+            del_id = sa_del_create.get_json()["delegation"]["delegationId"]
+            self.assertTrue(sa_del_create.get_json()["delegation"]["isTestSandboxDelegation"])
+
+            sa_del_revoke = client.post(
+                f"/api/surgery-approval/delegations/{del_id}/revoke",
+                json={"reason": "Kết thúc kiểm thử giả lập ủy quyền"},
+                headers=self._hdr(tok_an, "sa-del-sbx-rev-1", sim_staff_id=1),
+            )
+            self.assertEqual(sa_del_revoke.status_code, 200, sa_del_revoke.get_data(as_text=True))
 
     def test_03_muc2d_two_tier_multi_episode_duplicate_protection(self) -> None:
         with tempfile.TemporaryDirectory() as td:
