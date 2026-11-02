@@ -5,7 +5,7 @@
 > 2. `Quyết định số 1073/QĐ-BVBD` ngày 12/06/2024 của Giám đốc Bệnh viện Bình Dân ban hành Quy chế xếp cột Bác sĩ phẫu thuật, thủ thuật *(đã xác nhận còn nguyên hiệu lực, chưa có văn bản thay thế)*.
 > 3. `KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx` (Hội đồng xếp cột Bệnh viện Bình Dân phê duyệt năm 2026 cho `11` Bác sĩ Khoa Phẫu thuật Đại trực tràng — **thời hạn hiệu lực 01 năm `01/01/2026 – 31/12/2026`, mỗi năm Bệnh viện tổ chức xếp cột bác sĩ lại**).
 > 4. `29.12.2025_DMKT - MÃ PHẪU THUẬT KHOA PTĐTT.xlsx` (Bảng mã DVKT nội bộ tham chiếu của Khoa Phẫu thuật Đại trực tràng).
-> 5. **Chỉ đạo nghiệp vụ:** `BSCKII. Vũ Khương An` — Phó Trưởng khoa Phẫu thuật Đại trực tràng cập nhật vào Brain dự án ngày `28/10/2026` và bổ sung quy tắc kiểm soát vượt cột theo tính chất ca mổ ngày `31/10/2026`.
+> 5. **Quy ước điều phối nội bộ tại Khoa Phẫu thuật Đại trực tràng:** `BSCKII. Vũ Khương An` — Phó Trưởng khoa Phẫu thuật Đại trực tràng cập nhật vào Brain dự án ngày `28/10/2026`, bổ sung quy ước điều phối bán khẩn nội bộ ngày `31/10/2026` và chuẩn hóa tách bạch nguồn căn cứ (`Phương án 1`) ngày `02/11/2026`.
 
 ---
 
@@ -22,30 +22,30 @@ Quyền đứng tên **Phẫu thuật viên chính (`BS mổ chính` / `mainSurg
    - **Nội soi tiêu hóa (`approachType = "nsth"`):** Thủ thuật/can thiệp qua đường tự nhiên (`ESD`, `ERCP`, nội soi nong, cắt polyp qua nội soi ống mềm...) thuộc thẩm quyền duyệt mổ của **Trưởng khoa Nội soi tiêu hóa**.
 
 2. **Trục 2 — Đúng thứ bậc Cột chuyên môn (`Cột ĐB` > `Cột I` > `Cột II` > `Cột III`):**
-   - Bác sĩ chính được Hội đồng Bệnh viện xếp ở **cột nào** thì đương nhiên đủ điều kiện đứng tên **BS mổ chính** cho phẫu thuật thuộc **loại tương ứng cột đó và tất cả các loại thấp hơn** (nguyên tắc bao hàm từ cao xuống thấp theo Thông tư 50/2014/TT-BYT và Mục IV Quyết định 1073/QĐ-BVBD):
+   - **Theo Quyết định 1073/QĐ-BVBD & Bảng xếp cột 2026:** Bác sĩ chính được Hội đồng Bệnh viện xếp ở **cột nào** thì đương nhiên đủ điều kiện đứng tên **BS mổ chính** cho phẫu thuật thuộc **loại tương ứng cột đó và tất cả các loại thấp hơn** (nguyên tắc bao hàm từ cao xuống thấp theo Thông tư 50/2014/TT-BYT và Mục IV Quyết định 1073/QĐ-BVBD). Nếu muốn thực hiện thường quy kỹ thuật thuộc cột trên phải lập danh sách đăng ký xét duyệt **Vượt cột theo từng DVKT cụ thể** trình Hội đồng Bệnh viện phê duyệt (Mục III Quyết định 1073/QĐ-BVBD).
+   - **Quy ước điều phối nội bộ tại Khoa đối với ca mổ bán khẩn:** Khi phát sinh ca mổ bán khẩn mà tại thời điểm đó không có nhân sự cột trên phù hợp, Ban Chủ nhiệm khoa có thể cân nhắc cho phép vượt tối đa `+01` cột chuyên môn.
 
-| Cột của Bác sĩ chính | Mổ chương trình & Mổ yêu cầu (ĐÚNG CỘT — Tuyệt đối không vượt cột) | Mổ bán khẩn do BCN khoa cân nhắc (Chỉ được vượt tối đa 01 cột khi không có nhân sự phù hợp) | Phạm vi Thủ thuật đi kèm |
+| Cột của Bác sĩ chính | Mổ chương trình & Mổ yêu cầu — Theo QĐ 1073/QĐ-BVBD & Bảng xếp cột 2026 (Tuyệt đối đúng cột) | Mổ bán khẩn — Theo Quy ước điều phối nội bộ tại Khoa (BCN cân nhắc tối đa +01 cột khi thiếu nhân sự cột trên) | Phạm vi Thủ thuật đi kèm |
 |:---:|:---|:---|:---|
 | **Cột Đặc biệt (`Cột ĐB`)** | **`PT-ĐB`, `PT-I`, `PT-II`, `PT-III`** | Không áp dụng vượt cột *(PT Robot cần chứng nhận riêng)* | Thủ thuật các loại (`ĐB, I, II, III`) |
-| **Cột I (`Cột 1`)** | **`PT-I`, `PT-II`, `PT-III`** *(Cấm vượt lên `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-ĐB`** *(vượt 01 cột)* | Thủ thuật từ loại `ĐB` trở xuống |
-| **Cột II (`Cột 2`)** | **`PT-II`, `PT-III`** *(Cấm vượt lên `PT-I`, `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-I`** *(vượt 01 cột; **tuyệt đối cấm** vượt 02 cột lên `PT-ĐB`)* | Thủ thuật từ loại `I` trở xuống |
-| **Cột III (`Cột 3`)** | **`PT-III`** *(Cấm vượt lên `PT-II`, `PT-I`, `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-II`** *(vượt 01 cột; **tuyệt đối cấm** vượt 02–03 cột lên `PT-I`, `PT-ĐB`)* | Thủ thuật từ loại `II` trở xuống |
+| **Cột I (`Cột 1`)** | **`PT-I`, `PT-II`, `PT-III`** *(Không vượt lên `PT-ĐB` nếu chưa có QĐ vượt cột theo DVKT)* | Có thể được BCN cân nhắc cho mổ **`PT-ĐB`** *(tối đa +01 cột)* | Thủ thuật từ loại `ĐB` trở xuống |
+| **Cột II (`Cột 2`)** | **`PT-II`, `PT-III`** *(Không vượt lên `PT-I`, `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-I`** *(tối đa +01 cột; không xét lên `PT-ĐB`)* | Thủ thuật từ loại `I` trở xuống |
+| **Cột III (`Cột 3`)** | **`PT-III`** *(Không vượt lên `PT-II`, `PT-I`, `PT-ĐB`)* | Có thể được BCN cân nhắc cho mổ **`PT-II`** *(tối đa +01 cột; không xét lên `PT-I`, `PT-ĐB`)* | Thủ thuật từ loại `II` trở xuống |
 | **Chưa xếp cột** *(BSNT / BS Học viên)* | **Không được đứng tên `BS mổ chính`** | Không áp dụng | Tham gia phụ mổ & chuẩn bị hồ sơ tiền phẫu |
 
-### 2. Quy chế Kiểm Soát Vượt Cột Theo Tính Chất Ca Mổ & Thời Hạn Xếp Cột Hàng Năm
+### 2. Tách Bạch Nguồn Căn Cứ Giữa Quyết Định 1073/QĐ-BVBD Và Quy Ước Điều Phối Nội Bộ Tại Khoa
 
-1. **Thời hạn hiệu lực bảng xếp cột bác sĩ (`01 năm`):**
-   - Bảng xếp cột bác sĩ chính tại Khoa Phẫu thuật Đại trực tràng (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`) có **thời hạn 01 năm (`2026`)**. Mỗi năm Bệnh viện Bình Dân sẽ tổ chức xét duyệt và xếp cột bác sĩ lại.
-2. **Nguyên tắc Mổ chương trình & Mổ yêu cầu (`urgencyLevel = "elective"` hoặc `"elective_service"`):**
-   - **TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP VƯỢT CỘT.**
-   - Bác sĩ ở cột nào chỉ được phép đứng `BS mổ chính` cho phẫu thuật từ loại tương ứng cột đó trở xuống (ví dụ: `Cột I` chỉ được phép mổ `PT-I`, `PT-II`, `PT-III`; `Cột II` chỉ được phép mổ `PT-II`, `PT-III`).
-   - Hệ thống `PTDTT Manager` chặn cứng (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`) không cho gửi duyệt ca mổ chương trình hoặc mổ yêu cầu nếu hạng phẫu thuật cao hơn cột hiện tại của `BS mổ chính`.
-3. **Nguyên tắc Mổ bán khẩn (`urgencyLevel = "semi_urgent"`):**
-   - **Do Ban Chủ nhiệm khoa (`Trưởng khoa` / `Phó Trưởng khoa`) cân nhắc quyết định.**
-   - **Chỉ được phép vượt tối đa 01 cột (`columnStepDelta = 1`)** nếu tại thời điểm mổ bán khẩn đó không có nhân sự cột trên phù hợp (ví dụ: bác sĩ `Cột II` có thể được Ban Chủ nhiệm khoa cân nhắc cho mổ phẫu thuật loại I `PT-I`; bác sĩ `Cột III` có thể được cân nhắc cho mổ `PT-II`).
-   - Nếu vượt từ **02 cột trở lên** (`columnStepDelta >= 2`, ví dụ `Cột II` xếp mổ `PT-ĐB` hoặc `Cột III` xếp mổ `PT-I`/`PT-ĐB`), hệ thống chặn cứng (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP`) ngay cả khi là mổ bán khẩn.
-4. **Chế độ hậu kiểm & thu hồi (`Quyết định 1073/QĐ-BVBD` Mục III):**
-   - Ban Chủ nhiệm khoa báo cáo kết quả thực hiện kỹ thuật vượt cột về Phòng Kế hoạch tổng hợp **mỗi 06 tháng/lần**. Trong vòng 01 năm, nếu xảy ra biến chứng mức độ **3, 4, 5 theo phân độ Clavien-Dindo** hoặc tỷ lệ biến chứng cao bất thường do lỗi kỹ thuật, quyền vượt cột bị xem xét thu hồi.
+1. **Thời hạn hiệu lực bảng xếp cột bác sĩ (`01 năm` — Quyết định 1073/QĐ-BVBD):**
+   - Bảng xếp cột bác sĩ chính tại Khoa Phẫu thuật Đại trực tràng (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`) có **thời hạn 01 năm (`2026`)**. Mỗi năm Bệnh viện Bình Dân tổ chức xét duyệt và xếp cột bác sĩ lại.
+2. **Mổ chương trình & Mổ yêu cầu (`urgencyLevel = "elective"` hoặc `"elective_service"` — Theo QĐ 1073/QĐ-BVBD & Bảng xếp cột 2026):**
+   - **TUYỆT ĐỐI ĐÚNG CỘT** (trừ các kỹ thuật đã được Hội đồng Bệnh viện phê duyệt vượt cột đích danh theo từng DVKT tại Mục III `QĐ 1073/QĐ-BVBD`).
+   - Bác sĩ ở cột nào chỉ được phép đứng `BS mổ chính` cho phẫu thuật từ loại tương ứng cột đó trở xuống (ví dụ: `Cột I` chỉ mổ `PT-I`, `PT-II`, `PT-III`; `Cột II` chỉ mổ `PT-II`, `PT-III`).
+   - Hệ thống `PTDTT Manager` chặn cứng (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`) không cho trình duyệt ca mổ chương trình hoặc mổ yêu cầu nếu hạng phẫu thuật cao hơn cột hiện tại của `BS mổ chính`.
+3. **Mổ bán khẩn (`urgencyLevel = "semi_urgent"` — Quy ước điều phối nội bộ tại Khoa Phẫu thuật Đại trực tràng):**
+   - Đây là **quy ước điều phối an toàn nội bộ tại Khoa** (tách biệt với quy chế đăng ký vượt cột định kỳ cấp Bệnh viện trong `QĐ 1073/QĐ-BVBD`).
+   - Khi ca mổ bán khẩn cần xử trí sớm mà tại thời điểm đó không có bác sĩ cột trên phù hợp, **Ban Chủ nhiệm khoa (`Trưởng khoa` / `Phó Trưởng khoa`) cân nhắc tối đa `+01` cột** (`columnStepDelta = 1`, ví dụ: `Cột II` cân nhắc mổ `PT-I`; `Cột III` cân nhắc mổ `PT-II`). Hệ thống tự động từ chối (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP`) nếu khoảng cách lớn hơn `01` cột.
+4. **Chế độ hậu kiểm & thu hồi vượt cột định kỳ (`Quyết định 1073/QĐ-BVBD` Mục III):**
+   - Đối với các DVKT vượt cột đã đăng ký theo quy chế Bệnh viện, Ban Chủ nhiệm khoa báo cáo kết quả thực hiện về Phòng Kế hoạch tổng hợp **mỗi 06 tháng/lần**. Trong vòng 01 năm, nếu xảy ra biến chứng mức độ **3, 4, 5 theo phân độ Clavien-Dindo** hoặc tỷ lệ biến chứng cao bất thường do lỗi kỹ thuật, quyền vượt cột bị xem xét thu hồi.
 
 ---
 

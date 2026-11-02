@@ -595,7 +595,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(
                     422,
                     "LATE_REASON_REQUIRED",
-                    "Ca mổ trình sau thời hạn SLA quy định — vui lòng nhập lý do trình trễ hạn.",
+                    "Ca mổ trình sau mốc hạn trình duyệt quy định — vui lòng nhập lý do trình trễ hạn.",
                 )
 
             # Freeze POD Snapshot
@@ -721,7 +721,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     "Bắt buộc chỉ định BS chính chịu trách nhiệm hoàn tất hồ sơ sau mổ cấp cứu.",
                 )
 
-            if surgery.get("preopChecklist") is None:
+            if surgery.get("preopChecklist") is None or surgery.get("clinicalChips") is None:
                 init_parts = build_initial_unverified_structures(surgery, catalog, db)
                 for k_i, v_i in init_parts.items():
                     if surgery.get(k_i) is None:
@@ -736,6 +736,50 @@ def register_surgery_approval_routes(app, sf_mod):
                     item["verifiedByStaffId"] = actor.get("staffId")
                     deferred_items.append(code)
 
+            # C-08..C-10 Emergency Deferral (TC-22b): allow 'unknown' & record in deferredItems
+            chips = surgery.setdefault("clinicalChips", {})
+            sh = chips.setdefault("surgicalHistory", {"confirmed": False, "status": None, "categories": [], "abdominalScarType": "not_applicable", "detailNote": None})
+            if not sh.get("confirmed") or sh.get("status") in (None, "unknown"):
+                sh["confirmed"] = True
+                sh["status"] = "unknown"
+                sh["categories"] = []
+                sh["abdominalScarType"] = "not_applicable"
+                deferred_items.append("clinicalChips.surgicalHistory")
+
+            al = chips.setdefault("allergyHistory", {"confirmed": False, "status": None, "allergenGroups": [], "reactionSeverity": None, "allergenDetail": None})
+            if not al.get("confirmed") or al.get("status") in (None, "unknown"):
+                al["confirmed"] = True
+                al["status"] = "unknown"
+                al["allergenGroups"] = []
+                al["reactionSeverity"] = None
+                deferred_items.append("clinicalChips.allergyHistory")
+
+            soc = chips.setdefault("socialHabits", {
+                "confirmed": False,
+                "alcoholUse": None,
+                "smoking": {"status": None, "packYears": None, "packYearsUnknown": False},
+                "substanceAbuse": {"status": None, "substanceNote": None},
+            })
+            smk = soc.setdefault("smoking", {"status": None, "packYears": None, "packYearsUnknown": False})
+            sub_ab = soc.setdefault("substanceAbuse", {"status": None, "substanceNote": None})
+            if (
+                not soc.get("confirmed")
+                or soc.get("alcoholUse") in (None, "unknown")
+                or smk.get("status") in (None, "unknown")
+                or sub_ab.get("status") in (None, "unknown")
+            ):
+                soc["confirmed"] = True
+                if not soc.get("alcoholUse"):
+                    soc["alcoholUse"] = "unknown"
+                if not smk.get("status"):
+                    smk["status"] = "unknown"
+                    smk["packYears"] = None
+                    smk["packYearsUnknown"] = False
+                if not sub_ab.get("status"):
+                    sub_ab["status"] = "unknown"
+                    sub_ab["substanceNote"] = None
+                deferred_items.append("clinicalChips.socialHabits")
+
             cc = surgery.setdefault("clinicalClassification", {})
             cc["urgencyLevel"] = "emergency_exception"
 
@@ -749,7 +793,7 @@ def register_surgery_approval_routes(app, sf_mod):
             approval["slaStatus"] = "emergency_exempt"
             approval["activeHold"] = None
             approval["approvedSnapshot"] = None
-            approval["deferredItems"] = deferred_items
+            approval["deferredItems"] = list(deferred_items)
             approval["emergencyException"] = {
                 "emergencyReasonNote": em_note,
                 "verbalConsultRecord": {
@@ -758,6 +802,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     "contactedAt": str(verbal["contactedAt"]).strip(),
                 },
                 "postOpFollowUpOwnerStaffId": int(followup_owner),
+                "deferredItems": list(deferred_items),
                 "submittedByStaffId": actor.get("staffId"),
                 "submittedAt": now_vn_iso(),
             }

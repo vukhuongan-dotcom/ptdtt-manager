@@ -31,17 +31,83 @@ const SAP_URGENCY_OPTIONS = [
     { value: 'emergency_exception', label: 'Cấp cứu ngoại lệ', icon: '⚡', shortLabel: 'Cấp cứu ngoại lệ' }
 ];
 
+// C-04: 13 bệnh lý nội khoa chọn lọc từ Phiếu khám tiền mê BVBD + đặc thù tiêu hóa – gan mật (đã lược bỏ Covid 19)
 const SAP_COMORBIDITIES = [
-    { value: 'none', label: 'Không bệnh nền', exclusive: true },
+    { value: 'none', label: 'Chưa ghi nhận', exclusive: true },
     { value: 'hypertension', label: 'Tăng huyết áp' },
     { value: 'diabetes', label: 'Đái tháo đường' },
-    { value: 'cad_stent', label: 'Bệnh mạch vành / Stent' },
-    { value: 'afib_hf', label: 'Rung nhĩ / Suy tim' },
-    { value: 'copd_asthma', label: 'COPD / Hen' },
+    { value: 'ischemic_heart_cad', label: 'Bệnh tim TMCB / Stent' },
+    { value: 'arrhythmia', label: 'Rối loạn nhịp' },
+    { value: 'valvular_heart_hf', label: 'Bệnh van tim / Suy tim' },
+    { value: 'thyroid_disease', label: 'Bệnh tuyến giáp / Bướu giáp' },
+    { value: 'copd_asthma', label: 'COPD / Hen PQ' },
+    { value: 'pulmonary_tb_sequelae', label: 'Lao phổi' },
+    { value: 'stroke_cva_sequelae', label: 'TBMMN / Đột quỵ cũ' },
     { value: 'ckd', label: 'Bệnh thận mạn' },
-    { value: 'cirrhosis', label: 'Xơ gan' },
+    { value: 'cirrhosis', label: 'Xơ gan / Bệnh gan mạn' },
     { value: 'anemia_malnutrition', label: 'Thiếu máu / Suy kiệt' },
-    { value: 'other', label: 'Bệnh nền khác' }
+    { value: 'other', label: 'Khác' }
+];
+
+const SAP_COMORBIDITY_LEGACY_LABELS = {
+    cad_stent: 'Bệnh tim TMCB / Stent',
+    afib_hf: 'Bệnh van tim / Suy tim'
+};
+
+// C-08: Tiền sử ngoại khoa / vô cảm (theo Phiếu khám tiền mê BVBD + đặc thù PTĐTT)
+const SAP_SURGICAL_HISTORY_STATUS = [
+    { value: 'none', label: 'Chưa từng mổ / vô cảm' },
+    { value: 'present', label: 'Có tiền sử mổ / vô cảm' }
+];
+
+const SAP_SURGICAL_CATEGORIES = [
+    { value: 'prior_colorectal_stoma', label: 'Mổ đại trực tràng / HMNT cũ', requiresScar: true },
+    { value: 'prior_abdominal_pelvic', label: 'Mổ ổ bụng – vùng chậu khác', requiresScar: true },
+    { value: 'prior_anorectal_perineal', label: 'Mổ hậu môn – tầng sinh môn cũ' },
+    { value: 'prior_extra_abdominal', label: 'Mổ ngoài ổ bụng', requiresDetail: true },
+    { value: 'prior_anesthesia_or_transfusion_event', label: 'Tai biến GMHS / Truyền máu trước đây', requiresDetail: true, highRisk: true }
+];
+
+const SAP_ABDOMINAL_SCAR_TYPES = [
+    { value: 'laparoscopic_scar', label: 'Sẹo nội soi cũ' },
+    { value: 'open_laparotomy_scar', label: 'Sẹo mổ mở cũ (nguy cơ dính bụng)' }
+];
+
+// C-09: Tiền sử dị ứng (TC-21a: Thuốc hoặc Phản vệ bắt buộc ghi rõ tên tác nhân)
+const SAP_ALLERGY_STATUS = [
+    { value: 'none', label: 'Chưa ghi nhận' },
+    { value: 'present', label: 'Có tiền sử dị ứng' }
+];
+
+const SAP_ALLERGY_GROUPS = [
+    { value: 'drug', label: 'Thuốc (KS / giảm đau / thuốc tê-mê...)' },
+    { value: 'food', label: 'Thức ăn' },
+    { value: 'latex_antiseptic_other', label: 'Latex / Cồn iod / Băng keo / Cản quang / Khác' }
+];
+
+const SAP_ALLERGY_SEVERITIES = [
+    { value: 'mild_moderate', label: 'Mề đay / Ngứa / Nhẹ – Trung bình' },
+    { value: 'severe_anaphylaxis', label: 'Phản vệ / Phù mạch / Co thắt PQ (Nặng)' }
+];
+
+// C-10: Thói quen Rượu bia · Thuốc lá (gói/năm) · Chất gây nghiện (TC-21b, TC-21c)
+const SAP_ALCOHOL_OPTIONS = [
+    { value: 'none', label: 'Không' },
+    { value: 'occasional', label: 'Thỉnh thoảng' },
+    { value: 'dependent', label: 'Nghiện / Lệ thuộc rượu' }
+];
+
+const SAP_SMOKING_OPTIONS = [
+    { value: 'no', label: 'Không' },
+    { value: 'current', label: 'Đang hút' },
+    { value: 'former', label: 'Đã ngưng' }
+];
+
+const SAP_PACK_YEAR_PRESETS = [5, 10, 20, 30];
+
+const SAP_SUBSTANCE_OPTIONS = [
+    { value: 'no', label: 'Không' },
+    { value: 'yes', label: 'Có' }
 ];
 
 const SAP_ANTITHROMBOTIC_MODES = [
@@ -135,6 +201,7 @@ const SAP_SUBCHECK_LABELS = {
 
 const SAP_RETURN_FEEDBACK_CHIPS = [
     'Thiếu khám tiền mê / thăm dò tim phổi',
+    'Chưa khai thác / ghi rõ tiền sử dị ứng, mổ cũ hoặc thói quen',
     'Chưa rõ kế hoạch ngưng/duy trì thuốc chống huyết khối',
     'Thiếu MRI vùng chậu / đánh giá CRM hoặc đường rò',
     'Cần hội chẩn liên chuyên khoa / MDT trước mổ',
@@ -171,14 +238,27 @@ const SAP_GATE_REASON_MAP = {
     'OTHER_PATHOLOGY_NOTE_REQUIRED': { step: 1, fieldId: 'sap-f-pathology-group', label: 'Chưa ghi rõ chi tiết nhóm bệnh lý khác (tối thiểu 10 ký tự)' },
     'CATALOG_ENTRY_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa chọn kỹ thuật mổ trong Danh mục 309 phẫu thuật' },
     'UNCLASSIFIED_NOTE_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi chú hạng dự kiến cho kỹ thuật chưa phân loại' },
-    'OVER_COLUMN_NOT_ALLOWED_ELECTIVE': { step: 1, fieldId: 'sap-f-catalog', label: 'Ca mổ chương trình / yêu cầu không được vượt cột phẫu thuật của BS chính' },
-    'OVER_COLUMN_EXCEEDS_MAX_ONE_STEP': { step: 1, fieldId: 'sap-f-catalog', label: 'Ca mổ bán khẩn chỉ được trình vượt tối đa 01 cột phẫu thuật' },
-    'OVER_COLUMN_JUSTIFICATION_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi lý do xin vượt 01 cột cho ca bán khẩn để BCN cân nhắc' },
+    'OVER_COLUMN_NOT_ALLOWED_ELECTIVE': { step: 1, fieldId: 'sap-f-catalog', label: 'Theo QĐ 1073/QĐ-BVBD & Bảng xếp cột BS 2026: Ca mổ chương trình / yêu cầu phải đúng cột phẫu thuật của BS chính' },
+    'OVER_COLUMN_EXCEEDS_MAX_ONE_STEP': { step: 1, fieldId: 'sap-f-catalog', label: 'Theo quy ước điều phối nội bộ tại Khoa: Ca mổ bán khẩn khi thiếu nhân sự cột trên chỉ được BCN cân nhắc tối đa +01 cột' },
+    'OVER_COLUMN_JUSTIFICATION_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi lý do xin vượt +01 cột cho ca bán khẩn theo quy ước điều phối nội bộ tại Khoa để BCN cân nhắc' },
     'SEMI_URGENT_REASON_REQUIRED': { step: 1, fieldId: 'sap-f-urgency', label: 'Chưa ghi lý do lâm sàng mổ bán khẩn' },
     'ROBOT_CERTIFICATION_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'BS mổ chính chưa có trong danh sách chứng nhận phẫu thuật Robot tại khoa' },
     'MISSING_COORDINATING_ATTENDING': { step: 1, fieldId: 'sap-f-coord-attending', label: 'Chưa chọn BS chính Khoa PTĐTT phụ trách phối hợp cho PTV ngoài khoa' },
-    'C-04_COMORBIDITIES_UNCONFIRMED': { step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa xác nhận tình trạng bệnh nền nội khoa' },
-    'C-04_OTHER_NOTE_REQUIRED': { step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa ghi rõ tên bệnh nền khác' },
+    'C-04_COMORBIDITIES_UNCONFIRMED': { step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa xác nhận tiền sử bệnh lý nội khoa' },
+    'C-04_OTHER_NOTE_REQUIRED': { step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa ghi rõ tên bệnh nền nội khoa khác (tối thiểu 3 ký tự)' },
+    'C-08_SURGICAL_HISTORY_UNCONFIRMED': { step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa xác nhận tiền sử ngoại khoa / vô cảm' },
+    'C-08_SURGICAL_CATEGORIES_REQUIRED': { step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa chọn phân nhóm tiền sử phẫu thuật / vô cảm' },
+    'C-08_SURGICAL_CATEGORY_REQUIRED': { step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa chọn phân nhóm tiền sử phẫu thuật / vô cảm' },
+    'C-08_ABDOMINAL_SCAR_REQUIRED': { step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa chọn loại sẹo mổ bụng cũ (Sẹo nội soi cũ / Sẹo mổ mở cũ)' },
+    'C-08_SURGICAL_DETAIL_REQUIRED': { step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa ghi rõ chi tiết phẫu thuật ngoài ổ bụng hoặc tai biến GMHS / truyền máu cũ' },
+    'C-09_ALLERGY_HISTORY_UNCONFIRMED': { step: 2, fieldId: 'sap-f-allergy-history', label: 'Chưa xác nhận tiền sử dị ứng' },
+    'C-09_ALLERGY_GROUP_REQUIRED': { step: 2, fieldId: 'sap-f-allergy-history', label: 'Chưa chọn nhóm tác nhân dị ứng (Thuốc / Thức ăn / Latex – Khác)' },
+    'C-09_ALLERGY_SEVERITY_REQUIRED': { step: 2, fieldId: 'sap-f-allergy-history', label: 'Chưa chọn mức độ phản ứng dị ứng' },
+    'ALLERGY_DETAIL_REQUIRED': { step: 2, fieldId: 'sap-f-allergy-history', label: 'Bắt buộc ghi rõ tên thuốc / tác nhân dị ứng khi có dị ứng Thuốc hoặc Phản vệ nặng' },
+    'C-10_SOCIAL_HABITS_UNCONFIRMED': { step: 2, fieldId: 'sap-f-social-habits', label: 'Chưa xác nhận đủ thói quen (Rượu bia, Hút thuốc lá, Chất gây nghiện)' },
+    'SMOKING_PACK_YEARS_REQUIRED': { step: 2, fieldId: 'sap-f-social-habits', label: 'Chưa nhập số gói/năm hút thuốc lá (hoặc chọn Chưa rõ số gói/năm)' },
+    'SUBSTANCE_DETAIL_REQUIRED': { step: 2, fieldId: 'sap-f-social-habits', label: 'Bắt buộc ghi rõ loại chất gây nghiện và tình trạng hiện tại' },
+    'CK-03_HIGH_RISK_HISTORY_PLAN_REQUIRED': { step: 2, fieldId: 'sap-f-high-risk-plan', label: 'Tiền sử nguy cơ cao bắt buộc BS chính ghi kế hoạch phối hợp GMHS / dự phòng tiền phẫu' },
     'C-05_ANTITHROMBOTIC_UNCONFIRMED': { step: 2, fieldId: 'sap-f-antithrombotic', label: 'Chưa xác nhận kế hoạch thuốc chống huyết khối' },
     'ANTITHROMBOTIC_DETAILS_REQUIRED': { step: 2, fieldId: 'sap-f-antithrombotic', label: 'Chưa nhập đủ tên thuốc, liều cuối và chuyên khoa duyệt cho thuốc chống huyết khối' },
     'UNHELD_DRUG_NOT_FOR_ELECTIVE': { step: 2, fieldId: 'sap-f-antithrombotic', label: 'Thuốc chống huyết khối chưa ngưng đủ ngày không được trình mổ chương trình thường quy' },
@@ -584,6 +664,10 @@ const SurgeryApprovalPage = {
                 urgencyLevel: s.clinicalClassification?.urgencyLevel || 'elective',
                 pathologyGroup: s.clinicalClassification?.pathologyGroup?.confirmedValue || '',
                 catalogEntryId: s.clinicalClassification?.procedureClass?.confirmedCatalogEntryId || '',
+                comorbiditiesSummary: this._formatComorbiditiesSummary(s.clinicalChips?.comorbidities),
+                surgicalHistorySummary: this._formatSurgicalHistorySummary(s.clinicalChips?.surgicalHistory),
+                allergyHistorySummary: this._formatAllergyHistorySummary(s.clinicalChips?.allergyHistory),
+                socialHabitsSummary: this._formatSocialHabitsSummary(s.clinicalChips?.socialHabits),
                 antithromboticSummary: this._formatAntithromboticSummary(s.clinicalChips?.antithromboticPlan),
                 stomaPlan: s.clinicalChips?.stomaPlan?.value || '',
                 crmStatus: s.clinicalChips?.contextChips?.cancerContext?.crmStatus || ''
@@ -608,6 +692,108 @@ const SurgeryApprovalPage = {
             if (map[String(sid)]) return map[String(sid)];
         } catch (_) {}
         return null;
+    },
+
+    _comorbidityLabel(val) {
+        const hit = SAP_COMORBIDITIES.find(c => c.value === val);
+        if (hit) return hit.label;
+        if (SAP_COMORBIDITY_LEGACY_LABELS[val]) return SAP_COMORBIDITY_LEGACY_LABELS[val];
+        return val || '';
+    },
+
+    _hasHighRiskPreopHistory(chips) {
+        if (!chips || typeof chips !== 'object') return false;
+        const anti = chips.antithromboticPlan || {};
+        if (anti.mode === 'unheld_urgent_risk') return true;
+        const al = chips.allergyHistory || {};
+        if (al.status === 'present' && al.reactionSeverity === 'severe_anaphylaxis') return true;
+        const sh = chips.surgicalHistory || {};
+        if (sh.status === 'present' && (sh.categories || []).includes('prior_anesthesia_or_transfusion_event')) return true;
+        const soc = chips.socialHabits || {};
+        if (soc.alcoholUse === 'dependent') return true;
+        if (soc.substanceAbuse?.status === 'yes') return true;
+        return false;
+    },
+
+    _areStep2HistoryChipsRoutineConfirmed(chips) {
+        if (!chips || typeof chips !== 'object' || this._hasHighRiskPreopHistory(chips)) return false;
+        const comorb = chips.comorbidities || {};
+        if (!comorb.confirmed || !(comorb.values || []).length) return false;
+        const anti = chips.antithromboticPlan || {};
+        if (!anti.confirmed || !anti.mode) return false;
+        const sh = chips.surgicalHistory || {};
+        if (!sh.confirmed || !['none', 'present'].includes(sh.status)) return false;
+        const al = chips.allergyHistory || {};
+        if (!al.confirmed || !['none', 'present'].includes(al.status)) return false;
+        const soc = chips.socialHabits || {};
+        const smk = soc.smoking || {};
+        const sub = soc.substanceAbuse || {};
+        if (!soc.confirmed
+            || !['none', 'occasional', 'dependent'].includes(soc.alcoholUse)
+            || !['no', 'current', 'former'].includes(smk.status)
+            || !['no', 'yes'].includes(sub.status)) {
+            return false;
+        }
+        return true;
+    },
+
+    _formatComorbiditiesSummary(comorb) {
+        if (!comorb || !comorb.confirmed || !(comorb.values || []).length) return 'Chưa xác nhận';
+        if ((comorb.values || []).includes('none')) return 'Chưa ghi nhận';
+        const labels = (comorb.values || []).map(v => {
+            if (v === 'other' && String(comorb.otherComorbidityNote || '').trim()) {
+                return `Khác (${String(comorb.otherComorbidityNote).trim()})`;
+            }
+            return this._comorbidityLabel(v);
+        });
+        const tx = String(comorb.medicalTreatmentNote || '').trim();
+        return tx ? `${labels.join(', ')} · ĐT: ${tx}` : labels.join(', ');
+    },
+
+    _formatSurgicalHistorySummary(sh) {
+        if (!sh || !sh.confirmed || !sh.status) return 'Chưa xác nhận';
+        if (sh.status === 'unknown') return 'Chưa khai thác (ngoại lệ cấp cứu)';
+        if (sh.status === 'none') return 'Chưa từng mổ / vô cảm';
+        const catLabels = (sh.categories || []).map(c => SAP_SURGICAL_CATEGORIES.find(x => x.value === c)?.label || c);
+        const scarLabel = sh.abdominalScarType && sh.abdominalScarType !== 'not_applicable'
+            ? (SAP_ABDOMINAL_SCAR_TYPES.find(x => x.value === sh.abdominalScarType)?.label || '')
+            : '';
+        const det = String(sh.detailNote || '').trim();
+        return [catLabels.join(', '), scarLabel, det].filter(Boolean).join(' · ') || 'Có tiền sử mổ / vô cảm';
+    },
+
+    _formatAllergyHistorySummary(al) {
+        if (!al || !al.confirmed || !al.status) return 'Chưa xác nhận';
+        if (al.status === 'unknown') return 'Chưa khai thác (ngoại lệ cấp cứu)';
+        if (al.status === 'none') return 'Chưa ghi nhận';
+        const grpLabels = (al.allergenGroups || []).map(g => SAP_ALLERGY_GROUPS.find(x => x.value === g)?.label?.split(' (')[0] || g);
+        const sevLabel = SAP_ALLERGY_SEVERITIES.find(x => x.value === al.reactionSeverity)?.label || '';
+        const det = String(al.allergenDetail || '').trim();
+        return [grpLabels.join(', '), det ? `Tác nhân: ${det}` : '', sevLabel].filter(Boolean).join(' · ') || 'Có tiền sử dị ứng';
+    },
+
+    _formatSocialHabitsSummary(soc) {
+        if (!soc || !soc.confirmed) return 'Chưa xác nhận';
+        const alc = soc.alcoholUse;
+        const smk = soc.smoking || {};
+        const sub = soc.substanceAbuse || {};
+        if (alc === 'unknown' || smk.status === 'unknown' || sub.status === 'unknown') {
+            return 'Chưa khai thác (ngoại lệ cấp cứu)';
+        }
+        const alcLbl = `Rượu bia: ${SAP_ALCOHOL_OPTIONS.find(x => x.value === alc)?.label || '—'}`;
+        let smkLbl = `Thuốc lá: ${SAP_SMOKING_OPTIONS.find(x => x.value === smk.status)?.label || '—'}`;
+        if (['current', 'former'].includes(smk.status)) {
+            if (typeof smk.packYears === 'number' && smk.packYears > 0) {
+                smkLbl += ` (${smk.packYears} gói/năm)`;
+            } else if (smk.packYearsUnknown) {
+                smkLbl += ' (chưa rõ gói/năm)';
+            }
+        }
+        const subNote = String(sub.substanceNote || '').trim();
+        const subLbl = sub.status === 'yes'
+            ? `Chất gây nghiện: Có${subNote ? ` (${subNote})` : ''}`
+            : 'Chất gây nghiện: Không';
+        return [alcLbl, smkLbl, subLbl].join(' · ');
     },
 
     _formatAntithromboticSummary(anti) {
@@ -1152,7 +1338,7 @@ const SurgeryApprovalPage = {
         });
     },
 
-    // Compute SLA Deadline Text & Semantic Color (< 4h yellow, overdue red) — BƯỚC 1.4
+    // Compute Deadline Text & Semantic Color (< 4h yellow, overdue red) — BƯỚC 1.4
     _computeSlaDisplay(s, cfg) {
         const st = s.approval?.status || 'draft_unsubmitted';
         const urg = s.clinicalClassification?.urgencyLevel || 'elective';
@@ -1250,6 +1436,33 @@ const SurgeryApprovalPage = {
             const lbl = anti.mode === 'bridging_per_plan' ? 'Kháng đông bắc cầu' : (anti.mode === 'continued_per_plan' ? 'Kháng đông tiếp tục' : 'Kháng đông chưa ngưng đủ');
             flags.push({ icon: '⚠️', label: lbl, severity: 'warn' });
         }
+        const al = chips.allergyHistory || {};
+        if (al.confirmed && al.status === 'present') {
+            const alDet = String(al.allergenDetail || '').trim();
+            if (al.reactionSeverity === 'severe_anaphylaxis') {
+                flags.push({ icon: '🚨', label: `Tiền sử phản vệ${alDet ? `: ${alDet}` : ''}`, severity: 'danger' });
+            } else if ((al.allergenGroups || []).includes('drug')) {
+                flags.push({ icon: '💊', label: `Dị ứng thuốc${alDet ? `: ${alDet}` : ''}`, severity: 'danger' });
+            }
+        }
+        const sh = chips.surgicalHistory || {};
+        if (sh.confirmed && sh.status === 'present') {
+            if ((sh.categories || []).includes('prior_anesthesia_or_transfusion_event')) {
+                flags.push({ icon: '⚠️', label: 'Tai biến GMHS / truyền máu cũ', severity: 'warn' });
+            }
+            if (['noisoi', 'robot'].includes(s.approachType) && sh.abdominalScarType === 'open_laparotomy_scar') {
+                flags.push({ icon: '🩹', label: 'Sẹo mổ mở cũ · lưu ý trocar', severity: 'warn' });
+            }
+        }
+        const soc = chips.socialHabits || {};
+        if (soc.confirmed) {
+            if (soc.alcoholUse === 'dependent') {
+                flags.push({ icon: '⚠️', label: 'Nghiện / lệ thuộc rượu', severity: 'warn' });
+            }
+            if (soc.substanceAbuse?.status === 'yes') {
+                flags.push({ icon: '⚠️', label: 'Chất gây nghiện (+)', severity: 'warn' });
+            }
+        }
         const abnCount = Object.values(ck).filter(it => it && it.state === 'verified_abnormal_planned').length;
         if (abnCount > 0) {
             flags.push({ icon: '⚠️', label: `Có mục Bất thường (${abnCount})`, severity: 'warn' });
@@ -1264,13 +1477,13 @@ const SurgeryApprovalPage = {
         return flags;
     },
 
-    // Dossier completion progress ("Hồ sơ 9/13") — BƯỚC 1.4
+    // Dossier completion progress ("Hồ sơ 16/17") — BƯỚC 1.4
     _computeDossierProgress(s) {
         const missing = this._computeMissingRequirements(s, { staffId: Number(s.mainSurgeon) || 8 });
-        // Base total items: 4 in Step 1 + 5 in Step 2 + 5 independent CK in Step 3 = 14 (or 13 when no special sub-module)
+        // Base total items: 4 in Step 1 + 7 base groups in Step 2 (C-04..C-10) + 5 independent CK in Step 3 = 16 (+1 when active context module B1..B4 = 17)
         const pgVal = s.clinicalClassification?.pathologyGroup?.confirmedValue || s.clinicalClassification?.pathologyGroup?.suggestedValue;
         const hasMod = ['benign_anorectal', 'benign_colorectal_abdominal', 'cancer_confirmed', 'neoplasm_suspected_or_special'].includes(pgVal);
-        const total = hasMod ? 14 : 13;
+        const total = hasMod ? 17 : 16;
         if (this.isApprovalGreenTickValid(s) || ['submitted', 'preapproved', 'approved_with_exception'].includes(s.approval?.status)) {
             return { done: total, total };
         }
@@ -1771,6 +1984,10 @@ const SurgeryApprovalPage = {
                     urgencyLevel: rec.clinicalClassification?.urgencyLevel || 'elective',
                     pathologyGroup: rec.clinicalClassification?.pathologyGroup?.confirmedValue || '',
                     catalogEntryId: rec.clinicalClassification?.procedureClass?.confirmedCatalogEntryId || '',
+                    comorbiditiesSummary: this._formatComorbiditiesSummary(rec.clinicalChips?.comorbidities),
+                    surgicalHistorySummary: this._formatSurgicalHistorySummary(rec.clinicalChips?.surgicalHistory),
+                    allergyHistorySummary: this._formatAllergyHistorySummary(rec.clinicalChips?.allergyHistory),
+                    socialHabitsSummary: this._formatSocialHabitsSummary(rec.clinicalChips?.socialHabits),
                     antithromboticSummary: this._formatAntithromboticSummary(rec.clinicalChips?.antithromboticPlan),
                     stomaPlan: rec.clinicalChips?.stomaPlan?.value || '',
                     crmStatus: rec.clinicalChips?.contextChips?.cancerContext?.crmStatus || ''
@@ -1913,6 +2130,18 @@ const SurgeryApprovalPage = {
         if (combined.includes('tiền mê') || combined.includes('tim phổi') || combined.includes('ecg') || combined.includes('siêu âm tim')) {
             set.add('sap-ck-row-CK-02');
         }
+        if (combined.includes('bệnh nền') || combined.includes('nội khoa') || combined.includes('tiền sử')) {
+            set.add('sap-f-comorbidities');
+        }
+        if (combined.includes('mổ cũ') || combined.includes('sẹo') || combined.includes('vô cảm') || combined.includes('ngoại khoa')) {
+            set.add('sap-f-surgical-history');
+        }
+        if (combined.includes('dị ứng') || combined.includes('phản vệ')) {
+            set.add('sap-f-allergy-history');
+        }
+        if (combined.includes('thói quen') || combined.includes('thuốc lá') || combined.includes('gói/năm') || combined.includes('rượu') || combined.includes('chất gây nghiện')) {
+            set.add('sap-f-social-habits');
+        }
         if (combined.includes('chống huyết khối') || combined.includes('kháng đông') || combined.includes('kháng kết tập')) {
             set.add('sap-f-antithrombotic');
         }
@@ -1987,12 +2216,80 @@ const SurgeryApprovalPage = {
             }
         }
 
-        // Step ②: Lâm sàng (Chips + 1 active context module)
+        // Step ②: Lâm sàng (Cụm 2A Tiền sử C-04/08/09/10 + Cụm 2B Kế hoạch C-05/06/07 + 1 active context module)
         const comorb = chips.comorbidities || {};
         if (!comorb.confirmed || !(comorb.values || []).length) {
-            missing.push({ step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa xác nhận bệnh nền nội khoa', code: 'C-04_COMORBIDITIES_UNCONFIRMED' });
-        } else if ((comorb.values || []).includes('other') && !String(comorb.otherComorbidityNote || '').trim()) {
-            missing.push({ step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa ghi rõ tên bệnh nền khác', code: 'C-04_OTHER_NOTE_REQUIRED' });
+            missing.push({ step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa xác nhận tiền sử bệnh lý nội khoa', code: 'C-04_COMORBIDITIES_UNCONFIRMED' });
+        } else if ((comorb.values || []).includes('other') && String(comorb.otherComorbidityNote || '').trim().length < 3) {
+            missing.push({ step: 2, fieldId: 'sap-f-comorbidities', label: 'Chưa ghi rõ tên bệnh nền nội khoa khác (≥ 3 ký tự)', code: 'C-04_OTHER_NOTE_REQUIRED' });
+        }
+
+        const sh = chips.surgicalHistory || {};
+        if (!sh.confirmed || !['none', 'present'].includes(sh.status)) {
+            missing.push({ step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa xác nhận tiền sử ngoại khoa / vô cảm', code: 'C-08_SURGICAL_HISTORY_UNCONFIRMED' });
+        } else if (sh.status === 'present') {
+            const shCats = sh.categories || [];
+            if (!shCats.length) {
+                missing.push({ step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa chọn phân nhóm tiền sử phẫu thuật / vô cảm', code: 'C-08_SURGICAL_CATEGORIES_REQUIRED' });
+            } else {
+                const needScar = shCats.includes('prior_colorectal_stoma') || shCats.includes('prior_abdominal_pelvic');
+                if (needScar && !['laparoscopic_scar', 'open_laparotomy_scar'].includes(sh.abdominalScarType)) {
+                    missing.push({ step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa chọn loại sẹo mổ bụng cũ (Sẹo nội soi cũ / Sẹo mổ mở cũ)', code: 'C-08_ABDOMINAL_SCAR_REQUIRED' });
+                }
+                const needShDetail = shCats.includes('prior_extra_abdominal') || shCats.includes('prior_anesthesia_or_transfusion_event');
+                if (needShDetail && String(sh.detailNote || '').trim().length < 3) {
+                    missing.push({ step: 2, fieldId: 'sap-f-surgical-history', label: 'Chưa ghi rõ chi tiết mổ ngoài ổ bụng / tai biến GMHS cũ', code: 'C-08_SURGICAL_DETAIL_REQUIRED' });
+                }
+            }
+        }
+
+        const al = chips.allergyHistory || {};
+        if (!al.confirmed || !['none', 'present'].includes(al.status)) {
+            missing.push({ step: 2, fieldId: 'sap-f-allergy-history', label: 'Chưa xác nhận tiền sử dị ứng', code: 'C-09_ALLERGY_HISTORY_UNCONFIRMED' });
+        } else if (al.status === 'present') {
+            const alGrps = al.allergenGroups || [];
+            if (!alGrps.length) {
+                missing.push({ step: 2, fieldId: 'sap-f-allergy-history', label: 'Chưa chọn nhóm tác nhân dị ứng', code: 'C-09_ALLERGY_GROUP_REQUIRED' });
+            }
+            if (!['mild_moderate', 'severe_anaphylaxis'].includes(al.reactionSeverity)) {
+                missing.push({ step: 2, fieldId: 'sap-f-allergy-history', label: 'Chưa chọn mức độ phản ứng dị ứng', code: 'C-09_ALLERGY_SEVERITY_REQUIRED' });
+            }
+            if ((alGrps.includes('drug') || al.reactionSeverity === 'severe_anaphylaxis') && String(al.allergenDetail || '').trim().length < 2) {
+                missing.push({ step: 2, fieldId: 'sap-f-allergy-history', label: 'Bắt buộc ghi rõ tên thuốc / tác nhân dị ứng', code: 'ALLERGY_DETAIL_REQUIRED' });
+            }
+        }
+
+        const soc = chips.socialHabits || {};
+        const smk = soc.smoking || {};
+        const sub = soc.substanceAbuse || {};
+        if (!soc.confirmed
+            || !['none', 'occasional', 'dependent'].includes(soc.alcoholUse)
+            || !['no', 'current', 'former'].includes(smk.status)
+            || !['no', 'yes'].includes(sub.status)) {
+            missing.push({ step: 2, fieldId: 'sap-f-social-habits', label: 'Chưa xác nhận đủ thói quen (Rượu bia, Hút thuốc lá, Chất gây nghiện)', code: 'C-10_SOCIAL_HABITS_UNCONFIRMED' });
+        } else {
+            if (['current', 'former'].includes(smk.status)) {
+                const pyNum = Number(smk.packYears);
+                const validPy = typeof smk.packYears === 'number' && !Number.isNaN(pyNum) && pyNum >= 0.1 && pyNum <= 200.0;
+                if (!validPy && !smk.packYearsUnknown) {
+                    missing.push({ step: 2, fieldId: 'sap-f-social-habits', label: 'Chưa nhập số gói/năm hút thuốc lá (hoặc chọn Chưa rõ)', code: 'SMOKING_PACK_YEARS_REQUIRED' });
+                }
+            }
+            if (sub.status === 'yes' && !String(sub.substanceNote || '').trim()) {
+                missing.push({ step: 2, fieldId: 'sap-f-social-habits', label: 'Bắt buộc ghi rõ loại chất gây nghiện và tình trạng hiện tại', code: 'SUBSTANCE_DETAIL_REQUIRED' });
+            }
+        }
+
+        if (!isTrainee && this._hasHighRiskPreopHistory(chips)) {
+            const ck03 = ck['CK-03'] || {};
+            if (ck03.state !== 'verified_abnormal_planned' || !String(ck03.clinicalPlanNote || '').trim()) {
+                missing.push({
+                    step: 2,
+                    fieldId: 'sap-f-high-risk-plan',
+                    label: 'Tiền sử nguy cơ cao bắt buộc BS chính ghi kế hoạch phối hợp GMHS / dự phòng tiền phẫu',
+                    code: 'CK-03_HIGH_RISK_HISTORY_PLAN_REQUIRED'
+                });
+            }
         }
 
         const anti = chips.antithromboticPlan || {};
@@ -2150,12 +2447,18 @@ const SurgeryApprovalPage = {
         const pgVal = s.clinicalClassification?.pathologyGroup?.confirmedValue;
         const ckPatch = {};
 
-        // 1. C-04 + C-05 -> CK-03
-        if (comorb.confirmed && (comorb.values || []).length > 0 && anti.confirmed && anti.mode) {
+        // 1. C-04 + C-08 + C-09 + C-10 + C-05 -> CK-03 (High-risk history requires explicit plan, never auto-marked verified_ok — TC-21d)
+        const isHighRisk = this._hasHighRiskPreopHistory(chips);
+        if (isHighRisk) {
+            const curCk03 = s.preopChecklist?.['CK-03'] || {};
+            if (curCk03.state === 'verified_ok') {
+                ckPatch['CK-03'] = { state: isTrainee ? 'prepared_ok' : 'unverified', clinicalPlanNote: curCk03.clinicalPlanNote || '' };
+            }
+        } else if (this._areStep2HistoryChipsRoutineConfirmed(chips)) {
             if (isTrainee) {
                 ckPatch['CK-03'] = { state: 'prepared_ok' };
             } else {
-                const needAbnPlan = ['continued_per_plan', 'bridging_per_plan', 'unheld_urgent_risk'].includes(anti.mode);
+                const needAbnPlan = ['continued_per_plan', 'bridging_per_plan'].includes(anti.mode);
                 const planStr = this._formatAntithromboticSummary(anti);
                 ckPatch['CK-03'] = needAbnPlan
                     ? { state: 'verified_abnormal_planned', clinicalPlanNote: planStr }
@@ -2269,24 +2572,71 @@ const SurgeryApprovalPage = {
     _getEffectiveStep2Suggestions(s) {
         const chips = s.clinicalChips || {};
         const comorb = chips.comorbidities || {};
+        const sh = chips.surgicalHistory || {};
+        const al = chips.allergyHistory || {};
+        const soc = chips.socialHabits || {};
         const anti = chips.antithromboticPlan || {};
         const bd = chips.bloodAndDevices || {};
         const stoma = chips.stomaPlan || {};
         const diagLower = String(s.diagnosis || '').toLowerCase();
         const methodLower = String(s.method || '').toLowerCase();
+        const combinedTxt = `${diagLower} ${methodLower}`;
 
         let comorbValues = Array.isArray(comorb.values) && comorb.values.length > 0 ? comorb.values : null;
         if (!comorb.confirmed && !comorbValues) {
-            const inferred = [];
-            if (diagLower.includes('tăng huyết áp') || /\btha\b/.test(diagLower)) inferred.push('hypertension');
-            if (diagLower.includes('đái tháo đường') || diagLower.includes('tiểu đường') || /\bđtđ\b/.test(diagLower)) inferred.push('diabetes');
-            if (diagLower.includes('mạch vành') || diagLower.includes('stent')) inferred.push('cad_stent');
-            if (diagLower.includes('suy tim') || diagLower.includes('rung nhĩ')) inferred.push('afib_hf');
-            if (diagLower.includes('copd') || diagLower.includes('hen phế quản')) inferred.push('copd_asthma');
-            if (diagLower.includes('suy thận')) inferred.push('ckd');
-            if (diagLower.includes('xơ gan')) inferred.push('cirrhosis');
-            comorbValues = inferred.length > 0 ? inferred : ['none'];
+            const sugArr = Array.isArray(comorb.suggestedValues) && comorb.suggestedValues.length > 0 ? comorb.suggestedValues : null;
+            if (sugArr) {
+                comorbValues = sugArr;
+            } else {
+                const inferred = [];
+                if (diagLower.includes('tăng huyết áp') || /\btha\b/.test(diagLower)) inferred.push('hypertension');
+                if (diagLower.includes('đái tháo đường') || diagLower.includes('tiểu đường') || /\bđtđ\b/.test(diagLower)) inferred.push('diabetes');
+                if (diagLower.includes('mạch vành') || diagLower.includes('thiếu máu cơ tim') || diagLower.includes('tmcb') || diagLower.includes('stent')) inferred.push('ischemic_heart_cad');
+                if (diagLower.includes('rối loạn nhịp') || diagLower.includes('rung nhĩ') || diagLower.includes('ngoại tâm thu')) inferred.push('arrhythmia');
+                if (diagLower.includes('suy tim') || diagLower.includes('bệnh van tim') || diagLower.includes('hẹp van') || diagLower.includes('hở van')) inferred.push('valvular_heart_hf');
+                if (diagLower.includes('tuyến giáp') || diagLower.includes('bướu giáp') || diagLower.includes('basedow') || diagLower.includes('suy giáp') || diagLower.includes('cường giáp')) inferred.push('thyroid_disease');
+                if (diagLower.includes('copd') || diagLower.includes('hen phế quản') || diagLower.includes('bệnh phổi tắc nghẽn')) inferred.push('copd_asthma');
+                if (diagLower.includes('lao phổi')) inferred.push('pulmonary_tb_sequelae');
+                if (diagLower.includes('tbmmn') || diagLower.includes('đột quỵ') || diagLower.includes('nhồi máu não') || diagLower.includes('tai biến mạch máu não')) inferred.push('stroke_cva_sequelae');
+                if (diagLower.includes('suy thận') || diagLower.includes('bệnh thận mạn')) inferred.push('ckd');
+                if (diagLower.includes('xơ gan') || diagLower.includes('viêm gan mạn')) inferred.push('cirrhosis');
+                if (diagLower.includes('thiếu máu') || diagLower.includes('suy kiệt')) inferred.push('anemia_malnutrition');
+                comorbValues = inferred.length > 0 ? inferred : ['none'];
+            }
         }
+
+        let shStatus = sh.status || null;
+        let shCategories = Array.isArray(sh.categories) && sh.categories.length > 0 ? sh.categories : [];
+        if (!sh.confirmed && !shStatus) {
+            if (sh.suggestedStatus) {
+                shStatus = sh.suggestedStatus;
+                shCategories = Array.isArray(sh.suggestedCategories) ? sh.suggestedCategories : [];
+            } else if (['đóng hmnt', 'đóng hậu môn nhân tạo', 'lập lại lưu thông', 'miệng nối cũ'].some(k => combinedTxt.includes(k))) {
+                shStatus = 'present';
+                shCategories = ['prior_colorectal_stoma'];
+            } else if (combinedTxt.includes('tái phát')) {
+                shStatus = 'present';
+                shCategories = ['rò hậu môn', 'trĩ', 'hậu môn', 'tầng sinh môn'].some(k => combinedTxt.includes(k))
+                    ? ['prior_anorectal_perineal']
+                    : ['prior_abdominal_pelvic'];
+            } else {
+                shStatus = 'none';
+                shCategories = [];
+            }
+        }
+
+        let alStatus = al.status || null;
+        if (!al.confirmed && !alStatus) {
+            alStatus = al.suggestedStatus || 'none';
+        }
+
+        const socHabits = (!soc.confirmed && !soc.alcoholUse && !soc.smoking?.status && !soc.substanceAbuse?.status)
+            ? {
+                alcoholUse: 'none',
+                smoking: { status: 'no', packYears: null, packYearsUnknown: false },
+                substanceAbuse: { status: 'no', substanceNote: null }
+            }
+            : null;
 
         const hasAnticoagHint = ['aspirin', 'clopidogrel', 'plavix', 'rivaroxaban', 'xarelto', 'warfarin', 'sintrom', 'dabigatran', 'apixaban', 'kháng đông', 'chống đông'].some(k => diagLower.includes(k));
         let antiMode = anti.mode || null;
@@ -2309,7 +2659,7 @@ const SurgeryApprovalPage = {
             else stomaValue = 'no_stoma';
         }
 
-        return { comorbValues, antiMode, bdValues, stomaValue };
+        return { comorbValues, shStatus, shCategories, alStatus, socHabits, antiMode, bdValues, stomaValue };
     },
 
     // ── BƯỚC 2.6: Per-Step Suggestion Preview & 1-Tap Step Suggestion Confirm ──
@@ -2337,8 +2687,25 @@ const SurgeryApprovalPage = {
             const eff2 = this._getEffectiveStep2Suggestions(s);
             const comorb = chips.comorbidities || {};
             if (!comorb.confirmed && eff2.comorbValues && eff2.comorbValues.length > 0 && !eff2.comorbValues.includes('other')) {
-                const lbls = eff2.comorbValues.map(v => SAP_COMORBIDITIES.find(c => c.value === v)?.label || v).join(', ');
-                items.push(`Bệnh nền: ${lbls}`);
+                const lbls = eff2.comorbValues.map(v => this._comorbidityLabel(v)).join(', ');
+                items.push(`Nội khoa: ${lbls}`);
+            }
+            const sh = chips.surgicalHistory || {};
+            if (!sh.confirmed && eff2.shStatus) {
+                if (eff2.shStatus === 'none') {
+                    items.push('Ngoại khoa: Chưa từng mổ / vô cảm');
+                } else if (eff2.shCategories.length > 0) {
+                    const cLbls = eff2.shCategories.map(c => SAP_SURGICAL_CATEGORIES.find(x => x.value === c)?.label || c).join(', ');
+                    items.push(`Ngoại khoa: ${cLbls}`);
+                }
+            }
+            const al = chips.allergyHistory || {};
+            if (!al.confirmed && eff2.alStatus === 'none') {
+                items.push('Dị ứng: Chưa ghi nhận');
+            }
+            const soc = chips.socialHabits || {};
+            if (!soc.confirmed && eff2.socHabits) {
+                items.push('Thói quen: Không rượu · Không thuốc lá · Không chất gây nghiện');
             }
             const anti = chips.antithromboticPlan || {};
             if (!anti.confirmed && eff2.antiMode === 'none_confirmed') {
@@ -2709,11 +3076,11 @@ const SurgeryApprovalPage = {
 
                 ${sysCheck === 'over_column' && (urg === 'elective' || urg === 'elective_service') ? `
                 <div class="sap-alert sap-alert--danger">
-                    <strong>Nguyên tắc xếp cột BS 2026:</strong> Mổ chương trình và mổ yêu cầu không được phép vượt cột (BS Cột <strong>${Utils.escapeHtml(baseCol)}</strong> không mổ hạng <strong>${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}</strong>). Vui lòng phân công lại BS mổ chính đúng cột trên Lịch mổ tuần.
+                    <strong>Theo QĐ 1073/QĐ-BVBD & Bảng xếp cột BS 2026:</strong> Mổ chương trình và mổ yêu cầu phải đúng cột phẫu thuật (BS Cột <strong>${Utils.escapeHtml(baseCol)}</strong> chỉ mổ từ loại tương ứng trở xuống, không mổ hạng <strong>${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}</strong>). Vui lòng phân công lại BS mổ chính đúng cột trên Lịch mổ tuần.
                 </div>` : ''}
 
                 ${sysCheck === 'over_column' && urg === 'semi_urgent' && Number(colObj.columnStepDelta || 9) === 1 ? `
-                <input type="text" class="sap-input" placeholder="Ghi rõ lý do ca bán khẩn không có nhân sự cột trên phù hợp để BCN cân nhắc duyệt vượt 01 cột..."
+                <input type="text" class="sap-input" placeholder="Theo quy ước điều phối nội bộ tại Khoa: ghi rõ lý do ca bán khẩn thiếu nhân sự cột trên phù hợp để BCN cân nhắc tối đa +01 cột..."
                     aria-label="Lý do xin vượt 1 cột ca bán khẩn"
                     value="${Utils.escapeHtml(colObj.overColumnRef || '')}" ${!canEdit ? 'disabled' : ''}
                     onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { columnCompliance: { declaredMode: 'propose_over_column', overColumnRef: this.value } } })">` : ''}
@@ -2721,26 +3088,36 @@ const SurgeryApprovalPage = {
         </section>`;
     },
 
-    // ── BƯỚC 2.2 & 2.6: Step ② Lâm sàng (4 Chip Groups + Exactly 1 Active Module B1–B4, Zero <select>) ──
+    // ── BƯỚC 2.2 & 2.6 (v5): Step ② Lâm sàng (Cụm 2A Tiền sử C-04/08/09/10 + Cụm 2B Kế hoạch C-05/06/07 + Module B1–B4, Zero <select>) ──
     _renderStep2Html(s, actor, canEdit, stepMiss, returnedSet) {
         const cc = s.clinicalClassification || {};
         const pgVal = cc.pathologyGroup?.confirmedValue || cc.pathologyGroup?.suggestedValue || '';
         const chips = s.clinicalChips || {};
         const comorb = chips.comorbidities || { confirmed: false, values: [] };
+        const sh = chips.surgicalHistory || { confirmed: false, status: null, categories: [], abdominalScarType: 'not_applicable', detailNote: '' };
+        const al = chips.allergyHistory || { confirmed: false, status: null, allergenGroups: [], reactionSeverity: null, allergenDetail: '' };
+        const soc = chips.socialHabits || { confirmed: false, alcoholUse: null, smoking: { status: null, packYears: null, packYearsUnknown: false }, substanceAbuse: { status: null, substanceNote: '' } };
+        const smk = soc.smoking || {};
+        const sub = soc.substanceAbuse || {};
         const anti = chips.antithromboticPlan || { confirmed: false, mode: null };
         const bd = chips.bloodAndDevices || { confirmed: false, values: [] };
         const stoma = chips.stomaPlan || { confirmed: false, value: null };
-        const hasReturnedInStep2 = ['sap-f-comorbidities', 'sap-f-antithrombotic', 'sap-f-blood-devices', 'sap-f-stoma', 'sap-f-context-module'].some(id => returnedSet.has(id));
-        const hasHighlightInStep2 = ['sap-f-comorbidities', 'sap-f-antithrombotic', 'sap-f-blood-devices', 'sap-f-stoma', 'sap-f-context-module'].includes(this._highlightFieldId);
+        const step2FieldIds = [
+            'sap-f-comorbidities', 'sap-f-surgical-history', 'sap-f-allergy-history', 'sap-f-social-habits',
+            'sap-f-high-risk-plan', 'sap-f-antithrombotic', 'sap-f-blood-devices', 'sap-f-stoma', 'sap-f-context-module'
+        ];
+        const hasReturnedInStep2 = step2FieldIds.some(id => returnedSet.has(id));
+        const hasHighlightInStep2 = step2FieldIds.includes(this._highlightFieldId);
 
         const isAutoCollapsed = stepMiss.length === 0 && !hasReturnedInStep2 && !hasHighlightInStep2 && this._expandedSteps[2] !== true;
         if (isAutoCollapsed) {
-            const cSummary = (comorb.values || []).includes('none') ? 'Không bệnh nền' : `${(comorb.values || []).length} bệnh nền`;
+            const cSummary = (comorb.values || []).includes('none') ? 'Nội khoa (-)' : `${(comorb.values || []).length} bệnh nền`;
+            const alSummary = al.status === 'present' ? `Dị ứng (+${al.allergenDetail ? `: ${al.allergenDetail}` : ''})` : 'Dị ứng (-)';
             const aSummary = anti.mode === 'none_confirmed' ? 'Không kháng đông' : (SAP_ANTITHROMBOTIC_MODES.find(m => m.value === anti.mode)?.label || '');
             const sSummary = SAP_STOMA_PLANS.find(p => p.value === stoma.value)?.label || '';
             return `
             <button type="button" id="sap-step-card-2" class="sap-step-collapsed-bar" onclick="SurgeryApprovalPage.toggleStepExpand(${s.id}, 2)">
-                <span>${this._ico('✓')} Bước ② Lâm sàng: ${Utils.escapeHtml([cSummary, aSummary, sSummary].filter(Boolean).join(' · '))}</span>
+                <span>${this._ico('✓')} Bước ② Tiền sử & Lâm sàng: ${Utils.escapeHtml([cSummary, alSummary, aSummary, sSummary].filter(Boolean).join(' · '))}</span>
                 <span>Mở sửa ▾</span>
             </button>`;
         }
@@ -2749,10 +3126,22 @@ const SurgeryApprovalPage = {
         const eff2 = this._getEffectiveStep2Suggestions(s);
         const fieldCls = fid => `sap-field-block ${returnedSet.has(fid) ? 'sap-field--returned-highlight' : ''} ${this._highlightFieldId === fid ? 'sap-field--missing-focus' : ''}`;
 
+        const hasNonNoneComorb = comorb.confirmed && (comorb.values || []).some(v => v !== 'none');
+        const shCats = Array.isArray(sh.categories) ? sh.categories : [];
+        const shNeedsScar = sh.status === 'present' && (shCats.includes('prior_colorectal_stoma') || shCats.includes('prior_abdominal_pelvic'));
+        const shNeedsDetail = sh.status === 'present' && (shCats.includes('prior_extra_abdominal') || shCats.includes('prior_anesthesia_or_transfusion_event'));
+        const shLapOpenScarWarn = sh.status === 'present' && sh.abdominalScarType === 'open_laparotomy_scar' && ['noisoi', 'robot'].includes(s.approachType);
+
+        const alGrps = Array.isArray(al.allergenGroups) ? al.allergenGroups : [];
+        const alDetailRequired = al.status === 'present' && (alGrps.includes('drug') || al.reactionSeverity === 'severe_anaphylaxis');
+
+        const isHighRiskHistory = this._hasHighRiskPreopHistory(chips);
+        const ck03PlanNote = s.preopChecklist?.['CK-03']?.clinicalPlanNote || '';
+
         return `
-        <section class="sap-section" id="sap-step-card-2" aria-label="Bước 2 Đánh giá lâm sàng, thuốc chống huyết khối và chuyên khoa">
+        <section class="sap-section" id="sap-step-card-2" aria-label="Bước 2 Tiền sử người bệnh, kế hoạch chu phẫu và đặc thù bệnh lý">
             <div class="sap-section-header">
-                <h3 class="sap-section-title">Bước ② Lâm sàng, Kháng đông & Đặc thù bệnh lý</h3>
+                <h3 class="sap-section-title">Bước ② Tiền sử người bệnh, Kháng đông & Đặc thù bệnh lý</h3>
                 ${stepMiss.length === 0 ? `<button type="button" class="sap-btn sap-btn--ghost" onclick="SurgeryApprovalPage.toggleStepExpand(${s.id}, 2)">Thu gọn ▴</button>` : `<span class="sap-step-nav-pill sap-step-nav-pill--todo">Còn ${stepMiss.length} mục</span>`}
             </div>
 
@@ -2767,105 +3156,316 @@ const SurgeryApprovalPage = {
                 </button>
             </div>` : ''}
 
-            <!-- Bệnh nền -->
-            <div class="${fieldCls('sap-f-comorbidities')}" id="sap-f-comorbidities">
-                <div class="sap-field-label">Bệnh nền nội khoa</div>
-                <div class="sap-chip-group">
-                    ${SAP_COMORBIDITIES.map(c => {
-                        const hasConf = comorb.confirmed && (comorb.values || []).includes(c.value);
-                        const hasSugg = !comorb.confirmed && (eff2.comorbValues || []).includes(c.value);
-                        const cls = hasConf ? 'sap-chip--selected' : (hasSugg ? 'sap-chip--suggested' : '');
-                        return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.toggleMultiChip(${s.id}, 'comorbidities', '${c.value}', ${Boolean(c.exclusive)})">
-                            <span>${Utils.escapeHtml(c.label)}</span>
-                            ${hasSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
-                        </button>`;
-                    }).join('')}
+            <!-- CỤM 2A: TIỀN SỬ NGƯỜI BỆNH (THEO PHIẾU KHÁM TIỀN MÊ BVBD) -->
+            <div class="sap-step2-cluster" aria-label="Cụm 2A Tiền sử người bệnh theo Phiếu khám tiền mê BVBD">
+                <div class="sap-step2-cluster-header">
+                    <span class="sap-step2-cluster-badge">Cụm 2A</span>
+                    <span class="sap-step2-cluster-title">Tiền sử người bệnh (theo Phiếu khám tiền mê BVBD)</span>
                 </div>
-                ${(comorb.values || []).includes('other') ? `
-                <input type="text" class="sap-input" placeholder="Ghi rõ bệnh nền khác..."
-                    aria-label="Ghi rõ bệnh nền khác"
-                    value="${Utils.escapeHtml(comorb.otherComorbidityNote || '')}" ${!canEdit ? 'disabled' : ''}
-                    onchange="SurgeryApprovalPage.patchChipWithSync(${s.id}, { comorbidities: { confirmed: true, values: ${JSON.stringify(comorb.values)}, otherComorbidityNote: this.value } })">` : ''}
-            </div>
 
-            <!-- Thuốc chống huyết khối -->
-            <div class="${fieldCls('sap-f-antithrombotic')}" id="sap-f-antithrombotic">
-                <div class="sap-field-label">Thuốc chống huyết khối (Kháng đông / Kháng kết tập tiểu cầu)</div>
-                <div class="sap-chip-group">
-                    ${SAP_ANTITHROMBOTIC_MODES.map(m => {
-                        const isConf = anti.confirmed && anti.mode === m.value;
-                        const isSugg = !anti.confirmed && eff2.antiMode === m.value;
-                        const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
-                        return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.selectAntithromboticMode(${s.id}, '${m.value}')">
-                            <span>${Utils.escapeHtml(m.label)}</span>
-                            ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
-                        </button>`;
-                    }).join('')}
+                <!-- C-04: Tiền sử nội khoa (13 bệnh lý chọn lọc, đã lược bỏ Covid 19) -->
+                <div class="${fieldCls('sap-f-comorbidities')}" id="sap-f-comorbidities">
+                    <div class="sap-field-label">Tiền sử nội khoa <span class="sap-field-sub">(chọn nhiều; "Chưa ghi nhận" loại trừ các chip khác)</span></div>
+                    <div class="sap-chip-group">
+                        ${SAP_COMORBIDITIES.map(c => {
+                            const legacyHit = (c.value === 'ischemic_heart_cad' && (comorb.values || []).includes('cad_stent'))
+                                || (c.value === 'valvular_heart_hf' && (comorb.values || []).includes('afib_hf'));
+                            const hasConf = comorb.confirmed && ((comorb.values || []).includes(c.value) || legacyHit);
+                            const hasSugg = !comorb.confirmed && (eff2.comorbValues || []).includes(c.value);
+                            const cls = hasConf ? 'sap-chip--selected' : (hasSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.toggleMultiChip(${s.id}, 'comorbidities', '${c.value}', ${Boolean(c.exclusive)})">
+                                <span>${Utils.escapeHtml(c.label)}</span>
+                                ${hasSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                    ${(comorb.values || []).includes('other') ? `
+                    <input type="text" class="sap-input" placeholder="Ghi rõ tên bệnh nền nội khoa khác (tối thiểu 3 ký tự)..."
+                        aria-label="Ghi rõ bệnh nền nội khoa khác"
+                        value="${Utils.escapeHtml(comorb.otherComorbidityNote || '')}" ${!canEdit ? 'disabled' : ''}
+                        onchange="SurgeryApprovalPage.updateComorbidityNote(${s.id}, 'otherComorbidityNote', this.value)">` : ''}
+                    ${hasNonNoneComorb ? `
+                    <input type="text" class="sap-input" placeholder="Tình trạng điều trị nội khoa hiện tại (tùy chọn, VD: Amlodipin 5mg, Insulin nền — tối đa 240 ký tự)..."
+                        aria-label="Tình trạng điều trị nội khoa hiện tại"
+                        maxlength="240"
+                        value="${Utils.escapeHtml(comorb.medicalTreatmentNote || '')}" ${!canEdit ? 'disabled' : ''}
+                        onchange="SurgeryApprovalPage.updateComorbidityNote(${s.id}, 'medicalTreatmentNote', this.value)">` : ''}
                 </div>
-                ${anti.mode && anti.mode !== 'none_confirmed' ? `
-                <div class="sap-canary-grid" style="margin-top:6px;">
-                    <input type="text" class="sap-input" placeholder="Tên thuốc (Aspirin, Clopidogrel, Rivaroxaban...)"
-                        aria-label="Tên thuốc chống huyết khối"
-                        value="${Utils.escapeHtml(anti.drugName || '')}" ${!canEdit ? 'disabled' : ''}
-                        onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'drugName', this.value)">
-                    <input type="text" class="sap-input" placeholder="Liều cuối cùng (ngày/giờ)"
-                        aria-label="Thời điểm liều cuối cùng"
-                        value="${Utils.escapeHtml(anti.lastDoseAt || '')}" ${!canEdit ? 'disabled' : ''}
-                        onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'lastDoseAt', this.value)">
-                    ${anti.mode === 'bridging_per_plan' ? `
-                    <input type="text" class="sap-input" placeholder="Thuốc bắc cầu (Enoxaparin / Heparin...)"
-                        aria-label="Thuốc bắc cầu"
-                        value="${Utils.escapeHtml(anti.bridgingAgent || '')}" ${!canEdit ? 'disabled' : ''}
-                        onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'bridgingAgent', this.value)">` : ''}
-                    <input type="text" class="sap-input" placeholder="Chuyên khoa / Bác sĩ hội chẩn duyệt"
-                        aria-label="Chuyên khoa hoặc bác sĩ duyệt"
-                        value="${Utils.escapeHtml(anti.approvingSpecialtyOrDoctor || '')}" ${!canEdit ? 'disabled' : ''}
-                        onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'approvingSpecialtyOrDoctor', this.value)">
-                    <input type="text" class="sap-input" placeholder="Ghi chú kế hoạch cầm máu / khởi động lại sau mổ"
-                        aria-label="Kế hoạch cầm máu"
-                        value="${Utils.escapeHtml(anti.planReferenceNote || '')}" ${!canEdit ? 'disabled' : ''}
-                        onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'planReferenceNote', this.value)">
+
+                <!-- C-08: Tiền sử ngoại khoa / vô cảm -->
+                <div class="${fieldCls('sap-f-surgical-history')}" id="sap-f-surgical-history">
+                    <div class="sap-field-label">Tiền sử ngoại khoa / vô cảm <span class="sap-field-sub">(mổ cũ, sẹo ổ bụng & tai biến GMHS/truyền máu)</span></div>
+                    <div class="sap-chip-group">
+                        ${SAP_SURGICAL_HISTORY_STATUS.map(opt => {
+                            const isConf = sh.confirmed && sh.status === opt.value;
+                            const isSugg = !sh.confirmed && eff2.shStatus === opt.value;
+                            const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.selectSurgicalHistoryStatus(${s.id}, '${opt.value}')">
+                                <span>${Utils.escapeHtml(opt.label)}</span>
+                                ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                    ${sh.status === 'present' ? `
+                    <div class="sap-filter-sub-label">Phân nhóm phẫu thuật / sự cố cũ (chọn ≥ 1):</div>
+                    <div class="sap-chip-group">
+                        ${SAP_SURGICAL_CATEGORIES.map(cat => {
+                            const isSel = shCats.includes(cat.value);
+                            const isSugg = !sh.confirmed && (eff2.shCategories || []).includes(cat.value);
+                            const cls = isSel ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.toggleSurgicalCategory(${s.id}, '${cat.value}')">
+                                <span>${Utils.escapeHtml(cat.label)}</span>
+                                ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                    ${shNeedsScar ? `
+                    <div class="sap-filter-sub-label">Loại sẹo mổ bụng cũ (bắt buộc khi có mổ ổ bụng / đại trực tràng cũ):</div>
+                    <div class="sap-chip-group">
+                        ${SAP_ABDOMINAL_SCAR_TYPES.map(sc => `
+                        <button type="button" class="sap-chip ${sh.abdominalScarType === sc.value ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                            onclick="SurgeryApprovalPage.selectAbdominalScarType(${s.id}, '${sc.value}')">
+                            <span>${Utils.escapeHtml(sc.label)}</span>
+                        </button>`).join('')}
+                    </div>` : ''}
+                    ${shLapOpenScarWarn ? `
+                    <div class="sap-alert sap-alert--warning" style="margin-top:4px;">
+                        ${this._ico('🩹')} <strong>Lưu ý ngoại khoa:</strong> Ca dự kiến phẫu thuật <strong>${s.approachType === 'robot' ? 'Robot' : 'Nội soi'}</strong> trên nền <strong>sẹo mổ mở cũ</strong> — lưu ý vị trí đặt trocar đầu tiên (Hasson / Palmer) và tiên lượng gỡ dính.
+                    </div>` : ''}
+                    <input type="text" class="sap-input"
+                        placeholder="${shNeedsDetail ? 'Ghi rõ phẫu thuật ngoài ổ bụng hoặc tai biến GMHS / truyền máu trước đây (bắt buộc, ≥ 3 ký tự)...' : 'Ghi chú ngắn tên phẫu thuật cũ / năm mổ (tùy chọn, VD: Cắt túi mật NS 2021)...'}"
+                        aria-label="Chi tiết tiền sử ngoại khoa hoặc vô cảm"
+                        maxlength="200"
+                        value="${Utils.escapeHtml(sh.detailNote || '')}" ${!canEdit ? 'disabled' : ''}
+                        onchange="SurgeryApprovalPage.updateSurgicalHistoryDetail(${s.id}, this.value)">` : ''}
+                </div>
+
+                <!-- C-09: Tiền sử dị ứng -->
+                <div class="${fieldCls('sap-f-allergy-history')}" id="sap-f-allergy-history">
+                    <div class="sap-field-label">Tiền sử dị ứng <span class="sap-field-sub">(Thuốc / Phản vệ bắt buộc ghi rõ tên tác nhân)</span></div>
+                    <div class="sap-chip-group">
+                        ${SAP_ALLERGY_STATUS.map(opt => {
+                            const isConf = al.confirmed && al.status === opt.value;
+                            const isSugg = !al.confirmed && eff2.alStatus === opt.value;
+                            const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.selectAllergyStatus(${s.id}, '${opt.value}')">
+                                <span>${Utils.escapeHtml(opt.label)}</span>
+                                ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                    ${al.status === 'present' ? `
+                    <div class="sap-filter-sub-label">Nhóm dị nguyên (chọn ≥ 1):</div>
+                    <div class="sap-chip-group">
+                        ${SAP_ALLERGY_GROUPS.map(grp => `
+                        <button type="button" class="sap-chip ${alGrps.includes(grp.value) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                            onclick="SurgeryApprovalPage.toggleAllergyGroup(${s.id}, '${grp.value}')">
+                            <span>${Utils.escapeHtml(grp.label)}</span>
+                        </button>`).join('')}
+                    </div>
+                    <div class="sap-filter-sub-label">Mức độ phản ứng từng xảy ra:</div>
+                    <div class="sap-chip-group">
+                        ${SAP_ALLERGY_SEVERITIES.map(sev => `
+                        <button type="button" class="sap-chip ${al.reactionSeverity === sev.value ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                            onclick="SurgeryApprovalPage.selectAllergySeverity(${s.id}, '${sev.value}')">
+                            <span>${Utils.escapeHtml(sev.label)}</span>
+                        </button>`).join('')}
+                    </div>
+                    <input type="text" class="sap-input"
+                        placeholder="${alDetailRequired ? 'BẮT BUỘC ghi rõ tên thuốc / kháng sinh / tác nhân gây dị ứng hoặc phản vệ (≥ 2 ký tự)...' : 'Ghi tên thức ăn / tác nhân dị ứng cụ thể (tùy chọn)...'}"
+                        aria-label="Tên thuốc hoặc tác nhân dị ứng cụ thể"
+                        maxlength="160"
+                        value="${Utils.escapeHtml(al.allergenDetail || '')}" ${!canEdit ? 'disabled' : ''}
+                        onchange="SurgeryApprovalPage.updateAllergyDetail(${s.id}, this.value)">` : ''}
+                </div>
+
+                <!-- C-10: Thói quen sinh hoạt (Rượu bia · Hút thuốc lá gói/năm · Chất gây nghiện) -->
+                <div class="${fieldCls('sap-f-social-habits')}" id="sap-f-social-habits">
+                    <div class="sap-field-label">Thói quen sinh hoạt <span class="sap-field-sub">(Rượu bia · Hút thuốc lá gói/năm · Chất gây nghiện)</span></div>
+                    <div class="sap-habit-grid">
+                        <div class="sap-habit-row">
+                            <span class="sap-habit-row-label">Rượu bia:</span>
+                            <div class="sap-chip-group">
+                                ${SAP_ALCOHOL_OPTIONS.map(opt => {
+                                    const isConf = soc.confirmed && soc.alcoholUse === opt.value;
+                                    const isSelDraft = !soc.confirmed && soc.alcoholUse === opt.value;
+                                    const isSugg = !soc.confirmed && !soc.alcoholUse && eff2.socHabits?.alcoholUse === opt.value;
+                                    const cls = (isConf || isSelDraft) ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                                    return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                        onclick="SurgeryApprovalPage.updateSocialHabits(${s.id}, { alcoholUse: '${opt.value}' })">
+                                        <span>${Utils.escapeHtml(opt.label)}</span>
+                                        ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                                    </button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="sap-habit-row">
+                            <span class="sap-habit-row-label">Hút thuốc lá:</span>
+                            <div class="sap-chip-group">
+                                ${SAP_SMOKING_OPTIONS.map(opt => {
+                                    const isConf = soc.confirmed && smk.status === opt.value;
+                                    const isSelDraft = !soc.confirmed && smk.status === opt.value;
+                                    const isSugg = !soc.confirmed && !smk.status && eff2.socHabits?.smoking?.status === opt.value;
+                                    const cls = (isConf || isSelDraft) ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                                    return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                        onclick="SurgeryApprovalPage.updateSocialHabits(${s.id}, { smoking: { status: '${opt.value}' } })">
+                                        <span>${Utils.escapeHtml(opt.label)}</span>
+                                        ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                                    </button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        ${['current', 'former'].includes(smk.status) ? `
+                        <div class="sap-packyears-wrap" role="group" aria-label="Định lượng hút thuốc lá gói trên năm">
+                            <span class="sap-filter-sub-label">Định lượng gói/năm:</span>
+                            <div class="sap-chip-group">
+                                ${SAP_PACK_YEAR_PRESETS.map(n => `
+                                <button type="button" class="sap-chip ${!smk.packYearsUnknown && Number(smk.packYears) === n ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                    onclick="SurgeryApprovalPage.selectPackYearPreset(${s.id}, ${n})">
+                                    <span>${n} gói/năm</span>
+                                </button>`).join('')}
+                                <input type="text" inputmode="decimal" class="sap-input sap-packyears-input"
+                                    placeholder="Số gói/năm..."
+                                    aria-label="Nhập số gói trên năm"
+                                    value="${!smk.packYearsUnknown && smk.packYears !== null && smk.packYears !== undefined ? Utils.escapeHtml(String(smk.packYears)) : ''}"
+                                    ${!canEdit ? 'disabled' : ''}
+                                    onchange="SurgeryApprovalPage.updatePackYearsInput(${s.id}, this.value)">
+                                <button type="button" class="sap-chip ${smk.packYearsUnknown ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                    onclick="SurgeryApprovalPage.togglePackYearsUnknown(${s.id})">
+                                    <span>Chưa rõ số gói/năm</span>
+                                </button>
+                            </div>
+                        </div>` : ''}
+
+                        <div class="sap-habit-row">
+                            <span class="sap-habit-row-label">Chất gây nghiện:</span>
+                            <div class="sap-chip-group">
+                                ${SAP_SUBSTANCE_OPTIONS.map(opt => {
+                                    const isConf = soc.confirmed && sub.status === opt.value;
+                                    const isSelDraft = !soc.confirmed && sub.status === opt.value;
+                                    const isSugg = !soc.confirmed && !sub.status && eff2.socHabits?.substanceAbuse?.status === opt.value;
+                                    const cls = (isConf || isSelDraft) ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                                    return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                        onclick="SurgeryApprovalPage.updateSocialHabits(${s.id}, { substanceAbuse: { status: '${opt.value}' } })">
+                                        <span>${Utils.escapeHtml(opt.label)}</span>
+                                        ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                                    </button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        ${sub.status === 'yes' ? `
+                        <input type="text" class="sap-input"
+                            placeholder="Bắt buộc ghi rõ loại chất gây nghiện & tình trạng hiện tại (ngưng / đang điều trị Methadone / nguy cơ hội chứng cai)..."
+                            aria-label="Chi tiết lạm dụng chất gây nghiện"
+                            maxlength="160"
+                            value="${Utils.escapeHtml(sub.substanceNote || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.updateSocialHabits(${s.id}, { substanceAbuse: { status: 'yes', substanceNote: this.value } })">` : ''}
+                    </div>
+                </div>
+
+                ${isHighRiskHistory ? `
+                <div class="${fieldCls('sap-f-high-risk-plan')} sap-high-risk-plan-box" id="sap-f-high-risk-plan">
+                    <div class="sap-field-label">${this._ico('⚠️')} Kế hoạch phối hợp GMHS / dự phòng tiền phẫu bắt buộc <span class="sap-field-sub">(do có tiền sử nguy cơ cao)</span></div>
+                    <input type="text" class="sap-input"
+                        placeholder="Ghi rõ phương án dự phòng phản vệ / thay kháng sinh / dự phòng hội chứng cai / xử trí kháng đông với BS Gây mê hồi sức..."
+                        aria-label="Kế hoạch dự phòng tiền phẫu cho tiền sử nguy cơ cao"
+                        value="${Utils.escapeHtml(ck03PlanNote)}" ${!canEdit ? 'disabled' : ''}
+                        onchange="SurgeryApprovalPage.setHighRiskHistoryPlan(${s.id}, this.value)">
                 </div>` : ''}
             </div>
 
-            <!-- Dự trù máu & thiết bị -->
-            <div class="${fieldCls('sap-f-blood-devices')}" id="sap-f-blood-devices">
-                <div class="sap-field-label">Dự trù máu & Thiết bị đặc thù</div>
-                <div class="sap-chip-group">
-                    ${SAP_BLOOD_DEVICES.filter(d => !(s.approachType === 'robot' && d.value === 'basic_instruments_only')).map(d => {
-                        const hasConf = bd.confirmed && (bd.values || []).includes(d.value);
-                        const hasSugg = !bd.confirmed && (eff2.bdValues || []).includes(d.value);
-                        const cls = hasConf ? 'sap-chip--selected' : (hasSugg ? 'sap-chip--suggested' : '');
-                        return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.toggleMultiChip(${s.id}, 'bloodAndDevices', '${d.value}', ${Boolean(d.exclusive)})">
-                            <span>${Utils.escapeHtml(d.label)}</span>
-                            ${hasSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
-                        </button>`;
-                    }).join('')}
+            <!-- CỤM 2B: KẾ HOẠCH CHU PHẪU NGOẠI KHOA & ĐẶC THÙ BỆNH LÝ -->
+            <div class="sap-step2-cluster" aria-label="Cụm 2B Kế hoạch chu phẫu ngoại khoa và đặc thù bệnh lý">
+                <div class="sap-step2-cluster-header">
+                    <span class="sap-step2-cluster-badge">Cụm 2B</span>
+                    <span class="sap-step2-cluster-title">Kế hoạch chu phẫu ngoại khoa & Đặc thù bệnh lý</span>
                 </div>
-            </div>
 
-            <!-- Kế hoạch HMNT -->
-            <div class="${fieldCls('sap-f-stoma')}" id="sap-f-stoma">
-                <div class="sap-field-label">Kế hoạch Hậu môn nhân tạo (HMNT)</div>
-                <div class="sap-chip-group">
-                    ${SAP_STOMA_PLANS.map(p => {
-                        const isConf = stoma.confirmed && stoma.value === p.value;
-                        const isSugg = !stoma.confirmed && eff2.stomaValue === p.value;
-                        const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
-                        return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.patchChipWithSync(${s.id}, { stomaPlan: { confirmed: true, value: '${p.value}' } })">
-                            <span>${Utils.escapeHtml(p.label)}</span>
-                            ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
-                        </button>`;
-                    }).join('')}
+                <!-- Thuốc chống huyết khối -->
+                <div class="${fieldCls('sap-f-antithrombotic')}" id="sap-f-antithrombotic">
+                    <div class="sap-field-label">Thuốc chống huyết khối (Kháng đông / Kháng kết tập tiểu cầu)</div>
+                    <div class="sap-chip-group">
+                        ${SAP_ANTITHROMBOTIC_MODES.map(m => {
+                            const isConf = anti.confirmed && anti.mode === m.value;
+                            const isSugg = !anti.confirmed && eff2.antiMode === m.value;
+                            const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.selectAntithromboticMode(${s.id}, '${m.value}')">
+                                <span>${Utils.escapeHtml(m.label)}</span>
+                                ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                    ${anti.mode && anti.mode !== 'none_confirmed' ? `
+                    <div class="sap-canary-grid" style="margin-top:6px;">
+                        <input type="text" class="sap-input" placeholder="Tên thuốc (Aspirin, Clopidogrel, Rivaroxaban...)"
+                            aria-label="Tên thuốc chống huyết khối"
+                            value="${Utils.escapeHtml(anti.drugName || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'drugName', this.value)">
+                        <input type="text" class="sap-input" placeholder="Liều cuối cùng (ngày/giờ)"
+                            aria-label="Thời điểm liều cuối cùng"
+                            value="${Utils.escapeHtml(anti.lastDoseAt || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'lastDoseAt', this.value)">
+                        ${anti.mode === 'bridging_per_plan' ? `
+                        <input type="text" class="sap-input" placeholder="Thuốc bắc cầu (Enoxaparin / Heparin...)"
+                            aria-label="Thuốc bắc cầu"
+                            value="${Utils.escapeHtml(anti.bridgingAgent || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'bridgingAgent', this.value)">` : ''}
+                        <input type="text" class="sap-input" placeholder="Chuyên khoa / Bác sĩ hội chẩn duyệt"
+                            aria-label="Chuyên khoa hoặc bác sĩ duyệt"
+                            value="${Utils.escapeHtml(anti.approvingSpecialtyOrDoctor || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'approvingSpecialtyOrDoctor', this.value)">
+                        <input type="text" class="sap-input" placeholder="Ghi chú kế hoạch cầm máu / khởi động lại sau mổ"
+                            aria-label="Kế hoạch cầm máu"
+                            value="${Utils.escapeHtml(anti.planReferenceNote || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.updateAntithromboticDetail(${s.id}, 'planReferenceNote', this.value)">
+                    </div>` : ''}
                 </div>
-            </div>
 
-            <!-- Đúng 1 Module chuyên biệt theo nhóm bệnh (ẩn hoàn toàn các module không liên quan) -->
-            ${this._renderActiveContextModuleHtml(s, pgVal, stoma.value, canEdit, fieldCls('sap-f-context-module'))}
+                <!-- Dự trù máu & thiết bị -->
+                <div class="${fieldCls('sap-f-blood-devices')}" id="sap-f-blood-devices">
+                    <div class="sap-field-label">Dự trù máu & Thiết bị đặc thù</div>
+                    <div class="sap-chip-group">
+                        ${SAP_BLOOD_DEVICES.filter(d => !(s.approachType === 'robot' && d.value === 'basic_instruments_only')).map(d => {
+                            const hasConf = bd.confirmed && (bd.values || []).includes(d.value);
+                            const hasSugg = !bd.confirmed && (eff2.bdValues || []).includes(d.value);
+                            const cls = hasConf ? 'sap-chip--selected' : (hasSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.toggleMultiChip(${s.id}, 'bloodAndDevices', '${d.value}', ${Boolean(d.exclusive)})">
+                                <span>${Utils.escapeHtml(d.label)}</span>
+                                ${hasSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Kế hoạch HMNT -->
+                <div class="${fieldCls('sap-f-stoma')}" id="sap-f-stoma">
+                    <div class="sap-field-label">Kế hoạch Hậu môn nhân tạo (HMNT)</div>
+                    <div class="sap-chip-group">
+                        ${SAP_STOMA_PLANS.map(p => {
+                            const isConf = stoma.confirmed && stoma.value === p.value;
+                            const isSugg = !stoma.confirmed && eff2.stomaValue === p.value;
+                            const cls = isConf ? 'sap-chip--selected' : (isSugg ? 'sap-chip--suggested' : '');
+                            return `<button type="button" class="sap-chip ${cls}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.patchChipWithSync(${s.id}, { stomaPlan: { confirmed: true, value: '${p.value}' } })">
+                                <span>${Utils.escapeHtml(p.label)}</span>
+                                ${isSugg ? '<span class="sap-chip-hint">Gợi ý</span>' : ''}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Đúng 1 Module chuyên biệt theo nhóm bệnh (ẩn hoàn toàn các module không liên quan) -->
+                ${this._renderActiveContextModuleHtml(s, pgVal, stoma.value, canEdit, fieldCls('sap-f-context-module'))}
+            </div>
         </section>`;
     },
 
@@ -3120,7 +3720,11 @@ const SurgeryApprovalPage = {
         const showUndoToastBar = Boolean(s._bulkUndoSnapshot) && Date.now() < this._bulkUndoExpiresAt;
 
         // Mục 2.4 Synced Summary Strip ("✓ theo mục ②")
-        const ck03Ok = ['verified_ok', 'verified_abnormal_planned', 'prepared_ok'].includes(ck['CK-03']?.state);
+        const ck03HighRisk = this._hasHighRiskPreopHistory(s.clinicalChips || {});
+        const ck03Ok = ck03HighRisk
+            ? (ck['CK-03']?.state === 'verified_abnormal_planned' && Boolean(String(ck['CK-03']?.clinicalPlanNote || '').trim()))
+            : ['verified_ok', 'verified_abnormal_planned', 'prepared_ok'].includes(ck['CK-03']?.state);
+        const ck03TargetField = ck03HighRisk ? 'sap-f-high-risk-plan' : 'sap-f-comorbidities';
         const ck07Ok = ['verified_ok', 'prepared_ok'].includes(ck['CK-07']?.state);
         const ck05Ok = ['verified_ok', 'verified_abnormal_planned', 'not_applicable', 'prepared_ok'].includes(ck['CK-05']?.state);
 
@@ -3141,8 +3745,8 @@ const SurgeryApprovalPage = {
                 <span style="font-weight:700;color:var(--text-heading);">Đồng bộ tự động từ Bước ②:</span>
                 <div class="sap-synced-pills">
                     <span class="sap-synced-pill ${ck03Ok ? '' : 'sap-synced-pill--pending'}"
-                        ${!ck03Ok ? `onclick="SurgeryApprovalPage.jumpToStep(${s.id}, 2, 'sap-f-antithrombotic')"` : ''}>
-                        ${this._ico(ck03Ok ? '✓' : '⏳')} <span>Bệnh nền & Kháng đông: ${ck03Ok ? '✓ theo mục ②' : 'Chờ mục ②'}</span>
+                        ${!ck03Ok ? `onclick="SurgeryApprovalPage.jumpToStep(${s.id}, 2, '${ck03TargetField}')"` : ''}>
+                        ${this._ico(ck03Ok ? '✓' : '⏳')} <span>Tiền sử & Kháng đông: ${ck03Ok ? '✓ theo mục ②' : (ck03HighRisk ? 'Cần kế hoạch mục ②' : 'Chờ mục ②')}</span>
                     </span>
                     <span class="sap-synced-pill ${ck07Ok ? '' : 'sap-synced-pill--pending'}"
                         ${!ck07Ok ? `onclick="SurgeryApprovalPage.jumpToStep(${s.id}, 2, 'sap-f-blood-devices')"` : ''}>
@@ -3305,7 +3909,7 @@ const SurgeryApprovalPage = {
         const procName = (this._catalogData?.procedures || []).find(p => p.id === (pcObj.confirmedCatalogEntryId || pcObj.suggestedCatalogEntryId))?.name || s.method || '—';
 
         const syncedCkTitles = {
-            'CK-03': 'Bệnh nền & Thuốc chống huyết khối',
+            'CK-03': 'Tiền sử toàn diện & Thuốc chống huyết khối',
             'CK-05': 'Giải phẫu bệnh & Giai đoạn u',
             'CK-07': 'Dự trù máu & thiết bị đặc thù'
         };
@@ -3398,6 +4002,19 @@ const SurgeryApprovalPage = {
                     (${Utils.escapeHtml(SAP_EMERGENCY_CHANNEL_LABELS[app.emergencyException.verbalConsultRecord?.contactChannel] || app.emergencyException.verbalConsultRecord?.contactChannel || 'Điện thoại trực tiếp')} lúc ${Utils.escapeHtml((app.emergencyException.verbalConsultRecord?.contactedAt || '').replace('T', ' ').slice(0, 16))})
                     · BS hoàn tất sau mổ: <strong>${Utils.escapeHtml(Utils.getStaffName(app.emergencyException.postOpFollowUpOwnerStaffId) || '')}</strong>
                 </div>
+                ${(app.emergencyException.deferredItems || app.deferredItems || []).some(k => String(k).startsWith('clinicalChips.')) ? `
+                <div style="margin-top:4px;font-size:13px;">
+                    <strong>Mục tiền sử chờ bổ sung hậu kiểm sau mổ:</strong> ${Utils.escapeHtml(
+                        (app.emergencyException.deferredItems || app.deferredItems || [])
+                            .filter(k => String(k).startsWith('clinicalChips.'))
+                            .map(k => ({
+                                'clinicalChips.surgicalHistory': 'Tiền sử ngoại khoa / vô cảm',
+                                'clinicalChips.allergyHistory': 'Tiền sử dị ứng',
+                                'clinicalChips.socialHabits': 'Thói quen sinh hoạt'
+                            })[k] || k)
+                            .join(' · ')
+                    )}
+                </div>` : ''}
             </div>` : ''}
 
             <div class="sap-exec-grid">
@@ -3420,8 +4037,39 @@ const SurgeryApprovalPage = {
                 </div>
 
                 <div class="sap-exec-box">
-                    <div class="sap-exec-box-title">2. Bệnh nền, Kháng đông & Vật tư</div>
-                    <div><strong>Bệnh nền:</strong> ${Utils.escapeHtml((chips.comorbidities?.values || []).map(v => SAP_COMORBIDITIES.find(c => c.value === v)?.label || v).join(', ') || 'Chưa xác nhận')}</div>
+                    <div class="sap-exec-box-title">2. Tiền sử toàn diện, Kháng đông & Vật tư</div>
+                    ${(() => {
+                        const al = chips.allergyHistory || {};
+                        const sh = chips.surgicalHistory || {};
+                        const soc = chips.socialHabits || {};
+                        const inlineBadges = [];
+                        if (al.confirmed && al.status === 'present') {
+                            const det = String(al.allergenDetail || '').trim();
+                            if (al.reactionSeverity === 'severe_anaphylaxis') {
+                                inlineBadges.push(`<span class="sap-risk-pill sap-risk-pill--danger">${this._ico('🚨')} <span>Phản vệ nặng${det ? `: ${Utils.escapeHtml(det)}` : ''}</span></span>`);
+                            } else if ((al.allergenGroups || []).includes('drug')) {
+                                inlineBadges.push(`<span class="sap-risk-pill sap-risk-pill--danger">${this._ico('💊')} <span>Dị ứng thuốc${det ? `: ${Utils.escapeHtml(det)}` : ''}</span></span>`);
+                            }
+                        }
+                        if (sh.confirmed && sh.status === 'present' && (sh.categories || []).includes('prior_anesthesia_or_transfusion_event')) {
+                            inlineBadges.push(`<span class="sap-risk-pill sap-risk-pill--warn">${this._ico('⚠️')} <span>Tai biến GMHS / truyền máu cũ</span></span>`);
+                        }
+                        if (soc.confirmed && soc.alcoholUse === 'dependent') {
+                            inlineBadges.push(`<span class="sap-risk-pill sap-risk-pill--warn">${this._ico('⚠️')} <span>Nghiện / lệ thuộc rượu</span></span>`);
+                        }
+                        if (soc.confirmed && soc.substanceAbuse?.status === 'yes') {
+                            inlineBadges.push(`<span class="sap-risk-pill sap-risk-pill--warn">${this._ico('⚠️')} <span>Chất gây nghiện (+)</span></span>`);
+                        }
+                        const lapOpenWarn = sh.confirmed && sh.status === 'present' && sh.abdominalScarType === 'open_laparotomy_scar' && ['noisoi', 'robot'].includes(s.approachType);
+                        return `
+                        ${inlineBadges.length > 0 ? `<div class="sap-exec-inline-alerts">${inlineBadges.join('')}</div>` : ''}
+                        ${lapOpenWarn ? `<div class="sap-exec-scar-note">${this._ico('🩹')} <strong>Lưu ý ngoại khoa:</strong> ${s.approachType === 'robot' ? 'Phẫu thuật Robot' : 'Phẫu thuật Nội soi'} trên nền <strong>sẹo mổ mở cũ</strong> (lưu ý vị trí đặt trocar đầu tiên & gỡ dính).</div>` : ''}
+                        `;
+                    })()}
+                    <div><strong>Nội khoa:</strong> ${Utils.escapeHtml(this._formatComorbiditiesSummary(chips.comorbidities))}</div>
+                    <div><strong>Ngoại khoa / vô cảm:</strong> ${Utils.escapeHtml(this._formatSurgicalHistorySummary(chips.surgicalHistory))}</div>
+                    <div><strong>Dị ứng:</strong> ${Utils.escapeHtml(this._formatAllergyHistorySummary(chips.allergyHistory))}</div>
+                    <div><strong>Thói quen:</strong> ${Utils.escapeHtml(this._formatSocialHabitsSummary(chips.socialHabits))}</div>
                     <div><strong>Chống huyết khối:</strong> ${Utils.escapeHtml(this._formatAntithromboticSummary(chips.antithromboticPlan))}</div>
                     <div><strong>Máu & thiết bị:</strong> ${Utils.escapeHtml((chips.bloodAndDevices?.values || []).map(v => SAP_BLOOD_DEVICES.find(b => b.value === v)?.label || v).join(', ') || 'Chưa xác nhận')}</div>
                     <div><strong>Kế hoạch HMNT:</strong> ${Utils.escapeHtml(SAP_STOMA_PLANS.find(p => p.value === chips.stomaPlan?.value)?.label || 'Chưa xác nhận')}</div>
@@ -3485,6 +4133,10 @@ const SurgeryApprovalPage = {
         const rows = [];
         const prev = this._getCachedApprovedSnapshot(s.id);
         if (prev) {
+            const curComorb = this._formatComorbiditiesSummary(s.clinicalChips?.comorbidities);
+            const curSh = this._formatSurgicalHistorySummary(s.clinicalChips?.surgicalHistory);
+            const curAl = this._formatAllergyHistorySummary(s.clinicalChips?.allergyHistory);
+            const curSoc = this._formatSocialHabitsSummary(s.clinicalChips?.socialHabits);
             const curAnti = this._formatAntithromboticSummary(s.clinicalChips?.antithromboticPlan);
             const curPg = s.clinicalClassification?.pathologyGroup?.confirmedValue || '';
             const curCat = s.clinicalClassification?.procedureClass?.confirmedCatalogEntryId || '';
@@ -3528,6 +4180,18 @@ const SurgeryApprovalPage = {
                     oldVal: procs.find(p => p.id === prev.catalogEntryId)?.name || prev.catalogEntryId,
                     newVal: procs.find(p => p.id === curCat)?.name || curCat
                 });
+            }
+            if (prev.comorbiditiesSummary && prev.comorbiditiesSummary !== curComorb) {
+                rows.push({ field: 'Tiền sử nội khoa', oldVal: prev.comorbiditiesSummary, newVal: curComorb });
+            }
+            if (prev.surgicalHistorySummary && prev.surgicalHistorySummary !== curSh) {
+                rows.push({ field: 'Tiền sử ngoại khoa / vô cảm', oldVal: prev.surgicalHistorySummary, newVal: curSh });
+            }
+            if (prev.allergyHistorySummary && prev.allergyHistorySummary !== curAl) {
+                rows.push({ field: 'Tiền sử dị ứng', oldVal: prev.allergyHistorySummary, newVal: curAl });
+            }
+            if (prev.socialHabitsSummary && prev.socialHabitsSummary !== curSoc) {
+                rows.push({ field: 'Thói quen sinh hoạt', oldVal: prev.socialHabitsSummary, newVal: curSoc });
             }
             if (prev.antithromboticSummary && prev.antithromboticSummary !== curAnti) {
                 rows.push({ field: 'Chống huyết khối', oldVal: prev.antithromboticSummary, newVal: curAnti });
@@ -4218,7 +4882,37 @@ const SurgeryApprovalPage = {
             const eff2 = this._getEffectiveStep2Suggestions(s);
             const chipPatch = {};
             if (!chips.comorbidities?.confirmed && eff2.comorbValues && eff2.comorbValues.length > 0 && !eff2.comorbValues.includes('other')) {
-                chipPatch.comorbidities = { confirmed: true, values: eff2.comorbValues };
+                const prevCm = chips.comorbidities || {};
+                chipPatch.comorbidities = {
+                    confirmed: true,
+                    values: eff2.comorbValues,
+                    ...(prevCm.medicalTreatmentNote ? { medicalTreatmentNote: prevCm.medicalTreatmentNote } : {})
+                };
+            }
+            if (!chips.surgicalHistory?.confirmed && eff2.shStatus) {
+                const prevSh = chips.surgicalHistory || {};
+                chipPatch.surgicalHistory = {
+                    confirmed: true,
+                    status: eff2.shStatus,
+                    categories: eff2.shStatus === 'present' ? (eff2.shCategories || []) : [],
+                    abdominalScarType: prevSh.abdominalScarType || 'not_applicable',
+                    detailNote: prevSh.detailNote || null
+                };
+            }
+            if (!chips.allergyHistory?.confirmed && eff2.alStatus === 'none') {
+                chipPatch.allergyHistory = {
+                    confirmed: true,
+                    status: 'none',
+                    allergenGroups: [],
+                    reactionSeverity: null,
+                    allergenDetail: null
+                };
+            }
+            if (!chips.socialHabits?.confirmed && eff2.socHabits) {
+                chipPatch.socialHabits = {
+                    confirmed: true,
+                    ...eff2.socHabits
+                };
             }
             if (!chips.antithromboticPlan?.confirmed && eff2.antiMode === 'none_confirmed') {
                 chipPatch.antithromboticPlan = { confirmed: true, mode: 'none_confirmed' };
@@ -4240,6 +4934,10 @@ const SurgeryApprovalPage = {
         const curObj = s.clinicalChips?.[groupKey] || { confirmed: false, values: [] };
         const exclVals = groupKey === 'comorbidities' ? ['none'] : ['basic_instruments_only'];
         let nextVals = curObj.confirmed ? [...(curObj.values || [])] : [];
+        if (groupKey === 'comorbidities') {
+            nextVals = nextVals.map(v => v === 'cad_stent' ? 'ischemic_heart_cad' : (v === 'afib_hf' ? 'valvular_heart_hf' : v));
+            nextVals = Array.from(new Set(nextVals));
+        }
         if (isExclusive) {
             nextVals = [val];
         } else {
@@ -4253,7 +4951,266 @@ const SurgeryApprovalPage = {
                 nextVals = exclVals[0] && !(s.approachType === 'robot' && exclVals[0] === 'basic_instruments_only') ? [exclVals[0]] : [val];
             }
         }
-        await this.patchChipWithSync(sid, { [groupKey]: { confirmed: true, values: nextVals } });
+        const nextGroupPayload = { confirmed: true, values: nextVals };
+        if (groupKey === 'comorbidities') {
+            if (!nextVals.includes('none') && curObj.medicalTreatmentNote) {
+                nextGroupPayload.medicalTreatmentNote = curObj.medicalTreatmentNote;
+            }
+            if (nextVals.includes('other') && curObj.otherComorbidityNote) {
+                nextGroupPayload.otherComorbidityNote = curObj.otherComorbidityNote;
+            }
+        }
+        await this.patchChipWithSync(sid, { [groupKey]: nextGroupPayload });
+    },
+
+    async updateComorbidityNote(sid, field, value) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const cur = s.clinicalChips?.comorbidities || { confirmed: true, values: ['none'] };
+        await this.patchChipWithSync(sid, {
+            comorbidities: {
+                confirmed: true,
+                values: cur.values || [],
+                medicalTreatmentNote: field === 'medicalTreatmentNote' ? value : (cur.medicalTreatmentNote || ''),
+                otherComorbidityNote: field === 'otherComorbidityNote' ? value : (cur.otherComorbidityNote || '')
+            }
+        });
+    },
+
+    async selectSurgicalHistoryStatus(sid, statusVal) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.surgicalHistory || {};
+        const eff2 = this._getEffectiveStep2Suggestions(s);
+        const initCats = statusVal === 'present'
+            ? ((prev.categories && prev.categories.length > 0) ? prev.categories : (eff2.shCategories || []))
+            : [];
+        await this.patchChipWithSync(sid, {
+            surgicalHistory: {
+                confirmed: true,
+                status: statusVal,
+                categories: initCats,
+                abdominalScarType: statusVal === 'present' ? (prev.abdominalScarType || 'not_applicable') : 'not_applicable',
+                detailNote: statusVal === 'present' ? (prev.detailNote || '') : null
+            }
+        });
+    },
+
+    async toggleSurgicalCategory(sid, catVal) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.surgicalHistory || {};
+        const curCats = Array.isArray(prev.categories) ? [...prev.categories] : [];
+        const nextCats = curCats.includes(catVal) ? curCats.filter(x => x !== catVal) : [...curCats, catVal];
+        const hasAbd = nextCats.includes('prior_colorectal_stoma') || nextCats.includes('prior_abdominal_pelvic');
+        await this.patchChipWithSync(sid, {
+            surgicalHistory: {
+                confirmed: true,
+                status: 'present',
+                categories: nextCats,
+                abdominalScarType: hasAbd ? (prev.abdominalScarType || 'not_applicable') : 'not_applicable',
+                detailNote: prev.detailNote || ''
+            }
+        });
+    },
+
+    async selectAbdominalScarType(sid, scarType) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.surgicalHistory || {};
+        await this.patchChipWithSync(sid, {
+            surgicalHistory: {
+                confirmed: true,
+                status: 'present',
+                categories: prev.categories || [],
+                abdominalScarType: scarType,
+                detailNote: prev.detailNote || ''
+            }
+        });
+    },
+
+    async updateSurgicalHistoryDetail(sid, detailNote) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.surgicalHistory || {};
+        await this.patchChipWithSync(sid, {
+            surgicalHistory: {
+                confirmed: true,
+                status: 'present',
+                categories: prev.categories || [],
+                abdominalScarType: prev.abdominalScarType || 'not_applicable',
+                detailNote
+            }
+        });
+    },
+
+    async selectAllergyStatus(sid, statusVal) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.allergyHistory || {};
+        await this.patchChipWithSync(sid, {
+            allergyHistory: {
+                confirmed: true,
+                status: statusVal,
+                allergenGroups: statusVal === 'present'
+                    ? ((prev.allergenGroups && prev.allergenGroups.length > 0) ? prev.allergenGroups : ['drug'])
+                    : [],
+                reactionSeverity: statusVal === 'present' ? (prev.reactionSeverity || 'mild_moderate') : null,
+                allergenDetail: statusVal === 'present' ? (prev.allergenDetail || '') : null
+            }
+        });
+    },
+
+    async toggleAllergyGroup(sid, grpVal) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.allergyHistory || {};
+        const curGrps = Array.isArray(prev.allergenGroups) ? [...prev.allergenGroups] : [];
+        let nextGrps = curGrps.includes(grpVal) ? curGrps.filter(x => x !== grpVal) : [...curGrps, grpVal];
+        if (nextGrps.length === 0) nextGrps = [grpVal];
+        await this.patchChipWithSync(sid, {
+            allergyHistory: {
+                confirmed: true,
+                status: 'present',
+                allergenGroups: nextGrps,
+                reactionSeverity: prev.reactionSeverity || 'mild_moderate',
+                allergenDetail: prev.allergenDetail || ''
+            }
+        });
+    },
+
+    async selectAllergySeverity(sid, sevVal) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.allergyHistory || {};
+        await this.patchChipWithSync(sid, {
+            allergyHistory: {
+                confirmed: true,
+                status: 'present',
+                allergenGroups: (prev.allergenGroups && prev.allergenGroups.length > 0) ? prev.allergenGroups : ['drug'],
+                reactionSeverity: sevVal,
+                allergenDetail: prev.allergenDetail || ''
+            }
+        });
+    },
+
+    async updateAllergyDetail(sid, detailVal) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.allergyHistory || {};
+        await this.patchChipWithSync(sid, {
+            allergyHistory: {
+                confirmed: true,
+                status: 'present',
+                allergenGroups: (prev.allergenGroups && prev.allergenGroups.length > 0) ? prev.allergenGroups : ['drug'],
+                reactionSeverity: prev.reactionSeverity || 'mild_moderate',
+                allergenDetail: detailVal
+            }
+        });
+    },
+
+    async updateSocialHabits(sid, partialObj) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const prev = s.clinicalChips?.socialHabits || {};
+        const eff2 = this._getEffectiveStep2Suggestions(s);
+        const fallbackAlc = prev.confirmed ? prev.alcoholUse : (prev.alcoholUse || eff2.socHabits?.alcoholUse || 'none');
+        const fallbackSmkSt = prev.confirmed ? prev.smoking?.status : (prev.smoking?.status || eff2.socHabits?.smoking?.status || 'no');
+        const fallbackSubSt = prev.confirmed ? prev.substanceAbuse?.status : (prev.substanceAbuse?.status || eff2.socHabits?.substanceAbuse?.status || 'no');
+
+        const nextAlc = partialObj.alcoholUse !== undefined ? partialObj.alcoholUse : fallbackAlc;
+        const nextSmkIn = partialObj.smoking || {};
+        const nextSmkSt = nextSmkIn.status !== undefined ? nextSmkIn.status : fallbackSmkSt;
+        const isSmokingActive = ['current', 'former'].includes(nextSmkSt);
+        const nextPyUnknown = isSmokingActive
+            ? (nextSmkIn.packYearsUnknown !== undefined ? Boolean(nextSmkIn.packYearsUnknown) : Boolean(prev.smoking?.packYearsUnknown))
+            : false;
+        const nextPyVal = isSmokingActive && !nextPyUnknown
+            ? (nextSmkIn.packYears !== undefined ? nextSmkIn.packYears : (prev.smoking?.packYears ?? null))
+            : null;
+
+        const nextSubIn = partialObj.substanceAbuse || {};
+        const nextSubSt = nextSubIn.status !== undefined ? nextSubIn.status : fallbackSubSt;
+        const nextSubNote = nextSubSt === 'yes'
+            ? (nextSubIn.substanceNote !== undefined ? nextSubIn.substanceNote : (prev.substanceAbuse?.substanceNote || ''))
+            : null;
+
+        await this.patchChipWithSync(sid, {
+            socialHabits: {
+                confirmed: Boolean(nextAlc && nextSmkSt && nextSubSt),
+                alcoholUse: nextAlc,
+                smoking: {
+                    status: nextSmkSt,
+                    packYears: nextPyVal,
+                    packYearsUnknown: nextPyUnknown
+                },
+                substanceAbuse: {
+                    status: nextSubSt,
+                    substanceNote: nextSubNote
+                }
+            }
+        });
+    },
+
+    async selectPackYearPreset(sid, numVal) {
+        await this.updateSocialHabits(sid, {
+            smoking: {
+                packYears: Number(numVal),
+                packYearsUnknown: false
+            }
+        });
+    },
+
+    async updatePackYearsInput(sid, rawStr) {
+        const cleaned = String(rawStr || '').trim().replace(',', '.');
+        if (!cleaned) {
+            await this.updateSocialHabits(sid, {
+                smoking: {
+                    packYears: null,
+                    packYearsUnknown: false
+                }
+            });
+            return;
+        }
+        const num = Number(cleaned);
+        if (Number.isNaN(num) || num < 0.1 || num > 200.0) {
+            Toast.warning('Số gói/năm cần nằm trong khoảng 0.1 đến 200.');
+            this._refreshOpenModal(sid);
+            return;
+        }
+        await this.updateSocialHabits(sid, {
+            smoking: {
+                packYears: Math.round(num * 10) / 10,
+                packYearsUnknown: false
+            }
+        });
+    },
+
+    async togglePackYearsUnknown(sid) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const curUnk = Boolean(s.clinicalChips?.socialHabits?.smoking?.packYearsUnknown);
+        await this.updateSocialHabits(sid, {
+            smoking: {
+                packYears: null,
+                packYearsUnknown: !curUnk
+            }
+        });
+    },
+
+    async setHighRiskHistoryPlan(sid, note) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const actor = this.getEffectiveActor(s);
+        const isTrainee = SAP_TRAINEE_IDS.has(actor.staffId);
+        await this.patchDraft(sid, {
+            preopChecklist: {
+                'CK-03': {
+                    state: isTrainee ? 'prepared_ok' : 'verified_abnormal_planned',
+                    clinicalPlanNote: String(note || '').trim()
+                }
+            }
+        });
     },
 
     async selectAntithromboticMode(sid, mode) {
@@ -4636,12 +5593,12 @@ const SurgeryApprovalPage = {
         if (SAP_GATE_REASON_MAP[codeStr]) return SAP_GATE_REASON_MAP[codeStr];
 
         const ckTitle = code => SAP_CK_INDEPENDENT_ITEMS.find(m => m.code === code)?.title
-            || (code === 'CK-03' ? 'Bệnh nền & Thuốc chống huyết khối (Bước ②)'
+            || (code === 'CK-03' ? 'Tiền sử toàn diện & Thuốc chống huyết khối (Bước ②)'
                 : code === 'CK-05' ? 'Giải phẫu bệnh & Giai đoạn u (Bước ②)'
                     : code === 'CK-07' ? 'Dự trù máu & thiết bị (Bước ②)' : 'Mục bảng kiểm');
 
         const ckStepAndField = code => {
-            if (code === 'CK-03') return { step: 2, fieldId: 'sap-f-antithrombotic' };
+            if (code === 'CK-03') return { step: 2, fieldId: 'sap-f-comorbidities' };
             if (code === 'CK-05') return { step: 2, fieldId: 'sap-f-context-module' };
             if (code === 'CK-07') return { step: 2, fieldId: 'sap-f-blood-devices' };
             return { step: 3, fieldId: `sap-ck-row-${code}` };

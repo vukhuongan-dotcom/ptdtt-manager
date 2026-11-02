@@ -2,9 +2,9 @@
 """
 Surgery Approval Engine — Khoa Phẫu thuật Đại trực tràng (Bệnh viện Bình Dân)
 Implements Plan 1 (Core Departmental Online Surgery Approval Workflow) &
-Plan 2 (Pre-op Checklist CK-01..08 & 1-Tap Clinical Chips C-01..07 + B1..B4).
+Plan 2 (Pre-op Checklist CK-01..08 & 1-Tap Clinical Chips C-01..10 + B1..B4).
 
-Boundary: Purely internal Step 1 at Khoa PTĐTT (Zero HIS / BM01 coupling).
+Boundary: Purely internal Step 1 at Khoa PTĐTT (Zero HIS / BM01 coupling, no ASA/Mallampati).
 """
 
 import copy
@@ -19,7 +19,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 
 VN_TZ = timezone(timedelta(hours=7))
-RULE_VERSION = "2026.10.v4"
+RULE_VERSION = "2026.11.v5"
 SCHEMA_VERSION = 2
 GENESIS_HASH = "0" * 64
 
@@ -121,9 +121,38 @@ VALID_WARD_ROOMS = {
     "711", "712", "712A", "718", "719", "unassigned",
 }
 VALID_COMORBIDITIES = {
-    "none", "hypertension", "diabetes", "cad_stent", "afib_hf",
-    "copd_asthma", "ckd", "cirrhosis", "anemia_malnutrition", "other",
+    "none",
+    "hypertension",
+    "diabetes",
+    "ischemic_heart_cad",
+    "cad_stent",  # legacy alias preserved for v4 compatibility
+    "arrhythmia",
+    "valvular_heart_hf",
+    "afib_hf",  # legacy alias preserved for v4 compatibility
+    "thyroid_disease",
+    "copd_asthma",
+    "pulmonary_tb_sequelae",
+    "stroke_cva_sequelae",
+    "ckd",
+    "cirrhosis",
+    "anemia_malnutrition",
+    "other",
 }
+VALID_SURGICAL_HISTORY_STATUS = {"none", "present", "unknown"}
+VALID_SURGICAL_HISTORY_CATEGORIES = {
+    "prior_colorectal_stoma",
+    "prior_abdominal_pelvic",
+    "prior_anorectal_perineal",
+    "prior_extra_abdominal",
+    "prior_anesthesia_or_transfusion_event",
+}
+VALID_ABDOMINAL_SCAR_TYPES = {"laparoscopic_scar", "open_laparotomy_scar", "not_applicable"}
+VALID_ALLERGY_STATUS = {"none", "present", "unknown"}
+VALID_ALLERGY_GROUPS = {"drug", "food", "latex_antiseptic_other"}
+VALID_ALLERGY_SEVERITIES = {"mild_moderate", "severe_anaphylaxis"}
+VALID_ALCOHOL_USE = {"none", "occasional", "dependent", "unknown"}
+VALID_SMOKING_STATUS = {"no", "current", "former", "unknown"}
+VALID_SUBSTANCE_STATUS = {"no", "yes", "unknown"}
 VALID_ANTITHROMBOTIC_MODES = {
     "none_confirmed",
     "continued_per_plan",
@@ -1123,6 +1152,68 @@ def is_same_pod_attending(catalog: dict, surgery: dict, actor_staff_id: int) -> 
     return False
 
 
+def suggest_surgical_history(diagnosis: str, method: str) -> dict:
+    """Smart suggestion for C-08 Surgical History from diagnosis & method."""
+    txt = normalize_vn_text(f"{diagnosis or ''} {method or ''}")
+    if any(k in txt for k in ("đóng hmnt", "đóng hậu môn nhân tạo", "lập lại lưu thông", "miệng nối cũ")):
+        return {"suggestedStatus": "present", "suggestedCategories": ["prior_colorectal_stoma"]}
+    if "tái phát" in txt:
+        if any(k in txt for k in ("rò hậu môn", "trĩ", "hậu môn", "tầng sinh môn")):
+            return {"suggestedStatus": "present", "suggestedCategories": ["prior_anorectal_perineal"]}
+        return {"suggestedStatus": "present", "suggestedCategories": ["prior_abdominal_pelvic"]}
+    return {"suggestedStatus": "none", "suggestedCategories": []}
+
+
+def has_high_risk_preop_history(chips: dict) -> bool:
+    """True when pre-op history has critical anesthesia/surgical safety risks requiring an explicit CK-03 plan."""
+    if not isinstance(chips, dict):
+        return False
+    anti = chips.get("antithromboticPlan") or {}
+    if anti.get("mode") == "unheld_urgent_risk":
+        return True
+    al = chips.get("allergyHistory") or {}
+    if al.get("status") == "present" and al.get("reactionSeverity") == "severe_anaphylaxis":
+        return True
+    sh = chips.get("surgicalHistory") or {}
+    if sh.get("status") == "present" and "prior_anesthesia_or_transfusion_event" in (sh.get("categories") or []):
+        return True
+    soc = chips.get("socialHabits") or {}
+    if soc.get("alcoholUse") == "dependent":
+        return True
+    if ((soc.get("substanceAbuse") or {}).get("status")) == "yes":
+        return True
+    return False
+
+
+def are_step2_history_chips_routine_confirmed(chips: dict) -> bool:
+    """True only when C-04, C-05, C-08, C-09, C-10 are all routine-confirmed (no 'unknown') AND zero high-risk flags."""
+    if not isinstance(chips, dict) or has_high_risk_preop_history(chips):
+        return False
+    comorb = chips.get("comorbidities") or {}
+    if not comorb.get("confirmed") or not (comorb.get("values") or []):
+        return False
+    anti = chips.get("antithromboticPlan") or {}
+    if not anti.get("confirmed") or anti.get("mode") not in VALID_ANTITHROMBOTIC_MODES:
+        return False
+    sh = chips.get("surgicalHistory") or {}
+    if not sh.get("confirmed") or sh.get("status") not in ("none", "present"):
+        return False
+    al = chips.get("allergyHistory") or {}
+    if not al.get("confirmed") or al.get("status") not in ("none", "present"):
+        return False
+    soc = chips.get("socialHabits") or {}
+    smk = soc.get("smoking") or {}
+    sub = soc.get("substanceAbuse") or {}
+    if (
+        not soc.get("confirmed")
+        or soc.get("alcoholUse") not in ("none", "occasional", "dependent")
+        or smk.get("status") not in ("no", "current", "former")
+        or sub.get("status") not in ("no", "yes")
+    ):
+        return False
+    return True
+
+
 def build_initial_unverified_structures(surgery: dict, catalog: dict, db: dict) -> dict:
     """Builds clean unverified Stage 1 + Stage 2 structures (all states = unverified, confirmed = False)."""
     approach = surgery.get("approachType") or "mo"
@@ -1138,6 +1229,7 @@ def build_initial_unverified_structures(surgery: dict, catalog: dict, db: dict) 
         confirmed_catalog_id=None,
     )
     urgency = suggest_urgency_level(surgery.get("surgeryType"))
+    sug_sh = suggest_surgical_history(surgery.get("diagnosis", ""), surgery.get("method", ""))
 
     ck = {}
     for code in CK_CODES:
@@ -1180,7 +1272,36 @@ def build_initial_unverified_structures(surgery: dict, catalog: dict, db: dict) 
         },
         "preopChecklist": ck,
         "clinicalChips": {
-            "comorbidities": {"confirmed": False, "suggestedValues": ["none"], "values": []},
+            "comorbidities": {
+                "confirmed": False,
+                "suggestedValues": ["none"],
+                "values": [],
+                "medicalTreatmentNote": None,
+                "otherComorbidityNote": "",
+            },
+            "surgicalHistory": {
+                "confirmed": False,
+                "suggestedStatus": sug_sh["suggestedStatus"],
+                "suggestedCategories": sug_sh["suggestedCategories"],
+                "status": None,
+                "categories": [],
+                "abdominalScarType": "not_applicable",
+                "detailNote": None,
+            },
+            "allergyHistory": {
+                "confirmed": False,
+                "suggestedStatus": "none",
+                "status": None,
+                "allergenGroups": [],
+                "reactionSeverity": None,
+                "allergenDetail": None,
+            },
+            "socialHabits": {
+                "confirmed": False,
+                "alcoholUse": None,
+                "smoking": {"status": None, "packYears": None, "packYearsUnknown": False},
+                "substanceAbuse": {"status": None, "substanceNote": None},
+            },
             "antithromboticPlan": {"confirmed": False, "mode": None},
             "bloodAndDevices": {"confirmed": False, "values": []},
             "stomaPlan": {"confirmed": False, "value": None},
@@ -1513,8 +1634,14 @@ def run_surgery_approval_migration(db: dict, data_dir: str, base_dir: str, *, fo
       - M4 approachType == 'nsth' -> nsth_external_authority
       - M5 missing/invalid date or future missing mainSurgeon/method -> legacy_unverified_manual_review
     """
+    cfg_prior_rule = (db.get("surgeryApprovalConfig") or {}).get("ruleVersion") if isinstance(db.get("surgeryApprovalConfig"), dict) else None
     cfg = get_approval_config(db)
     db.setdefault("surgeryApprovalConfig", copy.deepcopy(cfg))
+    cfg_rule_upgraded = 0
+    if isinstance(db.get("surgeryApprovalConfig"), dict):
+        if cfg_prior_rule is not None and cfg_prior_rule != RULE_VERSION:
+            cfg_rule_upgraded = 1
+        db["surgeryApprovalConfig"]["ruleVersion"] = RULE_VERSION
     db.setdefault("approvalDelegations", [])
     db.setdefault("_approvalIdempotency", {})
 
@@ -1538,6 +1665,8 @@ def run_surgery_approval_migration(db: dict, data_dir: str, base_dir: str, *, fo
         "M4": 0,
         "M5": 0,
         "alreadyMigrated": 0,
+        "upgradedV5HistoryFields": 0,
+        "upgradedConfigRuleVersion": cfg_rule_upgraded,
         "strippedRealSurgeries": stripped_real,
     }
 
@@ -1547,6 +1676,82 @@ def run_surgery_approval_migration(db: dict, data_dir: str, base_dir: str, *, fo
         if sandbox_only and s.get("isTestSandboxCase") is not True:
             continue
         if not force and s.get("schemaVersion") == SCHEMA_VERSION and isinstance(s.get("approval"), dict) and s["approval"].get("status"):
+            if s.get("ruleVersion") != RULE_VERSION:
+                if s.get("approachType") in ("mo", "noisoi", "robot") and isinstance(s.get("clinicalChips"), dict):
+                    chips_m = s["clinicalChips"]
+                    cm_m = chips_m.setdefault("comorbidities", {"confirmed": False, "values": []})
+                    cm_m.setdefault("medicalTreatmentNote", None)
+                    cm_m.setdefault("otherComorbidityNote", "")
+                    app_st = s["approval"].get("status", "draft_unsubmitted")
+                    sug_sh_m = suggest_surgical_history(s.get("diagnosis", ""), s.get("method", ""))
+                    if app_st in ("emergency_exception_pending_ack", "approved_with_exception"):
+                        chips_m.setdefault("surgicalHistory", {
+                            "confirmed": True,
+                            "status": "unknown",
+                            "categories": [],
+                            "abdominalScarType": "not_applicable",
+                            "detailNote": None,
+                        })
+                        chips_m.setdefault("allergyHistory", {
+                            "confirmed": True,
+                            "status": "unknown",
+                            "allergenGroups": [],
+                            "reactionSeverity": None,
+                            "allergenDetail": None,
+                        })
+                        chips_m.setdefault("socialHabits", {
+                            "confirmed": True,
+                            "alcoholUse": "unknown",
+                            "smoking": {"status": "unknown", "packYears": None, "packYearsUnknown": False},
+                            "substanceAbuse": {"status": "unknown", "substanceNote": None},
+                        })
+                    elif app_st in ("submitted", "preapproved", "approved", "post_approval_hold", "reapproval_required", "ready_for_attending") or cm_m.get("confirmed"):
+                        chips_m.setdefault("surgicalHistory", {
+                            "confirmed": True,
+                            "status": "none",
+                            "categories": [],
+                            "abdominalScarType": "not_applicable",
+                            "detailNote": None,
+                        })
+                        chips_m.setdefault("allergyHistory", {
+                            "confirmed": True,
+                            "status": "none",
+                            "allergenGroups": [],
+                            "reactionSeverity": None,
+                            "allergenDetail": None,
+                        })
+                        chips_m.setdefault("socialHabits", {
+                            "confirmed": True,
+                            "alcoholUse": "none",
+                            "smoking": {"status": "no", "packYears": None, "packYearsUnknown": False},
+                            "substanceAbuse": {"status": "no", "substanceNote": None},
+                        })
+                    else:
+                        chips_m.setdefault("surgicalHistory", {
+                            "confirmed": False,
+                            "suggestedStatus": sug_sh_m["suggestedStatus"],
+                            "suggestedCategories": sug_sh_m["suggestedCategories"],
+                            "status": None,
+                            "categories": [],
+                            "abdominalScarType": "not_applicable",
+                            "detailNote": None,
+                        })
+                        chips_m.setdefault("allergyHistory", {
+                            "confirmed": False,
+                            "suggestedStatus": "none",
+                            "status": None,
+                            "allergenGroups": [],
+                            "reactionSeverity": None,
+                            "allergenDetail": None,
+                        })
+                        chips_m.setdefault("socialHabits", {
+                            "confirmed": False,
+                            "alcoholUse": None,
+                            "smoking": {"status": None, "packYears": None, "packYearsUnknown": False},
+                            "substanceAbuse": {"status": None, "substanceNote": None},
+                        })
+                s["ruleVersion"] = RULE_VERSION
+                counts["upgradedV5HistoryFields"] += 1
             counts["alreadyMigrated"] += 1
             continue
 
@@ -1793,8 +1998,8 @@ def compute_sla_status(surgery: dict, cfg: dict, urgency: str) -> str:
 
 def validate_routine_submit_gate(surgery: dict, actor: dict, payload: dict, catalog: dict, db: dict, cfg: dict) -> list:
     """
-    Validates Stage 1 (Privilege Matrix, Catalog Disambiguation, Interdisciplinary, SLA) +
-    Stage 2 (Checklist CK-01..08 & Clinical Chips C-01..07 + B1..B4 when checklistMode == 'enforced_gate').
+    Validates Stage 1 (Privilege Matrix, Catalog Disambiguation, Interdisciplinary, Mốc hạn trình duyệt) +
+    Stage 2 (Checklist CK-01..08 & Clinical Chips C-01..10 + B1..B4 when checklistMode == 'enforced_gate').
     Raises ApprovalEngineError(422/403, ...) with exact errorCode on violation.
     """
     if surgery.get("approachType") == "nsth":
@@ -1903,21 +2108,21 @@ def validate_routine_submit_gate(surgery: dict, actor: dict, payload: dict, cata
             raise ApprovalEngineError(
                 422,
                 "OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE",
-                f"Nguyên tắc mổ chương trình và mổ yêu cầu không được phép vượt cột (BS mổ chính Cột {base_col_str} chỉ được phép mổ từ loại tương ứng trở xuống, không được mổ {conf_class}). Vui lòng phân công BS mổ chính đúng cột.",
+                f"Theo Quyết định 1073/QĐ-BVBD & Bảng xếp cột 2026, ca mổ chương trình và mổ yêu cầu phải đúng cột (BS mổ chính Cột {base_col_str} chỉ mổ từ loại tương ứng trở xuống, không mổ {conf_class}). Vui lòng phân công BS mổ chính đúng cột.",
             )
         if urgency_for_col == "semi_urgent":
             if not isinstance(step_delta, int) or step_delta > 1:
                 raise ApprovalEngineError(
                     422,
                     "OVER_COLUMN_EXCEEDS_MAX_ONE_STEP",
-                    f"Mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (BS Cột {base_col_str} không được vượt {step_delta} cột lên {conf_class}).",
+                    f"Theo quy ước điều phối nội bộ tại Khoa, ca mổ bán khẩn khi thiếu nhân sự cột trên chỉ được Ban Chủ nhiệm khoa cân nhắc tối đa +01 cột (BS Cột {base_col_str} không được vượt {step_delta} cột lên {conf_class}).",
                 )
             over_ref = str(col_obj.get("overColumnRef") or "").strip()
             if len(over_ref) < 5 and col_obj.get("privilegeVerifiedByStaffId") not in BCN_STAFF_IDS:
                 raise ApprovalEngineError(
                     422,
                     "OVER_COLUMN_JUSTIFICATION_REQUIRED",
-                    "Ca mổ bán khẩn xin vượt 01 cột bắt buộc ghi rõ lý do tại thời điểm đó không có nhân sự cột trên phù hợp để Ban Chủ nhiệm khoa cân nhắc.",
+                    "Theo quy ước điều phối nội bộ tại Khoa, ca mổ bán khẩn xin vượt +01 cột bắt buộc ghi rõ lý do tại thời điểm đó không có nhân sự cột trên phù hợp để Ban Chủ nhiệm khoa cân nhắc.",
                 )
     elif sys_check == "matrix_expired_manual_verify":
         if decl_mode not in ("matrix_expired_manual_verify", "propose_over_column"):
@@ -1955,15 +2160,95 @@ def validate_routine_submit_gate(surgery: dict, actor: dict, payload: dict, cata
 
     chips = surgery.get("clinicalChips") or {}
 
-    # C-04 Comorbidities
+    # C-04 Comorbidities (13 selected chips from BVBD Phiếu Khám Tiền Mê + GI specifics; Covid 19 excluded)
     comorb = chips.get("comorbidities") or {}
     c_vals = comorb.get("values") or []
     if not comorb.get("confirmed") or not c_vals:
         blocking.append("C-04_COMORBIDITIES_UNCONFIRMED")
+    for v_cm in c_vals:
+        if v_cm not in VALID_COMORBIDITIES:
+            raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Giá trị bệnh nền nội khoa '{v_cm}' không hợp lệ.")
     if "none" in c_vals and len(c_vals) > 1:
-        raise ApprovalEngineError(422, "MUTUALLY_EXCLUSIVE_CHIPS", "Chip 'Không bệnh nền' không thể chọn đồng thời với bệnh nền khác.")
-    if "other" in c_vals and not str(comorb.get("otherComorbidityNote") or "").strip():
+        raise ApprovalEngineError(422, "MUTUALLY_EXCLUSIVE_CHIPS", "Chip 'Chưa ghi nhận' không thể chọn đồng thời với bệnh nền khác.")
+    if "other" in c_vals and len(str(comorb.get("otherComorbidityNote") or "").strip()) < 3:
         blocking.append("C-04_OTHER_NOTE_REQUIRED")
+    med_tx_note = str(comorb.get("medicalTreatmentNote") or "").strip()
+    if len(med_tx_note) > 240:
+        raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", "Ghi chú tình trạng điều trị nội khoa tối đa 240 ký tự.")
+
+    # C-08 Surgical History
+    sh = chips.get("surgicalHistory") or {}
+    sh_status = sh.get("status")
+    if not sh.get("confirmed") or sh_status not in ("none", "present"):
+        blocking.append("C-08_SURGICAL_HISTORY_UNCONFIRMED")
+    elif sh_status == "present":
+        sh_cats = sh.get("categories") or []
+        if not sh_cats or any(c not in VALID_SURGICAL_HISTORY_CATEGORIES for c in sh_cats):
+            blocking.append("C-08_SURGICAL_CATEGORIES_REQUIRED")
+        else:
+            needs_scar = ("prior_colorectal_stoma" in sh_cats) or ("prior_abdominal_pelvic" in sh_cats)
+            if needs_scar and sh.get("abdominalScarType") not in ("laparoscopic_scar", "open_laparotomy_scar"):
+                blocking.append("C-08_ABDOMINAL_SCAR_REQUIRED")
+            needs_sh_detail = ("prior_extra_abdominal" in sh_cats) or ("prior_anesthesia_or_transfusion_event" in sh_cats)
+            if needs_sh_detail and len(str(sh.get("detailNote") or "").strip()) < 3:
+                blocking.append("C-08_SURGICAL_DETAIL_REQUIRED")
+
+    # C-09 Allergy History (TC-21a: drug allergy or severe_anaphylaxis strictly requires allergenDetail >= 2 chars)
+    al = chips.get("allergyHistory") or {}
+    al_status = al.get("status")
+    if al_status == "present":
+        al_grps = al.get("allergenGroups") or []
+        al_sev = al.get("reactionSeverity")
+        al_det = str(al.get("allergenDetail") or "").strip()
+        if ("drug" in al_grps or al_sev == "severe_anaphylaxis") and len(al_det) < 2:
+            raise ApprovalEngineError(
+                422,
+                "ALLERGY_DETAIL_REQUIRED",
+                "Khi ghi nhận dị ứng Thuốc hoặc Phản vệ / Phù mạch nặng, bắt buộc ghi rõ tên thuốc / tác nhân dị ứng (tối thiểu 2 ký tự).",
+            )
+        if not al.get("confirmed"):
+            blocking.append("C-09_ALLERGY_HISTORY_UNCONFIRMED")
+        else:
+            if not al_grps or any(g not in VALID_ALLERGY_GROUPS for g in al_grps):
+                blocking.append("C-09_ALLERGY_GROUP_REQUIRED")
+            if al_sev not in VALID_ALLERGY_SEVERITIES:
+                blocking.append("C-09_ALLERGY_SEVERITY_REQUIRED")
+    elif not al.get("confirmed") or al_status != "none":
+        blocking.append("C-09_ALLERGY_HISTORY_UNCONFIRMED")
+
+    # C-10 Social Habits (TC-21b & TC-21c: smoking pack-years & substance detail strictly validated)
+    soc = chips.get("socialHabits") or {}
+    alc_val = soc.get("alcoholUse")
+    smk_obj = soc.get("smoking") or {}
+    smk_st = smk_obj.get("status")
+    sub_obj = soc.get("substanceAbuse") or {}
+    sub_st = sub_obj.get("status")
+
+    if smk_st in ("current", "former"):
+        py_val = smk_obj.get("packYears")
+        py_unk = bool(smk_obj.get("packYearsUnknown") is True)
+        valid_py = isinstance(py_val, (int, float)) and not isinstance(py_val, bool) and (0.1 <= float(py_val) <= 200.0)
+        if not valid_py and not py_unk:
+            raise ApprovalEngineError(
+                422,
+                "SMOKING_PACK_YEARS_REQUIRED",
+                "Khi chọn Hút thuốc lá (Đang hút / Đã ngưng), bắt buộc nhập số gói/năm (0.1–200) hoặc chọn 'Chưa rõ số gói/năm'.",
+            )
+    if sub_st == "yes":
+        sub_note = str(sub_obj.get("substanceNote") or "").strip()
+        if not sub_note:
+            raise ApprovalEngineError(
+                422,
+                "SUBSTANCE_DETAIL_REQUIRED",
+                "Khi ghi nhận Có lạm dụng chất gây nghiện, bắt buộc ghi rõ loại chất và tình trạng hiện tại.",
+            )
+    if (
+        not soc.get("confirmed")
+        or alc_val not in ("none", "occasional", "dependent")
+        or smk_st not in ("no", "current", "former")
+        or sub_st not in ("no", "yes")
+    ):
+        blocking.append("C-10_SOCIAL_HABITS_UNCONFIRMED")
 
     # C-05 Antithrombotic Plan
     anti = chips.get("antithromboticPlan") or {}
@@ -2081,6 +2366,9 @@ def validate_routine_submit_gate(surgery: dict, actor: dict, payload: dict, cata
             continue
         if st_val == "verified_abnormal_planned" and not str(item.get("clinicalPlanNote") or "").strip():
             blocking.append(f"{code}_CLINICAL_PLAN_NOTE_REQUIRED")
+        if code == "CK-03" and has_high_risk_preop_history(chips):
+            if st_val != "verified_abnormal_planned" or not str(item.get("clinicalPlanNote") or "").strip():
+                blocking.append("CK-03_HIGH_RISK_HISTORY_PLAN_REQUIRED")
         if code == "CK-01" and st_val == "not_indicated" and len(str(item.get("clinicalPlanNote") or "").strip()) < 5:
             blocking.append("CK-01_NOT_INDICATED_REASON_REQUIRED")
         if code == "CK-04" and st_val == "not_applicable":
@@ -2163,8 +2451,7 @@ def apply_draft_updates(surgery: dict, actor: dict, payload: dict, catalog: dict
         ck = surgery.setdefault("preopChecklist", {})
         surgery["_bulkUndoSnapshot"] = copy.deepcopy(ck)
         target_state = "prepared_ok" if trainee else "verified_ok"
-        anti_mode = ((surgery.get("clinicalChips") or {}).get("antithromboticPlan") or {}).get("mode")
-        anti_conf = ((surgery.get("clinicalChips") or {}).get("antithromboticPlan") or {}).get("confirmed")
+        step2_history_ready = are_step2_history_chips_routine_confirmed(surgery.get("clinicalChips") or {})
         changed_codes = []
 
         # Auto-derive CK-05 = not_applicable ONLY for confirmed benign groups
@@ -2182,7 +2469,7 @@ def apply_draft_updates(surgery: dict, actor: dict, payload: dict, catalog: dict
             # Protected states: NEVER overwrite!
             if cur_st in ("not_applicable", "not_indicated", "verified_abnormal_planned", "deferred_emergency"):
                 continue
-            if code == "CK-03" and (not anti_conf or anti_mode == "unheld_urgent_risk"):
+            if code == "CK-03" and not step2_history_ready:
                 continue
             if code == "CK-02":
                 subs = item.setdefault("subChecks", {})
@@ -2348,23 +2635,138 @@ def apply_draft_updates(surgery: dict, actor: dict, payload: dict, catalog: dict
         if "semiUrgentClinicalReason" in cc_in:
             cc["semiUrgentClinicalReason"] = str(cc_in.get("semiUrgentClinicalReason") or "").strip()
 
-    # 4. Clinical Chips (C-04..C-07 & Context B1..B4)
+    # 4. Clinical Chips (C-04..C-10 & Context B1..B4)
     if isinstance(payload.get("clinicalChips"), dict):
         chips_in = payload["clinicalChips"]
         chips = surgery.setdefault("clinicalChips", {})
 
         if isinstance(chips_in.get("comorbidities"), dict):
             cm_in = chips_in["comorbidities"]
+            prev_cm = chips.get("comorbidities") or {}
             vals = cm_in.get("values") if isinstance(cm_in.get("values"), list) else []
             if "none" in vals and len(vals) > 1:
-                raise ApprovalEngineError(422, "MUTUALLY_EXCLUSIVE_CHIPS", "Chip 'Không bệnh nền' loại trừ các bệnh nền khác.")
+                raise ApprovalEngineError(422, "MUTUALLY_EXCLUSIVE_CHIPS", "Chip 'Chưa ghi nhận' loại trừ các bệnh nền khác.")
             for v in vals:
                 if v not in VALID_COMORBIDITIES:
                     raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Giá trị bệnh nền '{v}' không hợp lệ.")
+            has_real_comorb = any(v != "none" for v in vals)
+            med_note_raw = str(
+                cm_in.get("medicalTreatmentNote")
+                if "medicalTreatmentNote" in cm_in
+                else (prev_cm.get("medicalTreatmentNote") or "")
+            ).strip()[:240]
             chips["comorbidities"] = {
                 "confirmed": bool(cm_in.get("confirmed", len(vals) > 0)),
+                "suggestedValues": prev_cm.get("suggestedValues") or ["none"],
                 "values": vals,
-                "otherComorbidityNote": str(cm_in.get("otherComorbidityNote") or "").strip(),
+                "medicalTreatmentNote": (med_note_raw or None) if has_real_comorb else None,
+                "otherComorbidityNote": str(cm_in.get("otherComorbidityNote") or "").strip()[:160] if "other" in vals else "",
+            }
+
+        if isinstance(chips_in.get("surgicalHistory"), dict):
+            sh_in = chips_in["surgicalHistory"]
+            prev_sh = chips.get("surgicalHistory") or {}
+            sh_status = sh_in.get("status")
+            if sh_status is not None and sh_status not in VALID_SURGICAL_HISTORY_STATUS:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Trạng thái tiền sử ngoại khoa '{sh_status}' không hợp lệ.")
+            raw_cats = sh_in.get("categories") if isinstance(sh_in.get("categories"), list) else []
+            for c_val in raw_cats:
+                if c_val not in VALID_SURGICAL_HISTORY_CATEGORIES:
+                    raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Phân nhóm tiền sử ngoại khoa '{c_val}' không hợp lệ.")
+            cats = raw_cats if sh_status == "present" else []
+            has_abd = any(c in ("prior_colorectal_stoma", "prior_abdominal_pelvic") for c in cats)
+            scar_in = sh_in.get("abdominalScarType", prev_sh.get("abdominalScarType", "not_applicable"))
+            if scar_in not in VALID_ABDOMINAL_SCAR_TYPES:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Loại sẹo mổ bụng '{scar_in}' không hợp lệ.")
+            scar_val = scar_in if (sh_status == "present" and has_abd) else "not_applicable"
+            det_raw = str(
+                sh_in.get("detailNote")
+                if "detailNote" in sh_in
+                else (prev_sh.get("detailNote") or "")
+            ).strip()[:200]
+            sug_sh = suggest_surgical_history(surgery.get("diagnosis", ""), surgery.get("method", ""))
+            chips["surgicalHistory"] = {
+                "confirmed": bool(sh_in.get("confirmed", sh_status is not None)),
+                "suggestedStatus": prev_sh.get("suggestedStatus") or sug_sh["suggestedStatus"],
+                "suggestedCategories": prev_sh.get("suggestedCategories") if "suggestedCategories" in prev_sh else sug_sh["suggestedCategories"],
+                "status": sh_status,
+                "categories": cats,
+                "abdominalScarType": scar_val,
+                "detailNote": (det_raw or None) if sh_status == "present" else None,
+            }
+
+        if isinstance(chips_in.get("allergyHistory"), dict):
+            al_in = chips_in["allergyHistory"]
+            prev_al = chips.get("allergyHistory") or {}
+            al_status = al_in.get("status")
+            if al_status is not None and al_status not in VALID_ALLERGY_STATUS:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Trạng thái tiền sử dị ứng '{al_status}' không hợp lệ.")
+            raw_grps = al_in.get("allergenGroups") if isinstance(al_in.get("allergenGroups"), list) else []
+            for g_val in raw_grps:
+                if g_val not in VALID_ALLERGY_GROUPS:
+                    raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Nhóm dị nguyên '{g_val}' không hợp lệ.")
+            sev_in = al_in.get("reactionSeverity", prev_al.get("reactionSeverity"))
+            if sev_in is not None and sev_in not in VALID_ALLERGY_SEVERITIES:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Mức độ phản ứng dị ứng '{sev_in}' không hợp lệ.")
+            det_al = str(
+                al_in.get("allergenDetail")
+                if "allergenDetail" in al_in
+                else (prev_al.get("allergenDetail") or "")
+            ).strip()[:160]
+            chips["allergyHistory"] = {
+                "confirmed": bool(al_in.get("confirmed", al_status is not None)),
+                "suggestedStatus": prev_al.get("suggestedStatus") or "none",
+                "status": al_status,
+                "allergenGroups": raw_grps if al_status == "present" else [],
+                "reactionSeverity": (sev_in or "mild_moderate") if al_status == "present" else None,
+                "allergenDetail": (det_al or None) if al_status == "present" else None,
+            }
+
+        if isinstance(chips_in.get("socialHabits"), dict):
+            soc_in = chips_in["socialHabits"]
+            prev_soc = chips.get("socialHabits") or {}
+            prev_smk = prev_soc.get("smoking") or {}
+            prev_sub = prev_soc.get("substanceAbuse") or {}
+            alc = soc_in.get("alcoholUse", prev_soc.get("alcoholUse"))
+            if alc is not None and alc not in VALID_ALCOHOL_USE:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Mức sử dụng rượu bia '{alc}' không hợp lệ.")
+            smk_in = soc_in.get("smoking") if isinstance(soc_in.get("smoking"), dict) else {}
+            smk_st = smk_in.get("status", prev_smk.get("status"))
+            if smk_st is not None and smk_st not in VALID_SMOKING_STATUS:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Tình trạng hút thuốc lá '{smk_st}' không hợp lệ.")
+            py_unk = bool(smk_in.get("packYearsUnknown", prev_smk.get("packYearsUnknown", False))) if smk_st in ("current", "former") else False
+            py_raw = smk_in.get("packYears", prev_smk.get("packYears")) if smk_st in ("current", "former") else None
+            py_val = None
+            if smk_st in ("current", "former") and not py_unk and py_raw is not None and str(py_raw).strip() != "":
+                try:
+                    py_num = round(float(py_raw), 1)
+                except (TypeError, ValueError):
+                    raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", "Số gói/năm phải là số hợp lệ (0.1 – 200).")
+                if py_num < 0.1 or py_num > 200.0:
+                    raise ApprovalEngineError(422, "SMOKING_PACK_YEARS_REQUIRED", "Số gói/năm phải nằm trong khoảng 0.1 – 200.")
+                py_val = py_num
+            sub_in = soc_in.get("substanceAbuse") if isinstance(soc_in.get("substanceAbuse"), dict) else {}
+            sub_st = sub_in.get("status", prev_sub.get("status"))
+            if sub_st is not None and sub_st not in VALID_SUBSTANCE_STATUS:
+                raise ApprovalEngineError(422, "INVALID_CHIP_VALUE", f"Tình trạng chất gây nghiện '{sub_st}' không hợp lệ.")
+            sub_note_raw = str(
+                sub_in.get("substanceNote")
+                if "substanceNote" in sub_in
+                else (prev_sub.get("substanceNote") or "")
+            ).strip()[:160]
+            all_filled = alc is not None and smk_st is not None and sub_st is not None
+            chips["socialHabits"] = {
+                "confirmed": bool(soc_in.get("confirmed", all_filled)),
+                "alcoholUse": alc,
+                "smoking": {
+                    "status": smk_st,
+                    "packYears": py_val,
+                    "packYearsUnknown": py_unk,
+                },
+                "substanceAbuse": {
+                    "status": sub_st,
+                    "substanceNote": (sub_note_raw or None) if sub_st == "yes" else None,
+                },
             }
 
         if isinstance(chips_in.get("antithromboticPlan"), dict):
@@ -2583,6 +2985,35 @@ def _build_verified_checklist_for_sandbox(
     return ck
 
 
+def _default_v5_history_for_sandbox() -> dict:
+    """Clean routine-confirmed C-08..C-10 history baseline for sandbox test cases."""
+    return {
+        "surgicalHistory": {
+            "confirmed": True,
+            "suggestedStatus": "none",
+            "suggestedCategories": [],
+            "status": "none",
+            "categories": [],
+            "abdominalScarType": "not_applicable",
+            "detailNote": None,
+        },
+        "allergyHistory": {
+            "confirmed": True,
+            "suggestedStatus": "none",
+            "status": "none",
+            "allergenGroups": [],
+            "reactionSeverity": None,
+            "allergenDetail": None,
+        },
+        "socialHabits": {
+            "confirmed": True,
+            "alcoholUse": "none",
+            "smoking": {"status": "no", "packYears": None, "packYearsUnknown": False},
+            "substanceAbuse": {"status": "no", "substanceNote": None},
+        },
+    }
+
+
 def _stamp_pod_for_sandbox(rec: dict, catalog: dict, ward_room: str, trainee_id: int = None, freeze_snapshot: bool = False):
     r_info = get_pod_room_info(catalog, ward_room)
     res_list = r_info.get("residentStaffIds") or []
@@ -2767,7 +3198,29 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="MO-145", proc_class="PT-I", declared_mode="within_column", urgency_level="elective_service",
     )
     c03["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["diabetes"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["diabetes"],
+            "medicalTreatmentNote": "Metformin 1000mg/ngày, đường huyết ổn định (HbA1c 6.8%)",
+            "otherComorbidityNote": "",
+        },
+        "surgicalHistory": {
+            "confirmed": True,
+            "suggestedStatus": "present",
+            "suggestedCategories": ["prior_anorectal_perineal"],
+            "status": "present",
+            "categories": ["prior_anorectal_perineal"],
+            "abdominalScarType": "not_applicable",
+            "detailNote": "Đã mổ rò hậu môn 2 lần năm 2023–2025",
+        },
+        "socialHabits": {
+            "confirmed": True,
+            "alcoholUse": "none",
+            "smoking": {"status": "former", "packYears": 10.0, "packYearsUnknown": False},
+            "substanceAbuse": {"status": "no", "substanceNote": None},
+        },
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["energy_device"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
@@ -2818,7 +3271,23 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-235", proc_class="PT-I", declared_mode="within_column", urgency_level="elective",
     )
     c04["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["hypertension"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["hypertension", "thyroid_disease"],
+            "medicalTreatmentNote": "Amlodipin 5mg + Levothyroxin 50mcg sáng, FT4/TSH bình giáp",
+            "otherComorbidityNote": "",
+        },
+        "surgicalHistory": {
+            "confirmed": True,
+            "suggestedStatus": "none",
+            "suggestedCategories": [],
+            "status": "present",
+            "categories": ["prior_abdominal_pelvic"],
+            "abdominalScarType": "open_laparotomy_scar",
+            "detailNote": "Mổ mở cắt tử cung đường giữa dưới rốn năm 2014",
+        },
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["robot_instruments", "mesh", "energy_device"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
@@ -2888,7 +3357,28 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-218", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
     )
     c06["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["hypertension", "cad_stent"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["hypertension", "ischemic_heart_cad"],
+            "medicalTreatmentNote": "Amlodipin/Valsartan 5/80mg, Isosorbid dinitrat, Stent LAD năm 2024 ổn định",
+            "otherComorbidityNote": "",
+        },
+        "allergyHistory": {
+            "confirmed": True,
+            "suggestedStatus": "none",
+            "status": "present",
+            "allergenGroups": ["drug"],
+            "reactionSeverity": "mild_moderate",
+            "allergenDetail": "Cefazolin (phát ban mề đay — đổi kháng sinh dự phòng Ciprofloxacin + Metronidazol)",
+        },
+        "socialHabits": {
+            "confirmed": True,
+            "alcoholUse": "occasional",
+            "smoking": {"status": "former", "packYears": 20.0, "packYearsUnknown": False},
+            "substanceAbuse": {"status": "no", "substanceNote": None},
+        },
         "antithromboticPlan": {
             "confirmed": True,
             "mode": "continued_per_plan",
@@ -2958,7 +3448,14 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-204", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
     )
     c07["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["afib_hf", "anemia_malnutrition"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["valvular_heart_hf", "arrhythmia", "anemia_malnutrition"],
+            "medicalTreatmentNote": "Rung nhĩ đáp ứng thất trung bình 76 l/p, Bisoprolol 2.5mg",
+            "otherComorbidityNote": "",
+        },
         "antithromboticPlan": {
             "confirmed": True,
             "mode": "bridging_per_plan",
@@ -3027,7 +3524,8 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-217", proc_class="PT-I", declared_mode="within_column", urgency_level="elective",
     )
     c08["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {"confirmed": True, "suggestedValues": ["none"], "values": ["none"], "medicalTreatmentNote": None, "otherComorbidityNote": ""},
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "protective_temp_stoma_risk", "stomaNote": "Cân nhắc mở HMNT bảo vệ nếu miệng nối sát đường lược"},
@@ -3080,7 +3578,17 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         over_column_ref="Tại thời điểm mổ bán khẩn không có BS Cột I/ĐB phù hợp — trình Ban Chủ nhiệm khoa cân nhắc duyệt vượt 01 cột (Cột II -> PT-I)",
     )
     c09["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {"confirmed": True, "suggestedValues": ["none"], "values": ["none"], "medicalTreatmentNote": None, "otherComorbidityNote": ""},
+        "surgicalHistory": {
+            "confirmed": True,
+            "suggestedStatus": "present",
+            "suggestedCategories": ["prior_colorectal_stoma"],
+            "status": "present",
+            "categories": ["prior_colorectal_stoma"],
+            "abdominalScarType": "laparoscopic_scar",
+            "detailNote": "PTNS cắt trước thấp mở HMNT hồi tràng quai cách 4 tháng",
+        },
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["circular_linear_stapler"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "stoma_closure", "stomaNote": "Đóng HMNT hồi tràng quai nối máy Stapler thẳng"},
@@ -3129,7 +3637,8 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         over_column_ref="Tại thời điểm mổ bán khẩn không có BS Cột I/II phù hợp — PTV Cột III trình Ban Chủ nhiệm khoa cân nhắc duyệt vượt 01 cột thực hiện PTNS cắt ruột thừa (Cột III -> PT-II)",
     )
     c10["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {"confirmed": True, "suggestedValues": ["none"], "values": ["none"], "medicalTreatmentNote": None, "otherComorbidityNote": ""},
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["basic_instruments_only"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
@@ -3173,7 +3682,20 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         semi_urgent_reason="Áp-xe cạnh hậu môn căng đau, sốt 38.5°C trên bệnh nhân đái tháo đường cần dẫn lưu sớm",
     )
     c11["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["diabetes", "hypertension"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["diabetes", "hypertension"],
+            "medicalTreatmentNote": "Insulin Mixtard sáng 24 UI - chiều 12 UI, Amlodipin 5mg",
+            "otherComorbidityNote": "",
+        },
+        "socialHabits": {
+            "confirmed": True,
+            "alcoholUse": "occasional",
+            "smoking": {"status": "current", "packYears": 15.0, "packYearsUnknown": False},
+            "substanceAbuse": {"status": "no", "substanceNote": None},
+        },
         "antithromboticPlan": {
             "confirmed": True,
             "mode": "held_per_plan",
@@ -3225,13 +3747,26 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
     }, catalog, db)
     _stamp_pod_for_sandbox(c12, catalog, rng.choice(rooms_pod3), trainee_id=tr12, freeze_snapshot=False)
     c12["clinicalClassification"]["urgencyLevel"] = "emergency_exception"
+    c12["clinicalChips"]["surgicalHistory"]["status"] = "unknown"
+    c12["clinicalChips"]["allergyHistory"]["status"] = "unknown"
+    c12["clinicalChips"]["socialHabits"] = {
+        "confirmed": False,
+        "alcoholUse": "unknown",
+        "smoking": {"status": "unknown", "packYears": None, "packYearsUnknown": False},
+        "substanceAbuse": {"status": "unknown", "substanceNote": None},
+    }
     for ck_c in CK_CODES:
         c12["preopChecklist"][ck_c]["state"] = "deferred_emergency"
         c12["preopChecklist"][ck_c]["verifiedByStaffId"] = ms12
     c12["caseRevision"] = 2
     c12["approval"]["status"] = "emergency_exception_pending_ack"
     c12["approval"]["slaStatus"] = "emergency_exempt"
-    c12["approval"]["deferredItems"] = list(CK_CODES)
+    def_c12 = list(CK_CODES) + [
+        "clinicalChips.surgicalHistory",
+        "clinicalChips.allergyHistory",
+        "clinicalChips.socialHabits",
+    ]
+    c12["approval"]["deferredItems"] = list(def_c12)
     c12["approval"]["emergencyException"] = {
         "emergencyReasonNote": "Tắc ruột đại tràng quai kín dọa vỡ manh tràng đau phản ứng thành bụng HCP — chỉ định mổ cấp cứu khẩn giải áp & cắt đoạn Hartmann.",
         "verbalConsultRecord": {
@@ -3240,6 +3775,7 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
             "contactedAt": ts_now,
         },
         "postOpFollowUpOwnerStaffId": ms12,
+        "deferredItems": list(def_c12),
         "submittedByStaffId": ms12,
         "submittedAt": ts_now,
     }
@@ -3280,7 +3816,23 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="MO-191", proc_class="PT-I", declared_mode="external_surgeon_verify_privilege", urgency_level="elective",
     )
     c13["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["hypertension"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["hypertension"],
+            "medicalTreatmentNote": "Telmisartan 40mg sáng, HA 125/80 mmHg",
+            "otherComorbidityNote": "",
+        },
+        "surgicalHistory": {
+            "confirmed": True,
+            "suggestedStatus": "present",
+            "suggestedCategories": ["prior_abdominal_pelvic"],
+            "status": "present",
+            "categories": ["prior_abdominal_pelvic", "prior_anesthesia_or_transfusion_event"],
+            "abdominalScarType": "open_laparotomy_scar",
+            "detailNote": "Mổ mở lấy u sau phúc mạc 2022; từng sốt rét run khi truyền HC lắng (đã dự trù HC lắng lọc bạch cầu)",
+        },
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["prbc_reserved", "energy_device"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "protective_temp_stoma_risk", "stomaNote": "Dự phòng mở HMNT nếu phải cắt đoạn đại tràng Sigma dính u"},
@@ -3294,6 +3846,12 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         },
     }
     c13["preopChecklist"] = _build_verified_checklist_for_sandbox(coord_id, tr13, benign=False)
+    c13["preopChecklist"]["CK-03"] = {
+        "state": "verified_abnormal_planned",
+        "preparedByStaffId": tr13,
+        "verifiedByStaffId": coord_id,
+        "clinicalPlanNote": "Tiền sử phản ứng truyền máu năm 2022 — đã hội chẩn GMHS dự trù 02 ĐV hồng cầu lắng lọc bạch cầu & tiền mê Corticoid",
+    }
     c13["caseRevision"] = 2
     c13["approval"]["status"] = "submitted"
     c13["approval"]["slaStatus"] = "on_time"
@@ -3327,7 +3885,14 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-194", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
     )
     c14["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["hypertension", "diabetes"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {
+            "confirmed": True,
+            "suggestedValues": ["none"],
+            "values": ["hypertension", "diabetes", "stroke_cva_sequelae"],
+            "medicalTreatmentNote": "TBMMN cũ năm 2021 hồi phục không yếu liệt, Perindopril 5mg + Metformin 850mg",
+            "otherComorbidityNote": "",
+        },
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "no_stoma", "stomaNote": ""},
@@ -3392,7 +3957,14 @@ def build_sandbox_sample_surgeries(db: dict, data_dir: str, base_dir: str) -> li
         catalog_entry_id="PTNS-218", proc_class="PT-ĐB", declared_mode="within_column", urgency_level="elective",
     )
     c15["clinicalChips"] = {
-        "comorbidities": {"confirmed": True, "values": ["none"], "otherComorbidityNote": ""},
+        **_default_v5_history_for_sandbox(),
+        "comorbidities": {"confirmed": True, "suggestedValues": ["none"], "values": ["none"], "medicalTreatmentNote": None, "otherComorbidityNote": ""},
+        "socialHabits": {
+            "confirmed": True,
+            "alcoholUse": "none",
+            "smoking": {"status": "former", "packYears": 30.0, "packYearsUnknown": False},
+            "substanceAbuse": {"status": "no", "substanceNote": None},
+        },
         "antithromboticPlan": {"confirmed": True, "mode": "none_confirmed"},
         "bloodAndDevices": {"confirmed": True, "values": ["prbc_reserved", "circular_linear_stapler", "energy_device"], "otherDeviceNote": ""},
         "stomaPlan": {"confirmed": True, "value": "planned_permanent_stoma", "stomaNote": "Nguy cơ chuyển APR mở HMNT vĩnh viễn nếu diện cắt dưới dương tính trên sinh thiết tức thì"},
