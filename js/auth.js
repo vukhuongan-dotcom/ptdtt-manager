@@ -1,35 +1,144 @@
-// ===== AUTHENTICATION MODULE (JWT — Phase 3 + P0 Security) =====
+// ===== AUTHENTICATION MODULE (JWT — Phase 3 + P0 Security + Phase-1 Accountability) =====
 const Auth = {
     SESSION_KEY: 'ptdtt_session',
     TOKEN_KEY: 'ptdtt_jwt',
     SUPERADMIN_USERNAME: 'vkan',
     PASSWORD_MIN_LENGTH: 10,
+    _authEpoch: 1,
+    _activeAbortController: null,
+    _channel: null,
+    _syncBound: false,
+    _switchPromptOpen: false,
 
     init() {
-        // Check if we have a stored JWT token
         const token = this.getToken();
         if (token) {
-            // Verify token is not expired locally
             const payload = this._decodeToken(token);
             if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
-                // Token expired — clear session
-                this.logout();
+                this.logout({ silentBroadcast: true });
             }
+        }
+        this._bindMultiTabSync();
+    },
+
+    _bumpAuthEpoch(reason = 'auth_change') {
+        this._authEpoch = (this._authEpoch || 0) + 1;
+        if (this._activeAbortController) {
+            try { this._activeAbortController.abort(reason); } catch (_) {}
+        }
+        this._activeAbortController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        return this._authEpoch;
+    },
+
+    getActiveSignal() {
+        if (!this._activeAbortController && typeof AbortController !== 'undefined') {
+            this._activeAbortController = new AbortController();
+        }
+        return this._activeAbortController ? this._activeAbortController.signal : undefined;
+    },
+
+    _broadcastAuthEvent(type, extra = {}) {
+        if (this._channel) {
+            try {
+                this._channel.postMessage({ type, ts: Date.now(), ...extra });
+            } catch (_) {}
+        }
+    },
+
+    _bindMultiTabSync() {
+        if (this._syncBound || typeof window === 'undefined') return;
+        this._syncBound = true;
+
+        if (typeof BroadcastChannel !== 'undefined') {
+            try {
+                this._channel = new BroadcastChannel('ptdtt_auth_sync');
+                this._channel.onmessage = (ev) => {
+                    this._handleCrossTabAuthSignal(ev?.data || {});
+                };
+            } catch (_) {
+                this._channel = null;
+            }
+        }
+
+        window.addEventListener('storage', (ev) => {
+            if (!ev) return;
+            if (ev.key === this.TOKEN_KEY || ev.key === this.SESSION_KEY) {
+                this._handleCrossTabAuthSignal({ type: 'storage_sync', key: ev.key });
+            }
+        });
+    },
+
+    _handleCrossTabAuthSignal(msg) {
+        // Tab-isolated sessionStorage token stays unaffected unless its own user changed password / revoked epoch
+        const tabToken = sessionStorage.getItem(this.TOKEN_KEY);
+        if (tabToken) {
+            const p = this._decodeToken(tabToken);
+            if (msg?.type === 'password_changed' && p && p.sub === msg.username && Number(p.sessionEpoch || 1) < Number(msg.sessionEpoch || 1)) {
+                this._bumpAuthEpoch('session_epoch_revoked');
+                this.logout({ silentBroadcast: true });
+                if (typeof App !== 'undefined' && App.showLogin) App.showLogin(p.sub);
+                if (typeof Toast !== 'undefined') {
+                    Toast.warning('Mật khẩu tài khoản vừa được đổi ở tab khác. Vui lòng đăng nhập lại.');
+                }
+                return;
+            }
+            // Refresh UI header from this tab's own JWT claims so localStorage writes in another tab never overwrite our header
+            if (typeof App !== 'undefined' && Auth.isLoggedIn()) {
+                App.updateSidebarUser?.();
+                App.updateMobileHeader?.();
+            }
+            return;
+        }
+
+        // Shared localStorage token changed across tabs
+        this._bumpAuthEpoch('cross_tab_storage_change');
+        const nextSession = this.getSession();
+        if (!nextSession) {
+            if (typeof Store !== 'undefined' && Store.resetForLogout) Store.resetForLogout();
+            if (typeof App !== 'undefined' && App.showLogin) App.showLogin();
+            return;
+        }
+        if (typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.hasUnsavedDraft && SurgeryApprovalPage.hasUnsavedDraft()) {
+            SurgeryApprovalPage.DiscardDraftOnAccountChange?.(nextSession);
+        }
+        if (typeof Store !== 'undefined' && Store.reconcilePendingForSession) {
+            Store.reconcilePendingForSession();
+            Store._syncFromServer?.(true);
+        }
+        if (typeof App !== 'undefined') {
+            App.updateSidebarUser?.();
+            App.updateMobileHeader?.();
+            App.updateNavVisibility?.();
+            App.renderCurrentPage?.();
         }
     },
 
     // ===== TOKEN MANAGEMENT =====
-    // Token is stored in sessionStorage by default (cleared on browser close).
-    // Only stored in localStorage when user checks "Ghi nhớ thiết bị này".
+    // Token is stored in sessionStorage by default (tab-isolated, cleared on browser close).
+    // Stored in localStorage ONLY when user checks "Ghi nhớ thiết bị này".
     getToken() {
         return sessionStorage.getItem(this.TOKEN_KEY) || localStorage.getItem(this.TOKEN_KEY);
     },
 
+    _isRememberedToken() {
+        return !sessionStorage.getItem(this.TOKEN_KEY) && Boolean(localStorage.getItem(this.TOKEN_KEY));
+    },
+
     _saveToken(token, remember = false) {
         if (remember) {
+            sessionStorage.removeItem(this.TOKEN_KEY);
             localStorage.setItem(this.TOKEN_KEY, token);
         } else {
             sessionStorage.setItem(this.TOKEN_KEY, token);
+            localStorage.removeItem(this.TOKEN_KEY);
+        }
+    },
+
+    _saveSessionCache(session, remember = false) {
+        const raw = JSON.stringify(session);
+        sessionStorage.setItem(this.SESSION_KEY, raw);
+        if (remember) {
+            localStorage.setItem(this.SESSION_KEY, raw);
         }
     },
 
@@ -81,10 +190,9 @@ const Auth = {
                 return { success: false, error: result.error || 'Đăng nhập thất bại' };
             }
 
-            // Save JWT token
+            this._bumpAuthEpoch('login');
             this._saveToken(result.token, remember);
 
-            // Save session info for quick access (from server response, not client-generated)
             const session = {
                 staffId: result.user.staffId,
                 username: result.user.username,
@@ -93,14 +201,18 @@ const Auth = {
                 title: result.user.title || '',
                 isAdmin: result.user.isAdmin,
                 isSuperAdmin: result.user.isSuperAdmin || false,
-                color: result.user.color || '#6366f1',
+                mustChangePassword: Boolean(result.user.mustChangePassword || result.mustChangePassword),
+                sessionEpoch: Number(result.user.sessionEpoch || 1),
+                color: result.user.color || '#1878B4',
                 loginTime: new Date().toISOString()
             };
-            localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            this._saveSessionCache(session, remember);
+            if (remember) {
+                this._broadcastAuthEvent('login', { username: session.username, staffId: session.staffId });
+            }
 
             return { success: true, session };
         } catch (e) {
-            // Server unavailable — cannot login without server
             console.error('[Auth] Login error:', e);
             return { success: false, error: 'Không thể kết nối server. Vui lòng thử lại.' };
         }
@@ -118,12 +230,11 @@ const Auth = {
             });
 
             if (!response.ok) {
-                this.logout();
+                this.logout({ silentBroadcast: true });
                 return null;
             }
 
             const user = await response.json();
-            // Update cached session with live server data
             const session = {
                 staffId: user.staffId,
                 username: user.username,
@@ -132,13 +243,14 @@ const Auth = {
                 title: user.title || '',
                 isAdmin: user.isAdmin,
                 isSuperAdmin: user.isSuperAdmin || false,
-                color: user.color || '#6366f1',
+                mustChangePassword: Boolean(user.mustChangePassword),
+                sessionEpoch: Number(user.sessionEpoch || 1),
+                color: user.color || '#1878B4',
                 loginTime: new Date().toISOString()
             };
-            localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            this._saveSessionCache(session, this._isRememberedToken());
             return session;
         } catch (e) {
-            // Network error — if offline, don't auto-logout but don't grant access
             console.warn('[Auth] Cannot reach server for session validation:', e.message);
             return null;
         }
@@ -165,6 +277,7 @@ const Auth = {
             const result = await response.json();
             if (!result || !result.token || !result.user) return { success: false };
 
+            this._bumpAuthEpoch('local_auto_login');
             this._saveToken(result.token, true);
             sessionStorage.setItem(this.TOKEN_KEY, result.token);
             const session = {
@@ -175,10 +288,12 @@ const Auth = {
                 title: result.user.title || '',
                 isAdmin: result.user.isAdmin,
                 isSuperAdmin: result.user.isSuperAdmin || false,
-                color: result.user.color || '#8b5cf6',
+                mustChangePassword: Boolean(result.user.mustChangePassword),
+                sessionEpoch: Number(result.user.sessionEpoch || 1),
+                color: result.user.color || '#1878B4',
                 loginTime: new Date().toISOString()
             };
-            localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            this._saveSessionCache(session, true);
             if (!localStorage.getItem('ptdtt_onboarding_done')) {
                 localStorage.setItem('ptdtt_onboarding_done', 'true');
             }
@@ -188,37 +303,65 @@ const Auth = {
         }
     },
 
-    // Logout — cleans ALL sensitive data while preserving isolated pending queue per ownerKey
-    logout() {
+    // Logout — aborts in-flight requests, isolates pending queue per ownerKey, clears sensitive cache
+    logout(opts = {}) {
+        const wasRemembered = this._isRememberedToken();
+        this._bumpAuthEpoch('logout');
         if (typeof Store !== 'undefined' && typeof Store.resetForLogout === 'function') {
             Store.resetForLogout();
         }
-        // Token
         this._removeToken();
-        // Session
-        localStorage.removeItem(this.SESSION_KEY);
         sessionStorage.removeItem(this.SESSION_KEY);
-        // Idle tracking
+        if (wasRemembered || !opts.preserveSharedSession) {
+            localStorage.removeItem(this.SESSION_KEY);
+        }
         localStorage.removeItem('ptdtt_lastActivity');
-        // Business data cache (sensitive hospital data)
         localStorage.removeItem('ptdtt_manager');
+        if (!opts.silentBroadcast && wasRemembered) {
+            this._broadcastAuthEvent('logout');
+        }
     },
 
-    // Get current session
+    // Get current session — ALWAYS derived from the active tab's JWT claims to prevent cross-tab identity spoofing
     getSession() {
         const token = this.getToken();
         if (!token) return null;
 
-        // Check token expiry
         const payload = this._decodeToken(token);
-        if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
-            this.logout();
+        if (!payload || !payload.sub || (payload.exp && payload.exp * 1000 < Date.now())) {
+            this.logout({ silentBroadcast: true });
             return null;
         }
 
-        // Return cached session data
-        const saved = localStorage.getItem(this.SESSION_KEY);
-        return saved ? JSON.parse(saved) : null;
+        let matched = null;
+        for (const raw of [sessionStorage.getItem(this.SESSION_KEY), localStorage.getItem(this.SESSION_KEY)]) {
+            if (!raw) continue;
+            try {
+                const parsed = JSON.parse(raw);
+                if (
+                    parsed &&
+                    String(parsed.username || '').toLowerCase() === String(payload.sub || '').toLowerCase() &&
+                    Number(parsed.staffId || 0) === Number(payload.staffId || 0)
+                ) {
+                    matched = parsed;
+                    break;
+                }
+            } catch (_) {}
+        }
+
+        return {
+            staffId: payload.staffId,
+            username: payload.sub,
+            name: (matched && matched.name) || payload.name || payload.sub,
+            role: payload.role || (matched && matched.role) || '',
+            title: (matched && matched.title !== undefined) ? matched.title : (payload.title || ''),
+            isAdmin: Boolean(payload.isAdmin),
+            isSuperAdmin: Boolean(payload.isSuperAdmin),
+            mustChangePassword: Boolean(payload.mustChangePassword || (matched && matched.mustChangePassword)),
+            sessionEpoch: Number(payload.sessionEpoch || (matched && matched.sessionEpoch) || 1),
+            color: (matched && matched.color) || payload.color || '#1878B4',
+            loginTime: (matched && matched.loginTime) || null
+        };
     },
 
     // Check if logged in
@@ -230,6 +373,7 @@ const Auth = {
     async changePassword(currentPw, newPw) {
         const token = this.getToken();
         if (!token) return { success: false, error: 'Chưa đăng nhập' };
+        const remembered = this._isRememberedToken();
 
         try {
             const response = await fetch('/api/auth/password', {
@@ -244,6 +388,29 @@ const Auth = {
             const result = await response.json();
             if (!response.ok) {
                 return { success: false, error: result.error || 'Đổi mật khẩu thất bại' };
+            }
+            if (result.token) {
+                this._saveToken(result.token, remembered);
+            }
+            if (result.user) {
+                const updatedSession = {
+                    staffId: result.user.staffId,
+                    username: result.user.username,
+                    name: result.user.name,
+                    role: result.user.role,
+                    title: result.user.title || '',
+                    isAdmin: result.user.isAdmin,
+                    isSuperAdmin: result.user.isSuperAdmin || false,
+                    mustChangePassword: false,
+                    sessionEpoch: Number(result.user.sessionEpoch || 1),
+                    color: result.user.color || '#1878B4',
+                    loginTime: new Date().toISOString()
+                };
+                this._saveSessionCache(updatedSession, remembered);
+                this._broadcastAuthEvent('password_changed', {
+                    username: updatedSession.username,
+                    sessionEpoch: updatedSession.sessionEpoch
+                });
             }
             return { success: true };
         } catch (e) {
@@ -394,21 +561,41 @@ const Auth = {
         btn.querySelector('.eye-off').style.display = isPassword ? '' : 'none';
     },
 
-    openChangePassword() {
+    openChangePassword(opts = {}) {
         const session = this.getSession();
-        if (!session || !session.isAdmin) return;
-        Modal.open('Đổi mật khẩu', `
+        if (!session) return;
+        const mandatory = Boolean(opts.mandatory || session.mustChangePassword);
+        const closeBtn = document.getElementById('modal-close');
+        if (closeBtn) closeBtn.style.display = mandatory ? 'none' : '';
+        Modal.open(mandatory ? '🔐 Đổi mật khẩu bắt buộc lần đầu' : '🔑 Đổi mật khẩu cá nhân', `
+            ${mandatory ? `<div class="sap-banner-info" style="margin-bottom:12px;padding:10px 12px;border-radius:8px;background:rgba(24,120,180,0.1);border-left:4px solid #1878B4;font-size:0.86rem;line-height:1.45;">
+                Tài khoản <strong>${Utils.escapeHtml(session.title ? session.title + ' ' + session.name : session.name)}</strong> đang dùng mật khẩu mặc định trùng tên đăng nhập. Vui lòng đặt mật khẩu cá nhân mới (tối thiểu ${this.PASSWORD_MIN_LENGTH} ký tự, gồm chữ cái và chữ số) để ghi nhận trách nhiệm chuẩn bị / duyệt mổ chính xác.
+            </div>` : ''}
             <form onsubmit="Auth.handleChangePassword(event)">
                 ${this._pwField('pw-current', 'Mật khẩu hiện tại', 'required')}
-                ${this._pwField('pw-new', 'Mật khẩu mới', `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
+                ${this._pwField('pw-new', `Mật khẩu mới (ít nhất ${this.PASSWORD_MIN_LENGTH} ký tự, có chữ và số)`, `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
                 ${this._pwField('pw-confirm', 'Xác nhận mật khẩu mới', `required minlength="${this.PASSWORD_MIN_LENGTH}"`)}
                 <div id="pw-error" class="pw-error"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
-                    <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                    ${mandatory
+                        ? `<button type="button" class="btn btn-secondary" onclick="Auth._logoutFromMandatoryModal()">Đăng xuất / Đổi TK</button>`
+                        : `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>`}
+                    <button type="submit" class="btn btn-primary">Lưu mật khẩu mới</button>
                 </div>
             </form>
         `);
+    },
+
+    openMandatoryPasswordChangeModal() {
+        this.openChangePassword({ mandatory: true });
+    },
+
+    _logoutFromMandatoryModal() {
+        const closeBtn = document.getElementById('modal-close');
+        if (closeBtn) closeBtn.style.display = '';
+        try { Modal.close(); } catch (_) {}
+        this.logout();
+        if (typeof App !== 'undefined' && App.showLogin) App.showLogin();
     },
 
     async handleChangePassword(e) {
@@ -423,10 +610,71 @@ const Auth = {
         if (passwordError) { errEl.textContent = passwordError; return; }
         const result = await this.changePassword(current, newPw);
         if (result.success) {
+            const closeBtn = document.getElementById('modal-close');
+            if (closeBtn) closeBtn.style.display = '';
             Modal.close();
-            Toast.success('Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại trên các thiết bị khác.', 'Đổi mật khẩu thành công');
+            if (typeof App !== 'undefined') {
+                App.updateSidebarUser?.();
+                App.updateMobileHeader?.();
+            }
+            Toast.success('Mật khẩu cá nhân đã được cập nhật. Các phiên cũ trên thiết bị khác đã được thu hồi.', 'Đổi mật khẩu thành công');
         } else {
             errEl.textContent = result.error;
+        }
+    },
+
+    // Quick account switch on shared hospital PCs / ward iPads with unsaved-draft protection
+    async quickSwitchAccount(preselectUsername = '') {
+        if (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.hasUnsavedDraft === 'function' && SurgeryApprovalPage.hasUnsavedDraft()) {
+            if (this._switchPromptOpen) return;
+            this._switchPromptOpen = true;
+            const curSession = this.getSession();
+            const curLabel = curSession ? `${curSession.title ? curSession.title + ' ' : ''}${curSession.name}` : 'tài khoản hiện tại';
+            Modal.open('⚠️ Hồ sơ chuẩn bị mổ chưa lưu nháp', `
+                <div style="font-size:0.9rem;line-height:1.5;margin-bottom:14px;">
+                    Bạn đang có thay đổi chưa lưu trên hồ sơ duyệt mổ dưới phiên của <strong>${Utils.escapeHtml(curLabel)}</strong>.
+                    Trước khi chuyển tài khoản, vui lòng chọn:
+                </div>
+                <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="Auth._cancelQuickSwitchPrompt()">Ở lại tiếp tục</button>
+                    <button type="button" class="btn btn-secondary" onclick="Auth._proceedQuickSwitch('${Utils.escapeHtml(preselectUsername)}', false)">Hủy thay đổi chưa lưu</button>
+                    <button type="button" class="btn btn-primary" onclick="Auth._proceedQuickSwitch('${Utils.escapeHtml(preselectUsername)}', true)">💾 Lưu nháp dưới tên tài khoản đang mở</button>
+                </div>
+            `);
+            return;
+        }
+        await this._executeQuickSwitchLogout(preselectUsername);
+    },
+
+    _cancelQuickSwitchPrompt() {
+        this._switchPromptOpen = false;
+        Modal.close();
+    },
+
+    async _proceedQuickSwitch(preselectUsername, saveFirst) {
+        this._switchPromptOpen = false;
+        if (saveFirst && typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.flushPendingDraftBeforeSwitch === 'function') {
+            const ok = await SurgeryApprovalPage.flushPendingDraftBeforeSwitch();
+            if (!ok) return;
+        } else if (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.discardOpenDraft === 'function') {
+            SurgeryApprovalPage.discardOpenDraft();
+        }
+        try { Modal.close(); } catch (_) {}
+        await this._executeQuickSwitchLogout(preselectUsername);
+    },
+
+    async _executeQuickSwitchLogout(preselectUsername = '') {
+        const tok = this.getToken();
+        if (tok) {
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
+                body: '{}'
+            }).catch(() => {});
+        }
+        this.logout();
+        if (typeof App !== 'undefined' && App.showLogin) {
+            App.showLogin(preselectUsername);
         }
     },
 
@@ -536,9 +784,17 @@ const Auth = {
     }
 };
 
-// ===== LOGIN PAGE RENDERER =====
+// ===== LOGIN PAGE RENDERER (with 1-Tap Staff Cards for Fast Ward Login) =====
 const LoginPage = {
-    render() {
+    _staffCards: null,
+    _selectedUsername: '',
+    _filterGroup: 'doctors',
+
+    render(preselectUsername = '') {
+        if (preselectUsername) {
+            this._selectedUsername = preselectUsername;
+        }
+        setTimeout(() => this._ensureStaffCardsLoaded(), 0);
         return `
         <div class="login-page">
             <button class="login-theme-toggle" onclick="App.toggleTheme()"
@@ -560,22 +816,25 @@ const LoginPage = {
 
                 <div class="login-error" id="login-error"></div>
 
+                <div class="login-staff-picker" id="login-staff-picker">
+                    ${this._renderStaffCardsInner()}
+                </div>
+
                 <form class="login-form" id="login-form" onsubmit="LoginPage.handleLogin(event)">
                     <div class="form-group">
                         <label class="form-label">Tên đăng nhập</label>
-                        <input class="form-input" type="text" id="login-username" name="username" placeholder="vd: vkan" required autofocus>
+                        <input class="form-input" type="text" id="login-username" name="username" value="${Utils.escapeHtml(this._selectedUsername || '')}" placeholder="Chạm thẻ tên phía trên hoặc nhập username" required ${this._selectedUsername ? '' : 'autofocus'}>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Mật khẩu</label>
-                        <input class="form-input" type="password" id="login-password" name="password" placeholder="••••••" required>
+                        <label class="form-label">Mật khẩu cá nhân</label>
+                        <input class="form-input" type="password" id="login-password" name="password" placeholder="••••••" required ${this._selectedUsername ? 'autofocus' : ''}>
                     </div>
                     <div class="login-remember-row">
                         <input type="checkbox" id="login-remember">
-                        <label for="login-remember">Ghi nhớ thiết bị này</label>
+                        <label for="login-remember">Ghi nhớ thiết bị cá nhân này (không chọn trên máy dùng chung tại khoa)</label>
                     </div>
                     <button type="submit" class="login-btn">Đăng nhập</button>
                 </form>
-
 
                 <div class="login-footer">
                     © 2026 Khoa Phẫu thuật Đại trực tràng · Bệnh viện Bình Dân
@@ -585,18 +844,88 @@ const LoginPage = {
         `;
     },
 
+    async _ensureStaffCardsLoaded() {
+        if (!Array.isArray(this._staffCards)) {
+            try {
+                const resp = await fetch('/api/auth/staff-cards', { cache: 'no-store' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this._staffCards = Array.isArray(data.cards) ? data.cards : [];
+                } else {
+                    this._staffCards = [];
+                }
+            } catch (_) {
+                this._staffCards = [];
+            }
+        }
+        const host = document.getElementById('login-staff-picker');
+        if (host) {
+            host.innerHTML = this._renderStaffCardsInner();
+        }
+    },
+
+    setFilterGroup(grp) {
+        this._filterGroup = grp;
+        const host = document.getElementById('login-staff-picker');
+        if (host) host.innerHTML = this._renderStaffCardsInner();
+    },
+
+    selectStaffCard(username) {
+        this._selectedUsername = username;
+        const uInp = document.getElementById('login-username');
+        const pInp = document.getElementById('login-password');
+        if (uInp) uInp.value = username;
+        const host = document.getElementById('login-staff-picker');
+        if (host) host.innerHTML = this._renderStaffCardsInner();
+        if (pInp) {
+            pInp.value = '';
+            pInp.focus();
+        }
+    },
+
+    _renderStaffCardsInner() {
+        if (!Array.isArray(this._staffCards) || this._staffCards.length === 0) {
+            return '';
+        }
+        const grp = this._filterGroup || 'doctors';
+        const filtered = this._staffCards.filter(c => {
+            if (grp === 'doctors') return c.group === 'bcn' || c.group === 'attending';
+            if (grp === 'trainee') return c.group === 'trainee';
+            if (grp === 'nursing') return c.group === 'nursing_admin';
+            return true;
+        });
+        const chips = filtered.map(c => {
+            const active = c.username === this._selectedUsername;
+            const shortTitle = (c.title || '').replace(/\s+/g, ' ').trim();
+            const label = shortTitle ? `${shortTitle} ${c.name}` : c.name;
+            return `<button type="button" class="login-staff-chip${active ? ' active' : ''}" onclick="LoginPage.selectStaffCard('${Utils.escapeHtml(c.username)}')" title="${Utils.escapeHtml(label)} (${Utils.escapeHtml(c.username)})">
+                <span class="login-staff-chip__dot" style="background:${Utils.escapeHtml(c.color || '#1878B4')}"></span>
+                <span class="login-staff-chip__name">${Utils.escapeHtml(c.name)}</span>
+            </button>`;
+        }).join('');
+
+        return `
+            <div class="login-staff-picker__hdr">
+                <span class="login-staff-picker__lbl">⚡ Chạm chọn nhanh tài khoản:</span>
+                <div class="login-staff-picker__tabs">
+                    <button type="button" class="login-staff-tab${grp === 'doctors' ? ' active' : ''}" onclick="LoginPage.setFilterGroup('doctors')">BS Khoa</button>
+                    <button type="button" class="login-staff-tab${grp === 'trainee' ? ' active' : ''}" onclick="LoginPage.setFilterGroup('trainee')">BSNT / HV</button>
+                    <button type="button" class="login-staff-tab${grp === 'nursing' ? ' active' : ''}" onclick="LoginPage.setFilterGroup('nursing')">ĐD / Khác</button>
+                </div>
+            </div>
+            <div class="login-staff-picker__grid">${chips}</div>
+        `;
+    },
+
     _isDark() {
         return document.documentElement.getAttribute('data-theme') === 'dark';
     },
-
-
 
     async handleLogin(e) {
         e.preventDefault();
         const username = document.getElementById('login-username').value.trim();
         const password = document.getElementById('login-password').value;
 
-        // Show loading state
         const loginBtn = e.target.querySelector('button[type="submit"]');
         const originalText = loginBtn ? loginBtn.innerHTML : '';
         if (loginBtn) {
@@ -613,16 +942,18 @@ const LoginPage = {
         }
 
         if (result.success) {
+            this._selectedUsername = '';
             App.onLoginSuccess();
         } else {
             const errEl = document.getElementById('login-error');
             errEl.textContent = result.error;
             errEl.classList.add('show');
-            // Shake animation
             const card = document.querySelector('.login-card');
-            card.style.animation = 'none';
-            card.offsetHeight; // trigger reflow
-            card.style.animation = 'shake 0.4s ease';
+            if (card) {
+                card.style.animation = 'none';
+                card.offsetHeight;
+                card.style.animation = 'shake 0.4s ease';
+            }
         }
     }
 };

@@ -6,6 +6,8 @@ for Departmental Online Surgery Approval (Khoa PTĐTT — Bệnh viện Bình D�
 
 import copy
 import fcntl
+import gzip
+import hashlib
 import json
 import os
 import uuid
@@ -21,11 +23,15 @@ from surgery_approval_engine import (
     CK_CODES,
     DEFAULT_SURGERY_APPROVAL_CONFIG,
     DEPUTY_STAFF_ID,
+    GENESIS_HASH,
     PROTECTED_APPROVAL_COLLECTIONS,
     RULE_VERSION,
     SCHEMA_VERSION,
     TRAINEE_STAFF_IDS,
+    TNM_RULESET_REGISTRY,
+    VALID_VERIFIED_BASIS_CODES,
     ApprovalEngineError,
+    append_dual_wal_transaction,
     append_wal_journal_entry,
     apply_draft_updates,
     build_approval_notifications,
@@ -33,31 +39,50 @@ from surgery_approval_engine import (
     build_initial_unverified_structures,
     build_sandbox_sample_surgeries,
     can_user_access_sandbox,
+    canonical_json,
     check_idempotency,
+    compute_dual_approval_kpis,
+    compute_journal_entry_hash,
+    compute_recursive_changed_fields,
     compute_sla_status,
+    evaluate_column_compliance,
+    evaluate_tnm_assessment,
     find_active_delegation_for_deputy,
     get_approval_config,
+    get_archive_dir,
+    get_attribution_journal_path,
     get_journal_path,
     get_pod_room_info,
     is_attending_user,
     is_bcn_user,
+    is_in_phase1_approval_scope,
     is_pos_int,
     is_same_pod_attending,
     is_strict_int,
     is_valid_iso_date,
+    load_or_init_journal_checkpoint,
     load_procedure_catalog,
     now_vn,
     now_vn_iso,
     parse_iso_dt,
+    query_journal_reverse_paginated,
+    read_last_valid_jsonl_record_adaptive,
+    reconcile_dual_journals_and_db,
     reconcile_journal_and_db,
+    record_contributor_on_surgery,
+    resolve_case_actor_role,
     resolve_effective_actor,
     resolve_live_user_fail_closed,
+    resolve_submit_authorization,
     run_surgery_approval_migration,
+    sha256_hex,
     stamp_badge_fields,
     strip_approval_metadata_from_real_surgeries,
     suggest_urgency_level,
+    validate_bcn_approve_gate,
     validate_routine_submit_gate,
     verify_approval_journal_chain,
+    verify_journal_stream_streaming,
 )
 
 
@@ -73,7 +98,7 @@ def _atomic_write_json(path: str, payload: dict):
 
 def ensure_approval_bootstrapped(sf_mod) -> dict:
     """
-    Acquires LOCK_EX on _DB_LOCK_FILE, runs WAL crash reconciliation + M1..M5 idempotent migration,
+    Acquires LOCK_EX on _DB_LOCK_FILE, runs Dual-Journal WAL crash reconciliation + M1..M5 idempotent migration,
     and persists db.json only if changes occurred.
     """
     os.makedirs(sf_mod.DATA_DIR, exist_ok=True)
@@ -87,11 +112,16 @@ def ensure_approval_bootstrapped(sf_mod) -> dict:
             db = json.load(rf)
 
         had_cfg = isinstance(db.get("surgeryApprovalConfig"), dict)
-        journal_rep = reconcile_journal_and_db(db, get_journal_path(sf_mod.DATA_DIR))
+        journal_rep = reconcile_dual_journals_and_db(db, sf_mod.DATA_DIR)
         mig_rep = run_surgery_approval_migration(db, sf_mod.DATA_DIR, sf_mod.BASE_DIR)
 
         migrated_any = any(v > 0 for k, v in mig_rep["counts"].items() if k != "alreadyMigrated")
-        if journal_rep["replayedEvents"] > 0 or migrated_any or not had_cfg:
+        if (
+            journal_rep.get("replayedEvents", 0) > 0
+            or journal_rep.get("replayedAttributionEvents", 0) > 0
+            or migrated_any
+            or not had_cfg
+        ):
             db["_lastModified"] = datetime.now().isoformat()
             _atomic_write_json(sf_mod.DATA_FILE, db)
 
@@ -168,6 +198,18 @@ def register_surgery_approval_routes(app, sf_mod):
                 return s
         raise ApprovalEngineError(404, "SURGERY_NOT_FOUND", f"Không tìm thấy ca mổ #{sid}.")
 
+    def _require_in_phase1_scope(surgery: dict, cfg: dict):
+        if surgery.get("approachType") == "nsth" and not cfg.get("nsthInternalPrecheckEnabled"):
+            raise ApprovalEngineError(422, "NSTH_EXTERNAL_AUTHORITY", "Ca Nội soi tiêu hóa không thuộc luồng duyệt Khoa PTĐTT.")
+        in_scope, reason_code = is_in_phase1_approval_scope(surgery, cfg)
+        if not in_scope:
+            raise ApprovalEngineError(
+                403,
+                "NOT_IN_PHASE1_SCOPE",
+                "Ca mổ không thuộc phạm vi duyệt mổ Đợt 1 (chỉ áp dụng ca mổ chương trình / Robot chương trình đã có lịch mổ).",
+                {"scopeReason": reason_code},
+            )
+
     def _run_wal_tx(
         *,
         action_key: str,
@@ -178,12 +220,12 @@ def register_surgery_approval_routes(app, sf_mod):
         handler_fn,
     ):
         """
-        5-Step WAL-First Atomic Transaction Coordinator:
-          Step 1: Acquire LOCK_EX on _DB_LOCK_FILE -> load db.json -> reconcile WAL -> Fail-Closed Auth -> Idempotency check.
+        Dual-Journal Atomic Transaction Coordinator (S1 -> S2 -> S3):
+          Step 1: Acquire LOCK_EX on _DB_LOCK_FILE -> load db.json -> reconcile Dual WAL -> Fail-Closed Auth -> Idempotency check.
           Step 2: Execute handler_fn in memory (RBAC + OCC + validation + notifications).
-          Step 3: Append & fsync hash-chained entry to data/surgery_approval_logs.jsonl BEFORE touching db.json.
-          Step 4: Write + fsync db.json.tmp -> os.replace(tmp, db.json).
-          Step 5: Release LOCK_EX and return HTTP JSON response.
+          Step S1: Append & fsync hash-chained entry (txEventId + embeddedAttributionBatch) to surgery_approval_logs.jsonl.
+          Step S2: Append & fsync hash-chained attribution entries to surgery_attribution.jsonl.
+          Step S3: Apply contributor summary + write & fsync db.json.tmp -> os.replace(tmp, db.json).
         """
         body = request.get_json(force=True, silent=True)
         if body is None:
@@ -201,7 +243,7 @@ def register_surgery_approval_routes(app, sf_mod):
             with open(sf_mod.DATA_FILE, "r", encoding="utf-8") as rf:
                 db = json.load(rf)
 
-            reconcile_journal_and_db(db, get_journal_path(sf_mod.DATA_DIR))
+            reconcile_dual_journals_and_db(db, sf_mod.DATA_DIR)
             if not isinstance(db.get("surgeryApprovalConfig"), dict):
                 run_surgery_approval_migration(db, sf_mod.DATA_DIR, sf_mod.BASE_DIR)
 
@@ -211,6 +253,8 @@ def register_surgery_approval_routes(app, sf_mod):
                 sf_mod.AUTH_FILE,
                 db,
                 sf_mod._save_auth,
+                http_method=request.method,
+                request_path=request.path,
             )
 
             if require_build_header:
@@ -255,6 +299,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 "request_verify",
                 "submit",
                 "submit_emergency",
+                "verify_procedure_class",
                 "preapprove",
                 "approve",
                 "return",
@@ -274,7 +319,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     "Tab Duyệt mổ đang ở chế độ Chỉ dùng ca TEST giả lập — không thao tác trên bệnh nhân thật.",
                 )
 
-            idem_key = request.headers.get("Idempotency-Key", "")
+            idem_key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key") or ""
             cached_status, cached_resp, scope_key = check_idempotency(
                 db,
                 actor.get("staffId", 0),
@@ -286,10 +331,7 @@ def register_surgery_approval_routes(app, sf_mod):
             if cached_resp is not None:
                 return jsonify(cached_resp), cached_status
 
-            fingerprint = None
-            if scope_key:
-                from surgery_approval_engine import canonical_json, sha256_hex
-                fingerprint = sha256_hex(canonical_json(body))
+            fingerprint = sha256_hex(canonical_json(body)) if scope_key else None
 
             catalog = load_procedure_catalog(sf_mod.DATA_DIR, sf_mod.BASE_DIR)
             tx_out = handler_fn(db=db, body=body, real_user=real_user, actor=actor, catalog=catalog, cfg=cfg)
@@ -298,12 +340,18 @@ def register_surgery_approval_routes(app, sf_mod):
             resp_payload = tx_out["response"]
             wal_spec = tx_out.get("wal")
 
+            if tx_out.get("skipDbWrite") is True and wal_spec is None:
+                if isinstance(resp_payload, dict) and isinstance(db.get("_revisions"), dict):
+                    resp_payload.setdefault("revisions", copy.deepcopy(db["_revisions"]))
+                resp_payload["version"] = sf_mod._get_file_version()
+                return jsonify(resp_payload), http_status
+
             idem_rec = build_idempotency_record(scope_key, fingerprint, http_status, resp_payload)
             if idem_rec:
                 db.setdefault("_approvalIdempotency", {})[idem_rec["scopeKey"]] = copy.deepcopy(idem_rec["value"])
 
             if wal_spec:
-                entry = append_wal_journal_entry(
+                entry, attr_written = append_dual_wal_transaction(
                     sf_mod.DATA_DIR,
                     db,
                     action=wal_spec["action"],
@@ -316,15 +364,29 @@ def register_surgery_approval_routes(app, sf_mod):
                     committed_state_patch=wal_spec.get("committedStatePatch"),
                     committed_notifications=wal_spec.get("committedNotifications"),
                     idempotency_record=idem_rec,
+                    attribution_specs=wal_spec.get("attributionSpecs"),
                 )
                 rec_in_db = wal_spec.get("recordRef")
                 if isinstance(rec_in_db, dict):
+                    tx_id = entry.get("txEventId") or entry.get("eventId")
+                    for raw_attr in entry.get("embeddedAttributionBatch") or []:
+                        record_contributor_on_surgery(
+                            rec_in_db,
+                            raw_attr.get("actor") or entry.get("actor") or actor,
+                            role_in_case=raw_attr.get("actorRoleInCase", "attending"),
+                            action_type=raw_attr.get("actionType", entry.get("action", "edit")),
+                            timestamp_iso=raw_attr.get("timestamp", entry.get("timestamp", now_vn_iso())),
+                            source_key=f"{tx_id}:{int(raw_attr.get('attrSubIndex', 0))}",
+                        )
                     rec_in_db["lastJournalSeq"] = entry["eventSeq"]
+                    if attr_written:
+                        rec_in_db["lastAttributionSeq"] = attr_written[-1]["attributionSeq"]
                     if isinstance(resp_payload.get("surgery"), dict) and resp_payload["surgery"].get("id") == rec_in_db.get("id"):
-                        resp_payload["surgery"]["lastJournalSeq"] = entry["eventSeq"]
+                        resp_payload["surgery"] = copy.deepcopy(rec_in_db)
                 resp_payload["journalSeq"] = entry["eventSeq"]
+                if attr_written:
+                    resp_payload["attributionSeqs"] = [a["attributionSeq"] for a in attr_written]
 
-                # Re-sync idempotency snapshot with journalSeq
                 if idem_rec:
                     idem_rec["value"]["responseSnapshot"] = copy.deepcopy(resp_payload)
                     db["_approvalIdempotency"][idem_rec["scopeKey"]] = copy.deepcopy(idem_rec["value"])
@@ -425,6 +487,68 @@ def register_surgery_approval_routes(app, sf_mod):
             if "nsthInternalPrecheckEnabled" in body:
                 new_cfg["nsthInternalPrecheckEnabled"] = bool(body["nsthInternalPrecheckEnabled"])
 
+            if "approvedRuleSetIds" in body:
+                rids = body["approvedRuleSetIds"]
+                if not isinstance(rids, list) or any(r not in TNM_RULESET_REGISTRY for r in rids):
+                    raise ApprovalEngineError(422, "INVALID_CONFIG", "approvedRuleSetIds chứa mã bộ quy tắc TNM không hợp lệ.")
+                new_cfg["approvedRuleSetIds"] = list(dict.fromkeys(rids))
+            if "signedVignetteDigest" in body:
+                new_cfg["signedVignetteDigest"] = str(body["signedVignetteDigest"] or "").strip() or None
+            if "clinicalStagingApprovedBy" in body:
+                app_by = body["clinicalStagingApprovedBy"]
+                if app_by is not None and (not is_pos_int(app_by) or int(app_by) not in ATTENDING_STAFF_IDS):
+                    raise ApprovalEngineError(422, "INVALID_CONFIG", "clinicalStagingApprovedBy phải là BS chính / BCN hợp lệ.")
+                new_cfg["clinicalStagingApprovedBy"] = int(app_by) if is_pos_int(app_by) else None
+            if "clinicalStagingApprovedAt" in body:
+                new_cfg["clinicalStagingApprovedAt"] = str(body["clinicalStagingApprovedAt"] or "").strip() or None
+            if "enableAutoStageDerivation" in body:
+                if not isinstance(body["enableAutoStageDerivation"], bool):
+                    raise ApprovalEngineError(422, "INVALID_CONFIG", "enableAutoStageDerivation phải là boolean.")
+                if body["enableAutoStageDerivation"] is True:
+                    if (
+                        not new_cfg.get("approvedRuleSetIds")
+                        or not new_cfg.get("signedVignetteDigest")
+                        or not is_pos_int(new_cfg.get("clinicalStagingApprovedBy"))
+                    ):
+                        raise ApprovalEngineError(
+                            422,
+                            "CLINICAL_STAGING_SIGNOFF_REQUIRED",
+                            "Cần thẩm định chuyên môn (approvedRuleSetIds, signedVignetteDigest, clinicalStagingApprovedBy) trước khi bật tính giai đoạn TNM tự động.",
+                        )
+                    if not new_cfg.get("clinicalStagingApprovedAt"):
+                        new_cfg["clinicalStagingApprovedAt"] = now_vn_iso()
+                new_cfg["enableAutoStageDerivation"] = body["enableAutoStageDerivation"]
+
+            if "podRosters" in body:
+                rosters = body["podRosters"]
+                if not isinstance(rosters, list):
+                    raise ApprovalEngineError(422, "INVALID_CONFIG", "podRosters phải là danh sách các kỳ phân công khu vực.")
+                norm_rosters = []
+                for idx_r, r_item in enumerate(rosters):
+                    if not isinstance(r_item, dict):
+                        raise ApprovalEngineError(422, "INVALID_CONFIG", f"podRosters[{idx_r}] không hợp lệ.")
+                    ef = str(r_item.get("effectiveFrom") or "").strip()
+                    et = str(r_item.get("effectiveTo") or "").strip()
+                    if not is_valid_iso_date(ef) or not is_valid_iso_date(et) or et < ef:
+                        raise ApprovalEngineError(422, "INVALID_POD_ROSTER_WINDOW", "Khoảng ngày hiệu lực podRosters không hợp lệ.")
+                    for prev_r in norm_rosters:
+                        if not (et < prev_r["effectiveFrom"] or ef > prev_r["effectiveTo"]):
+                            raise ApprovalEngineError(422, "OVERLAPPING_POD_ROSTERS", "Hai kỳ phân công POD bị chồng lắp ngày hiệu lực.")
+                    norm_rosters.append({
+                        "rosterPeriod": str(r_item.get("rosterPeriod") or f"{ef}_{et}"),
+                        "effectiveFrom": ef,
+                        "effectiveTo": et,
+                        "approvedByStaffId": actor.get("staffId"),
+                        "rooms": copy.deepcopy(r_item.get("rooms") or {}),
+                    })
+                new_cfg["podRosters"] = norm_rosters
+
+            if "journalRotateMaxBytes" in body:
+                j_max = body["journalRotateMaxBytes"]
+                if not is_pos_int(j_max) or int(j_max) < 1024:
+                    raise ApprovalEngineError(422, "INVALID_CONFIG", "journalRotateMaxBytes phải >= 1024 bytes.")
+                new_cfg["journalRotateMaxBytes"] = int(j_max)
+
             db["surgeryApprovalConfig"] = new_cfg
             mig_summary = None
             if remigrate:
@@ -442,6 +566,7 @@ def register_surgery_approval_routes(app, sf_mod):
                         "sandboxOnlyMode": new_cfg.get("sandboxOnlyMode"),
                         "checklistMode": new_cfg["checklistMode"],
                         "rolloutEffectiveSurgeryDate": new_cfg["rolloutEffectiveSurgeryDate"],
+                        "enableAutoStageDerivation": new_cfg.get("enableAutoStageDerivation", False),
                     },
                     "committedStatePatch": {"patchKind": "config_update", "configRecord": copy.deepcopy(new_cfg)},
                 },
@@ -455,15 +580,25 @@ def register_surgery_approval_routes(app, sf_mod):
     def save_surgery_approval_draft(sid):
         def _handler(db, body, real_user, actor, catalog, cfg):
             surgery = _find_surgery_or_404(db, sid)
-            if surgery.get("approachType") == "nsth" and not cfg.get("nsthInternalPrecheckEnabled"):
-                raise ApprovalEngineError(422, "NSTH_EXTERNAL_AUTHORITY", "Ca Nội soi tiêu hóa không thuộc luồng duyệt Khoa PTĐTT.")
+            _require_in_phase1_scope(surgery, cfg)
             _require_expected_revision(body, surgery)
 
+            before_surgery = copy.deepcopy(surgery)
             rev_before = int(surgery.get("caseRevision", 1))
             approval = surgery.setdefault("approval", {"status": "draft_unsubmitted", "activeHold": None})
             old_status = approval.get("status", "draft_unsubmitted")
 
             tier_a_changed, act_name, summary = apply_draft_updates(surgery, actor, body, catalog, db)
+
+            if summary.get("isNoOp") is True:
+                return {
+                    "httpStatus": 200,
+                    "response": {"ok": True, "noOp": True, "surgery": copy.deepcopy(surgery)},
+                    "wal": None,
+                    "skipDbWrite": True,
+                }
+
+            attr_ops = summary.pop("attributionOps", None) or []
 
             if old_status in ("approved", "approved_with_exception", "post_approval_hold"):
                 if tier_a_changed:
@@ -477,7 +612,6 @@ def register_surgery_approval_routes(app, sf_mod):
                     approval["invalidationReason"] = "Chỉnh sửa thông tin phân loại / checklist / chip lâm sàng sau khi đã duyệt"
                     act_name = "tier_a_draft_edit_invalidated_approval"
                 else:
-                    # Tier B only (e.g. wardRoom assignment) -> keep caseRevision & approval intact (CORE-TC-07)
                     rev_after = rev_before
             elif old_status in ("submitted", "preapproved", "emergency_exception_pending_ack"):
                 if tier_a_changed:
@@ -494,6 +628,10 @@ def register_surgery_approval_routes(app, sf_mod):
                     approval["status"] = "draft_unsubmitted"
 
             stamp_badge_fields(surgery)
+            changed_fields = compute_recursive_changed_fields(before_surgery, surgery)
+            if not isinstance(changed_fields, dict):
+                changed_fields = {}
+
             revs = db.setdefault("_revisions", {})
             revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
 
@@ -507,7 +645,8 @@ def register_surgery_approval_routes(app, sf_mod):
                     "caseRevBefore": rev_before,
                     "caseRevAfter": rev_after,
                     "summary": {**summary, "statusBefore": old_status, "statusAfter": approval.get("status")},
-                    "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
+                    "committedStatePatch": {"patchKind": "surgery_field_delta", "changedFields": changed_fields},
+                    "attributionSpecs": attr_ops,
                     "recordRef": surgery,
                 },
             }
@@ -518,9 +657,12 @@ def register_surgery_approval_routes(app, sf_mod):
     def request_attending_verify(sid):
         def _handler(db, body, real_user, actor, catalog, cfg):
             surgery = _find_surgery_or_404(db, sid)
+            _require_in_phase1_scope(surgery, cfg)
             _require_expected_revision(body, surgery)
+            draft_attr_ops = []
             if isinstance(body.get("draft"), dict):
-                apply_draft_updates(surgery, actor, body["draft"], catalog, db)
+                _, _, d_sum = apply_draft_updates(surgery, actor, body["draft"], catalog, db)
+                draft_attr_ops = d_sum.get("attributionOps") or []
 
             approval = surgery.setdefault("approval", {"status": "draft_unsubmitted", "activeHold": None})
             old_status = approval.get("status", "draft_unsubmitted")
@@ -553,6 +695,15 @@ def register_surgery_approval_routes(app, sf_mod):
             revs = db.setdefault("_revisions", {})
             revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
 
+            role_in_case = resolve_case_actor_role(surgery, actor, catalog, db)
+            attr_specs = list(draft_attr_ops) + [{
+                "episodeId": surgery.get("episodeId"),
+                "actorRoleInCase": role_in_case,
+                "roleContextSource": "server_roster",
+                "actionType": "request_attending_verify",
+                "touchedSections": ["approval.readyForAttending"],
+            }]
+
             resp = {"ok": True, "surgery": copy.deepcopy(surgery)}
             return {
                 "httpStatus": 200,
@@ -565,6 +716,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     "summary": {"statusBefore": old_status, "statusAfter": "ready_for_attending"},
                     "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
                     "committedNotifications": notifs,
+                    "attributionSpecs": attr_specs,
                     "recordRef": surgery,
                 },
             }
@@ -575,6 +727,7 @@ def register_surgery_approval_routes(app, sf_mod):
     def submit_surgery_for_approval(sid):
         def _handler(db, body, real_user, actor, catalog, cfg):
             surgery = _find_surgery_or_404(db, sid)
+            _require_in_phase1_scope(surgery, cfg)
             _require_expected_revision(body, surgery)
 
             if not (is_attending_user(actor) or is_bcn_user(actor)):
@@ -584,32 +737,36 @@ def register_surgery_approval_routes(app, sf_mod):
                     "Chỉ Bác sĩ chính phụ trách ca mổ (hoặc BCN) mới có quyền bấm Trình duyệt mổ.",
                 )
 
+            draft_attr_ops = []
             if isinstance(body.get("draft"), dict):
-                apply_draft_updates(surgery, actor, body["draft"], catalog, db)
+                _, _, d_sum = apply_draft_updates(surgery, actor, body["draft"], catalog, db)
+                draft_attr_ops = d_sum.get("attributionOps") or []
 
             approval = surgery.setdefault("approval", {"status": "draft_unsubmitted", "activeHold": None})
             old_status = approval.get("status", "draft_unsubmitted")
-            if old_status in ("approved", "post_approval_hold", "trashed_inactive", "nsth_external_authority"):
+            if old_status in ("approved", "post_approval_hold", "trashed_inactive", "nsth_external_authority", "not_in_scope"):
                 raise ApprovalEngineError(409, "INVALID_STATUS_TRANSITION", f"Không thể trình duyệt từ trạng thái '{old_status}'.")
 
+            submit_auth = resolve_submit_authorization(surgery, actor, body, catalog, db)
             validate_routine_submit_gate(surgery, actor, body, catalog, db, cfg)
 
             cc = surgery.get("clinicalClassification") or {}
             urgency = cc.get("urgencyLevel") or suggest_urgency_level(surgery.get("surgeryType"))
             sla_status = compute_sla_status(surgery, cfg, urgency)
             late_reason = str(body.get("lateReason") or approval.get("lateReason") or "").strip()
-            if sla_status == "late" and urgency in ("elective", "elective_service") and len(late_reason) < 5:
+            if sla_status == "late" and len(late_reason) < 5:
                 raise ApprovalEngineError(
                     422,
                     "LATE_REASON_REQUIRED",
-                    "Ca mổ trình sau mốc hạn trình duyệt quy định — vui lòng nhập lý do trình trễ hạn.",
+                    "Ca mổ trình sau mốc 16:00 ngày N-2 — vui lòng nhập lý do trình trễ hạn.",
                 )
 
-            # Freeze POD Snapshot
+            # Freeze POD Snapshot against active server-side podRosters
             pa = surgery.setdefault("podAssignment", {})
-            r_info = get_pod_room_info(catalog, pa.get("wardRoom"))
+            r_info = get_pod_room_info(catalog, pa.get("wardRoom"), db=db, ref_date=surgery.get("date"))
             pa["podSnapshot"] = {
-                "rosterPeriod": ((catalog.get("podRoster") or {}).get("rosterPeriod")) or "2026-10-05_2026-12-13",
+                "rosterPeriod": r_info.get("rosterPeriod") or ((catalog.get("podRoster") or {}).get("rosterPeriod")) or "2026-10-05_2026-12-13",
+                "rosterSource": r_info.get("rosterSource", "server_roster"),
                 "podId": r_info.get("podId"),
                 "wardRoom": pa.get("wardRoom"),
                 "attendingStaffIds": r_info.get("attendingStaffIds", []),
@@ -621,7 +778,11 @@ def register_surgery_approval_routes(app, sf_mod):
             rev_after = rev_before + 1
             surgery["caseRevision"] = rev_after
 
-            acting_reason = str(body.get("actingForMainSurgeonReason") or "").strip() or None
+            acting_reason = submit_auth.get("actingForMainSurgeonReason")
+            proxy_source = submit_auth.get("proxySubmitterSource")
+            proxy_reason_code = submit_auth.get("proxyReasonCode")
+            pod_src = submit_auth.get("podMembershipSource")
+
             approval["status"] = "submitted"
             approval["slaStatus"] = sla_status
             approval["lateReason"] = late_reason or None
@@ -632,6 +793,10 @@ def register_surgery_approval_routes(app, sf_mod):
                 "caseRevision": rev_after,
                 "submittedAt": now_vn_iso(),
                 "submittedByStaffId": actor.get("staffId"),
+                "submitterMode": submit_auth.get("submitterMode"),
+                "proxySubmitterSource": proxy_source,
+                "proxyReasonCode": proxy_reason_code,
+                "podMembershipSource": pod_src,
                 "actingForMainSurgeonReason": acting_reason,
             }
             stamp_badge_fields(surgery)
@@ -640,13 +805,18 @@ def register_surgery_approval_routes(app, sf_mod):
             recipients = [CHIEF_STAFF_ID, DEPUTY_STAFF_ID]
             if is_pos_int(surgery.get("mainSurgeon")) and surgery.get("mainSurgeon") != actor.get("staffId"):
                 recipients.append(surgery["mainSurgeon"])
+            short_txt = (
+                f"Đã trình duyệt thay ({acting_reason}) — Chờ BCN phê duyệt"
+                if proxy_source
+                else "Đã trình duyệt mổ tại khoa — Chờ BCN phê duyệt"
+            )
             notifs = build_approval_notifications(
                 db,
                 surgery,
                 actor_staff_id=actor.get("staffId"),
                 event_id=event_seed,
                 notif_type="surgery_submitted",
-                short_status_text="Đã trình duyệt mổ tại khoa — Chờ BCN phê duyệt",
+                short_status_text=short_txt,
                 recipient_staff_ids=recipients,
             )
             if notifs:
@@ -655,6 +825,21 @@ def register_surgery_approval_routes(app, sf_mod):
 
             revs = db.setdefault("_revisions", {})
             revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
+
+            role_in_case = resolve_case_actor_role(surgery, actor, catalog, db)
+            attr_specs = list(draft_attr_ops) + [{
+                "episodeId": surgery.get("episodeId"),
+                "actorRoleInCase": proxy_source or role_in_case,
+                "roleContextSource": pod_src or "server_roster",
+                "actionType": "proxy_submit_case" if proxy_source else "submit_case",
+                "touchedSections": ["approval.submittedSnapshot"],
+                "proxyMeta": {
+                    "proxySubmitterSource": proxy_source,
+                    "proxyReasonCode": proxy_reason_code,
+                    "actingForMainSurgeonReason": acting_reason,
+                    "mainSurgeonStaffId": surgery.get("mainSurgeon"),
+                } if proxy_source else None,
+            }]
 
             resp = {"ok": True, "surgery": copy.deepcopy(surgery)}
             return {
@@ -669,10 +854,14 @@ def register_surgery_approval_routes(app, sf_mod):
                         "statusBefore": old_status,
                         "statusAfter": "submitted",
                         "slaStatus": sla_status,
+                        "submitterMode": submit_auth.get("submitterMode"),
+                        "proxySubmitterSource": proxy_source,
+                        "proxyReasonCode": proxy_reason_code,
                         "actingForMainSurgeonReason": acting_reason,
                     },
                     "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
                     "committedNotifications": notifs,
+                    "attributionSpecs": attr_specs,
                     "recordRef": surgery,
                 },
             }
@@ -685,174 +874,140 @@ def register_surgery_approval_routes(app, sf_mod):
             surgery = _find_surgery_or_404(db, sid)
             _require_expected_revision(body, surgery)
 
-            # Strictly Attending / On-call Doctor / BCN (blocks trainees & nurses -> 403, TC-13)
+            # Strictly Attending / On-call Doctor / BCN (blocks trainees & nurses -> 403 first)
             if not (is_attending_user(actor) or is_bcn_user(actor)):
                 raise ApprovalEngineError(
                     403,
                     "FORBIDDEN",
-                    "Chỉ Bác sĩ chính / Bác sĩ trực khoa (08:00–18:00) hoặc BCN mới có quyền mở Cổng Ngoại lệ Cấp cứu.",
+                    "Chỉ Bác sĩ chính / Bác sĩ trực khoa (08:00–18:00) hoặc BCN mới có quyền thao tác.",
                 )
 
-            if surgery.get("approachType") == "nsth":
-                raise ApprovalEngineError(422, "NSTH_EXTERNAL_AUTHORITY", "Ca Nội soi tiêu hóa thuộc thẩm quyền Khoa NSTH.")
+            # QĐ3 (BS. An chốt 02/11/2026): Cấp cứu & Bán khẩn nằm ngoài luồng duyệt Đợt 1 (`not_in_scope`)
+            raise ApprovalEngineError(
+                403,
+                "NOT_IN_PHASE1_SCOPE",
+                "Theo Quyết định Đợt 1, ca mổ cấp cứu / bán khẩn không áp luồng trình duyệt mổ chương trình (hiển thị bình thường, không chặn mổ).",
+            )
 
-            ms_id = surgery.get("mainSurgeon")
-            if not is_pos_int(ms_id) or ms_id in TRAINEE_STAFF_IDS:
-                raise ApprovalEngineError(422, "INVALID_MAIN_SURGEON", "Vui lòng chọn BS chính đứng tên mổ cấp cứu hợp lệ.")
+        return _run_wal_tx(action_key="submit_emergency", surgery_id=sid, handler_fn=_handler)
 
-            if isinstance(body.get("draft"), dict):
-                apply_draft_updates(surgery, actor, body["draft"], catalog, db)
+    @app.route("/api/surgery-approval/<int:sid>/verify-procedure-class", methods=["POST"])
+    def verify_custom_procedure_class(sid):
+        def _handler(db, body, real_user, actor, catalog, cfg):
+            actor_id = actor.get("staffId")
+            if actor_id not in BCN_STAFF_IDS:
+                raise ApprovalEngineError(
+                    403,
+                    "FORBIDDEN",
+                    "Chỉ Trưởng khoa (hoặc Phó Trưởng khoa có ủy quyền hợp lệ) mới được xác minh hạng kỹ thuật.",
+                )
 
-            em_note = str(body.get("emergencyReasonNote") or "").strip()
-            if len(em_note) < 10:
-                raise ApprovalEngineError(422, "EMERGENCY_REASON_REQUIRED", "Vui lòng ghi rõ chỉ định mổ cấp cứu / đe dọa tính mạng (tối thiểu 10 ký tự).")
+            surgery = _find_surgery_or_404(db, sid)
+            _require_expected_revision(body, surgery)
+            _require_in_phase1_scope(surgery, cfg)
+            before_surgery = copy.deepcopy(surgery)
 
-            verbal = body.get("verbalConsultRecord")
-            if (
-                not isinstance(verbal, dict)
-                or verbal.get("contactedLeaderStaffId") not in BCN_STAFF_IDS
-                or verbal.get("contactChannel") not in ("phone", "in_person", "zalo_duty")
-                or not str(verbal.get("contactedAt") or "").strip()
-            ):
+            urgency = ((surgery.get("clinicalClassification") or {}).get("urgencyLevel")) or "elective"
+            delegation_id = None
+            if actor_id == DEPUTY_STAFF_ID:
+                active_del = find_active_delegation_for_deputy(
+                    db, sid, urgency, is_sandbox_case=bool(surgery.get("isTestSandboxCase"))
+                )
+                if not active_del:
+                    raise ApprovalEngineError(
+                        403,
+                        "DELEGATION_NOT_ACTIVE",
+                        "Phó Trưởng khoa cần Ủy quyền đang hiệu lực của Trưởng khoa để chốt xác minh hạng kỹ thuật.",
+                    )
+                delegation_id = active_del.get("delegationId")
+
+            v_cls = body.get("verifiedClass")
+            v_basis = body.get("verifiedBasisCode") or "equivalent_dm309_complexity"
+            if v_cls not in ("PT-ĐB", "PT-I", "PT-II", "PT-III"):
                 raise ApprovalEngineError(
                     422,
-                    "VERBAL_CONSULT_REQUIRED",
-                    "Bắt buộc ghi nhận báo cáo trực tiếp / điện thoại với Trưởng khoa hoặc Phó Trưởng khoa.",
+                    "CUSTOM_PROCEDURE_VERIFICATION_REQUIRED",
+                    "Vui lòng chọn hạng kỹ thuật xác minh cụ thể (PT-ĐB, PT-I, PT-II hoặc PT-III).",
                 )
-
-            followup_owner = body.get("postOpFollowUpOwnerStaffId")
-            if not is_pos_int(followup_owner) or followup_owner not in ATTENDING_STAFF_IDS:
+            if v_basis not in VALID_VERIFIED_BASIS_CODES:
+                raise ApprovalEngineError(422, "INVALID_VERIFIED_BASIS", "Căn cứ xác minh hạng kỹ thuật không hợp lệ.")
+            v_note = str(body.get("verifiedNote") or "").strip()
+            if v_basis in ("other", "other_note") and len(v_note) < 5:
                 raise ApprovalEngineError(
                     422,
-                    "FOLLOWUP_OWNER_REQUIRED",
-                    "Bắt buộc chỉ định BS chính chịu trách nhiệm hoàn tất hồ sơ sau mổ cấp cứu.",
+                    "VERIFIED_BASIS_NOTE_REQUIRED",
+                    "Khi chọn 'Căn cứ khác', vui lòng nhập ghi chú căn cứ xác minh tối thiểu 5 ký tự.",
                 )
-
-            if surgery.get("preopChecklist") is None or surgery.get("clinicalChips") is None:
-                init_parts = build_initial_unverified_structures(surgery, catalog, db)
-                for k_i, v_i in init_parts.items():
-                    if surgery.get(k_i) is None:
-                        surgery[k_i] = v_i
-
-            ck = surgery.setdefault("preopChecklist", {})
-            deferred_items = []
-            for code in CK_CODES:
-                item = ck.setdefault(code, {"state": "unverified", "preparedByStaffId": None, "verifiedByStaffId": None})
-                if item.get("state") in ("unverified", "prepared_ok", "deferred_emergency"):
-                    item["state"] = "deferred_emergency"
-                    item["verifiedByStaffId"] = actor.get("staffId")
-                    deferred_items.append(code)
-
-            # C-08..C-10 Emergency Deferral (TC-22b): allow 'unknown' & record in deferredItems
-            chips = surgery.setdefault("clinicalChips", {})
-            sh = chips.setdefault("surgicalHistory", {"confirmed": False, "status": None, "categories": [], "abdominalScarType": "not_applicable", "detailNote": None})
-            if not sh.get("confirmed") or sh.get("status") in (None, "unknown"):
-                sh["confirmed"] = True
-                sh["status"] = "unknown"
-                sh["categories"] = []
-                sh["abdominalScarType"] = "not_applicable"
-                deferred_items.append("clinicalChips.surgicalHistory")
-
-            al = chips.setdefault("allergyHistory", {"confirmed": False, "status": None, "allergenGroups": [], "reactionSeverity": None, "allergenDetail": None})
-            if not al.get("confirmed") or al.get("status") in (None, "unknown"):
-                al["confirmed"] = True
-                al["status"] = "unknown"
-                al["allergenGroups"] = []
-                al["reactionSeverity"] = None
-                deferred_items.append("clinicalChips.allergyHistory")
-
-            soc = chips.setdefault("socialHabits", {
-                "confirmed": False,
-                "alcoholUse": None,
-                "smoking": {"status": None, "packYears": None, "packYearsUnknown": False},
-                "substanceAbuse": {"status": None, "substanceNote": None},
-            })
-            smk = soc.setdefault("smoking", {"status": None, "packYears": None, "packYearsUnknown": False})
-            sub_ab = soc.setdefault("substanceAbuse", {"status": None, "substanceNote": None})
-            if (
-                not soc.get("confirmed")
-                or soc.get("alcoholUse") in (None, "unknown")
-                or smk.get("status") in (None, "unknown")
-                or sub_ab.get("status") in (None, "unknown")
-            ):
-                soc["confirmed"] = True
-                if not soc.get("alcoholUse"):
-                    soc["alcoholUse"] = "unknown"
-                if not smk.get("status"):
-                    smk["status"] = "unknown"
-                    smk["packYears"] = None
-                    smk["packYearsUnknown"] = False
-                if not sub_ab.get("status"):
-                    sub_ab["status"] = "unknown"
-                    sub_ab["substanceNote"] = None
-                deferred_items.append("clinicalChips.socialHabits")
 
             cc = surgery.setdefault("clinicalClassification", {})
-            cc["urgencyLevel"] = "emergency_exception"
+            pc_obj = cc.setdefault("procedureClass", {})
+            col_obj = cc.setdefault("columnCompliance", {})
+            pc_obj["verifiedClass"] = v_cls
+            pc_obj["verifiedBasisCode"] = v_basis
+            pc_obj["verifiedByStaffId"] = actor_id
+            pc_obj["verifiedAt"] = now_vn_iso()
+            pc_obj["verifiedNote"] = v_note or None
+            is_custom = bool(pc_obj.get("isCustomOutsideCatalog") is True or pc_obj.get("confirmedCatalogEntryId") == "CUSTOM_OUTSIDE_DM309")
+            if not is_custom and pc_obj.get("confirmedClass") in (None, "unclassified", "unknown_ambiguous"):
+                pc_obj["confirmedClass"] = v_cls
+
+            live_col = evaluate_column_compliance(
+                catalog,
+                db,
+                main_surgeon_id=surgery.get("mainSurgeon"),
+                approach_type=surgery.get("approachType", "mo"),
+                surgery_date=surgery.get("date", ""),
+                confirmed_class=v_cls,
+                confirmed_catalog_id=pc_obj.get("confirmedCatalogEntryId"),
+                is_custom_outside_catalog=is_custom,
+                proposed_class=pc_obj.get("proposedClass"),
+                verified_class=v_cls,
+            )
+            col_obj.update(live_col)
+            if body.get("externalPrivilegeConfirmed") is True:
+                col_obj["externalPrivilegeConfirmed"] = True
+                col_obj["privilegeVerifiedByStaffId"] = actor_id
 
             rev_before = int(surgery.get("caseRevision", 1))
             rev_after = rev_before + 1
             surgery["caseRevision"] = rev_after
-
-            approval = surgery.setdefault("approval", {})
-            old_status = approval.get("status", "draft_unsubmitted")
-            approval["status"] = "emergency_exception_pending_ack"
-            approval["slaStatus"] = "emergency_exempt"
-            approval["activeHold"] = None
-            approval["approvedSnapshot"] = None
-            approval["deferredItems"] = list(deferred_items)
-            approval["emergencyException"] = {
-                "emergencyReasonNote": em_note,
-                "verbalConsultRecord": {
-                    "contactedLeaderStaffId": int(verbal["contactedLeaderStaffId"]),
-                    "contactChannel": verbal["contactChannel"],
-                    "contactedAt": str(verbal["contactedAt"]).strip(),
-                },
-                "postOpFollowUpOwnerStaffId": int(followup_owner),
-                "deferredItems": list(deferred_items),
-                "submittedByStaffId": actor.get("staffId"),
-                "submittedAt": now_vn_iso(),
-            }
             stamp_badge_fields(surgery)
-
-            event_seed = str(uuid.uuid4())
-            notifs = build_approval_notifications(
-                db,
-                surgery,
-                actor_staff_id=actor.get("staffId"),
-                event_id=event_seed,
-                notif_type="surgery_emergency_exception",
-                short_status_text="⚡ Ngoại lệ cấp cứu — Chờ BCN xác nhận ngoại lệ",
-                recipient_staff_ids=[CHIEF_STAFF_ID, DEPUTY_STAFF_ID, int(followup_owner)],
-            )
-            if notifs:
-                db.setdefault("notifications", []).extend(notifs)
-                db.setdefault("_revisions", {})["notifications"] = int(db.get("_revisions", {}).get("notifications", 1)) + 1
 
             revs = db.setdefault("_revisions", {})
             revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
+            delta = compute_recursive_changed_fields(before_surgery, surgery)
 
-            resp = {"ok": True, "surgery": copy.deepcopy(surgery)}
             return {
                 "httpStatus": 200,
-                "response": resp,
+                "response": {"ok": True, "surgery": copy.deepcopy(surgery)},
                 "wal": {
-                    "action": "submit_emergency_exception",
+                    "action": "verify_custom_procedure_class",
                     "surgeryId": sid,
                     "caseRevBefore": rev_before,
                     "caseRevAfter": rev_after,
+                    "delegationId": delegation_id,
                     "summary": {
-                        "statusBefore": old_status,
-                        "statusAfter": "emergency_exception_pending_ack",
-                        "deferredItems": deferred_items,
+                        "verifiedClass": v_cls,
+                        "verifiedBasisCode": v_basis,
+                        "systemCheck": col_obj.get("systemCheck"),
                     },
-                    "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
-                    "committedNotifications": notifs,
+                    "committedStatePatch": {
+                        "patchKind": "surgery_field_delta",
+                        "surgeryId": sid,
+                        "changedFields": delta if isinstance(delta, dict) else {},
+                    },
+                    "attributionSpecs": [
+                        {
+                            "actionCode": "verify_custom_procedure_class",
+                            "targetScope": "procedureClass",
+                            "metadata": {"verifiedClass": v_cls, "verifiedBasisCode": v_basis},
+                        }
+                    ],
                     "recordRef": surgery,
                 },
             }
 
-        return _run_wal_tx(action_key="submit_emergency", surgery_id=sid, handler_fn=_handler)
+        return _run_wal_tx(action_key="verify_procedure_class", surgery_id=sid, handler_fn=_handler)
 
     @app.route("/api/surgery-approval/<int:sid>/preapprove", methods=["POST"])
     def preapprove_surgery(sid):
@@ -862,20 +1017,12 @@ def register_surgery_approval_routes(app, sf_mod):
 
             surgery = _find_surgery_or_404(db, sid)
             _require_expected_revision(body, surgery)
+            _require_in_phase1_scope(surgery, cfg)
 
             approval = surgery.setdefault("approval", {})
             old_status = approval.get("status")
             if old_status not in ("submitted", "preapproved"):
                 raise ApprovalEngineError(409, "INVALID_STATUS_TRANSITION", f"Chỉ tiền duyệt ca đang ở trạng thái 'submitted' (hiện tại: '{old_status}').")
-
-            cc = surgery.get("clinicalClassification") or {}
-            col_obj = cc.get("columnCompliance") or {}
-            if (
-                body.get("verifyPrivilege")
-                or col_obj.get("declaredMode") in ("approved_over_column", "propose_over_column")
-                or col_obj.get("systemCheck") in ("matrix_expired_manual_verify", "external_surgeon_verify_privilege", "unclassified_manual_verify")
-            ):
-                col_obj["privilegeVerifiedByStaffId"] = DEPUTY_STAFF_ID
 
             rev_before = int(surgery.get("caseRevision", 1))
             rev_after = rev_before + 1
@@ -920,6 +1067,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     "summary": {"statusBefore": old_status, "statusAfter": "preapproved", "note": note},
                     "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
                     "committedNotifications": notifs,
+                    "attributionSpecs": [{"actionCode": "preapprove_deputy", "targetScope": "approval"}],
                     "recordRef": surgery,
                 },
             }
@@ -937,6 +1085,8 @@ def register_surgery_approval_routes(app, sf_mod):
 
             approval = surgery.setdefault("approval", {})
             old_status = approval.get("status")
+            if old_status != "emergency_exception_pending_ack":
+                _require_in_phase1_scope(surgery, cfg)
             if old_status not in ("submitted", "preapproved", "emergency_exception_pending_ack"):
                 raise ApprovalEngineError(409, "INVALID_STATUS_TRANSITION", f"Không thể trả hồ sơ từ trạng thái '{old_status}'.")
 
@@ -994,6 +1144,9 @@ def register_surgery_approval_routes(app, sf_mod):
                     "summary": {"statusBefore": old_status, "statusAfter": "returned_for_revision", "chips": chips},
                     "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
                     "committedNotifications": notifs,
+                    "attributionSpecs": [
+                        {"actionCode": "return_for_revision", "targetScope": "approval", "metadata": {"chips": chips}}
+                    ],
                     "recordRef": surgery,
                 },
             }
@@ -1097,6 +1250,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 }
 
             # ── Branch B: Standard Routine Approval -> approved (✅ Đã duyệt tại khoa) ──
+            _require_in_phase1_scope(surgery, cfg)
             if old_status not in ("submitted", "preapproved"):
                 raise ApprovalEngineError(
                     409,
@@ -1104,17 +1258,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     f"Chỉ phê duyệt ca đã trình duyệt ('submitted' hoặc 'preapproved', hiện tại: '{old_status}').",
                 )
 
-            cc = surgery.get("clinicalClassification") or {}
-            col_obj = cc.get("columnCompliance") or {}
-            if (
-                col_obj.get("declaredMode") in ("approved_over_column", "propose_over_column")
-                or col_obj.get("systemCheck") in ("matrix_expired_manual_verify", "external_surgeon_verify_privilege", "unclassified_manual_verify")
-            ):
-                col_obj["privilegeVerifiedByStaffId"] = actor_id
-
-            # Re-verify full gate integrity at approval time (Zero-Bypass)
-            validate_routine_submit_gate(surgery, actor, {"actingForMainSurgeonReason": "BCN_APPROVAL_CHECK"}, catalog, db, cfg)
-
+            cc = surgery.setdefault("clinicalClassification", {})
             urgency = cc.get("urgencyLevel") or "elective"
             delegation_id = None
             if actor_id == CHIEF_STAFF_ID:
@@ -1132,6 +1276,27 @@ def register_surgery_approval_routes(app, sf_mod):
                 approval_mode = "delegated_deputy"
                 delegation_id = active_del.get("delegationId")
 
+            # Enforce BCN Verification Gate + Full Clinical Submit Gate (Zero-Bypass)
+            validate_bcn_approve_gate(surgery, actor, body, catalog, db, cfg)
+
+            ck_map = surgery.get("preopChecklist") or {}
+            sub_snap = approval.get("submittedSnapshot") or {}
+            is_self_involved = (
+                actor_id == surgery.get("mainSurgeon")
+                or actor_id == sub_snap.get("submittedByStaffId")
+                or actor_id == ((ck_map.get("CK-04") or {}).get("verifiedByStaffId"))
+                or actor_id == ((ck_map.get("CK-08") or {}).get("verifiedByStaffId"))
+            )
+            if is_self_involved:
+                approval_mode = "self_approval_main_surgeon"
+
+            prev_cycles = int(approval.get("approvalCycleCount", 0) or 0)
+            was_prev_approved = bool(approval.get("firstApprovedAt") or approval.get("lastApprovedSnapshot") or prev_cycles >= 1)
+            new_cycles = (max(prev_cycles, 1) + 1) if was_prev_approved else 1
+            is_reapproval = new_cycles >= 2
+            reapproval_idx = max(0, new_cycles - 1)
+            approved_ts = now_vn_iso()
+
             rev_before = int(surgery.get("caseRevision", 1))
             rev_after = rev_before + 1
             surgery["caseRevision"] = rev_after
@@ -1139,12 +1304,18 @@ def register_surgery_approval_routes(app, sf_mod):
             note = str(body.get("note") or "").strip()
             approval["status"] = "approved"
             approval["activeHold"] = None
+            if not approval.get("firstApprovedAt"):
+                approval["firstApprovedAt"] = approved_ts
+            approval["latestApprovedAt"] = approved_ts
+            approval["approvalCycleCount"] = new_cycles
             approval["approvedSnapshot"] = {
                 "caseRevision": rev_after,
-                "approvedAt": now_vn_iso(),
+                "approvedAt": approved_ts,
                 "approvedByStaffId": actor_id,
                 "approvalMode": approval_mode,
                 "delegationId": delegation_id,
+                "approvalCycleCount": new_cycles,
+                "isReapproval": is_reapproval,
                 "note": note,
             }
             stamp_badge_fields(surgery)
@@ -1160,7 +1331,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 actor_staff_id=actor_id,
                 event_id=event_seed,
                 notif_type="surgery_approved",
-                short_status_text="✅ Đã duyệt tại khoa",
+                short_status_text="✅ Đã duyệt lại tại khoa" if is_reapproval else "✅ Đã duyệt tại khoa",
                 recipient_staff_ids=targets,
             )
             if notifs:
@@ -1170,12 +1341,13 @@ def register_surgery_approval_routes(app, sf_mod):
             revs = db.setdefault("_revisions", {})
             revs["surgeries"] = int(revs.get("surgeries", 1)) + 1
 
+            wal_action = "approve_reapproval" if is_reapproval else "approve_initial"
             resp = {"ok": True, "surgery": copy.deepcopy(surgery)}
             return {
                 "httpStatus": 200,
                 "response": resp,
                 "wal": {
-                    "action": "approve_routine",
+                    "action": wal_action,
                     "surgeryId": sid,
                     "caseRevBefore": rev_before,
                     "caseRevAfter": rev_after,
@@ -1184,9 +1356,19 @@ def register_surgery_approval_routes(app, sf_mod):
                         "statusBefore": old_status,
                         "statusAfter": "approved",
                         "approvalMode": approval_mode,
+                        "approvalCycleCount": new_cycles,
+                        "reapprovalIndex": reapproval_idx,
+                        "isTestSandboxCase": bool(surgery.get("isTestSandboxCase")),
                     },
                     "committedStatePatch": {"patchKind": "surgery_upsert", "surgeryRecord": copy.deepcopy(surgery)},
                     "committedNotifications": notifs,
+                    "attributionSpecs": [
+                        {
+                            "actionCode": wal_action,
+                            "targetScope": "approval",
+                            "metadata": {"approvalMode": approval_mode, "approvalCycleCount": new_cycles},
+                        }
+                    ],
                     "recordRef": surgery,
                 },
             }
@@ -1204,7 +1386,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 actor_id in BCN_STAFF_IDS
                 or actor_id == surgery.get("mainSurgeon")
                 or actor_id == surgery.get("coordinatingAttendingStaffId")
-                or is_same_pod_attending(catalog, surgery, actor_id)
+                or is_same_pod_attending(catalog, surgery, actor_id, db=db)
             )
             if not allowed_actor:
                 raise ApprovalEngineError(
@@ -1616,7 +1798,6 @@ def register_surgery_approval_routes(app, sf_mod):
                     "Tính năng Duyệt mổ tại khoa đang ở chế độ thử nghiệm dành riêng cho Super Admin.",
                 )
 
-            # Check simulated role if provided by superadmin so Role Simulator accurately tests 403 for non-BCN!
             sim_hdr = request.headers.get("X-Simulate-Staff-Id", "").strip()
             effective_staff_id = real_user.get("staffId")
             if sim_hdr and real_user.get("isSuperAdmin"):
@@ -1632,43 +1813,69 @@ def register_surgery_approval_routes(app, sf_mod):
                     "Sổ nhật ký chuỗi băm Duyệt mổ chỉ dành riêng cho Ban Chủ nhiệm khoa (Trưởng khoa & Phó Trưởng khoa).",
                 )
 
-            journal_path = get_journal_path(sf_mod.DATA_DIR)
-            ok, entries, chain_err = verify_approval_journal_chain(journal_path)
-
             sid_filter = request.args.get("surgeryId", "").strip()
+            target_sid = int(sid_filter) if sid_filter.isdigit() else None
+            before_raw = request.args.get("beforeSeq", "").strip()
+            before_seq = int(before_raw) if before_raw.isdigit() else None
             limit = min(max(int(request.args.get("limit", "200") or 200), 1), 1000)
+            include_snapshot = request.args.get("includeSnapshot") == "1"
+            verify_requested = request.args.get("verifyChain") == "1"
 
             sandbox_ids = {
                 s.get("id")
                 for s in ((db.get("surgeries") or []) + (db.get("surgeriesTrash") or []))
                 if isinstance(s, dict) and s.get("isTestSandboxCase") is True
             }
-            filtered = entries
-            if not can_user_access_sandbox(real_user, db):
-                def _is_sandbox_log(ev):
-                    act = str(ev.get("action") or "")
-                    if act.startswith("sandbox_"):
-                        return True
-                    if ev.get("surgeryId") in sandbox_ids:
-                        return True
-                    actor_ev = ev.get("actor") or {}
-                    if actor_ev.get("isSimulated") or actor_ev.get("simulatedBySuperAdminStaffId"):
-                        return True
-                    patch = ev.get("committedStatePatch") or {}
-                    if (patch.get("surgeryRecord") or {}).get("isTestSandboxCase") is True:
-                        return True
-                    if (patch.get("delegationRecord") or {}).get("isTestSandboxDelegation") is True:
-                        return True
+            allow_sbx = can_user_access_sandbox(real_user, db)
+
+            def _accept_ev(ev):
+                if allow_sbx:
+                    return True
+                act = str(ev.get("action") or "")
+                if act.startswith("sandbox_"):
                     return False
-                filtered = [e for e in filtered if not _is_sandbox_log(e)]
-            if sid_filter.isdigit():
-                target_sid = int(sid_filter)
-                filtered = [e for e in filtered if e.get("surgeryId") == target_sid]
+                if ev.get("surgeryId") in sandbox_ids:
+                    return False
+                actor_ev = ev.get("actor") or {}
+                if actor_ev.get("isSimulated") or actor_ev.get("simulatedBySuperAdminStaffId"):
+                    return False
+                patch = ev.get("committedStatePatch") or {}
+                if (patch.get("surgeryRecord") or {}).get("isTestSandboxCase") is True:
+                    return False
+                if (patch.get("delegationRecord") or {}).get("isTestSandboxDelegation") is True:
+                    return False
+                return True
+
+            page = query_journal_reverse_paginated(
+                sf_mod.DATA_DIR,
+                "approval",
+                limit=limit,
+                before_seq=before_seq,
+                surgery_id=target_sid,
+                filter_fn=_accept_ev,
+            )
+
+            journal_path = get_journal_path(sf_mod.DATA_DIR)
+            hot_size = os.path.getsize(journal_path) if os.path.isfile(journal_path) else 0
+            chain_ok = True
+            chain_err = None
+            if verify_requested or hot_size <= 5 * 1024 * 1024:
+                cp = load_or_init_journal_checkpoint(sf_mod.DATA_DIR)
+                base_seq = int(((cp.get("approval") or {}).get("activeBaseSeq", 0)) or 0)
+                gen_hash = str(((cp.get("approval") or {}).get("activeGenesisHash")) or GENESIS_HASH)
+                chain_ok, _, chain_err, _, _ = verify_journal_stream_streaming(
+                    journal_path,
+                    expected_start_seq=base_seq + 1,
+                    expected_genesis_hash=gen_hash,
+                    seq_field="eventSeq",
+                    collect_entries=False,
+                )
 
             sanitized = []
-            for e in reversed(filtered[-limit:]):
-                sanitized.append({
+            for e in page["items"]:
+                item = {
                     "eventId": e.get("eventId"),
+                    "txEventId": e.get("txEventId") or e.get("eventId"),
                     "eventSeq": e.get("eventSeq"),
                     "timestamp": e.get("timestamp"),
                     "surgeryId": e.get("surgeryId"),
@@ -1680,15 +1887,106 @@ def register_surgery_approval_routes(app, sf_mod):
                     "statePatchSummary": e.get("statePatchSummary"),
                     "prevHash": e.get("prevHash"),
                     "entryHash": e.get("entryHash"),
-                })
+                }
+                if include_snapshot:
+                    item["committedStatePatch"] = e.get("committedStatePatch")
+                sanitized.append(item)
 
             return jsonify({
-                "chainValid": ok,
-                "totalEvents": len(entries),
-                "headHash": entries[-1]["entryHash"] if entries else ("0" * 64),
+                "chainValid": chain_ok,
+                "totalEvents": page["headSeq"],
+                "headHash": page["headHash"],
                 "chainError": chain_err,
+                "hasMore": page["hasMore"],
+                "nextBeforeSeq": page["nextBeforeSeq"],
                 "entries": sanitized,
             })
+        except ApprovalEngineError as e:
+            return jsonify(e.to_dict()), e.status_code
+
+    @app.route("/api/surgery-approval/<int:sid>/attribution", methods=["GET"])
+    def get_surgery_attribution_history(sid):
+        try:
+            db = sf_mod.load_data()
+            real_user = resolve_live_user_fail_closed(
+                request.headers.get("Authorization", ""),
+                sf_mod._verify_jwt,
+                sf_mod.AUTH_FILE,
+                db,
+                sf_mod._save_auth,
+            )
+            cfg = get_approval_config(db)
+            if cfg.get("rolloutAccessMode") == "superadmin_only" and not real_user.get("isSuperAdmin"):
+                raise ApprovalEngineError(403, "CANARY_SUPERADMIN_ONLY", "Chế độ thử nghiệm Super Admin.")
+
+            surgery = _find_surgery_or_404(db, sid)
+            if surgery.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
+                raise ApprovalEngineError(404, "SURGERY_NOT_FOUND", f"Không tìm thấy ca mổ #{sid}.")
+
+            before_raw = request.args.get("beforeSeq", "").strip()
+            before_seq = int(before_raw) if before_raw.isdigit() else None
+            limit = min(max(int(request.args.get("limit", "100") or 100), 1), 500)
+
+            page = query_journal_reverse_paginated(
+                sf_mod.DATA_DIR,
+                "attribution",
+                limit=limit,
+                before_seq=before_seq,
+                surgery_id=sid,
+            )
+            return jsonify({
+                "ok": True,
+                "surgeryId": sid,
+                "preparationContributors": surgery.get("preparationContributors") or [],
+                "lastAttributionSeq": int(surgery.get("lastAttributionSeq", 0) or 0),
+                "hasMore": page["hasMore"],
+                "nextBeforeSeq": page["nextBeforeSeq"],
+                "events": page["items"],
+            })
+        except ApprovalEngineError as e:
+            return jsonify(e.to_dict()), e.status_code
+
+    @app.route("/api/surgery-approval/kpi", methods=["GET"])
+    def get_dual_surgery_approval_kpi():
+        try:
+            db = sf_mod.load_data()
+            real_user = resolve_live_user_fail_closed(
+                request.headers.get("Authorization", ""),
+                sf_mod._verify_jwt,
+                sf_mod.AUTH_FILE,
+                db,
+                sf_mod._save_auth,
+            )
+            cfg = get_approval_config(db)
+            if cfg.get("rolloutAccessMode") == "superadmin_only" and not real_user.get("isSuperAdmin"):
+                raise ApprovalEngineError(403, "CANARY_SUPERADMIN_ONLY", "Chế độ thử nghiệm Super Admin.")
+
+            today_dt = now_vn()
+            default_start = f"{today_dt.year:04d}-{today_dt.month:02d}-01"
+            if today_dt.month == 12:
+                default_end = f"{today_dt.year:04d}-12-31"
+            else:
+                from datetime import timedelta as _td
+                next_m = today_dt.replace(year=today_dt.year, month=today_dt.month + 1, day=1)
+                last_d = next_m - _td(days=1)
+                default_end = f"{last_d.year:04d}-{last_d.month:02d}-{last_d.day:02d}"
+
+            p_start = request.args.get("periodStart", default_start).strip()
+            p_end = request.args.get("periodEnd", default_end).strip()
+            if not is_valid_iso_date(p_start) or not is_valid_iso_date(p_end) or p_start > p_end:
+                raise ApprovalEngineError(422, "INVALID_PERIOD", "Khoảng thời gian báo cáo (periodStart..periodEnd) không hợp lệ.")
+
+            want_sbx = request.args.get("includeSandbox") == "1"
+            allow_sbx = can_user_access_sandbox(real_user, db)
+            inc_sbx = bool(want_sbx and allow_sbx)
+            kpis = compute_dual_approval_kpis(
+                db,
+                sf_mod.DATA_DIR,
+                p_start,
+                p_end,
+                include_sandbox=inc_sbx,
+            )
+            return jsonify({"ok": True, **kpis})
         except ApprovalEngineError as e:
             return jsonify(e.to_dict()), e.status_code
 
@@ -1843,14 +2141,20 @@ def register_surgery_approval_routes(app, sf_mod):
             rec.pop("deletedBy", None)
             rec.pop("deletedByStaffId", None)
 
-            rollout_date = cfg.get("rolloutEffectiveSurgeryDate", "2026-11-02")
+            rollout_date = cfg.get("rolloutEffectiveSurgeryDate", "2026-11-09")
             d_str = rec.get("date", "")
             approval = rec.setdefault("approval", {})
             approval["approvedSnapshot"] = None
             approval["activeHold"] = None
 
-            if rec.get("approachType") == "nsth":
+            in_scope, scope_reason = is_in_phase1_approval_scope(rec, cfg)
+            if scope_reason == "nsth_external_authority":
                 approval["status"] = "nsth_external_authority"
+            elif not in_scope:
+                if scope_reason == "before_rollout_date" and prev_status in ("legacy_exempt", "legacy_unverified_manual_review"):
+                    approval["status"] = prev_status
+                else:
+                    approval["status"] = "not_in_scope"
             elif prev_status in ("legacy_exempt", "legacy_unverified_manual_review"):
                 if is_valid_iso_date(d_str) and d_str >= rollout_date:
                     init_parts = build_initial_unverified_structures(rec, catalog, db)
@@ -2148,21 +2452,130 @@ def register_surgery_approval_routes(app, sf_mod):
             reason = str(body.get("reason") or "Disaster recovery restore").strip()
             sf_mod.snapshot_data_file("pre-disaster-restore")
 
-            journal_path = get_journal_path(sf_mod.DATA_DIR)
-            ok, entries, chain_err = verify_approval_journal_chain(journal_path)
-            if not ok:
-                raise ApprovalEngineError(503, "AUDIT_CHAIN_CORRUPTED", "Chuỗi băm nhật ký hiện tại không toàn vẹn.", {"chainError": chain_err})
+            import re as _re
+            archive_dir = get_archive_dir(sf_mod.DATA_DIR)
+            cp = load_or_init_journal_checkpoint(sf_mod.DATA_DIR)
 
-            # Find max eventSeq and max caseRevision per surgeryId in append-only WAL journal
-            max_seq_by_sid = {}
-            max_rev_by_sid = {}
-            for e in entries:
-                esid = e.get("surgeryId")
-                if is_pos_int(esid):
-                    max_seq_by_sid[esid] = max(max_seq_by_sid.get(esid, 0), int(e.get("eventSeq", 0)))
-                    r_after = e.get("caseRevisionAfter")
-                    if is_strict_int(r_after):
-                        max_rev_by_sid[esid] = max(max_rev_by_sid.get(esid, 1), r_after)
+            def _stream_verify_all_segments(stem_prefix: str, hot_path: str, seq_field: str):
+                seg_pat = _re.compile(rf"^{_re.escape(stem_prefix)}\.([0-9]{{4}}-Q[1-4])\.seq_([0-9]+)_([0-9]+)\.jsonl\.gz$")
+                seg_files = []
+                if os.path.isdir(archive_dir):
+                    for fn in os.listdir(archive_dir):
+                        m = seg_pat.match(fn)
+                        if m:
+                            seg_files.append((int(m.group(2)), int(m.group(3)), m.group(1), fn))
+                seg_files.sort(key=lambda x: (x[0], x[1]))
+
+                exp_seq = 1
+                exp_prev = GENESIS_HASH
+                max_seq_map = {}
+                max_rev_map = {}
+                rebuilt_segments = []
+
+                for s_seq_start, s_seq_end, q_lbl, fn in seg_files:
+                    gz_p = os.path.join(archive_dir, fn)
+                    sha_p = gz_p + ".sha256"
+                    h_calc = hashlib.sha256()
+                    with open(gz_p, "rb") as rbf:
+                        while True:
+                            blk = rbf.read(65536)
+                            if not blk:
+                                break
+                            h_calc.update(blk)
+                    gz_sha = h_calc.hexdigest()
+                    if os.path.isfile(sha_p):
+                        with open(sha_p, "r", encoding="utf-8") as sfh:
+                            recorded_sha = sfh.read().strip().split()[0]
+                        if recorded_sha != gz_sha:
+                            raise ApprovalEngineError(
+                                503,
+                                "AUDIT_ARCHIVE_SHA256_MISMATCH",
+                                f"Tệp nén lưu trữ {fn} không khớp mã kiểm tra SHA-256.",
+                                {"fileName": fn},
+                            )
+                    seg_first_prev = exp_prev
+                    with gzip.open(gz_p, "rt", encoding="utf-8") as gzf:
+                        for line_no, raw in enumerate(gzf, start=1):
+                            st = raw.strip()
+                            if not st:
+                                continue
+                            obj = json.loads(st)
+                            sq = obj.get(seq_field)
+                            if sq != exp_seq or obj.get("prevHash") != exp_prev or obj.get("entryHash") != compute_journal_entry_hash(obj):
+                                raise ApprovalEngineError(
+                                    503,
+                                    "AUDIT_CHAIN_CORRUPTED",
+                                    f"Chuỗi băm phân đoạn lưu trữ {fn} bị đứt gãy ở dòng {line_no}.",
+                                    {"fileName": fn, "line": line_no, "expectedSeq": exp_seq, "actualSeq": sq},
+                                )
+                            esid = obj.get("surgeryId")
+                            if is_pos_int(esid):
+                                max_seq_map[esid] = max(max_seq_map.get(esid, 0), int(sq))
+                                r_after = obj.get("caseRevisionAfter")
+                                if is_strict_int(r_after):
+                                    max_rev_map[esid] = max(max_rev_map.get(esid, 1), r_after)
+                            exp_seq += 1
+                            exp_prev = obj["entryHash"]
+                    if exp_seq - 1 != s_seq_end or s_seq_start != (exp_seq - (s_seq_end - s_seq_start + 1)):
+                        raise ApprovalEngineError(503, "AUDIT_CHAIN_CORRUPTED", f"Dải sequence của {fn} không khớp dữ liệu bên trong.")
+                    rebuilt_segments.append({
+                        "fileName": fn,
+                        "quarter": q_lbl,
+                        "startSeq": s_seq_start,
+                        "endSeq": s_seq_end,
+                        "firstPrevHash": seg_first_prev,
+                        "lastEntryHash": exp_prev,
+                        "gzipSha256": gz_sha,
+                        "byteSize": os.path.getsize(gz_p),
+                    })
+
+                active_base_seq = exp_seq - 1
+                active_genesis = exp_prev
+                if os.path.isfile(hot_path):
+                    read_last_valid_jsonl_record_adaptive(hot_path, truncate_torn=True)
+                    with open(hot_path, "r", encoding="utf-8") as hf:
+                        for line_no, raw in enumerate(hf, start=1):
+                            st = raw.strip()
+                            if not st:
+                                continue
+                            obj = json.loads(st)
+                            sq = obj.get(seq_field)
+                            if sq != exp_seq or obj.get("prevHash") != exp_prev or obj.get("entryHash") != compute_journal_entry_hash(obj):
+                                raise ApprovalEngineError(
+                                    503,
+                                    "AUDIT_CHAIN_CORRUPTED",
+                                    f"Chuỗi băm nhật ký nóng {os.path.basename(hot_path)} không toàn vẹn ở dòng {line_no}.",
+                                    {"line": line_no, "expectedSeq": exp_seq, "actualSeq": sq},
+                                )
+                            esid = obj.get("surgeryId")
+                            if is_pos_int(esid):
+                                max_seq_map[esid] = max(max_seq_map.get(esid, 0), int(sq))
+                                r_after = obj.get("caseRevisionAfter")
+                                if is_strict_int(r_after):
+                                    max_rev_map[esid] = max(max_rev_map.get(esid, 1), r_after)
+                            exp_seq += 1
+                            exp_prev = obj["entryHash"]
+
+                return max_seq_map, max_rev_map, active_base_seq, active_genesis, rebuilt_segments, (exp_seq - 1)
+
+            max_seq_by_sid, max_rev_by_sid, app_base_seq, app_gen_hash, app_segs, total_verified_events = _stream_verify_all_segments(
+                "surgery_approval_logs",
+                get_journal_path(sf_mod.DATA_DIR),
+                "eventSeq",
+            )
+            max_attr_by_sid, _, attr_base_seq, attr_gen_hash, attr_segs, total_verified_attr = _stream_verify_all_segments(
+                "surgery_attribution",
+                get_attribution_journal_path(sf_mod.DATA_DIR),
+                "attributionSeq",
+            )
+
+            cp.setdefault("approval", {})["activeBaseSeq"] = app_base_seq
+            cp["approval"]["activeGenesisHash"] = app_gen_hash
+            cp["approval"]["segments"] = app_segs
+            cp.setdefault("attribution", {})["activeBaseSeq"] = attr_base_seq
+            cp["attribution"]["activeGenesisHash"] = attr_gen_hash
+            cp["attribution"]["segments"] = attr_segs
+            _atomic_write_json(os.path.join(sf_mod.DATA_DIR, "journal_checkpoint.json"), cp)
 
             # Replace db contents from backup (excluding raw credential fields) while preserving journal seq
             db.clear()
@@ -2171,6 +2584,7 @@ def register_surgery_approval_routes(app, sf_mod):
                     db[k] = copy.deepcopy(v)
 
             run_surgery_approval_migration(db, sf_mod.DATA_DIR, sf_mod.BASE_DIR)
+            eff_cfg = get_approval_config(db)
 
             downgraded_ids = []
             for s in (db.get("surgeries") or []):
@@ -2179,6 +2593,9 @@ def register_surgery_approval_routes(app, sf_mod):
                 sid_val = s.get("id")
                 j_seq = max_seq_by_sid.get(sid_val, 0)
                 s_seq = int(s.get("lastJournalSeq", 0) or 0)
+                a_seq = max_attr_by_sid.get(sid_val, 0)
+                if a_seq > int(s.get("lastAttributionSeq", 0) or 0):
+                    s["lastAttributionSeq"] = a_seq
                 if j_seq > s_seq:
                     # Stale backup relative to WAL journal -> NEVER resurrect green tick silently!
                     s["caseRevision"] = max(int(s.get("caseRevision", 1) or 1), max_rev_by_sid.get(sid_val, 1)) + 1
@@ -2188,8 +2605,11 @@ def register_surgery_approval_routes(app, sf_mod):
                         app_obj["lastApprovedSnapshot"] = copy.deepcopy(app_obj["approvedSnapshot"])
                     app_obj["approvedSnapshot"] = None
                     app_obj["activeHold"] = None
-                    if s.get("approachType") == "nsth":
+                    in_sc, sc_reason = is_in_phase1_approval_scope(s, eff_cfg)
+                    if sc_reason == "nsth_external_authority":
                         app_obj["status"] = "nsth_external_authority"
+                    elif not in_sc:
+                        app_obj["status"] = "not_in_scope"
                     else:
                         app_obj["status"] = "reapproval_required"
                         app_obj["invalidationReason"] = "Khôi phục từ bản sao lưu cũ hơn Sổ nhật ký chuỗi băm — bắt buộc BCN xác nhận lại"
@@ -2206,6 +2626,9 @@ def register_surgery_approval_routes(app, sf_mod):
                 "ok": True,
                 "downgradedStaleApprovalIds": downgraded_ids,
                 "restoredSurgeriesCount": len(db.get("surgeries") or []),
+                "verifiedApprovalEvents": total_verified_events,
+                "verifiedAttributionEvents": total_verified_attr,
+                "verifiedArchiveSegments": len(app_segs),
             }
             return {
                 "httpStatus": 200,

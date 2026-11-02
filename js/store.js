@@ -4,7 +4,7 @@ const PENDING_KEY = 'ptdtt_pending_v1';
 const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
 const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2611021947;
+const CLIENT_BUILD = 2611030107;
 
 const COLLECTION_SYNC_ORDER = [
     'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
@@ -605,6 +605,11 @@ const Store = {
         if (!opts) opts = {};
         if (!opts.headers) opts.headers = {};
         opts.headers['X-Client-Build'] = String(CLIENT_BUILD);
+        const reqEpoch = (typeof Auth !== 'undefined' && Auth._authEpoch) ? Auth._authEpoch : 0;
+        if (!opts.signal && typeof Auth !== 'undefined' && typeof Auth.getActiveSignal === 'function') {
+            const sig = Auth.getActiveSignal();
+            if (sig) opts.signal = sig;
+        }
         // Inject JWT Bearer token for authentication
         const token = (typeof Auth !== 'undefined') ? Auth.getToken() : null;
         if (token) {
@@ -619,39 +624,70 @@ const Store = {
         // Các route khác vẫn giữ ?_t= để tránh stale cache
         const isDataEndpoint = url === '/api/data' || url.endsWith('/api/data');
         const fetchUrl = isDataEndpoint ? url : (url + sep + '_t=' + Date.now());
-        return fetch(fetchUrl, opts).then(async response => {
-            // Handle 401 Unauthorized — token expired or invalid
+        return fetch(fetchUrl, opts).catch(fetchErr => {
+            if (fetchErr && (fetchErr.name === 'AbortError' || String(fetchErr.message || '').includes('abort'))) {
+                throw new Error('AbortedByAuthEpoch');
+            }
+            throw fetchErr;
+        }).then(async response => {
+            if (typeof Auth !== 'undefined' && Auth._authEpoch && Auth._authEpoch !== reqEpoch) {
+                throw new Error('AbortedByAuthEpoch');
+            }
+            // Handle 401 Unauthorized — token expired, disabled, or sessionEpoch revoked
             if (response.status === 401 && typeof Auth !== 'undefined') {
+                let errBody = null;
+                try { errBody = await response.clone().json(); } catch (_) {}
                 console.warn('[Store] 401 Unauthorized — logging out');
-                Auth.logout();
+                Auth.logout({ silentBroadcast: true });
                 if (typeof App !== 'undefined' && App.showLogin) {
                     App.showLogin();
                 }
+                if (errBody?.errorCode === 'SESSION_REVOKED_PASSWORD_CHANGED' && typeof Toast !== 'undefined') {
+                    Toast.warning('Mật khẩu tài khoản vừa được thay đổi. Vui lòng đăng nhập lại.');
+                }
                 throw new Error('Unauthorized');
+            }
+            if (response.status === 403 && typeof Auth !== 'undefined') {
+                let errBody = null;
+                try { errBody = await response.clone().json(); } catch (_) {}
+                if (errBody?.errorCode === 'PASSWORD_CHANGE_REQUIRED') {
+                    Auth.openMandatoryPasswordChangeModal?.();
+                }
             }
             if (response.status === 409) {
                 let detail = null;
                 try { detail = await response.clone().json(); } catch (_) { }
-                if (detail && detail.code === 'DATA_CONFLICT') {
-                    const conflictErr = new Error(detail.error || 'Xung đột dữ liệu với máy chủ');
+                const errCode = detail?.errorCode || detail?.code || '';
+                if (errCode === 'STALE_CLIENT') {
+                    console.warn('[Store] 409 Conflict — stale client build, forcing reload');
+                    if (typeof Toast !== 'undefined') {
+                        Toast.error('Phiên bản trang đã cũ. Đang tải lại để tránh ghi đè dữ liệu...');
+                    }
+                    setTimeout(() => window.location.reload(), 1200);
+                    throw new Error('StaleClient');
+                }
+                if (errCode === 'DATA_CONFLICT') {
+                    const conflictErr = new Error(detail?.error || 'Xung đột dữ liệu với máy chủ');
                     conflictErr.status = 409;
                     conflictErr.code = 'DATA_CONFLICT';
+                    conflictErr.errorCode = 'DATA_CONFLICT';
                     conflictErr.detail = detail;
                     throw conflictErr;
                 }
-                console.warn('[Store] 409 Conflict — stale client build, forcing reload');
-                if (typeof Toast !== 'undefined') {
-                    Toast.error('Phiên bản trang đã cũ. Đang tải lại để tránh ghi đè dữ liệu...');
-                }
-                setTimeout(() => window.location.reload(), 1200);
-                throw new Error('StaleClient');
+                const domain409 = new Error(detail?.error || `HTTP 409`);
+                domain409.status = 409;
+                domain409.code = errCode || 'CONFLICT';
+                domain409.errorCode = errCode || 'CONFLICT';
+                domain409.detail = detail;
+                throw domain409;
             }
             if (!response.ok) {
                 let detail = null;
                 try { detail = await response.clone().json(); } catch (_) { }
                 const error = new Error(detail?.error || `HTTP ${response.status}`);
                 error.status = response.status;
-                error.code = detail?.code || null;
+                error.code = detail?.errorCode || detail?.code || null;
+                error.errorCode = detail?.errorCode || detail?.code || null;
                 error.detail = detail;
                 throw error;
             }
@@ -795,7 +831,7 @@ const Store = {
 
                     console.log(`[Store] ✅ Saved collection ${collection}`);
                 } catch (e) {
-                    if (e.message === 'Unauthorized' || e.message === 'StaleClient') {
+                    if (e.message === 'Unauthorized' || e.message === 'StaleClient' || e.message === 'AbortedByAuthEpoch') {
                         continue;
                     }
                     const currentGen = this._mutationGen[collection] || sentGen;
@@ -841,7 +877,12 @@ const Store = {
                         continue;
                     }
 
-                    const permanent = [400, 403, 404].includes(e.status);
+                    const isDuplicate409 = e.status === 409 && [
+                        'POTENTIAL_DUPLICATE_CONFIRM_REQUIRED',
+                        'DUPLICATE_ACTIVE_ADMISSION_CASE',
+                        'ADMISSION_ID_PATIENT_MISMATCH'
+                    ].includes(e.errorCode || e.code);
+                    const permanent = [400, 403, 404, 422].includes(e.status) || isDuplicate409 || (e.status === 409 && e.code !== 'DATA_CONFLICT');
                     if (permanent) {
                         const cleanItems = this._serverSyncedData?.[collection];
                         this._saveRejectedDraft(collection, e.message || `HTTP ${e.status}`, payloadObj.items, cleanItems);
@@ -853,7 +894,7 @@ const Store = {
                             delete this._pendingMeta[collection];
                             this._saveLocal();
                             this._persistPendingQueue();
-                            if (typeof App !== 'undefined' && App.renderCurrentPage) {
+                            if (!isDuplicate409 && typeof App !== 'undefined' && App.renderCurrentPage) {
                                 App.renderCurrentPage();
                             }
                         } else {
@@ -865,7 +906,9 @@ const Store = {
                             shouldRetry = true;
                         }
                         errors.push({ collection, error: e, message: e.message || 'Lỗi lưu dữ liệu' });
-                        this._notifySyncError(`Không thể lưu ${collection}: ${e.message}`);
+                        if (!isDuplicate409) {
+                            this._notifySyncError(`Không thể lưu ${collection}: ${e.message}`);
+                        }
                         continue;
                     }
 

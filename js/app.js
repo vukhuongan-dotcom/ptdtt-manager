@@ -81,7 +81,7 @@ const App = {
     },
 
     // === Login Flow ===
-    showLogin() {
+    showLogin(preselectUsername = '') {
         if (this._idleTimer) {
             clearInterval(this._idleTimer);
             this._idleTimer = null;
@@ -90,6 +90,8 @@ const App = {
         localStorage.removeItem(this._IDLE_KEY);
         document.getElementById('idle-warning-bar')?.remove();
         document.getElementById('auth-checking')?.remove();
+        const closeBtn = document.getElementById('modal-close');
+        if (closeBtn) closeBtn.style.display = '';
         Notifications.stopPolling();
         if (typeof Store !== 'undefined' && typeof Store._stopPolling === 'function') {
             Store._stopPolling();
@@ -101,14 +103,13 @@ const App = {
         document.getElementById('app').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
 
-        // Create login container if not exists
         let loginContainer = document.getElementById('login-container');
         if (!loginContainer) {
             loginContainer = document.createElement('div');
             loginContainer.id = 'login-container';
             document.body.appendChild(loginContainer);
         }
-        loginContainer.innerHTML = LoginPage.render();
+        loginContainer.innerHTML = LoginPage.render(preselectUsername);
     },
 
     async onLoginSuccess() {
@@ -146,11 +147,15 @@ const App = {
             EMR.startAutoRefresh();
         }
 
-        // Start idle auto-logout (5 min)
+        // Start idle auto-logout (10 min)
         this._startIdleTimer();
 
-        // Auto-start onboarding for first-time users
-        if (Onboarding.shouldShow()) {
+        // Mandatory password change check (QĐ2: default password = username)
+        const activeSession = Auth.getSession();
+        if (activeSession && activeSession.mustChangePassword) {
+            setTimeout(() => Auth.openMandatoryPasswordChangeModal(), 150);
+        } else if (Onboarding.shouldShow()) {
+            // Auto-start onboarding for first-time users
             setTimeout(() => Onboarding.start(), 800);
         }
 
@@ -406,15 +411,14 @@ const App = {
             </button>
             ${Notifications.renderBellButton('mobile')}
             ${Utils.renderAvatar({ id: session.staffId, name: session.name, color: session.color || 'var(--gradient-accent)' }, 'sm', { extraClass: 'mobile-user-avatar' })}
-            <span class="mobile-user-name">${session.name}</span>
-            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đăng xuất" title="Đăng xuất">
+            <span class="mobile-user-name" onclick="Auth.openChangePassword()" title="Chạm để đổi mật khẩu cá nhân" style="cursor:pointer;">${session.name}</span>
+            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đổi tài khoản / Đăng xuất" title="Đổi tài khoản nhanh / Đăng xuất">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
         `;
 
         document.getElementById('mobile-logout-btn').addEventListener('click', () => {
-            Auth.logout();
-            this.showLogin();
+            Auth.quickSwitchAccount();
         });
     },
 
@@ -451,11 +455,14 @@ const App = {
                     <span class="user-role">${session.role}</span>
                 </div>
             </div>
-            ${session.isAdmin ? `<div class="sidebar-admin-btns">
-                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openChangePassword()" aria-label="Đổi mật khẩu" title="Đổi mật khẩu">&#128273;<span class="sidebar-btn-text"> Đổi MK</span></button>
-                ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openManagePasswords()" aria-label="Quản lý tài khoản" title="Quản lý tài khoản">&#128101;<span class="sidebar-btn-text"> Quản lý TK</span></button>` : ''}
+            <div class="sidebar-admin-btns">
+                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openChangePassword()" aria-label="Đổi mật khẩu" title="Đổi mật khẩu cá nhân">&#128273;<span class="sidebar-btn-text"> Đổi MK</span></button>
+                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.quickSwitchAccount()" aria-label="Đổi tài khoản nhanh" title="Đổi tài khoản nhanh trên máy dùng chung">&#128260;<span class="sidebar-btn-text"> Đổi TK</span></button>
             </div>
-            ${session.isSuperAdmin ? `<button class="btn btn-secondary btn-sm sidebar-full-btn" onclick="AuditLog.open()" aria-label="Lịch sử hoạt động" title="Lịch sử hoạt động">&#128203;<span class="sidebar-btn-text"> Lịch sử hoạt động</span></button>` : ''}` : ''}
+            ${session.isSuperAdmin ? `<div class="sidebar-admin-btns" style="margin-top:4px;">
+                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openManagePasswords()" aria-label="Quản lý tài khoản" title="Quản lý tài khoản">&#128101;<span class="sidebar-btn-text"> Quản lý TK</span></button>
+                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="AuditLog.open()" aria-label="Lịch sử hoạt động" title="Lịch sử hoạt động">&#128203;<span class="sidebar-btn-text"> Nhật ký</span></button>
+            </div>` : ''}
             <button class="btn btn-secondary btn-sm sidebar-full-btn-spaced" onclick="Onboarding.start()" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn sử dụng">&#10067;<span class="sidebar-btn-text"> Hướng dẫn sử dụng</span></button>
             <button class="logout-btn" id="logout-btn" aria-label="Đăng xuất" title="Đăng xuất">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-btn-icon" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -475,8 +482,7 @@ const App = {
 
         document.getElementById('logout-btn').addEventListener('click', (e) => {
             e.stopPropagation();
-            Auth.logout();
-            this.showLogin();
+            Auth.quickSwitchAccount();
         });
     },
 
@@ -507,9 +513,15 @@ const App = {
     },
 
     bindModal() {
-        document.getElementById('modal-close').addEventListener('click', () => Modal.close());
+        document.getElementById('modal-close').addEventListener('click', () => {
+            if (Auth.getSession()?.mustChangePassword) return;
+            Modal.close();
+        });
         document.getElementById('modal-overlay').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) Modal.close();
+            if (e.target === e.currentTarget) {
+                if (Auth.getSession()?.mustChangePassword) return;
+                Modal.close();
+            }
         });
     },
 

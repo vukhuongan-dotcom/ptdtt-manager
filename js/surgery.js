@@ -1065,12 +1065,27 @@ const SurgeryPage = {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
+    _daysBetweenIso(d1, d2) {
+        if (!d1 || !d2) return null;
+        const p1 = String(d1).split('T')[0].split('-');
+        const p2 = String(d2).split('T')[0].split('-');
+        if (p1.length !== 3 || p2.length !== 3) return null;
+        const t1 = Date.UTC(parseInt(p1[0], 10), parseInt(p1[1], 10) - 1, parseInt(p1[2], 10));
+        const t2 = Date.UTC(parseInt(p2[0], 10), parseInt(p2[1], 10) - 1, parseInt(p2[2], 10));
+        if (!Number.isFinite(t1) || !Number.isFinite(t2)) return null;
+        return Math.round(Math.abs((t1 - t2) / 86400000));
+    },
+
+    _normalizeAdmissionKey(raw) {
+        return String(raw || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    },
+
     _findDuplicateSurgeries(candidate, currentId) {
         if (!candidate || !candidate.patientName) return [];
         const candName = this._normalizePatientName(candidate.patientName);
         if (!candName) return [];
 
-        const candAdm = (candidate.admissionId || '').trim();
+        const candAdm = this._normalizeAdmissionKey(candidate.admissionId);
         const candYear = candidate.birthYear ? parseInt(candidate.birthYear, 10) : null;
         const candDate = candidate.date || '';
         const monday = this._getMondayOfWeek(candDate);
@@ -1084,66 +1099,61 @@ const SurgeryPage = {
             if (currentId && String(s.id) === String(currentId)) continue;
             if (Boolean(s.isTestSandboxCase) !== candSandbox) continue;
             const existName = this._normalizePatientName(s.patientName);
-            const existAdm = (s.admissionId || '').trim();
+            const existAdm = this._normalizeAdmissionKey(s.admissionId);
             const existYear = s.birthYear ? parseInt(s.birthYear, 10) : null;
             const existDate = s.date || '';
+            const gapDays = this._daysBetweenIso(candDate, existDate);
 
-            // Cấp 1: Trùng số BA cùng ngày
-            if (candAdm && existAdm && candAdm === existAdm && existDate === candDate) {
+            // Tier 1A: Số nhập viện trùng nhưng KHÁC họ tên bệnh nhân -> Chặn tuyệt đối
+            if (candAdm && existAdm && candAdm === existAdm && existName && candName !== existName) {
                 matches.push({
-                    level: 1,
-                    levelLabel: 'Trùng số BA cùng ngày',
+                    level: 0,
+                    tier: 1,
+                    blockMismatch: true,
+                    levelLabel: 'Số nhập viện đang thuộc bệnh nhân khác',
                     severity: 'danger',
                     surgery: s,
-                    reason: `Trùng số nhập viện (${existAdm}) trong cùng ngày mổ ${Utils.formatDate(candDate)}.`
+                    reason: `Số nhập viện (${s.admissionId || existAdm}) đang gắn với người bệnh ${s.patientName}.`
                 });
                 continue;
             }
 
-            // Cấp 2: Trùng số BA khác ngày
-            if (candAdm && existAdm && candAdm === existAdm && existDate !== candDate) {
-                const inSameWeek = existDate >= monday && existDate <= sunday;
+            // Tier 1B: Cùng Số nhập viện & cùng bệnh nhân trong vòng <= 60 ngày
+            if (candAdm && existAdm && candAdm === existAdm && (gapDays === null || gapDays <= 60)) {
+                const sameDay = existDate === candDate;
                 matches.push({
-                    level: 2,
-                    levelLabel: inSameWeek ? 'Trùng số BA khác ngày trong tuần' : 'Trùng số BA đợt nằm viện',
-                    severity: 'warning',
+                    level: sameDay ? 1 : 2,
+                    tier: 1,
+                    levelLabel: sameDay ? 'Trùng số nhập viện cùng ngày' : 'Cùng số nhập viện trong đợt điều trị (≤60 ngày)',
+                    severity: sameDay ? 'danger' : 'warning',
                     surgery: s,
-                    inSameWeek: inSameWeek,
-                    reason: `Trùng số nhập viện (${existAdm}) với ca ngày ${Utils.formatDate(existDate)}.`
+                    inSameWeek: existDate >= monday && existDate <= sunday,
+                    reason: `Cùng số nhập viện (${s.admissionId || existAdm}) với ca ngày ${Utils.formatDate(existDate)}.`
                 });
                 continue;
             }
 
-            // Cấp 3: Trùng tên và năm sinh cùng ngày
-            if (candName === existName && candYear && existYear && candYear === existYear && existDate === candDate) {
+            // Tier 2A: Cùng Họ tên + Năm sinh trong vòng <= 365 ngày (đa đợt điều trị / đóng HMNT / trùng tên)
+            if (candName === existName && candYear && existYear && candYear === existYear && (gapDays === null || gapDays <= 365)) {
+                const sameDay = existDate === candDate;
                 matches.push({
-                    level: 3,
-                    levelLabel: 'Trùng tên và năm sinh cùng ngày',
-                    severity: 'danger',
+                    level: sameDay ? 3 : 4,
+                    tier: 2,
+                    levelLabel: sameDay ? 'Trùng họ tên và năm sinh cùng ngày' : 'Trùng họ tên và năm sinh (≤365 ngày)',
+                    severity: sameDay ? 'danger' : 'warning',
                     surgery: s,
-                    reason: `Trùng họ tên và năm sinh (${existYear}) trong cùng ngày mổ ${Utils.formatDate(candDate)}.`
+                    inSameWeek: existDate >= monday && existDate <= sunday,
+                    reason: `Bệnh nhân cùng họ tên và năm sinh (${existYear}) đã có ca ngày ${Utils.formatDate(existDate)}.`
                 });
                 continue;
             }
 
-            // Cấp 4: Trùng tên và năm sinh khác ngày trong tuần
-            if (candName === existName && candYear && existYear && candYear === existYear && existDate !== candDate && existDate >= monday && existDate <= sunday) {
-                matches.push({
-                    level: 4,
-                    levelLabel: 'Trùng tên và năm sinh khác ngày trong tuần',
-                    severity: 'warning',
-                    surgery: s,
-                    inSameWeek: true,
-                    reason: `Bệnh nhân đã có ca mổ vào ${Utils.formatDate(existDate)} (cùng tuần).`
-                });
-                continue;
-            }
-
-            // Cấp 5: Trùng tên thiếu tuổi cùng ngày
+            // Tier 2B: Trùng họ tên thiếu năm sinh trong cùng ngày mổ
             if (candName === existName && (!candYear || !existYear) && existDate === candDate) {
                 matches.push({
                     level: 5,
-                    levelLabel: 'Trùng họ tên (chưa đủ năm sinh)',
+                    tier: 2,
+                    levelLabel: 'Trùng họ tên cùng ngày (chưa đủ năm sinh)',
                     severity: 'info',
                     surgery: s,
                     reason: `Trùng họ tên với ca ngày ${Utils.formatDate(candDate)} (chưa đủ năm sinh đối chiếu).`
@@ -1295,44 +1305,63 @@ const SurgeryPage = {
             </table>
 
             <div class="dup-options-box">
-                <div style="font-weight:700;font-size:0.88rem;margin-bottom:8px;color:var(--text-primary)">👉 Chọn hướng xử lý:</div>
+                ${topMatch.blockMismatch ? `
+                <div style="padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:0.86rem;line-height:1.45;">
+                    ⛔ <strong>Không thể dùng chung Số nhập viện cho hai người bệnh khác nhau.</strong> Vui lòng bấm quay lại để kiểm tra và nhập đúng Số nhập viện trên hồ sơ bệnh án.
+                </div>
+                ` : `
+                <div style="font-weight:700;font-size:0.88rem;margin-bottom:8px;color:var(--text-primary)">👉 Chọn hướng xử lý (1 chạm):</div>
 
                 ${isNew && topMatch.surgery.date !== targetDate ? `
                 <div style="margin-bottom:12px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
                     <button type="button" class="btn btn-success" style="width:100%;font-weight:600;" onclick="SurgeryPage._rescheduleSurgery(${s.id}, '${targetDate}')">
-                        🔄 Dời ca cũ sang ngày ${safeCandDate} (Khuyến nghị)
+                        🔄 Dời ca cũ sang ngày ${safeCandDate} (Khuyến nghị nếu đổi lịch)
                     </button>
                     <div style="font-size:0.78rem;color:#166534;margin-top:4px;">
-                        Chuyển ngày mổ của ca cũ sang ngày ${safeCandDate}, giữ nguyên mã số ca mổ và không tạo ca rác.
+                        Chuyển ngày mổ của ca cũ sang ngày ${safeCandDate}, giữ nguyên hồ sơ và không tạo ca trùng.
                     </div>
                 </div>
                 ` : ''}
 
                 <div style="margin-bottom:10px;">
+                    ${topMatch.tier !== 1 ? `
                     <label class="dup-option-item">
-                        <input type="radio" name="dupOverrideType" value="same_patient_multicase" checked>
+                        <input type="radio" name="dupOverrideType" value="new_episode_same_patient" ${topMatch.surgery.date !== targetDate ? 'checked' : ''}>
                         <div>
-                            <div class="dup-option-title">Cùng bệnh nhân — Ca mổ riêng biệt / Mổ 2 thì</div>
-                            <div class="dup-option-sub">Bệnh nhân thực tế có nhiều lần mổ trong tuần (sẽ hiển thị badge ⚡ trên lịch).</div>
+                            <div class="dup-option-title">🔄 Cùng người bệnh — Đợt điều trị mới (đóng HMNT / tái nhập viện / mổ thì 2 khác đợt)</div>
+                            <div class="dup-option-sub">Tạo hồ sơ đợt mổ mới độc lập và liên kết lịch sử đợt trước, không ghi đè ca cũ.</div>
                         </div>
                     </label>
+                    ` : ''}
+                    <label class="dup-option-item">
+                        <input type="radio" name="dupOverrideType" value="same_admission_multistage" ${(topMatch.tier === 1 || topMatch.surgery.date === targetDate) ? 'checked' : ''}>
+                        <div>
+                            <div class="dup-option-title">⚡ Cùng đợt nằm viện — Mổ nhiều thì / mổ lại</div>
+                            <div class="dup-option-sub">Dùng chung mã đợt điều trị hiện tại và gắn nhãn ⚡ Mổ nhiều thì trên lịch mổ.</div>
+                        </div>
+                    </label>
+                    ${topMatch.tier !== 1 ? `
                     <label class="dup-option-item">
                         <input type="radio" name="dupOverrideType" value="different_patient_same_name">
                         <div>
-                            <div class="dup-option-title">Khác bệnh nhân — Trùng họ tên / thông tin ngẫu nhiên</div>
-                            <div class="dup-option-sub">Hai người bệnh riêng biệt hoàn toàn (không gắn badge 2 ca/tuần).</div>
+                            <div class="dup-option-title">👥 Hai người bệnh khác nhau — Trùng họ tên & năm sinh</div>
+                            <div class="dup-option-sub">Tạo mã đợt độc lập hoàn toàn và gắn nhãn 👥 Trùng tên để phân biệt.</div>
                         </div>
                     </label>
+                    ` : ''}
                 </div>
+                `}
             </div>
 
             <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:auto;">
                 <button type="button" class="btn btn-secondary" onclick="SurgeryPage._closeDuplicateConfirmDialog()">
-                    ❌ Hủy / Quay lại chỉnh sửa
+                    ❌ Quay lại chỉnh sửa
                 </button>
+                ${topMatch.blockMismatch ? '' : `
                 <button type="button" class="btn btn-primary" onclick="SurgeryPage._confirmDuplicateOverride(${currentId || 0}, ${s.id})">
-                    ${isNew ? '➕ Vẫn tạo ca này' : '💾 Tiếp tục lưu ca này'}
+                    ${isNew ? '➕ Xác nhận & Tạo ca này' : '💾 Xác nhận & Lưu ca này'}
                 </button>
+                `}
             </div>
         `;
 
@@ -1443,20 +1472,22 @@ const SurgeryPage = {
 
     _confirmDuplicateOverride(currentId, matchedWithId) {
         const dialog = document.getElementById('surgery-duplicate-dialog');
-        const selectedType = dialog ? dialog.querySelector('input[name="dupOverrideType"]:checked')?.value : 'same_patient_multicase';
+        const selectedType = dialog
+            ? dialog.querySelector('input[name="dupOverrideType"]:checked')?.value
+            : 'new_episode_same_patient';
 
-        const session = Auth.getSession();
-        const actorMeta = session ? {
-            username: session.username,
-            name: session.name || session.username,
-            at: new Date().toISOString()
-        } : { username: 'unknown', name: 'Không xác định', at: new Date().toISOString() };
+        const resolution = selectedType || 'new_episode_same_patient';
+        const defaultChipMap = {
+            new_episode_same_patient: 'stoma_closure_reversal',
+            same_admission_multistage: 'planned_two_stage',
+            different_patient_same_name: 'same_name_different_person'
+        };
 
         this._pendingOverride = {
-            type: selectedType || 'same_patient_multicase',
-            matchedWithId: matchedWithId,
-            confirmedBy: actorMeta.username,
-            confirmedAt: new Date().toISOString()
+            resolution,
+            type: resolution,
+            matchedWithId,
+            reasonChip: defaultChipMap[resolution] || 'planned_two_stage'
         };
 
         this._closeDuplicateConfirmDialog();
@@ -1471,18 +1502,21 @@ const SurgeryPage = {
 
     _renderPatientWeeklyBadge(s, weekSurgeries) {
         if (!s || !s.duplicateOverride) return '';
-        if (s.duplicateOverride.type === 'different_patient_same_name') {
-            return `<span class="badge-different-patient" title="Bệnh nhân trùng tên với ca khác trên lịch">👥 Trùng tên</span>`;
+        const ovType = s.duplicateOverride.resolution || s.duplicateOverride.type;
+        if (ovType === 'different_patient_same_name') {
+            return `<span class="badge-different-patient" title="Bệnh nhân trùng họ tên với ca khác trên lịch">👥 Trùng tên</span>`;
         }
-
-        if (s.duplicateOverride.type === 'same_patient_multicase') {
-            if (!Array.isArray(weekSurgeries)) return `<span class="badge-duplicate-patient" title="Bệnh nhân có nhiều ca mổ trong tuần">⚡ Mổ nhiều thì</span>`;
+        if (ovType === 'new_episode_same_patient') {
+            return `<span class="badge-duplicate-patient" title="Cùng người bệnh — Đợt điều trị mới (đóng HMNT / tái nhập viện)">🔄 Đợt mới</span>`;
+        }
+        if (ovType === 'same_admission_multistage' || ovType === 'same_patient_multicase') {
+            if (!Array.isArray(weekSurgeries)) return `<span class="badge-duplicate-patient" title="Bệnh nhân mổ nhiều thì trong đợt nằm viện">⚡ Mổ nhiều thì</span>`;
             const candName = this._normalizePatientName(s.patientName);
-            const candAdm = (s.admissionId || '').trim();
+            const candAdm = this._normalizeAdmissionKey(s.admissionId);
             const candYear = s.birthYear ? parseInt(s.birthYear, 10) : null;
 
             const count = weekSurgeries.filter(x => {
-                const existAdm = (x.admissionId || '').trim();
+                const existAdm = this._normalizeAdmissionKey(x.admissionId);
                 if (candAdm && existAdm && candAdm === existAdm) return true;
                 const existName = this._normalizePatientName(x.patientName);
                 const existYear = x.birthYear ? parseInt(x.birthYear, 10) : null;
@@ -1492,6 +1526,7 @@ const SurgeryPage = {
             if (count >= 2) {
                 return `<span class="badge-duplicate-patient" title="Bệnh nhân có ${count} ca mổ trong tuần này">⚡ ${count} ca/tuần</span>`;
             }
+            return `<span class="badge-duplicate-patient" title="Bệnh nhân mổ nhiều thì trong đợt nằm viện">⚡ Mổ nhiều thì</span>`;
         }
 
         return '';
@@ -1616,6 +1651,44 @@ const SurgeryPage = {
                 all.push(data);
             }
             const syncPromise = this.saveSurgeries(all);
+            Promise.resolve(syncPromise).then(syncRes => {
+                const dupErrEntry = syncRes?.errors?.find(x =>
+                    x?.error?.status === 409 && [
+                        'POTENTIAL_DUPLICATE_CONFIRM_REQUIRED',
+                        'DUPLICATE_ACTIVE_ADMISSION_CASE',
+                        'ADMISSION_ID_PATIENT_MISMATCH'
+                    ].includes(x?.error?.errorCode || x?.error?.code)
+                );
+                if (!dupErrEntry) return;
+                const srvErr = dupErrEntry.error;
+                const errCode = srvErr.errorCode || srvErr.code;
+                const matchedCase = srvErr.detail?.details?.matchedCase;
+                this.openForm(id || null, surgeryDate);
+                setTimeout(() => {
+                    const reopenedForm = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+                    if (reopenedForm) {
+                        Object.entries(candidateData).forEach(([k, v]) => {
+                            const inp = reopenedForm.querySelector(`[name="${k}"]`);
+                            if (!inp) return;
+                            if (inp.type === 'checkbox') inp.checked = Boolean(v);
+                            else if (v != null) inp.value = String(v);
+                        });
+                    }
+                    if (matchedCase) {
+                        this._showDuplicateConfirmDialog([{
+                            level: errCode === 'ADMISSION_ID_PATIENT_MISMATCH' ? 0 : 1,
+                            tier: errCode === 'POTENTIAL_DUPLICATE_CONFIRM_REQUIRED' ? 2 : 1,
+                            blockMismatch: errCode === 'ADMISSION_ID_PATIENT_MISMATCH',
+                            levelLabel: errCode === 'ADMISSION_ID_PATIENT_MISMATCH'
+                                ? 'Số nhập viện đang thuộc bệnh nhân khác'
+                                : (errCode === 'DUPLICATE_ACTIVE_ADMISSION_CASE' ? 'Cùng số nhập viện đang hoạt động' : 'Trùng họ tên và năm sinh (≤365 ngày)'),
+                            surgery: matchedCase
+                        }], candidateData, id);
+                    } else {
+                        Toast.warning(srvErr.message || 'Phát hiện hồ sơ trùng trên máy chủ.');
+                    }
+                }, 80);
+            });
 
             // P1: Clear auto-save draft on successful save
             const formKey = form?.getAttribute('data-autosave-key') || `surgery-${id || 'new'}`;

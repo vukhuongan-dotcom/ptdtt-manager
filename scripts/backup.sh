@@ -6,16 +6,16 @@
 # ================================================================
 set -euo pipefail
 
-# ── Config ──
-APP_DIR="/var/www/ptdtt-manager"
-BACKUP_DIR="/var/backups/ptdtt"
-LOG="/var/log/ptdtt/backup.log"
+# ── Config (overrideable via env for isolated tests) ──
+APP_DIR="${PTDTT_APP_DIR_OVERRIDE:-/var/www/ptdtt-manager}"
+BACKUP_DIR="${PTDTT_BACKUP_DIR_OVERRIDE:-/var/backups/ptdtt}"
+LOG="${PTDTT_BACKUP_LOG_OVERRIDE:-/var/log/ptdtt/backup.log}"
 DATE=$(date '+%Y%m%d_%H%M')
 DAY_TAG=$(date '+%Y-%m-%d')
 
 log() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"; }
 
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR" "$BACKUP_DIR/journal_archive"
 
 log "═══════════════════════════════════════"
 log "💾 BẮT ĐẦU BACKUP HÀNG NGÀY"
@@ -43,7 +43,28 @@ copy_runtime_data() {
         base="${path##*/}"
         [ "$base" = "backups" ] && continue
         [ "$base" = "snapshots" ] && continue
+        [ "$base" = "journal_archive" ] && continue
+        [ "$base" = ".rotation_staging" ] && continue
         cp -R "$path" "$STAGING_DIR/data/" 2>/dev/null || true
+    done
+    shopt -u nullglob
+}
+
+sync_closed_journal_segments() {
+    local dst_dir="$1"
+    mkdir -p "$dst_dir"
+    shopt -s nullglob
+    for src_dir in "$APP_DIR/data/journal_archive" "$BACKUP_DIR/journal_archive"; do
+        [ -d "$src_dir" ] || continue
+        for seg in "$src_dir"/*.seq_*.jsonl.gz "$src_dir"/*.seq_*.jsonl.gz.sha256; do
+            local bname="${seg##*/}"
+            local dst="$dst_dir/$bname"
+            [ "$seg" = "$dst" ] && continue
+            if [ ! -f "$dst" ] || ! cmp -s "$seg" "$dst"; then
+                cp -p "$seg" "$dst"
+                chmod 0600 "$dst" 2>/dev/null || true
+            fi
+        done
     done
     shopt -u nullglob
 }
@@ -52,6 +73,7 @@ if command -v flock >/dev/null 2>&1; then
     (
         flock -s -w 15 9 || log "  ⚠️ Không lấy được shared lock sau 15s, tiếp tục snapshot best-effort"
         copy_runtime_data
+        sync_closed_journal_segments "$BACKUP_DIR/journal_archive"
     ) 9>"$LOCK_FILE"
 else
     python3 -c '
@@ -62,7 +84,7 @@ with open(lock_path, "a+") as lf:
     fcntl.flock(lf, fcntl.LOCK_SH)
     try:
         for name in os.listdir(os.path.join(app_dir, "data")):
-            if name in ("backups", "snapshots") or name.startswith("."):
+            if name in ("backups", "snapshots", "journal_archive", ".rotation_staging") or name.startswith("."):
                 continue
             src = os.path.join(app_dir, "data", name)
             dst = os.path.join(stage_dir, "data", name)
@@ -73,6 +95,7 @@ with open(lock_path, "a+") as lf:
     finally:
         fcntl.flock(lf, fcntl.LOCK_UN)
 ' "$APP_DIR" "$STAGING_DIR" "$LOCK_FILE"
+    sync_closed_journal_segments "$BACKUP_DIR/journal_archive"
 fi
 
 shopt -s nullglob
@@ -122,13 +145,14 @@ git worktree add "$BACKUP_WORKTREE" backup 2>/dev/null || {
     git worktree add "$BACKUP_WORKTREE" backup
 }
 
-# Copy consistent staged runtime data to backup worktree
-mkdir -p "$BACKUP_WORKTREE/data"
+# Copy consistent staged runtime data & closed journal archive segments to backup worktree
+mkdir -p "$BACKUP_WORKTREE/data" "$BACKUP_WORKTREE/journal_archive"
 shopt -s nullglob
 for path in "$STAGING_DIR"/data/*; do
     cp -R "$path" "$BACKUP_WORKTREE/data/" 2>/dev/null || true
 done
 shopt -u nullglob
+sync_closed_journal_segments "$BACKUP_WORKTREE/journal_archive"
 mkdir -p "$BACKUP_WORKTREE/logs-snapshot"
 # Only copy latest audit log (not all)
 cp "$APP_DIR/logs/audit_${DAY_TAG}.jsonl" "$BACKUP_WORKTREE/logs-snapshot/" 2>/dev/null || true
@@ -154,8 +178,9 @@ git worktree remove "$BACKUP_WORKTREE" --force 2>/dev/null || rm -rf "$BACKUP_WO
 log "3/3 🔐 Chuẩn bị artifact kéo qua SSH xác thực (ngoài web root)..."
 
 PULL_STAGE_DIR="$BACKUP_DIR/pull_ready"
-mkdir -p "$PULL_STAGE_DIR"
-chmod 0700 "$PULL_STAGE_DIR"
+mkdir -p "$PULL_STAGE_DIR" "$PULL_STAGE_DIR/journal_archive"
+chmod 0700 "$PULL_STAGE_DIR" "$PULL_STAGE_DIR/journal_archive"
+sync_closed_journal_segments "$PULL_STAGE_DIR/journal_archive"
 
 BACKUP_ENCRYPTION_KEY_FILE="${BACKUP_ENCRYPTION_KEY_FILE:-/etc/ptdtt/backup.key}"
 if [ -s "$BACKUP_ENCRYPTION_KEY_FILE" ] && command -v openssl >/dev/null 2>&1; then

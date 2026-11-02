@@ -330,8 +330,10 @@ def _cleanup_old_logs(days=90):
 def _get_current_user():
     """Extract and verify JWT from Authorization header (Fail-Closed).
     Returns payload dict with live user info, or None.
-    Sets request._auth_store_error = True if auth.json is missing or corrupted."""
+    Sets request._auth_store_error = True if auth.json is missing or corrupted.
+    Sets request._session_revoked = True if sessionEpoch changed (password reset/changed)."""
     request._auth_store_error = False
+    request._session_revoked = False
     auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return None
@@ -370,11 +372,22 @@ def _get_current_user():
                 return None
         else:
             return None
+
+    live_epoch = int(user.get('sessionEpoch', 1) or 1)
+    jwt_epoch = payload.get('sessionEpoch')
+    if (jwt_epoch is None and live_epoch != 1) or (jwt_epoch is not None and int(jwt_epoch) != live_epoch):
+        request._session_revoked = True
+        return None
+
     payload['name'] = user.get('name', payload.get('name', ''))
+    payload['title'] = user.get('title', payload.get('title', ''))
     payload['role'] = user.get('role', payload.get('role', ''))
     payload['isAdmin'] = user.get('isAdmin', False)
     payload['isSuperAdmin'] = user.get('isSuperAdmin', False)
     payload['staffId'] = user.get('staffId', payload.get('staffId', 0))
+    payload['color'] = user.get('color', payload.get('color', '#6366f1'))
+    payload['sessionEpoch'] = live_epoch
+    payload['mustChangePassword'] = bool(user.get('mustChangePassword', False))
     return payload
 
 def _auth_store_503_response():
@@ -384,6 +397,28 @@ def _auth_store_503_response():
         'errorCode': 'AUTH_STORE_UNAVAILABLE',
     }), 503
 
+def _session_revoked_401_response():
+    return jsonify({
+        'error': 'Mật khẩu tài khoản đã được thay đổi. Vui lòng đăng nhập lại bằng mật khẩu mới.',
+        'code': 'SESSION_REVOKED_PASSWORD_CHANGED',
+        'errorCode': 'SESSION_REVOKED_PASSWORD_CHANGED',
+    }), 401
+
+def _must_change_password_guard(payload):
+    if (
+        isinstance(payload, dict)
+        and payload.get('mustChangePassword') is True
+        and request.method in ('POST', 'PUT', 'DELETE', 'PATCH')
+        and request.path not in ('/api/auth/password', '/api/auth/logout')
+    ):
+        return jsonify({
+            'error': 'Tài khoản đang sử dụng mật khẩu mặc định — bắt buộc đổi mật khẩu cá nhân trước khi thao tác.',
+            'code': 'PASSWORD_CHANGE_REQUIRED',
+            'errorCode': 'PASSWORD_CHANGE_REQUIRED',
+            'mustChangePassword': True,
+        }), 403
+    return None
+
 def require_auth(f):
     """Decorator: require valid JWT + active user for this endpoint (Fail-Closed)"""
     @wraps(f)
@@ -391,8 +426,13 @@ def require_auth(f):
         payload = _get_current_user()
         if getattr(request, '_auth_store_error', False):
             return _auth_store_503_response()
+        if getattr(request, '_session_revoked', False):
+            return _session_revoked_401_response()
         if not payload:
             return jsonify({'error': 'Authentication required'}), 401
+        pw_guard = _must_change_password_guard(payload)
+        if pw_guard is not None:
+            return pw_guard
         request._user = payload  # Attach user info to request
         return f(*args, **kwargs)
     return decorated
@@ -404,10 +444,15 @@ def require_admin(f):
         payload = _get_current_user()
         if getattr(request, '_auth_store_error', False):
             return _auth_store_503_response()
+        if getattr(request, '_session_revoked', False):
+            return _session_revoked_401_response()
         if not payload:
             return jsonify({'error': 'Authentication required'}), 401
         if not payload.get('isAdmin') and not payload.get('isSuperAdmin'):
             return jsonify({'error': 'Admin access required'}), 403
+        pw_guard = _must_change_password_guard(payload)
+        if pw_guard is not None:
+            return pw_guard
         request._user = payload
         return f(*args, **kwargs)
     return decorated
@@ -419,10 +464,15 @@ def require_superadmin(f):
         payload = _get_current_user()
         if getattr(request, '_auth_store_error', False):
             return _auth_store_503_response()
+        if getattr(request, '_session_revoked', False):
+            return _session_revoked_401_response()
         if not payload:
             return jsonify({'error': 'Authentication required'}), 401
         if not payload.get('isSuperAdmin'):
             return jsonify({'error': 'Super admin access required'}), 403
+        pw_guard = _must_change_password_guard(payload)
+        if pw_guard is not None:
+            return pw_guard
         request._user = payload
         return f(*args, **kwargs)
     return decorated
@@ -1103,7 +1153,9 @@ def static_files(path):
 # ────────────────────────────── Data API ──────────────────────────────
 _STRIP_DB_FIELDS = {
     'customPasswords', 'customAdmins', 'disabledAccounts', '_recentMutations',
-    '_approvalIdempotency', 'surgeryApprovalLogs', '_lastApprovalJournalSeq'
+    '_approvalIdempotency', 'surgeryApprovalLogs',
+    '_lastApprovalJournalSeq', '_lastApprovalJournalHash',
+    '_lastAttributionJournalSeq', '_lastAttributionJournalHash',
 }
 
 @app.route('/api/data', methods=['GET'])
@@ -1580,8 +1632,8 @@ def get_audit_logs():
     return jsonify({'logs': logs, 'total': len(logs)})
 
 # ────────────────────────────── Auth Helpers ──────────────────────────────
-_auth_lock = threading.Lock()
-_login_attempt_lock = threading.Lock()
+_auth_lock = threading.RLock()
+_login_attempt_lock = threading.RLock()
 _login_attempts = {}
 
 def _request_ip():
@@ -1719,10 +1771,13 @@ def _create_jwt(username, user_data):
     payload = {
         'sub': username,
         'name': user_data.get('name', ''),
+        'title': user_data.get('title', ''),
         'role': user_data.get('role', ''),
         'isAdmin': user_data.get('isAdmin', False),
         'isSuperAdmin': user_data.get('isSuperAdmin', False),
         'staffId': user_data.get('staffId', 0),
+        'sessionEpoch': int(user_data.get('sessionEpoch', 1) or 1),
+        'mustChangePassword': bool(user_data.get('mustChangePassword', False)),
         'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS),
         'iat': datetime.utcnow()
     }
@@ -1906,11 +1961,21 @@ def auth_login():
         return jsonify({'error': 'Tài khoản hoặc mật khẩu không đúng'}), 401
 
     _clear_login_failures(username, client_ip)
+    is_default_pw = (password == username) or _check_password(username, user['passwordHash'])
+    must_change = bool(user.get('mustChangePassword', False)) or bool(is_default_pw)
+    session_epoch = int(user.get('sessionEpoch', 1) or 1)
+    if (must_change and user.get('mustChangePassword') is not True) or ('sessionEpoch' not in user):
+        user['mustChangePassword'] = must_change
+        user['sessionEpoch'] = session_epoch
+        _save_auth(auth)
+
     token = _create_jwt(username, user)
-    audit_log(username, 'auth.login.success')
+    audit_log(username, 'auth.login.success', {'mustChangePassword': must_change, 'sessionEpoch': session_epoch})
 
     return jsonify({
         'token': token,
+        'mustChangePassword': must_change,
+        'sessionEpoch': session_epoch,
         'user': {
             'username': username,
             'name': user['name'],
@@ -1919,25 +1984,84 @@ def auth_login():
             'staffId': user['staffId'],
             'isAdmin': user['isAdmin'],
             'isSuperAdmin': user.get('isSuperAdmin', False),
-            'color': user.get('color', '#6366f1')
+            'color': user.get('color', '#6366f1'),
+            'mustChangePassword': must_change,
+            'sessionEpoch': session_epoch,
         }
     })
+
+@app.route('/api/auth/staff-cards', methods=['GET'])
+def auth_staff_cards():
+    """Return active doctor/staff display cards for 1-tap selection on Login screen (zero credentials/secrets)."""
+    auth = _load_auth()
+    users = auth.get('users', {}) if isinstance(auth, dict) else {}
+    db_data = load_data()
+    departed_ids = {d.get('id') for d in (db_data.get('departedStaff') or []) if isinstance(d, dict)}
+    staff_map = {s.get('id'): s for s in (db_data.get('staff') or []) if isinstance(s, dict)}
+    cards = []
+    for uname, urec in users.items():
+        if not isinstance(urec, dict) or uname == 'guest' or urec.get('disabled'):
+            continue
+        sid = urec.get('staffId', 0)
+        if sid in departed_ids:
+            continue
+        s_obj = staff_map.get(sid) or {}
+        if s_obj.get('active') is False or str(s_obj.get('status', '')).lower() == 'inactive':
+            continue
+        role_str = str(s_obj.get('role') or urec.get('role') or '')
+        title_str = str(s_obj.get('title') or urec.get('title') or '')
+        name_str = str(s_obj.get('name') or urec.get('name') or uname)
+        if sid in (1, 2) or 'Trưởng khoa' in role_str or 'Phó trưởng khoa' in role_str:
+            group = 'bcn'
+        elif 'học viên' in role_str.lower() or 'nội trú' in role_str.lower() or sid in (16, 43, 44, 45, 46, 47, 48, 50):
+            group = 'trainee'
+        elif 'Bác sĩ' in role_str or sid in (4, 5, 6, 7, 8, 9, 10, 11, 12):
+            group = 'attending'
+        else:
+            group = 'nursing_admin'
+        cards.append({
+            'username': uname,
+            'staffId': sid,
+            'name': name_str,
+            'title': title_str,
+            'role': role_str,
+            'group': group,
+            'color': s_obj.get('color') or urec.get('color', '#1878B4'),
+        })
+    group_order = {'bcn': 0, 'attending': 1, 'trainee': 2, 'nursing_admin': 3}
+    cards.sort(key=lambda c: (group_order.get(c['group'], 9), int(c['staffId'] or 9999)))
+    return jsonify({'cards': cards})
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    """Acknowledge logout and record audit entry if valid token provided."""
+    payload = _get_current_user()
+    if payload and payload.get('sub'):
+        audit_log(payload['sub'], 'auth.logout')
+    return jsonify({'ok': True})
 
 @app.route('/api/auth/me', methods=['GET'])
 def auth_me():
     """Return current user info — validates JWT + checks user is active server-side"""
     payload = _get_current_user()
+    if getattr(request, '_auth_store_error', False):
+        return _auth_store_503_response()
+    if getattr(request, '_session_revoked', False):
+        return _session_revoked_401_response()
     if not payload:
         return jsonify({'error': 'Token expired, invalid, or account disabled'}), 401
 
     return jsonify({
         'username': payload['sub'],
         'name': payload.get('name', ''),
+        'title': payload.get('title', ''),
         'role': payload.get('role', ''),
         'isAdmin': payload.get('isAdmin', False),
         'isSuperAdmin': payload.get('isSuperAdmin', False),
         'staffId': payload.get('staffId', 0),
-        'color': payload.get('color', '#6366f1')
+        'color': payload.get('color', '#6366f1'),
+        'sessionEpoch': payload.get('sessionEpoch', 1),
+        'mustChangePassword': bool(payload.get('mustChangePassword', False)),
     })
 
 @app.route('/api/auth/local-session', methods=['POST'])
@@ -1960,6 +2084,8 @@ def auth_local_session():
     token = _create_jwt(username, user)
     return jsonify({
         'token': token,
+        'mustChangePassword': bool(user.get('mustChangePassword', False)),
+        'sessionEpoch': int(user.get('sessionEpoch', 1) or 1),
         'user': {
             'username': username,
             'name': user.get('name', 'Vũ Khương An'),
@@ -1968,20 +2094,22 @@ def auth_local_session():
             'staffId': user.get('staffId', 2),
             'isAdmin': user.get('isAdmin', True),
             'isSuperAdmin': user.get('isSuperAdmin', True),
-            'color': user.get('color', '#8b5cf6')
+            'color': user.get('color', '#8b5cf6'),
+            'mustChangePassword': bool(user.get('mustChangePassword', False)),
+            'sessionEpoch': int(user.get('sessionEpoch', 1) or 1),
         }
     })
 
 @app.route('/api/auth/password', methods=['PUT'])
 def auth_change_password():
-    """Change own password"""
-    auth_header = request.headers.get('Authorization', '')
-    if not auth_header.startswith('Bearer '):
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    payload = _verify_jwt(auth_header[7:])
+    """Change own password, clear mustChangePassword, increment sessionEpoch to revoke sessions on other devices."""
+    payload = _get_current_user()
+    if getattr(request, '_auth_store_error', False):
+        return _auth_store_503_response()
+    if getattr(request, '_session_revoked', False):
+        return _session_revoked_401_response()
     if not payload:
-        return jsonify({'error': 'Token expired'}), 401
+        return jsonify({'error': 'Not authenticated or token expired'}), 401
 
     body = request.get_json(force=True)
     old_pw = body.get('oldPassword', '')
@@ -1989,51 +2117,91 @@ def auth_change_password():
 
     password_error = _validate_password_policy(new_pw, payload['sub'])
     if password_error:
-        return jsonify({'error': password_error}), 400
+        return jsonify({'error': password_error, 'code': 'WEAK_PASSWORD', 'errorCode': 'WEAK_PASSWORD'}), 400
 
-    auth = _load_auth()
-    user = auth['users'].get(payload['sub'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    with _auth_lock:
+        auth = _load_auth()
+        user = auth['users'].get(payload['sub'])
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
-    if not _check_password(old_pw, user['passwordHash']):
-        return jsonify({'error': 'Mật khẩu cũ không đúng'}), 401
+        if not _check_password(old_pw, user['passwordHash']):
+            return jsonify({'error': 'Mật khẩu hiện tại không đúng', 'code': 'WRONG_OLD_PASSWORD', 'errorCode': 'WRONG_OLD_PASSWORD'}), 401
 
-    user['passwordHash'] = _hash_password(new_pw)
-    user.pop('plaintextPw', None)  # Never store plaintext
-    _save_auth(auth)
-    audit_log(payload['sub'], 'auth.password.change')
-    return jsonify({'ok': True})
+        new_epoch = int(user.get('sessionEpoch', 1) or 1) + 1
+        user['passwordHash'] = _hash_password(new_pw)
+        user['mustChangePassword'] = False
+        user['sessionEpoch'] = new_epoch
+        user['passwordChangedAt'] = datetime.now(VN_TZ).isoformat()
+        user.pop('plaintextPw', None)  # Never store plaintext
+        _save_auth(auth)
+
+    fresh_token = _create_jwt(payload['sub'], user)
+    audit_log(payload['sub'], 'auth.password.change', {'sessionEpoch': new_epoch})
+    return jsonify({
+        'ok': True,
+        'token': fresh_token,
+        'mustChangePassword': False,
+        'sessionEpoch': new_epoch,
+        'user': {
+            'username': payload['sub'],
+            'name': user.get('name', ''),
+            'role': user.get('role', ''),
+            'title': user.get('title', ''),
+            'staffId': user.get('staffId', 0),
+            'isAdmin': user.get('isAdmin', False),
+            'isSuperAdmin': user.get('isSuperAdmin', False),
+            'color': user.get('color', '#6366f1'),
+            'mustChangePassword': False,
+            'sessionEpoch': new_epoch,
+        }
+    })
 
 @app.route('/api/auth/admin/password', methods=['PUT'])
 def auth_admin_change_password():
-    """Super admin changes another user's password"""
-    auth_header = request.headers.get('Authorization', '')
-    if not auth_header.startswith('Bearer '):
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    payload = _verify_jwt(auth_header[7:])
+    """Super admin changes/resets another user's password and revokes their active sessions via sessionEpoch."""
+    payload = _get_current_user()
+    if getattr(request, '_auth_store_error', False):
+        return _auth_store_503_response()
+    if getattr(request, '_session_revoked', False):
+        return _session_revoked_401_response()
     if not payload or not payload.get('isSuperAdmin'):
         return jsonify({'error': 'Unauthorized'}), 403
+    pw_guard = _must_change_password_guard(payload)
+    if pw_guard is not None:
+        return pw_guard
 
     body = request.get_json(force=True)
-    target_user = body.get('username', '')
+    target_user = str(body.get('username', '')).strip().lower()
     new_pw = body.get('newPassword', '')
+    reset_to_default = bool(body.get('resetToDefault', False))
 
-    password_error = _validate_password_policy(new_pw, target_user)
-    if password_error:
-        return jsonify({'error': password_error}), 400
+    if reset_to_default:
+        new_pw = target_user
+    else:
+        password_error = _validate_password_policy(new_pw, target_user)
+        if password_error:
+            return jsonify({'error': password_error}), 400
 
-    auth = _load_auth()
-    user = auth['users'].get(target_user)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    with _auth_lock:
+        auth = _load_auth()
+        user = auth['users'].get(target_user)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
-    user['passwordHash'] = _hash_password(new_pw)
-    user.pop('plaintextPw', None)  # Never store plaintext
-    _save_auth(auth)
-    audit_log(payload['sub'], 'auth.admin.password.reset', {'target': target_user})
-    return jsonify({'ok': True})
+        new_epoch = int(user.get('sessionEpoch', 1) or 1) + 1
+        user['passwordHash'] = _hash_password(new_pw)
+        user['sessionEpoch'] = new_epoch
+        user['mustChangePassword'] = True if reset_to_default else bool(body.get('mustChangePassword', True))
+        user.pop('plaintextPw', None)  # Never store plaintext
+        _save_auth(auth)
+
+    audit_log(payload['sub'], 'auth.admin.password.reset', {
+        'target': target_user,
+        'sessionEpoch': new_epoch,
+        'mustChangePassword': user['mustChangePassword'],
+    })
+    return jsonify({'ok': True, 'sessionEpoch': new_epoch, 'mustChangePassword': user['mustChangePassword']})
 
 @app.route('/api/auth/admin/toggle', methods=['PUT'])
 def auth_admin_toggle():
@@ -2483,7 +2651,7 @@ ensure_approval_bootstrapped(_sys.modules[__name__])
 _emr_bg_started = False
 def _start_emr_background():
     global _emr_bg_started
-    if _emr_bg_started:
+    if _emr_bg_started or os.environ.get('PTDTT_TESTING') == '1':
         return
     _emr_bg_started = True
     threading.Thread(target=_emr_background_refresh, daemon=True).start()

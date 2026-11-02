@@ -2421,6 +2421,198 @@
     }
 }
 
+/* ── SurgiLog-Style TNM Description Cards, 1-Tap Login Picker, Contributor List & Dual KPI Bar (v6) ── */
+.login-staff-picker {
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface-1, #f8fafc);
+    border: 1px solid var(--border-default, #dbe3ef);
+}
+
+.login-staff-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 156px;
+    overflow-y: auto;
+}
+
+.login-staff-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-default, #cbd5e1);
+    background: #ffffff;
+    color: var(--text-heading, #1D2357);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.login-staff-chip:hover,
+.login-staff-chip.is-selected {
+    border-color: #1878B4;
+    background: #eef6fc;
+    color: #1D2357;
+}
+
+.sap-tnm-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.sap-tnm-axis-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-heading, #1D2357);
+    margin-top: 2px;
+}
+
+.sap-tnm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+    gap: 8px;
+}
+
+.sap-tnm-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 4px;
+    min-height: 76px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-default, #d4dce8);
+    background: #ffffff;
+    color: var(--text-primary, #1e293b);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sap-tnm-card:hover:not(:disabled) {
+    border-color: #1878B4;
+    background: #f4f9fd;
+}
+
+.sap-tnm-card.is-selected {
+    background: #1D2357;
+    border-color: #1D2357;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(29, 35, 87, 0.18);
+}
+
+.sap-tnm-card-code {
+    font-size: 14.5px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #1D2357;
+}
+
+.sap-tnm-card.is-selected .sap-tnm-card-code {
+    color: #ffffff;
+}
+
+.sap-tnm-card-desc {
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--text-secondary, #475569);
+}
+
+.sap-tnm-card.is-selected .sap-tnm-card-desc {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.sap-contrib-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sap-contrib-list {
+    margin: 6px 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--surface-1, #f8fafc);
+    border: 1px solid var(--border-subtle, #e2e8f0);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sap-contrib-line {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed var(--border-subtle, #e2e8f0);
+    font-size: 13px;
+}
+
+.sap-contrib-line:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.sap-ck-row--stale {
+    border-color: #d97706 !important;
+    background: #fffbeb !important;
+}
+
+.sap-stale-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sap-dual-kpi-bar {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid var(--border-default, #dbe3ef);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sap-dual-kpi-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sap-dual-kpi-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 767px) {
+    .sap-tnm-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 /* ── Reduced Motion Accessibility Guard (BƯỚC 5) ── */
 @media (prefers-reduced-motion: reduce) {
     #modal.sap-drawer-right,

@@ -291,7 +291,94 @@ const SAP_GATE_REASON_MAP = {
     'CK-02_echo_UNVERIFIED': { step: 3, fieldId: 'sap-ck-row-CK-02', label: 'Chưa xác nhận trạng thái Siêu âm tim' },
     'CK-04_IMAGING_REQUIRED_FOR_CASE': { step: 3, fieldId: 'sap-ck-row-CK-04', label: 'Ca mổ này bắt buộc BS chính kiểm tra Phim chụp / nội soi gốc (không được chọn Không áp dụng)' },
     'CK-05_REQUIRED_FOR_NEOPLASM': { step: 2, fieldId: 'sap-f-context-module', label: 'BS chính chưa xác nhận đầy đủ Giải phẫu bệnh & Giai đoạn u ở Bước ②' },
-    'CK-05_NA_ONLY_FOR_BENIGN': { step: 2, fieldId: 'sap-f-context-module', label: 'Nhóm bệnh này cần BS chính xác nhận thông tin chuyên môn ở Bước ②' }
+    'CK-05_NA_ONLY_FOR_BENIGN': { step: 2, fieldId: 'sap-f-context-module', label: 'Nhóm bệnh này cần BS chính xác nhận thông tin chuyên môn ở Bước ②' },
+    'CUSTOM_PROCEDURE_NAME_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi tên kỹ thuật ngoài Danh mục 309 phẫu thuật (5–240 ký tự)' },
+    'CUSTOM_REASON_CHIP_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa chọn lý do chọn kỹ thuật ngoài Danh mục 309' },
+    'CUSTOM_PROPOSED_CLASS_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa chọn hạng phẫu thuật tự đề xuất' },
+    'CUSTOM_PROCEDURE_VERIFICATION_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Kỹ thuật ngoài Danh mục 309 bắt buộc Ban Chủ nhiệm xác minh hạng kỹ thuật chính thức trước khi duyệt' },
+    'VERIFIED_BASIS_NOTE_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi chú căn cứ xác minh hạng kỹ thuật của BCN' },
+    'EXTERNAL_PRIVILEGE_CONFIRM_REQUIRED': { step: 1, fieldId: 'sap-f-catalog', label: 'Chưa tích xác nhận đối chiếu quyền mổ của PTV ngoài khoa' },
+    'STALE_ATTENDING_REVERIFY_REQUIRED': { step: 3, fieldId: 'sap-step-card-3', label: 'Dữ liệu vừa thay đổi — cần BS chính xác nhận lại các mục chịu ảnh hưởng' },
+    'PROXY_SUBMIT_REASON_REQUIRED': { step: 3, fieldId: 'sap-step-card-3', label: 'Chưa chọn lý do trình thay Bác sĩ mổ chính' }
+};
+
+const SAP_CUSTOM_REASON_CHIPS = [
+    { value: 'combined_multiorgan', label: 'Phối hợp đa tạng / liên chuyên khoa' },
+    { value: 'modified_technique', label: 'Biến thể kỹ thuật cải biên' },
+    { value: 'not_in_dm309_yet', label: 'Kỹ thuật mới chưa cập nhật DM 309' },
+    { value: 'other', label: 'Lý do khác (ghi rõ)' }
+];
+
+const SAP_PROPOSED_CLASS_CHIPS = [
+    { value: 'PT-ĐB', label: 'PT-ĐB' },
+    { value: 'PT-I', label: 'PT-I' },
+    { value: 'PT-II', label: 'PT-II' },
+    { value: 'PT-III', label: 'PT-III' },
+    { value: 'unclassified', label: 'Chưa rõ hạng' }
+];
+
+const SAP_VERIFIED_BASIS_CHIPS = [
+    { value: 'tt50_by_analogy', label: 'Đối chiếu tương đương TT 50/2014/TT-BYT' },
+    { value: 'bvbd_privilege_decision', label: 'Theo QĐ phân quyền kỹ thuật BV Bình Dân' },
+    { value: 'joint_specialty_board', label: 'Biên bản hội chẩn liên chuyên khoa' },
+    { value: 'other_note', label: 'Căn cứ khác (ghi rõ)' }
+];
+
+const SAP_PROXY_REASON_CHIPS = [
+    { value: 'main_surgeon_in_or', label: 'BS mổ chính đang trong phòng mổ' },
+    { value: 'main_surgeon_in_clinic', label: 'BS mổ chính đang ngồi phòng khám' },
+    { value: 'main_surgeon_on_leave_or_duty', label: 'BS mổ chính đi công tác / nghỉ trực' },
+    { value: 'other', label: 'Lý do khác (ghi rõ)' }
+];
+
+// SurgiLog-inspired Site-Locked TNM Card Definitions (AJCC 8th Ch.20 Colorectal & AJCC v9 2023 Anal Canal SCC)
+const SAP_TNM_CARD_DEFS = {
+    AJCC_8_CH20_COLORECTAL: {
+        editionTitle: 'AJCC 8th Edition (Chương 20 — Đại trực tràng)',
+        T: [
+            { code: 'Tis', desc: 'Carcinoma tại chỗ (nội biểu mô hoặc xâm lấn lớp đệm lamina propria)' },
+            { code: 'T1', desc: 'U xâm lấn lớp dưới niêm mạc (submucosa)' },
+            { code: 'T2', desc: 'U xâm lấn lớp cơ riêng (muscularis propria)' },
+            { code: 'T3', desc: 'U xâm lấn xuyên lớp cơ riêng tới mô dưới thanh mạc / quanh đại trực tràng' },
+            { code: 'T4a', desc: 'U xâm lấn xuyên qua phúc mạc tạng (bao gồm thủng thanh mạc)' },
+            { code: 'T4b', desc: 'U xâm lấn trực tiếp hoặc dính chặt vào cơ quan / cấu trúc lân cận' },
+            { code: 'Tx', desc: 'Khối u nguyên phát không thể đánh giá (ghi rõ lý do)' }
+        ],
+        N: [
+            { code: 'N0', desc: 'Không ghi nhận di căn hạch vùng trên hình ảnh học' },
+            { code: 'N1', desc: 'Di căn 1–3 hạch vùng hoặc có nhân vệ tinh (tumor deposit N1c)' },
+            { code: 'N2', desc: 'Di căn từ 4 hạch vùng trở lên (N2a: 4–6 hạch; N2b: ≥ 7 hạch)' },
+            { code: 'Nx', desc: 'Hạch vùng không thể đánh giá (ghi rõ lý do)' }
+        ],
+        M: [
+            { code: 'M0', desc: 'Không ghi nhận di căn xa' },
+            { code: 'M1a', desc: 'Di căn xa khu trú 01 cơ quan / vị trí, không di căn phúc mạc' },
+            { code: 'M1b', desc: 'Di căn xa ≥ 02 cơ quan / vị trí, không di căn phúc mạc' },
+            { code: 'M1c', desc: 'Di căn phúc mạc (đơn độc hoặc kèm tạng khác)' },
+            { code: 'Mx', desc: 'Chưa đánh giá đủ di căn xa (ghi rõ lý do)' }
+        ]
+    },
+    AJCC_V9_2023_ANUS: {
+        editionTitle: 'AJCC Version 9 (2023 — Ống hậu môn SCC)',
+        T: [
+            { code: 'Tis', desc: 'Tổn thương nội biểu mô gai độ cao (HSIL / Bowen / AIN II–III)' },
+            { code: 'T1', desc: 'U đường kính lớn nhất ≤ 2 cm' },
+            { code: 'T2', desc: 'U đường kính > 2 cm nhưng ≤ 5 cm' },
+            { code: 'T3', desc: 'U đường kính lớn nhất > 5 cm' },
+            { code: 'T4', desc: 'U bất kể kích thước xâm lấn cơ quan lân cận (âm đạo, niệu đạo, bàng quang)' },
+            { code: 'Tx', desc: 'Khối u nguyên phát không thể đánh giá (ghi rõ lý do)' }
+        ],
+        N: [
+            { code: 'N0', desc: 'Không di căn hạch vùng' },
+            { code: 'N1', desc: 'Di căn hạch bẹn, mạc treo trực tràng, chậu trong hoặc chậu ngoài' },
+            { code: 'Nx', desc: 'Hạch vùng không thể đánh giá (ghi rõ lý do)' }
+        ],
+        M: [
+            { code: 'M0', desc: 'Không di căn xa' },
+            { code: 'M1', desc: 'Có di căn xa' },
+            { code: 'Mx', desc: 'Chưa đánh giá đủ di căn xa (ghi rõ lý do)' }
+        ]
+    }
 };
 
 // SSoT từ điển Việt hóa 100% các mã ngữ cảnh lâm sàng (B1..B4), kênh hội chẩn cấp cứu & nhật ký duyệt (BUG-204)
@@ -359,6 +446,9 @@ const SAP_CONTEXT_ENUM_LABELS = {
     crm_clear: 'CRM âm tính (> 1mm)',
     crm_threatened_or_positive: 'CRM bị đe dọa / dương tính (≤ 1mm)',
     unknown_no_pelvic_mri: 'Chưa có MRI tiểu khung',
+    emvi_negative: 'EMVI âm tính (không xâm lấn mạch máu ngoài thành)',
+    emvi_positive: 'EMVI dương tính (có xâm lấn mạch máu ngoài thành)',
+    not_assessed: 'Chưa đánh giá EMVI',
     not_applicable: 'Không áp dụng',
     // Module B4: U tân sinh đặc thù / nghi ác chưa GPB
     gist_or_submucosal: 'GIST / U dưới niêm mạc',
@@ -399,6 +489,9 @@ const SAP_WAL_ACTION_LABELS = {
     preapprove_deputy: 'Phó Trưởng khoa Tiền duyệt hồ sơ',
     return_for_revision: 'BCN trả hồ sơ yêu cầu bổ sung',
     approve_routine: 'BCN phê duyệt mổ tại khoa',
+    approve_initial: 'BCN phê duyệt mổ lần đầu',
+    approve_reapproval: 'BCN phê duyệt lại sau điều chỉnh',
+    verify_custom_procedure_class: 'BCN xác minh hạng kỹ thuật ngoài DM 309',
     approve_emergency_exception: 'BCN xác nhận Ngoại lệ Cấp cứu',
     hold_post_approval: 'Đặt Tạm hoãn tại khoa sau duyệt',
     release_post_approval_hold: 'Gỡ Tạm hoãn & khôi phục duyệt khoa',
@@ -458,6 +551,50 @@ const SurgeryApprovalPage = {
     _bulkUndoExpiresAt: 0,
     _bulkUndoTimer: null,
     _approvedSnapCache: {},
+    _isDraftDirty: false,
+    _pendingDraftPatch: null,
+    _contribExpandedMap: {},
+    _contribTimelineCache: {},
+    _proxyChipDraft: '',
+    _verifiedClassDraft: '',
+    _verifiedBasisDraft: '',
+    _externalPrivConfirmedDraft: false,
+    _tnmStageTab: 'cTNM', // 'cTNM' | 'ycTNM'
+    _kpiMode: 'bySurgeryDate', // 'bySurgeryDate' | 'byApprovalDate'
+    _kpiData: null,
+    _kpiOpen: false,
+
+    hasUnsavedDraft() {
+        return Boolean(this._openCaseId && this._isDraftDirty);
+    },
+
+    async flushPendingDraftBeforeSwitch() {
+        if (!this._openCaseId || !this._isDraftDirty) return;
+        const sid = this._openCaseId;
+        const patch = this._pendingDraftPatch;
+        this._isDraftDirty = false;
+        this._pendingDraftPatch = null;
+        if (patch && Object.keys(patch).length > 0) {
+            await this.patchDraft(sid, patch, true);
+        }
+    },
+
+    discardOpenDraft() {
+        this._isDraftDirty = false;
+        this._pendingDraftPatch = null;
+        if (this._openCaseId && typeof Modal !== 'undefined') {
+            Modal.close();
+        }
+    },
+
+    DiscardDraftOnAccountChange() {
+        this._isDraftDirty = false;
+        this._pendingDraftPatch = null;
+        this._simulatedStaffId = 0;
+        if (this._openCaseId && typeof Modal !== 'undefined') {
+            Modal.close();
+        }
+    },
 
     _ico(emoji) {
         return `<span class="sap-ico" aria-hidden="true">${emoji}</span>`;
@@ -507,9 +644,26 @@ const SurgeryApprovalPage = {
         return cfg.rolloutAccessMode === 'all_staff' && cfg.sandboxOnlyMode !== false;
     },
 
+    isInPhase1Scope(surgery) {
+        if (!surgery || typeof surgery !== 'object') return false;
+        if (surgery.approachType === 'nsth') return false;
+        const appStatus = surgery.approval?.status || '';
+        if (appStatus === 'not_in_scope' || appStatus === 'legacy_exempt' || appStatus === 'trashed_inactive') return false;
+        const stype = surgery.surgeryType || 'chuongtrinh';
+        if (!['chuongtrinh', 'robot'].includes(stype)) return false;
+        const dStr = String(surgery.date || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return false;
+        if (surgery.isTestSandboxCase !== true) {
+            const effDate = this.getConfig().rolloutEffectiveSurgeryDate || '2026-11-09';
+            if (dStr < effDate && !appStatus) return false;
+        }
+        return true;
+    },
+
     isCaseApprovalEnabled(surgery) {
         if (!this.isFeatureVisibleForCurrentUser()) return false;
         if (!surgery || typeof surgery !== 'object') return false;
+        if (!this.isInPhase1Scope(surgery)) return false;
         if (this.getConfig().sandboxOnlyMode !== false) {
             return surgery.isTestSandboxCase === true && this.canAccessSandboxCases();
         }
@@ -550,8 +704,8 @@ const SurgeryApprovalPage = {
         if (approach === 'nsth' || status === 'nsth_external_authority') {
             return { row: 12, badgeCode: 'NSTH_EXTERNAL', badgeLabel: '🔹 Thẩm quyền Khoa NSTH', isGreenTickValid: false, cssClass: 'sap-badge--nsth' };
         }
-        if (status === 'legacy_exempt') {
-            return { row: 11, badgeCode: 'LEGACY_EXEMPT', badgeLabel: '', isGreenTickValid: false, cssClass: '' };
+        if (status === 'legacy_exempt' || status === 'not_in_scope' || !['chuongtrinh', 'robot'].includes(surgery.surgeryType || 'chuongtrinh')) {
+            return { row: 11, badgeCode: 'NOT_IN_SCOPE', badgeLabel: '', isGreenTickValid: false, cssClass: '' };
         }
         if (status === 'legacy_unverified_manual_review') {
             return { row: 11, badgeCode: 'LEGACY_MANUAL_REVIEW', badgeLabel: '⚠️ Cần rà soát dữ liệu lịch sử', isGreenTickValid: false, cssClass: 'sap-badge--legacy' };
@@ -825,6 +979,9 @@ const SurgeryApprovalPage = {
 
     async _api(path, method = 'GET', body = null, opts = {}) {
         const token = Auth.getToken();
+        const epochAtStart = (typeof Auth !== 'undefined' && typeof Auth.getAuthEpoch === 'function')
+            ? Auth.getAuthEpoch()
+            : 0;
         const headers = {
             'X-Client-Build': String(CLIENT_BUILD)
         };
@@ -838,11 +995,28 @@ const SurgeryApprovalPage = {
             headers['X-Simulate-Staff-Id'] = String(simId);
         }
 
-        const resp = await fetch(path, {
-            method,
-            headers,
-            body: (body !== null && method !== 'GET') ? JSON.stringify(body) : undefined
-        });
+        const ctrl = (typeof Auth !== 'undefined' && typeof Auth.registerInFlightController === 'function')
+            ? Auth.registerInFlightController()
+            : null;
+        let resp;
+        try {
+            resp = await fetch(path, {
+                method,
+                headers,
+                signal: ctrl ? ctrl.signal : undefined,
+                body: (body !== null && method !== 'GET') ? JSON.stringify(body) : undefined
+            });
+        } finally {
+            if (ctrl && typeof Auth !== 'undefined' && typeof Auth.unregisterInFlightController === 'function') {
+                Auth.unregisterInFlightController(ctrl);
+            }
+        }
+
+        if (typeof Auth !== 'undefined' && typeof Auth.getAuthEpoch === 'function' && Auth.getAuthEpoch() !== epochAtStart) {
+            const staleErr = new Error('Đã đổi tài khoản trên tab khác — thao tác cũ đã hủy.');
+            staleErr.code = 'AUTH_EPOCH_CHANGED';
+            throw staleErr;
+        }
 
         let payload = {};
         try {
@@ -852,6 +1026,15 @@ const SurgeryApprovalPage = {
         }
 
         if (!resp.ok) {
+            if (resp.status === 401 && payload.code === 'SESSION_REVOKED_PASSWORD_CHANGED') {
+                if (typeof Auth !== 'undefined') Auth.logout();
+                if (typeof App !== 'undefined') App.showLogin();
+            }
+            if (resp.status === 403 && payload.code === 'PASSWORD_CHANGE_REQUIRED') {
+                if (typeof Auth !== 'undefined' && typeof Auth.openMandatoryPasswordChangeModal === 'function') {
+                    Auth.openMandatoryPasswordChangeModal();
+                }
+            }
             if (resp.status === 409 && payload.code === 'CASE_REVISION_MISMATCH' && payload.serverSurgery) {
                 this._syncSurgeryInStore(payload.serverSurgery);
                 if (this._openCaseId === payload.serverSurgery.id) {
@@ -1057,7 +1240,7 @@ const SurgeryApprovalPage = {
             <div class="sap-canary-bar" id="sap-staff-training-banner">
                 <div class="sap-canary-header">
                     <div class="sap-canary-title">
-                        ${this._ico('🧪')} <span>Chế độ Tập huấn Quy trình Duyệt mổ [TEST] — Tách biệt 100% khỏi bệnh nhân thật</span>
+                        ${this._ico('🧪')} <span>Chế độ Demo trên bệnh nhân giả [TEST] đến hết Chủ nhật 08/11/2026 — Dự kiến Thứ Hai 09/11/2026 áp dụng thực tế cho nhóm bệnh nhân mổ chương trình có lịch mổ (0% đụng bệnh nhân thật)</span>
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;">
                         <button type="button" class="sap-btn sap-btn--primary" onclick="App.navigate('surgery'); setTimeout(() => { if (typeof SurgeryPage !== 'undefined') SurgeryPage.openForm(0, null, { sandbox: true }); }, 80);">
@@ -1088,6 +1271,10 @@ const SurgeryApprovalPage = {
                 </div>
                 <div class="sap-role-context-bar">
                     <span>${this._ico('👤')} <strong>${Utils.escapeHtml(actor.title ? actor.title + ' ' + actor.name : actor.name)}</strong> · ${Utils.escapeHtml(roleSummary)}</span>
+                    ${isActorBcn ? `
+                    <button type="button" class="sap-btn" id="sap-btn-toggle-kpi" onclick="SurgeryApprovalPage.toggleDualKpiBar()">
+                        ${this._ico('📊')} <span>KPI ${this._kpiBarOpen ? '▴' : '▾'}</span>
+                    </button>` : ''}
                     ${this._filters.status !== 'all' ? `
                     <button type="button" class="sap-btn" id="sap-btn-show-all" onclick="SurgeryApprovalPage.setFilter('status', 'all')">
                         <span>Xem tất cả ca</span>
@@ -1097,6 +1284,8 @@ const SurgeryApprovalPage = {
                     </button>`}
                 </div>
             </div>
+
+            ${isActorBcn && this._kpiBarOpen ? this._renderDualKpiBarHtml() : ''}
 
             <div id="sap-subtab-container">
                 ${this._subtab === 'cases'
@@ -1120,6 +1309,77 @@ const SurgeryApprovalPage = {
         if (this._subtab === 'logs' && !this._logsState) {
             this.loadAuditLogs();
         }
+        if (this._kpiBarOpen && !this._kpiState && !this._kpiLoading) {
+            this.loadDualKpiData();
+        }
+    },
+
+    toggleDualKpiBar() {
+        this._kpiBarOpen = !this._kpiBarOpen;
+        if (this._kpiBarOpen && !this._kpiState) {
+            this.loadDualKpiData();
+        }
+        App.renderCurrentPage();
+    },
+
+    setDualKpiMode(mode) {
+        this._kpiMode = mode === 'approval' ? 'approval' : 'surgery';
+        App.renderCurrentPage();
+    },
+
+    async loadDualKpiData() {
+        if (this._kpiLoading) return;
+        this._kpiLoading = true;
+        try {
+            const now = new Date();
+            const yy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const lastDay = new Date(yy, now.getMonth() + 1, 0).getDate();
+            const fromStr = `${yy}-${mm}-01`;
+            const toStr = `${yy}-${mm}-${String(lastDay).padStart(2, '0')}`;
+            const cfg = this.getConfig();
+            const includeTest = cfg.sandboxOnlyMode !== false ? '1' : '0';
+            const res = await this._api(`/api/surgery-approval/kpi?from=${fromStr}&to=${toStr}&includeTest=${includeTest}`, 'GET');
+            this._kpiState = { from: fromStr, to: toStr, ...(res || {}) };
+        } catch (_) {
+            this._kpiState = null;
+        } finally {
+            this._kpiLoading = false;
+            if (App.currentPage === 'surgery-approval' && this._kpiBarOpen) {
+                App.renderCurrentPage();
+            }
+        }
+    },
+
+    _renderDualKpiBarHtml() {
+        const mode = this._kpiMode || 'surgery';
+        const st = this._kpiState;
+        const bySurg = st?.bySurgeryDate || {};
+        const byApp = st?.byApprovalDate || {};
+        return `
+        <div class="sap-dual-kpi-bar" role="region" aria-label="KPI Duyệt mổ tách đôi theo Ngày mổ và Ngày duyệt">
+            <div class="sap-dual-kpi-head">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <strong>${this._ico('📊')} KPI Duyệt mổ chương trình (${Utils.escapeHtml(st?.from || 'Tháng này')} → ${Utils.escapeHtml(st?.to || '')})</strong>
+                    <button type="button" class="sap-chip ${mode === 'surgery' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.setDualKpiMode('surgery')">1. Theo Ngày mổ (Độ phủ lịch mổ)</button>
+                    <button type="button" class="sap-chip ${mode === 'approval' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.setDualKpiMode('approval')">2. Theo Ngày quyết định duyệt (Khối lượng BCN)</button>
+                </div>
+                <button type="button" class="sap-btn sap-btn--ghost" onclick="SurgeryApprovalPage._kpiState=null;SurgeryApprovalPage.loadDualKpiData();">↻ Làm mới</button>
+            </div>
+            ${!st ? `<div style="font-size:13px;color:var(--text-muted);padding:4px 0;">Đang tải chỉ số KPI hai chiều...</div>` : (mode === 'surgery' ? `
+            <div class="sap-dual-kpi-metrics">
+                <span class="sap-tag">Ca chương trình trong kỳ: <strong>${Number(bySurg.inScopeScheduledCases || 0)}</strong></span>
+                <span class="sap-tag">Đã có tích xanh hợp lệ: <strong>${Number(bySurg.validGreenTickCases || 0)}</strong> (${Number(bySurg.coverageRatePct || 0)}%)</span>
+                <span class="sap-tag">Đang chờ duyệt / duyệt lại: <strong>${Number(bySurg.pendingOrReapprovalCases || 0)}</strong></span>
+                <span class="sap-tag">Chưa trình duyệt: <strong>${Number(bySurg.unsubmittedCases || 0)}</strong></span>
+            </div>` : `
+            <div class="sap-dual-kpi-metrics">
+                <span class="sap-tag">Tổng quyết định BCN trong kỳ: <strong>${Number(byApp.totalApprovalDecisionsInPeriod || 0)}</strong></span>
+                <span class="sap-tag">Duyệt lần đầu (<code>approve_initial</code>): <strong>${Number(byApp.initialApprovalsCount || 0)}</strong></span>
+                <span class="sap-tag">Duyệt lại sau thay đổi (<code>approve_reapproval</code>): <strong>${Number(byApp.reapprovalsCount || 0)}</strong></span>
+                <span class="sap-tag">Số ca duy nhất được BCN duyệt: <strong>${Number(byApp.uniqueCasesApprovedInPeriod || 0)}</strong></span>
+            </div>`)}
+        </div>`;
     },
 
     switchSubtab(tab) {
@@ -1343,7 +1603,7 @@ const SurgeryApprovalPage = {
                 <div class="sap-canary-title">
                     ${this._ico('🛡️')} <span>Bảng Kiểm Thử Super Admin</span>
                     <span class="sap-canary-pill ${sandboxOnly ? 'sap-canary-pill--locked' : 'sap-canary-pill--live'}">
-                        ${this._ico(sandboxOnly ? '🧪' : '🏥')} <span>${sandboxOnly ? 'Chỉ ca TEST (0% BN thật)' : 'Lịch mổ thật'}</span>
+                        ${this._ico(sandboxOnly ? '🧪' : '🏥')} <span>${sandboxOnly ? 'Demo ca TEST đến CN 08/11 (0% BN thật · T2 09/11 mở ca thật)' : 'Lịch mổ thật'}</span>
                     </span>
                     <span class="sap-canary-pill ${isLocked ? 'sap-canary-pill--locked' : 'sap-canary-pill--live'}">
                         ${this._ico(isLocked ? '🔒' : '🌐')} <span>${isLocked ? 'Chỉ Super Admin' : 'Mở toàn khoa'}</span>
@@ -1376,6 +1636,9 @@ const SurgeryApprovalPage = {
                     <span class="sap-filter-sub-label" style="margin-left:8px;">Cổng kiểm tra:</span>
                     <button type="button" class="sap-chip ${cfg.checklistMode === 'enforced_gate' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.updateConfigField('checklistMode', 'enforced_gate')">Bắt buộc đủ mục</button>
                     <button type="button" class="sap-chip ${cfg.checklistMode === 'shadow_optional' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.updateConfigField('checklistMode', 'shadow_optional')">Khuyến khích</button>
+                    <span class="sap-filter-sub-label" style="margin-left:8px;">Tự suy TNM:</span>
+                    <button type="button" class="sap-chip ${!cfg.enableAutoStageDerivation ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.updateConfigField('enableAutoStageDerivation', false)">Tắt (Chờ thẩm định)</button>
+                    <button type="button" class="sap-chip ${cfg.enableAutoStageDerivation ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.updateConfigField('enableAutoStageDerivation', true)">Bật AJCC 8/v9</button>
                 </div>
                 <div class="sap-filter-sub-group" id="sap-sim-attending-row">
                     <span class="sap-filter-sub-label">Giả lập vai trò (BCN & BS chính):</span>
@@ -1477,12 +1740,13 @@ const SurgeryApprovalPage = {
 
     _getEligibleSurgeries(cfg) {
         const all = Store._data?.surgeries || [];
-        const rolloutDate = cfg.rolloutEffectiveSurgeryDate || '2026-11-02';
+        const rolloutDate = cfg.rolloutEffectiveSurgeryDate || '2026-11-09';
         const sandboxOnly = cfg.sandboxOnlyMode !== false;
         return all.filter(s => {
             if (!s || typeof s !== 'object') return false;
             const st = s.approval?.status;
-            if (st === 'trashed_inactive') return false;
+            if (st === 'trashed_inactive' || st === 'not_in_scope') return false;
+            if (!this.isInPhase1Scope(s)) return false;
             if (sandboxOnly) {
                 if (s.isTestSandboxCase !== true || !this.canAccessSandboxCases()) return false;
                 if (this._filters.scope === 'week' && typeof SurgeryPage !== 'undefined') {
@@ -1497,29 +1761,22 @@ const SurgeryApprovalPage = {
                 const weekDates = SurgeryPage.getWeekDates().map(d => SurgeryPage.dateStr(d));
                 return weekDates.includes(s.date);
             }
-            if (st && !['legacy_exempt'].includes(st)) return true;
+            if (st && !['legacy_exempt', 'not_in_scope'].includes(st)) return true;
             return (s.date || '') >= rolloutDate;
         });
     },
 
-    // Compute Deadline Text & Semantic Color (< 4h yellow, overdue red) — BƯỚC 1.4
+    // Compute Deadline Text & Semantic Color (< 4h yellow, overdue red) — QĐ3: Mốc hạn duy nhất 16:00 ngày N-2
     _computeSlaDisplay(s, cfg) {
         const st = s.approval?.status || 'draft_unsubmitted';
-        const urg = s.clinicalClassification?.urgencyLevel || 'elective';
         if (this.isApprovalGreenTickValid(s) || st === 'approved_with_exception') {
             return { text: 'Đã hoàn tất duyệt', icon: '✓', cls: 'sap-sla--done', isOverdue: false };
         }
         if (['submitted', 'preapproved'].includes(st)) {
             if (s.approval?.slaStatus === 'late') {
-                return { text: 'Trình trễ hạn', icon: '⚠️', cls: 'sap-sla--soon', isOverdue: true };
+                return { text: 'Trình trễ hạn 16:00 N-2', icon: '⚠️', cls: 'sap-sla--soon', isOverdue: true };
             }
             return { text: 'Đã trình đúng hạn', icon: '✓', cls: 'sap-sla--done', isOverdue: false };
-        }
-        if (urg === 'emergency_exception' || st === 'emergency_exception_pending_ack') {
-            return { text: 'Ngoại lệ cấp cứu', icon: '⚡', cls: 'sap-sla--overdue', isOverdue: false };
-        }
-        if (urg === 'semi_urgent') {
-            return { text: 'Hạn ≥ 2h trước mổ (Bán khẩn)', icon: '🕒', cls: 'sap-sla--soon', isOverdue: false };
         }
         const dStr = s.date || '';
         if (!/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
@@ -1527,8 +1784,8 @@ const SurgeryApprovalPage = {
         }
         const [yy, mm, dd] = dStr.split('-').map(Number);
         const sla = cfg.slaConfig || {};
-        const daysBefore = urg === 'elective_service' ? Number(sla.serviceDaysBefore ?? 1) : Number(sla.electiveDaysBefore ?? 2);
-        const deadlineHour = urg === 'elective_service' ? Number(sla.serviceDeadlineHour ?? 13) : Number(sla.electiveDeadlineHour ?? 16);
+        const daysBefore = Number(sla.electiveDaysBefore ?? 2);
+        const deadlineHour = Number(sla.electiveDeadlineHour ?? 16);
         const dl = new Date(yy, mm - 1, dd - daysBefore, deadlineHour, 0, 0);
         const now = new Date();
         const diffMs = dl.getTime() - now.getTime();
@@ -2106,6 +2363,8 @@ const SurgeryApprovalPage = {
 
     _onModalClosed() {
         this._openCaseId = null;
+        this._isDraftDirty = false;
+        this._pendingDraftPatch = null;
         this._catalogQuery = '';
         this._catalogBrowseOpen = false;
         this._catalogApproachFilter = 'all';
@@ -2134,9 +2393,9 @@ const SurgeryApprovalPage = {
         const existing = this._getCachedApprovedSnapshot(s.id);
         if (existing && Number(existing.capturedAtRevision) === targetRev) return;
         try {
-            const res = await this._api('/api/surgery-approval/logs?limit=120', 'GET', null, { allowSimulation: true });
+            const res = await this._api(`/api/surgery-approval/logs?surgeryId=${encodeURIComponent(s.id)}&includeSnapshot=1&limit=40`, 'GET', null, { allowSimulation: true });
             const entries = res?.entries || [];
-            const match = entries.find(e => Number(e.surgeryId) === Number(s.id) && (e.action === 'approve_routine' || Number(e.caseRevAfter) === targetRev) && e.committedStatePatch?.surgeryRecord);
+            const match = entries.find(e => Number(e.surgeryId) === Number(s.id) && (['approve_routine', 'approve_initial', 'approve_reapproval'].includes(e.action) || Number(e.caseRevAfter) === targetRev) && e.committedStatePatch?.surgeryRecord);
             const rec = match?.committedStatePatch?.surgeryRecord;
             if (rec) {
                 const snap = {
@@ -2362,7 +2621,25 @@ const SurgeryApprovalPage = {
         } else if (pgVal === 'other_confirmed' && String(pgObj.otherPathologyNote || '').trim().length < 10) {
             missing.push({ step: 1, fieldId: 'sap-f-pathology-group', label: 'Chưa ghi chi tiết nhóm bệnh lý khác (≥ 10 ký tự)', code: 'OTHER_PATHOLOGY_NOTE_REQUIRED' });
         }
-        if (!pcObj.confirmedCatalogEntryId || !pcObj.confirmedClass) {
+        if (pcObj.isCustomOutsideCatalog === true || pcObj.isCustomProcedure === true) {
+            const cName = String(pcObj.customProcedureName || '').trim();
+            if (cName.length < 5 || cName.length > 240) {
+                missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi tên kỹ thuật ngoài Danh mục 309 PT (5–240 ký tự)', code: 'CUSTOM_PROCEDURE_NAME_REQUIRED' });
+            }
+            if (!pcObj.customReasonChip) {
+                missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'Chưa chọn lý do chọn kỹ thuật ngoài Danh mục 309', code: 'CUSTOM_REASON_CHIP_REQUIRED' });
+            } else if (pcObj.customReasonChip === 'other' && String(pcObj.customReasonNote || '').trim().length < 5) {
+                missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'Chưa ghi rõ lý do khác cho kỹ thuật ngoài Danh mục 309', code: 'CUSTOM_REASON_CHIP_REQUIRED' });
+            }
+            if (!pcObj.proposedClass) {
+                missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'Chưa chọn hạng phẫu thuật tự đề xuất', code: 'CUSTOM_PROPOSED_CLASS_REQUIRED' });
+            }
+            if (colObj.systemCheck === 'robot_certification_required') {
+                missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'BS mổ chính chưa có chứng nhận Phẫu thuật viên Robot tại khoa', code: 'ROBOT_CERTIFICATION_REQUIRED' });
+            } else if (colObj.systemCheck === 'over_column') {
+                missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'Mổ chương trình không được phép vượt cột BS mổ chính', code: 'OVER_COLUMN_NOT_ALLOWED_ELECTIVE' });
+            }
+        } else if (!pcObj.confirmedCatalogEntryId || !pcObj.confirmedClass) {
             missing.push({ step: 1, fieldId: 'sap-f-catalog', label: 'Chưa chọn kỹ thuật mổ trong Danh mục 309 phẫu thuật', code: 'CATALOG_ENTRY_REQUIRED' });
         } else {
             if (pcObj.confirmedClass === 'unclassified' && String(pcObj.unclassifiedNote || '').trim().length < 5) {
@@ -2512,12 +2789,15 @@ const SurgeryApprovalPage = {
         if (pgVal === 'cancer_confirmed') {
             const b3 = ctx.cancerContext || {};
             const locs = b3.tumorLocation || [];
-            const st = b3.clinicalStage || {};
+            const st = b3.baselineClinicalStage || b3.clinicalStage || {};
+            const tVal = st.cT || st.T || '';
+            const nVal = st.cN || st.N || '';
+            const mVal = st.cM || st.M || '';
             const isRectal = locs.some(l => String(l).startsWith('rectum_') || l === 'anal_canal');
             if (!locs.length) missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa chọn vị trí khối u đại trực tràng', code: 'B3_TUMOR_LOCATION_REQUIRED' });
             if (!b3.preopHistology) missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa chọn giải phẫu bệnh trước mổ', code: 'B3_HISTOLOGY_REQUIRED' });
-            if (!(st.cT && st.cN && st.cM)) missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa chọn đủ giai đoạn lâm sàng cT / cN / cM', code: 'B3_CLINICAL_STAGE_REQUIRED' });
-            if ([st.cT, st.cN, st.cM].some(x => ['Tx', 'Nx', 'Mx'].includes(x)) && !String(st.stagingNote || '').trim()) {
+            if (!(tVal && nVal && mVal)) missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa chọn đủ giai đoạn lâm sàng cT / cN / cM', code: 'B3_CLINICAL_STAGE_REQUIRED' });
+            if ([tVal, nVal, mVal].some(x => ['Tx', 'TX', 'Nx', 'NX', 'Mx', 'MX'].includes(x)) && !String(st.stagingNote || '').trim()) {
                 missing.push({ step: 2, fieldId: 'sap-f-context-module', label: 'Chưa ghi lý do giai đoạn Tx / Nx / Mx', code: 'B3_UNKNOWN_STAGE_NOTE_REQUIRED' });
             }
             if (isRectal && !['crm_clear', 'crm_threatened_or_positive', 'unknown_no_pelvic_mri'].includes(b3.crmStatus)) {
@@ -2538,11 +2818,30 @@ const SurgeryApprovalPage = {
             }
         }
 
-        // Step ③: 5 Independent Checklist Items (CK-01, CK-02, CK-06, CK-04, CK-08)
+        // Step ③: 5 Independent Checklist Items (CK-01, CK-02, CK-06, CK-04, CK-08) + Stale Re-verify Check
+        for (const syncCode of ['CK-03', 'CK-05', 'CK-07']) {
+            if (!isTrainee && ck[syncCode]?.needsReverify === true) {
+                missing.push({
+                    step: 3,
+                    fieldId: 'sap-step-card-3',
+                    label: `Dữ liệu vừa thay đổi — cần BS chính xác nhận lại mục đồng bộ (${syncCode})`,
+                    code: 'STALE_ATTENDING_REVERIFY_REQUIRED'
+                });
+            }
+        }
         for (const meta of SAP_CK_INDEPENDENT_ITEMS) {
             if (isTrainee && meta.attendingOnly) continue;
             const item = ck[meta.code] || {};
             const st = item.state || 'unverified';
+            if (!isTrainee && item.needsReverify === true) {
+                missing.push({
+                    step: 3,
+                    fieldId: `sap-ck-row-${meta.code}`,
+                    label: `Dữ liệu vừa thay đổi — cần BS chính xác nhận lại: ${meta.title}`,
+                    code: 'STALE_ATTENDING_REVERIFY_REQUIRED'
+                });
+                continue;
+            }
             const verifiedOk = SAP_ATTENDING_IDS.has(Number(item.verifiedByStaffId)) && ['verified_ok', 'verified_abnormal_planned', 'not_indicated', 'not_applicable'].includes(st);
             const traineeDone = isTrainee && st === 'prepared_ok';
             if (!verifiedOk && !traineeDone) {
@@ -2586,10 +2885,13 @@ const SurgeryApprovalPage = {
         if (pgVal === 'cancer_confirmed') {
             const b3 = ctx.cancerContext || {};
             const locs = b3.tumorLocation || [];
-            const st = b3.clinicalStage || {};
+            const st = b3.baselineClinicalStage || b3.clinicalStage || {};
+            const tVal = st.cT || st.T || '';
+            const nVal = st.cN || st.N || '';
+            const mVal = st.cM || st.M || '';
             const isRectal = locs.some(l => String(l).startsWith('rectum_') || l === 'anal_canal');
             const crmOk = !isRectal || ['crm_clear', 'crm_threatened_or_positive', 'unknown_no_pelvic_mri'].includes(b3.crmStatus);
-            return locs.length > 0 && Boolean(b3.preopHistology && st.cT && st.cN && st.cM && crmOk && b3.multimodalStatus && b3.mdtReviewStatus);
+            return locs.length > 0 && Boolean(b3.preopHistology && tVal && nVal && mVal && crmOk && b3.multimodalStatus && b3.mdtReviewStatus);
         }
         if (pgVal === 'neoplasm_suspected_or_special') {
             const b4 = ctx.specialNeoplasmContext || {};
@@ -3177,21 +3479,12 @@ const SurgeryApprovalPage = {
                 </div>
             </div>` : ''}
 
-            <!-- Tính khẩn -->
+            <!-- Tính khẩn (QĐ3: Đợt 1 chỉ áp dụng Ca mổ chương trình có lịch) -->
             <div class="${fieldCls('sap-f-urgency')}" id="sap-f-urgency">
-                <div class="sap-field-label">Tính chất khẩn của ca mổ</div>
+                <div class="sap-field-label">Tính chất ca mổ <span class="sap-field-sub">(Đợt 1: Ca mổ chương trình / Robot chương trình · Hạn trình 16:00 ngày N-2)</span></div>
                 <div class="sap-chip-group">
-                    ${SAP_URGENCY_OPTIONS.filter(u => u.value !== 'emergency_exception').map(u => {
-                        const sel = urg === u.value;
-                        return `<button type="button" class="sap-chip ${sel ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { urgencyLevel: '${u.value}' } })">${Utils.escapeHtml(u.label)}</button>`;
-                    }).join('')}
+                    <button type="button" class="sap-chip sap-chip--selected" disabled>Chương trình thường quy (Hạn 16:00 ngày N-2)</button>
                 </div>
-                ${urg === 'semi_urgent' ? `
-                <input type="text" class="sap-input" placeholder="Nhập lý do lâm sàng mổ bán khẩn (bắt buộc)..."
-                    aria-label="Lý do lâm sàng mổ bán khẩn"
-                    value="${Utils.escapeHtml(cc.semiUrgentClinicalReason || '')}" ${!canEdit ? 'disabled' : ''}
-                    onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { semiUrgentClinicalReason: this.value } })">` : ''}
             </div>
 
             <!-- Nhóm bệnh lý -->
@@ -3215,13 +3508,51 @@ const SurgeryApprovalPage = {
                     onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { pathologyGroup: { confirmedValue: 'other_confirmed', otherPathologyNote: this.value } } })">` : ''}
             </div>
 
-            <!-- Danh mục 309 kỹ thuật + "Hay dùng" + Kết quả cột 1 dòng cạnh Hạng PT -->
+            <!-- Danh mục 309 kỹ thuật + "Ngoài Danh mục 309 PT" (tách rõ proposedClass vs verifiedClass) -->
             <div class="${fieldCls('sap-f-catalog')}" id="sap-f-catalog">
-                <div class="sap-field-label">
-                    <span>Kỹ thuật phẫu thuật (Danh mục 309 kỹ thuật)</span>
-                    ${inlineColHtml}
+                <div class="sap-field-label" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                    <span>Kỹ thuật phẫu thuật (Danh mục 309 kỹ thuật) ${inlineColHtml}</span>
+                    ${canEdit ? `
+                    <button type="button" class="sap-chip ${(pcObj.isCustomOutsideCatalog || pcObj.isCustomProcedure) ? 'sap-chip--selected' : ''}"
+                        id="sap-btn-toggle-custom-proc"
+                        onclick="SurgeryApprovalPage.toggleCustomOutsideCatalog(${s.id})">
+                        ${this._ico('✍️')} <span>Ngoài Danh mục 309 PT</span>
+                    </button>` : ''}
                 </div>
 
+                ${(pcObj.isCustomOutsideCatalog || pcObj.isCustomProcedure) ? `
+                <div class="sap-custom-proc-box" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:10px;background:var(--bg-subtle,#f8fafc);border:1px solid var(--border-default);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:13px;">
+                        <strong>Kỹ thuật ngoài Danh mục 309 PT (tự động lấy tên từ Lịch mổ)</strong>
+                        ${pcObj.verifiedClass
+                            ? `<span class="sap-col-inline sap-col-inline--ok">${this._ico('✓')} <span>BCN đã xác minh hạng: <strong>${Utils.escapeHtml(this._formatRankCode(pcObj.verifiedClass))}</strong></span></span>`
+                            : `<span class="sap-col-inline sap-col-inline--warn">${this._ico('⏳')} <span>Hạng tự đề xuất — chờ BCN xác minh chính thức trước khi duyệt</span></span>`}
+                    </div>
+                    <input type="text" class="sap-input" placeholder="Tên kỹ thuật mổ dự kiến (5–240 ký tự)..."
+                        aria-label="Tên kỹ thuật ngoài Danh mục 309"
+                        value="${Utils.escapeHtml(pcObj.customProcedureName || s.method || '')}" ${!canEdit ? 'disabled' : ''}
+                        onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { procedureClass: { isCustomOutsideCatalog: true, customProcedureName: this.value } } })">
+                    <div>
+                        <div class="sap-filter-sub-label" style="margin-bottom:4px;">Lý do ngoài Danh mục 309 (chạm 1 lần):</div>
+                        <div class="sap-chip-group">
+                            ${SAP_CUSTOM_REASON_CHIPS.map(rc => `
+                            <button type="button" class="sap-chip ${pcObj.customReasonChip === rc.value ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { procedureClass: { isCustomOutsideCatalog: true, customProcedureName: ${JSON.stringify(pcObj.customProcedureName || s.method || '')}, customReasonChip: '${rc.value}' } } })">${Utils.escapeHtml(rc.label)}</button>`).join('')}
+                        </div>
+                        ${pcObj.customReasonChip === 'other' ? `
+                        <input type="text" class="sap-input" style="margin-top:6px;" placeholder="Ghi rõ lý do khác (≥ 5 ký tự)..."
+                            value="${Utils.escapeHtml(pcObj.customReasonNote || '')}" ${!canEdit ? 'disabled' : ''}
+                            onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { procedureClass: { isCustomOutsideCatalog: true, customReasonNote: this.value } } })">` : ''}
+                    </div>
+                    <div>
+                        <div class="sap-filter-sub-label" style="margin-bottom:4px;">Hạng phẫu thuật tự đề xuất (<code>proposedClass</code> — không thay thế xác minh của BCN):</div>
+                        <div class="sap-chip-group">
+                            ${SAP_PROPOSED_CLASS_CHIPS.map(rk => `
+                            <button type="button" class="sap-chip ${pcObj.proposedClass === rk.value ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { procedureClass: { isCustomOutsideCatalog: true, customProcedureName: ${JSON.stringify(pcObj.customProcedureName || s.method || '')}, proposedClass: '${rk.value}' } } })">${Utils.escapeHtml(rk.label)}</button>`).join('')}
+                        </div>
+                    </div>
+                </div>` : `
                 ${pcObj.confirmedCatalogEntryId && selectedProc ? `
                 <div style="font-size:13.5px;padding:8px 12px;border-radius:8px;background:var(--brand-soft);border:1px solid var(--border-default);color:var(--text-heading);">
                     <strong>Đã chọn:</strong> [${Utils.escapeHtml(selectedProc.rankLabel)}] ${Utils.escapeHtml(selectedProc.name)}
@@ -3266,18 +3597,12 @@ const SurgeryApprovalPage = {
                 <input type="text" class="sap-input" placeholder="Ghi chú thuyết minh chuyên môn cho kỹ thuật không phân loại (tối thiểu 5 ký tự)..."
                     aria-label="Thuyết minh kỹ thuật không phân loại"
                     value="${Utils.escapeHtml(pcObj.unclassifiedNote || '')}" ${!canEdit ? 'disabled' : ''}
-                    onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { procedureClass: { unclassifiedNote: this.value } } })">` : ''}
+                    onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { procedureClass: { unclassifiedNote: this.value } } })">` : ''}`}
 
-                ${sysCheck === 'over_column' && (urg === 'elective' || urg === 'elective_service') ? `
+                ${sysCheck === 'over_column' ? `
                 <div class="sap-alert sap-alert--danger">
-                    <strong>Theo QĐ 1073/QĐ-BVBD & Bảng xếp cột BS 2026:</strong> Mổ chương trình và mổ yêu cầu phải đúng cột phẫu thuật (BS Cột <strong>${Utils.escapeHtml(baseCol)}</strong> chỉ mổ từ loại tương ứng trở xuống, không mổ hạng <strong>${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}</strong>). Vui lòng phân công lại BS mổ chính đúng cột trên Lịch mổ tuần.
+                    <strong>Theo QĐ 1073/QĐ-BVBD & Bảng xếp cột BS 2026:</strong> Mổ chương trình phải đúng cột phẫu thuật (BS Cột <strong>${Utils.escapeHtml(baseCol)}</strong> chỉ mổ từ loại tương ứng trở xuống, không mổ hạng <strong>${Utils.escapeHtml(this._formatRankCode(pcObj.verifiedClass || pcObj.confirmedClass || pcObj.proposedClass || pcObj.suggestedClass))}</strong>). Vui lòng phân công lại BS mổ chính đúng cột trên Lịch mổ tuần.
                 </div>` : ''}
-
-                ${sysCheck === 'over_column' && urg === 'semi_urgent' && Number(colObj.columnStepDelta || 9) === 1 ? `
-                <input type="text" class="sap-input" placeholder="Theo quy ước điều phối nội bộ tại Khoa: ghi rõ lý do ca bán khẩn thiếu nhân sự cột trên phù hợp để BCN cân nhắc tối đa +01 cột..."
-                    aria-label="Lý do xin vượt 1 cột ca bán khẩn"
-                    value="${Utils.escapeHtml(colObj.overColumnRef || '')}" ${!canEdit ? 'disabled' : ''}
-                    onchange="SurgeryApprovalPage.patchDraft(${s.id}, { clinicalClassification: { columnCompliance: { declaredMode: 'propose_over_column', overColumnRef: this.value } } })">` : ''}
             </div>
         </section>`;
     },
@@ -3738,8 +4063,25 @@ const SurgeryApprovalPage = {
         if (pgVal === 'cancer_confirmed') {
             const b3 = ctx.cancerContext || {};
             const locs = b3.tumorLocation || [];
-            const st = b3.clinicalStage || {};
+            const hasAnal = locs.includes('anal_canal');
+            const hasColorectal = locs.some(l => l !== 'anal_canal');
+            const isDiscordantMultiSite = hasAnal && hasColorectal;
+            const isSpecialHistology = b3.preopHistology === 'neuroendocrine_gist_other';
+            const activeRuleSetId = (!locs.length || isDiscordantMultiSite || isSpecialHistology)
+                ? null
+                : ((hasAnal && !hasColorectal && b3.preopHistology === 'scc') ? 'AJCC_V9_2023_ANUS' : 'AJCC_8_CH20_COLORECTAL');
+            const cardDef = SAP_TNM_CARD_DEFS[activeRuleSetId || 'AJCC_8_CH20_COLORECTAL'];
+            const hasNeoadjuvant = ['post_neoadjuvant_crt', 'post_long_course_crt', 'post_tnt', 'post_systemic_chemo'].includes(b3.multimodalStatus);
+            const activeTab = (hasNeoadjuvant && this._tnmTimingTab === 'yc') ? 'yc' : 'c';
+            const baseSt = b3.baselineClinicalStage || b3.clinicalStage || {};
+            const ycSt = b3.restagingPostNeoadjuvant || {};
+            const st = activeTab === 'yc' ? ycSt : baseSt;
+            const pfx = activeTab === 'yc' ? 'yc' : 'c';
+            const curT = String(activeTab === 'yc' ? (st.ycT || st.T || '') : (st.cT || st.T || '')).replace(/^(yc|c)/i, '');
+            const curN = String(activeTab === 'yc' ? (st.ycN || st.N || '') : (st.cN || st.N || '')).replace(/^(yc|c)/i, '');
+            const curM = String(activeTab === 'yc' ? (st.ycM || st.M || '') : (st.cM || st.M || '')).replace(/^(yc|c)/i, '');
             const isRectal = locs.some(l => String(l).startsWith('rectum_') || l === 'anal_canal');
+            const cfg = this.getConfig();
             const locOpts = [
                 { v: 'right_colon', syn: ['cecum_right_colon'], l: 'Đại tràng phải' },
                 { v: 'transverse_colon', syn: [], l: 'Đại tràng ngang' },
@@ -3752,7 +4094,10 @@ const SurgeryApprovalPage = {
             ];
             return `
             <div class="${wrapperClass}" id="sap-f-context-module">
-                <div class="sap-field-label">${this._ico('🎗️')} Hồ sơ Ung thư Đại trực tràng – Ống hậu môn (GPB, cTNM, CRM, MDT)</div>
+                <div class="sap-field-label" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                    <span>${this._ico('🎗️')} Hồ sơ Ung thư Đại trực tràng – Ống hậu môn (GPB, cTNM/ycTNM, CRM, EMVI, MDT)</span>
+                    <span class="sap-tag">${Utils.escapeHtml(activeRuleSetId ? cardDef.editionTitle : 'Không tự suy giai đoạn gộp')}</span>
+                </div>
                 <div class="sap-filter-sub-label">Vị trí u (chọn ≥ 2 nếu u đồng thời đa ổ):</div>
                 <div class="sap-chip-group">
                     ${locOpts.map(o => `<button type="button" class="sap-chip ${(locs.includes(o.v) || o.syn.some(x => locs.includes(x))) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
@@ -3770,41 +4115,82 @@ const SurgeryApprovalPage = {
                         onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { preopHistology: '${o.v}' })">${o.l}</button>`).join('')}
                 </div>
 
-                <div class="sap-filter-sub-label">Giai đoạn lâm sàng cT · cN · cM (chạm chọn nhanh, không menu thả xuống):</div>
-                <div style="display:flex;flex-direction:column;gap:6px;">
-                    <div class="sap-chip-group">
-                        <span class="sap-filter-sub-label" style="min-width:32px;">cT:</span>
-                        ${['cT1', 'cT2', 'cT3', 'cT4a', 'cT4b', 'Tx'].map(v => {
-                            const shortV = v.replace(/^c/, '');
-                            return `<button type="button" class="sap-chip ${(st.cT === v || st.cT === shortV) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cT', '${v}')">${v}</button>`;
+                <div class="sap-filter-sub-label">Điều trị đa mô thức trước mổ:</div>
+                <div class="sap-chip-group">
+                    ${[
+                        { v: 'upfront_surgery', syn: [], l: 'Mổ kỳ đầu' },
+                        { v: 'post_neoadjuvant_crt', syn: ['post_long_course_crt'], l: 'Sau hóa xạ trị tiền phẫu (CRT)' },
+                        { v: 'post_tnt', syn: [], l: 'Sau điều trị tân bổ trợ toàn diện (TNT)' },
+                        { v: 'post_systemic_chemo', syn: [], l: 'Sau hóa trị toàn thân' }
+                    ].map(o => `<button type="button" class="sap-chip ${(b3.multimodalStatus === o.v || o.syn.includes(b3.multimodalStatus)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { multimodalStatus: '${o.v}' })">${o.l}</button>`).join('')}
+                </div>
+
+                ${isDiscordantMultiSite || isSpecialHistology ? `
+                <div class="sap-alert sap-alert--warning" style="margin:6px 0;font-size:13px;">
+                    ${isDiscordantMultiSite
+                        ? '<strong>Đa ổ khác hệ phân loại (Ống hậu môn + Đại trực tràng):</strong> Hệ thống giữ nguyên các thành tố T·N·M đã chọn nhưng <code>ruleSetId = null</code> (không tự suy gộp giai đoạn).'
+                        : '<strong>Giải phẫu bệnh đặc thù (NET / GIST / Khác):</strong> Không áp bảng AJCC Adenocarcinoma/SCC tự động (<code>SPECIAL_HISTOLOGY_NO_AUTO_MERGE</code>).'}
+                </div>` : ''}
+
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:4px;">
+                    <div class="sap-filter-sub-label">Phân giai đoạn lâm sàng ${pfx}T · ${pfx}N · ${pfx}M (bố cục thẻ mô tả chuẩn SurgiLog):</div>
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        ${hasNeoadjuvant ? `
+                        <button type="button" class="sap-chip ${activeTab === 'c' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.setTnmTimingTab(${s.id}, 'c')">Lần đầu trước điều trị (cTNM)</button>
+                        <button type="button" class="sap-chip ${activeTab === 'yc' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.setTnmTimingTab(${s.id}, 'yc')">Đánh giá lại sau tân bổ trợ (ycTNM)</button>` : ''}
+                        ${st.stageGroup && cfg.enableAutoStageDerivation
+                            ? `<span class="sap-col-inline sap-col-inline--ok">Giai đoạn: <strong>${Utils.escapeHtml(st.stageGroup)}</strong></span>`
+                            : `<span class="sap-tag" title="Cần BS chuyên môn thẩm định trước khi bật tự suy giai đoạn">Tự suy giai đoạn: ${cfg.enableAutoStageDerivation ? 'Đang bật' : 'Chờ thẩm định'}</span>`}
+                    </div>
+                </div>
+
+                <div class="sap-tnm-section">
+                    <div class="sap-tnm-axis-label">Khối u nguyên phát (${pfx}T):</div>
+                    <div class="sap-tnm-grid">
+                        ${cardDef.T.map(item => {
+                            const fullCode = item.code.toLowerCase() === 'tx' ? 'Tx' : `${pfx}${item.code}`;
+                            const isSel = curT.toLowerCase() === item.code.toLowerCase();
+                            return `<button type="button" class="sap-tnm-card ${isSel ? 'is-selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'T', '${fullCode}', '${activeTab}')">
+                                <span class="sap-tnm-card-code">${Utils.escapeHtml(fullCode)}</span>
+                                <span class="sap-tnm-card-desc">${Utils.escapeHtml(item.desc)}</span>
+                            </button>`;
                         }).join('')}
                     </div>
-                    <div class="sap-chip-group">
-                        <span class="sap-filter-sub-label" style="min-width:32px;">cN:</span>
-                        ${['cN0', 'cN1', 'cN2', 'Nx'].map(v => {
-                            const shortV = v.replace(/^c/, '');
-                            return `<button type="button" class="sap-chip ${(st.cN === v || st.cN === shortV) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cN', '${v}')">${v}</button>`;
+                    <div class="sap-tnm-axis-label">Hạch bạch huyết vùng (${pfx}N):</div>
+                    <div class="sap-tnm-grid">
+                        ${cardDef.N.map(item => {
+                            const fullCode = item.code.toLowerCase() === 'nx' ? 'Nx' : `${pfx}${item.code}`;
+                            const isSel = curN.toLowerCase() === item.code.toLowerCase();
+                            return `<button type="button" class="sap-tnm-card ${isSel ? 'is-selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'N', '${fullCode}', '${activeTab}')">
+                                <span class="sap-tnm-card-code">${Utils.escapeHtml(fullCode)}</span>
+                                <span class="sap-tnm-card-desc">${Utils.escapeHtml(item.desc)}</span>
+                            </button>`;
                         }).join('')}
                     </div>
-                    <div class="sap-chip-group">
-                        <span class="sap-filter-sub-label" style="min-width:32px;">cM:</span>
-                        ${['cM0', 'cM1a', 'cM1b', 'Mx'].map(v => {
-                            const shortV = v.replace(/^c/, '');
-                            return `<button type="button" class="sap-chip ${(st.cM === v || st.cM === shortV) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                            onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'cM', '${v}')">${v}</button>`;
+                    <div class="sap-tnm-axis-label">Di căn xa (${pfx}M):</div>
+                    <div class="sap-tnm-grid">
+                        ${cardDef.M.map(item => {
+                            const fullCode = item.code.toLowerCase() === 'mx' ? 'Mx' : `${pfx}${item.code}`;
+                            const isSel = curM.toLowerCase() === item.code.toLowerCase();
+                            return `<button type="button" class="sap-tnm-card ${isSel ? 'is-selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                                onclick="SurgeryApprovalPage.updateCancerStage(${s.id}, 'M', '${fullCode}', '${activeTab}')">
+                                <span class="sap-tnm-card-code">${Utils.escapeHtml(fullCode)}</span>
+                                <span class="sap-tnm-card-desc">${Utils.escapeHtml(item.desc)}</span>
+                            </button>`;
                         }).join('')}
                     </div>
                 </div>
-                ${[st.cT, st.cN, st.cM].some(x => ['Tx', 'Nx', 'Mx'].includes(x)) ? `
+                ${[curT, curN, curM].some(x => ['tx', 'nx', 'mx'].includes(x.toLowerCase())) ? `
                 <input type="text" class="sap-input" placeholder="Ghi rõ lý do phân giai đoạn Tx / Nx / Mx..."
                     aria-label="Ghi chú phân giai đoạn Tx Nx Mx"
                     value="${Utils.escapeHtml(st.stagingNote || '')}" ${!canEdit ? 'disabled' : ''}
-                    onchange="SurgeryApprovalPage.updateCancerStage(${s.id}, 'stagingNote', this.value)">` : ''}
+                    onchange="SurgeryApprovalPage.updateCancerStage(${s.id}, 'stagingNote', this.value, '${activeTab}')">` : ''}
 
                 ${isRectal ? `
-                <div class="sap-filter-sub-label">Diện cắt vòng quanh (CRM) trên MRI tiểu khung:</div>
+                <div class="sap-filter-sub-label">Diện cắt vòng quanh (CRM) trên MRI tiểu khung (yếu tố tiên lượng độc lập, tách khỏi TNM):</div>
                 <div class="sap-chip-group">
                     ${[
                         { v: 'crm_clear', l: 'CRM âm tính (an toàn > 1mm)' },
@@ -3817,18 +4203,16 @@ const SurgeryApprovalPage = {
                 <input type="text" class="sap-input" placeholder="Ghi lý do chưa chụp được MRI tiểu khung (chống chỉ định kim loại, u chảy máu...)..."
                     aria-label="Lý do chưa có MRI tiểu khung"
                     value="${Utils.escapeHtml(b3.crmNote || '')}" ${!canEdit ? 'disabled' : ''}
-                    onchange="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { crmNote: this.value })">` : ''}` : ''}
-
-                <div class="sap-filter-sub-label">Điều trị đa mô thức trước mổ:</div>
+                    onchange="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { crmNote: this.value })">` : ''}
+                <div class="sap-filter-sub-label">Xâm lấn mạch máu ngoài thành (EMVI) trên MRI tiểu khung:</div>
                 <div class="sap-chip-group">
                     ${[
-                        { v: 'upfront_surgery', syn: [], l: 'Mổ kỳ đầu' },
-                        { v: 'post_neoadjuvant_crt', syn: ['post_long_course_crt'], l: 'Sau hóa xạ trị tiền phẫu (CRT)' },
-                        { v: 'post_tnt', syn: [], l: 'Sau điều trị tân bổ trợ toàn diện (TNT)' },
-                        { v: 'post_systemic_chemo', syn: [], l: 'Sau hóa trị toàn thân' }
-                    ].map(o => `<button type="button" class="sap-chip ${(b3.multimodalStatus === o.v || o.syn.includes(b3.multimodalStatus)) ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
-                        onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { multimodalStatus: '${o.v}' })">${o.l}</button>`).join('')}
-                </div>
+                        { v: 'emvi_negative', l: 'EMVI âm tính (-)' },
+                        { v: 'emvi_positive', l: 'EMVI dương tính (+)' },
+                        { v: 'not_assessed', l: 'Chưa đánh giá EMVI' }
+                    ].map(o => `<button type="button" class="sap-chip ${b3.emviStatus === o.v ? 'sap-chip--selected' : ''}" ${!canEdit ? 'disabled' : ''}
+                        onclick="SurgeryApprovalPage.updateContextField(${s.id}, 'cancerContext', { emviStatus: '${o.v}' })">${o.l}</button>`).join('')}
+                </div>` : ''}
 
                 <div class="sap-filter-sub-label">Hội chẩn Ung bướu / Đa chuyên khoa (MDT):</div>
                 <div class="sap-chip-group">
@@ -3926,6 +4310,7 @@ const SurgeryApprovalPage = {
 
         const commonMeta = SAP_CK_INDEPENDENT_ITEMS.filter(m => !m.attendingOnly);
         const attendingMeta = SAP_CK_INDEPENDENT_ITEMS.filter(m => m.attendingOnly);
+        const staleCodes = ['CK-01', 'CK-02', 'CK-03', 'CK-04', 'CK-05', 'CK-06', 'CK-07', 'CK-08'].filter(cd => ck[cd]?.needsReverify === true);
 
         return `
         <section class="sap-section" id="sap-step-card-3" aria-label="Bước 3 Bảng kiểm tiền phẫu và Cam kết của BS chính">
@@ -3935,6 +4320,18 @@ const SurgeryApprovalPage = {
                     ${stepMiss.length === 0 ? '✓ Hoàn tất' : `Còn ${stepMiss.length} mục`}
                 </span>
             </div>
+
+            ${staleCodes.length > 0 ? `
+            <div class="sap-alert sap-alert--warning" id="sap-stale-reverify-banner" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <strong>${this._ico('⚠️')} Dữ liệu vừa thay đổi — cần BS chính xác nhận lại (${staleCodes.length} mục):</strong>
+                    <span>Một bác sĩ khác vừa cập nhật dữ kiện lâm sàng liên quan (${Utils.escapeHtml(staleCodes.join(', '))}).</span>
+                </div>
+                ${canEdit && isAttending ? `
+                <button type="button" class="sap-btn sap-btn--primary" id="sap-btn-reverify-stale" onclick="SurgeryApprovalPage.confirmMyDirectExamItems(${s.id})">
+                    ${this._ico('✓')} <span>Xác nhận lại mục tôi trực tiếp kiểm tra</span>
+                </button>` : ''}
+            </div>` : ''}
 
             <!-- Mục 2.4: Đồng bộ tự động từ Bước ② -->
             <div class="sap-synced-strip">
@@ -3990,7 +4387,9 @@ const SurgeryApprovalPage = {
             <div class="sap-section sap-section--attending ${this._highlightFieldId === 'sap-attending-only-box' ? 'sap-field--missing-focus' : ''}" id="sap-attending-only-box">
                 <div class="sap-section-header">
                     <h4 class="sap-section-title">${this._ico('🩺')} Khu vực dành riêng cho Bác sĩ mổ chính</h4>
-                    ${isTrainee ? `<span class="sap-tag">Học viên chỉ xem — Chờ BS chính xác nhận</span>` : ''}
+                    ${isTrainee
+                        ? `<span class="sap-tag">Học viên chỉ xem — Chờ BS chính xác nhận</span>`
+                        : (canEdit && isAttending ? `<button type="button" class="sap-btn" onclick="SurgeryApprovalPage.confirmMyDirectExamItems(${s.id})">${this._ico('✓')} <span>Xác nhận mục tôi trực tiếp khám / kiểm tra</span></button>` : '')}
                 </div>
                 <div class="sap-ck-list">
                     ${attendingMeta.map(meta => this._renderChecklistItemRow(s, meta, ck[meta.code], actor, canEdit && isAttending, returnedSet)).join('')}
@@ -4006,7 +4405,7 @@ const SurgeryApprovalPage = {
         const pgVal = s.clinicalClassification?.pathologyGroup?.confirmedValue || '';
         const pcClass = s.clinicalClassification?.procedureClass?.confirmedClass || '';
         const rowId = `sap-ck-row-${meta.code}`;
-        const rowCls = `sap-ck-row ${returnedSet.has(rowId) ? 'sap-field--returned-highlight' : ''} ${this._highlightFieldId === rowId ? 'sap-field--missing-focus' : ''}`;
+        const rowCls = `sap-ck-row ${it.needsReverify ? 'sap-ck-row--stale' : ''} ${returnedSet.has(rowId) ? 'sap-field--returned-highlight' : ''} ${this._highlightFieldId === rowId ? 'sap-field--missing-focus' : ''}`;
 
         // Allow NA segment?
         let canChooseNa = Boolean(meta.allowNotApplicable || meta.allowNotIndicatedWithReason);
@@ -4022,16 +4421,19 @@ const SurgeryApprovalPage = {
                 ? `BS xác nhận: ${verifiedName}`
                 : (prepName ? `HV rà sơ bộ: ${prepName} (chờ BS chính)` : 'Chưa xác nhận'));
 
-        const isOkActive = isTrainee ? st === 'prepared_ok' : st === 'verified_ok';
+        const isOkActive = !it.needsReverify && (isTrainee ? st === 'prepared_ok' : st === 'verified_ok');
         const isPrepBadge = !isTrainee && st === 'prepared_ok';
-        const isWarnActive = st === 'verified_abnormal_planned';
-        const isNaActive = ['not_applicable', 'not_indicated'].includes(st);
+        const isWarnActive = !it.needsReverify && st === 'verified_abnormal_planned';
+        const isNaActive = !it.needsReverify && ['not_applicable', 'not_indicated'].includes(st);
 
         return `
         <div class="${rowCls}" id="${rowId}" title="Mã nội bộ nhật ký: ${meta.code}">
             <div class="sap-ck-main">
                 <div class="sap-ck-info">
-                    <div class="sap-ck-title">${Utils.escapeHtml(meta.title)}</div>
+                    <div class="sap-ck-title">
+                        <span>${Utils.escapeHtml(meta.title)}</span>
+                        ${it.needsReverify ? `<span class="sap-stale-pill">${this._ico('⚠️')} Dữ liệu vừa thay đổi — cần BS chính xác nhận lại</span>` : ''}
+                    </div>
                     <div class="sap-ck-desc">${Utils.escapeHtml(meta.desc)} · <strong>${Utils.escapeHtml(statusByText)}</strong></div>
                 </div>
                 ${isTrainee ? `
@@ -4134,11 +4536,15 @@ const SurgeryApprovalPage = {
         const ctx = chips.contextChips || {};
         if (pgVal === 'cancer_confirmed') {
             const b3 = ctx.cancerContext || {};
-            const stg = b3.clinicalStage || {};
-            ctxLines.push(`Vị trí u: ${(b3.tumorLocation || []).map(trCtx).join(', ') || '—'}`);
-            ctxLines.push(`GPB & Giai đoạn: ${trCtx(b3.preopHistology)} · ${[stg.cT, stg.cN, stg.cM].filter(Boolean).join('') || '—'}`);
+            const stg = b3.baselineClinicalStage || b3.clinicalStage || {};
+            const ycStg = b3.restagingPostNeoadjuvant || {};
+            const baseTxt = [stg.cT || stg.T, stg.cN || stg.N, stg.cM || stg.M].filter(Boolean).join('') || '—';
+            const ycTxt = [ycStg.ycT || ycStg.T, ycStg.ycN || ycStg.N, ycStg.ycM || ycStg.M].filter(Boolean).join('');
+            ctxLines.push(`Vị trí u: ${(b3.tumorLocation || []).map(trCtx).join(' · ') || '—'}`);
+            ctxLines.push(`GPB & Giai đoạn: ${trCtx(b3.preopHistology)} · ${baseTxt}${ycTxt ? ` → Sau tân bổ trợ: ${ycTxt}` : ''}${stg.stageGroup && cfg.enableAutoStageDerivation ? ` (${stg.stageGroup})` : ''}`);
             if (b3.crmStatus && b3.crmStatus !== 'not_applicable') {
-                ctxLines.push(`CRM trên MRI chậu: ${b3.crmStatus === 'crm_clear' ? 'CRM âm tính (>1mm)' : (b3.crmStatus === 'crm_threatened_or_positive' ? '⚠️ CRM đe dọa / dương tính' : `⚠️ Chưa MRI (${b3.crmNote || ''})`)}`);
+                const emviTxt = b3.emviStatus ? ` · EMVI: ${trCtx(b3.emviStatus)}` : '';
+                ctxLines.push(`MRI chậu: ${b3.crmStatus === 'crm_clear' ? 'CRM âm tính (>1mm)' : (b3.crmStatus === 'crm_threatened_or_positive' ? '⚠️ CRM đe dọa / dương tính' : `⚠️ Chưa MRI (${b3.crmNote || ''})`)}${emviTxt}`);
             }
             ctxLines.push(`Đa mô thức & MDT: ${trCtx(b3.multimodalStatus)} · ${trCtx(b3.mdtReviewStatus)}`);
         } else if (pgVal === 'benign_anorectal') {
@@ -4153,10 +4559,24 @@ const SurgeryApprovalPage = {
             ctxLines.push(`U đặc thù: ${trCtx(b4.neoplasmCategory)} · Sinh thiết: ${trCtx(b4.biopsyStatus)} · Lan rộng: ${trCtx(b4.extentEvaluation)}`);
         }
 
-        const prepStaff = Utils.getStaffName(s.podAssignment?.preparedByStaffId || s.assistSurgeon1) || 'Chưa ghi nhận';
-        const subByStaff = Utils.getStaffName(app.submittedSnapshot?.submittedByStaffId || s.mainSurgeon) || 'Chưa trình';
-        const preappBy = app.preapprovedSnapshot?.preapprovedByStaffId ? Utils.getStaffName(app.preapprovedSnapshot.preapprovedByStaffId) : '';
+        const getFullDoctorTitleName = staffId => {
+            const stObj = Store.getById('staff', Number(staffId || 0));
+            if (stObj) return `${stObj.title ? stObj.title + ' ' : ''}${stObj.name}`;
+            return Utils.getStaffName(staffId) || '';
+        };
+        const subSid = Number(app.submittedSnapshot?.submittedByStaffId || s.mainSurgeon || 0);
+        const subByStaff = getFullDoctorTitleName(subSid) || 'Chưa trình';
+        const rawContribs = (this._contribCache?.[s.id]?.contributors) || s.preparationContributors || [];
+        const uniqueOtherContribs = rawContribs.filter(c => Number(c.staffId) && Number(c.staffId) !== subSid);
+        const isContribOpen = Boolean(this._contribExpanded?.[s.id]);
+        const preappBy = app.preapprovedSnapshot?.preapprovedByStaffId ? getFullDoctorTitleName(app.preapprovedSnapshot.preapprovedByStaffId) : '';
         const needDeputyEmergencyBackup = st === 'emergency_exception_pending_ack' && actor.staffId === SAP_DEPUTY_ID && !this._hasActiveDelegationForDeputy();
+        const isCustomProc = Boolean(pcObj.isCustomOutsideCatalog || pcObj.isCustomProcedure);
+        const bcnDraft = (this._bcnVerifyDraft && this._bcnVerifyDraft[s.id]) || {};
+        const selVerClass = bcnDraft.verifiedClass || pcObj.verifiedClass || (pcObj.proposedClass && pcObj.proposedClass !== 'unclassified' ? pcObj.proposedClass : '');
+        const selVerBasis = bcnDraft.verifiedBasisCode || pcObj.verifiedBasisCode || 'tt50_by_analogy';
+        const isExtSurgeon = colObj.systemCheck === 'external_surgeon_verify_privilege';
+        const extPrivChecked = bcnDraft.externalPrivilegeConfirmed !== undefined ? bcnDraft.externalPrivilegeConfirmed : Boolean(colObj.externalPrivilegeConfirmed);
 
         return `
         <section class="sap-exec-card" aria-label="Tóm tắt 1 trang dành cho Ban Chủ nhiệm phê duyệt">
@@ -4190,46 +4610,55 @@ const SurgeryApprovalPage = {
                 </div>`}
             </div>` : ''}
 
-            ${app.emergencyException ? `
-            <div class="sap-alert sap-alert--danger">
-                <strong>${this._ico('⚡')} Hồ sơ Ngoại lệ Cấp cứu:</strong> ${Utils.escapeHtml(app.emergencyException.emergencyReasonNote || '')}
-                <div style="margin-top:4px;font-size:13px;">
-                    Đã hội chẩn với: <strong>${Utils.escapeHtml(Utils.getStaffName(app.emergencyException.verbalConsultRecord?.contactedLeaderStaffId) || 'BCN')}</strong>
-                    (${Utils.escapeHtml(SAP_EMERGENCY_CHANNEL_LABELS[app.emergencyException.verbalConsultRecord?.contactChannel] || app.emergencyException.verbalConsultRecord?.contactChannel || 'Điện thoại trực tiếp')} lúc ${Utils.escapeHtml((app.emergencyException.verbalConsultRecord?.contactedAt || '').replace('T', ' ').slice(0, 16))})
-                    · BS hoàn tất sau mổ: <strong>${Utils.escapeHtml(Utils.getStaffName(app.emergencyException.postOpFollowUpOwnerStaffId) || '')}</strong>
-                </div>
-                ${(app.emergencyException.deferredItems || app.deferredItems || []).some(k => String(k).startsWith('clinicalChips.')) ? `
-                <div style="margin-top:4px;font-size:13px;">
-                    <strong>Mục tiền sử chờ bổ sung hậu kiểm sau mổ:</strong> ${Utils.escapeHtml(
-                        (app.emergencyException.deferredItems || app.deferredItems || [])
-                            .filter(k => String(k).startsWith('clinicalChips.'))
-                            .map(k => ({
-                                'clinicalChips.surgicalHistory': 'Tiền sử ngoại khoa / vô cảm',
-                                'clinicalChips.allergyHistory': 'Tiền sử dị ứng',
-                                'clinicalChips.socialHabits': 'Thói quen sinh hoạt'
-                            })[k] || k)
-                            .join(' · ')
-                    )}
-                </div>` : ''}
-            </div>` : ''}
-
             <div class="sap-exec-grid">
                 <div class="sap-exec-box">
                     <div class="sap-exec-box-title">1. Phân loại & Tuân thủ Cột 2026</div>
                     <div><strong>Tính chất:</strong> ${Utils.escapeHtml(urgLabel)}</div>
                     <div><strong>Nhóm bệnh:</strong> ${Utils.escapeHtml(pgLabel)}</div>
-                    <div><strong>Kỹ thuật:</strong> [${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}] ${Utils.escapeHtml(procName)}</div>
+                    ${isCustomProc ? `
+                    <div><strong>Kỹ thuật ngoài DM 309:</strong> ${Utils.escapeHtml(pcObj.customProcedureName || s.method || '—')}</div>
+                    <div><strong>Hạng tự đề xuất:</strong> <code>${Utils.escapeHtml(this._formatRankCode(pcObj.proposedClass))}</code> · <strong>Hạng BCN xác minh:</strong> ${pcObj.verifiedClass ? `<span style="color:#15803d;font-weight:700;">✓ ${Utils.escapeHtml(this._formatRankCode(pcObj.verifiedClass))}</span>` : '<span style="color:#b45309;font-weight:700;">⏳ Chờ BCN xác minh (2 chạm bên dưới)</span>'}</div>
+                    <div style="margin-top:6px;padding:8px;border-radius:8px;background:var(--surface-1,#f8fafc);border:1px dashed var(--border-default);display:flex;flex-direction:column;gap:6px;">
+                        <div style="font-size:12.5px;font-weight:700;color:var(--text-heading);">BCN xác minh hạng kỹ thuật chính thức (2 chạm):</div>
+                        <div class="sap-chip-group">
+                            ${SAP_PROPOSED_CLASS_CHIPS.filter(x => x.value !== 'unclassified').map(rk => `
+                            <button type="button" class="sap-chip ${selVerClass === rk.value ? 'sap-chip--selected' : ''}"
+                                onclick="SurgeryApprovalPage.setBcnVerifiedClassDraft(${s.id}, 'verifiedClass', '${rk.value}')">${Utils.escapeHtml(rk.label)}</button>`).join('')}
+                        </div>
+                        <div class="sap-chip-group">
+                            ${SAP_VERIFIED_BASIS_CHIPS.map(bs => `
+                            <button type="button" class="sap-chip ${selVerBasis === bs.value ? 'sap-chip--selected' : ''}"
+                                onclick="SurgeryApprovalPage.setBcnVerifiedClassDraft(${s.id}, 'verifiedBasisCode', '${bs.value}')">${Utils.escapeHtml(bs.label)}</button>`).join('')}
+                        </div>
+                        ${selVerBasis === 'other_note' ? `
+                        <input type="text" class="sap-input" placeholder="Ghi rõ căn cứ xác minh hạng kỹ thuật (≥ 5 ký tự)..."
+                            value="${Utils.escapeHtml(bcnDraft.verifiedBasisNote || pcObj.verifiedBasisNote || '')}"
+                            onchange="SurgeryApprovalPage.setBcnVerifiedClassDraft(${s.id}, 'verifiedBasisNote', this.value)">` : ''}
+                        <div>
+                            <button type="button" class="sap-btn sap-btn--primary" onclick="SurgeryApprovalPage.verifyCustomProcedureClass(${s.id})">
+                                ${this._ico('✓')} <span>Lưu xác minh hạng kỹ thuật</span>
+                            </button>
+                        </div>
+                    </div>` : `
+                    <div><strong>Kỹ thuật:</strong> [${Utils.escapeHtml(this._formatRankCode(pcObj.confirmedClass || pcObj.suggestedClass))}] ${Utils.escapeHtml(procName)}</div>`}
                     <div><strong>Xếp cột BS chính:</strong> Cột ${Utils.escapeHtml(this._formatColumnCode(colObj.surgeonBaseColumn2026))} — <strong>${
                         colObj.systemCheck === 'over_column'
-                            ? `⚠️ Vượt cột (${Utils.escapeHtml(colObj.overColumnRef || 'cần BCN xem xét')})`
-                            : (colObj.systemCheck === 'external_surgeon_verify_privilege'
+                            ? `⛔ Vượt cột (${Utils.escapeHtml(colObj.overColumnRef || 'cấm vượt cột đối với ca chương trình')})`
+                            : (isExtSurgeon
                                 ? '🤝 PTV ngoài khoa (BCN đối chiếu quyền mổ)'
                                 : (colObj.systemCheck === 'ambiguous_procedure_class'
-                                    ? '⚠️ Kỹ thuật chưa phân loại (BCN xem xét)'
+                                    ? '⚠️ Kỹ thuật chờ xác minh hạng'
                                     : (colObj.systemCheck === 'robot_certification_required'
                                         ? '⛔ Chưa có chứng nhận PTV Robot'
                                         : '✓ Đúng cột')))
                     }</strong></div>
+                    ${isExtSurgeon ? `
+                    <div style="margin-top:4px;">
+                        <button type="button" class="sap-chip ${extPrivChecked ? 'sap-chip--selected' : ''}"
+                            onclick="SurgeryApprovalPage.setBcnVerifiedClassDraft(${s.id}, 'externalPrivilegeConfirmed', ${!extPrivChecked})">
+                            ${this._ico(extPrivChecked ? '✓' : '☐')} <span>Đã đối chiếu quyền mổ PTV ngoài khoa</span>
+                        </button>
+                    </div>` : ''}
                 </div>
 
                 <div class="sap-exec-box">
@@ -4282,8 +4711,28 @@ const SurgeryApprovalPage = {
 
                 <div class="sap-exec-box">
                     <div class="sap-exec-box-title">4. Trách nhiệm Chuẩn bị & Xác nhận</div>
-                    <div><strong>HV chuẩn bị:</strong> ${Utils.escapeHtml(prepStaff)}</div>
-                    <div><strong>BS chính xác nhận/trình:</strong> ${Utils.escapeHtml(subByStaff)}</div>
+                    <div class="sap-contrib-summary">
+                        <span><strong>Chuẩn bị & Trình:</strong> ${Utils.escapeHtml(subByStaff)}${uniqueOtherContribs.length > 0 ? ` <span class="sap-tag">(+${uniqueOtherContribs.length} BS tham gia chuẩn bị)</span>` : ''}</span>
+                        <button type="button" class="sap-btn sap-btn--ghost" style="padding:3px 8px;min-height:32px;font-size:12.5px;"
+                            onclick="SurgeryApprovalPage.toggleContributorDetails(${s.id})" aria-expanded="${isContribOpen}">
+                            <span>${isContribOpen ? '▴ Thu gọn' : '▾ Xem chi tiết'}</span>
+                        </button>
+                    </div>
+                    ${isContribOpen ? `
+                    <div class="sap-contrib-list" role="list" aria-label="Danh sách bác sĩ tham gia chuẩn bị theo thời gian">
+                        ${rawContribs.length > 0 ? rawContribs.map(c => {
+                            const fullLabel = c.fullTitleName || `${c.title ? c.title + ' ' : ''}${c.name || getFullDoctorTitleName(c.staffId)}`;
+                            const roleMap = { trainee_preparer: 'HV chuẩn bị', attending_verifier: 'BS chính xác nhận', submitter: 'BS trình duyệt', bcn_reviewer: 'BCN rà soát' };
+                            const rolesTxt = (c.roles || []).map(r => roleMap[r] || r).join(' · ');
+                            const timeTxt = String(c.lastTouchedAt || c.firstTouchedAt || '').replace('T', ' ').slice(0, 16);
+                            return `<div class="sap-contrib-line" role="listitem">
+                                <strong>${Utils.escapeHtml(fullLabel)}</strong>
+                                <span style="font-size:12px;color:var(--text-muted);">${Utils.escapeHtml([rolesTxt, timeTxt].filter(Boolean).join(' · '))}</span>
+                            </div>`;
+                        }).join('') : `<div class="sap-contrib-line"><strong>${Utils.escapeHtml(subByStaff)}</strong></div>`}
+                    </div>` : ''}
+                    ${app.submittedSnapshot?.proxySubmitterType ? `<div><strong>Trình thay BS mổ chính:</strong> ${Utils.escapeHtml(app.submittedSnapshot.proxySubmitterType === 'assist_surgeon_1' ? 'BS phụ mổ 1 trên lịch mổ' : 'BS chính khu vực POD')} (${Utils.escapeHtml(SAP_PROXY_REASON_CHIPS.find(x => x.value === app.submittedSnapshot.proxyReasonChip)?.label || app.submittedSnapshot.actingForMainSurgeonReason || '')})</div>` : ''}
+                    ${app.approvalMode === 'self_approval_main_surgeon' ? `<div><strong>Chế độ phê duyệt:</strong> <span class="sap-tag">Trưởng khoa / Phó TK ủy quyền tự duyệt ca mình mổ chính</span></div>` : ''}
                     <div><strong>Phim gốc & Cam kết PT:</strong> ${SAP_ATTENDING_IDS.has(Number(ck['CK-04']?.verifiedByStaffId)) && SAP_ATTENDING_IDS.has(Number(ck['CK-08']?.verifiedByStaffId)) ? '✓ BS chính đã xác nhận đủ' : '⚠️ Chưa xác nhận đủ'}</div>
                     ${preappBy ? `<div><strong>Tiền duyệt:</strong> ✓ ${Utils.escapeHtml(preappBy)} ${app.preapprovedSnapshot?.note ? `(${Utils.escapeHtml(app.preapprovedSnapshot.note)})` : ''}</div>` : ''}
                     ${app.lateReason ? `<div><strong>Lý do trình trễ:</strong> ${Utils.escapeHtml(app.lateReason)}</div>` : ''}
@@ -4543,17 +4992,26 @@ const SurgeryApprovalPage = {
 
         if (kind === 'submit_extra') {
             const sla = this._computeSlaDisplay(s, this.getConfig());
-            const urg = s.clinicalClassification?.urgencyLevel || 'elective';
-            const needLate = sla.isOverdue && ['elective', 'elective_service'].includes(urg);
+            const needLate = sla.isOverdue;
             const needActing = !SAP_BCN_IDS.has(actor.staffId) && Number(actor.staffId) !== Number(s.mainSurgeon) && Number(actor.staffId) !== Number(s.coordinatingAttendingStaffId);
+            const curProxyChip = this._proxyChipDraft || 'main_surgeon_in_or';
             return `
             <div class="sap-section" style="border:2px solid #1D2357;" id="sap-subdrawer-submit-extra">
                 <div class="sap-section-header">
                     <h4 class="sap-section-title">${this._ico('🚀')} Bổ sung thông tin trước khi Trình duyệt</h4>
                     <button type="button" class="sap-btn sap-btn--ghost" onclick="SurgeryApprovalPage.toggleActionDrawer(${s.id}, null)">Đóng</button>
                 </div>
-                ${needLate ? `<input id="sap-late-reason" type="text" class="sap-input" value="${Utils.escapeHtml(s.approval?.lateReason || '')}" placeholder="Ca trình sau mốc hạn quy định — nhập lý do trình trễ hạn (≥ 5 ký tự)...">` : ''}
-                ${needActing ? `<input id="sap-acting-reason" type="text" class="sap-input" placeholder="BS chính cùng POD trình thay BS mổ chính — nhập lý do trình thay (≥ 10 ký tự)...">` : ''}
+                ${needLate ? `<input id="sap-late-reason" type="text" class="sap-input" value="${Utils.escapeHtml(s.approval?.lateReason || '')}" placeholder="Ca trình sau mốc 16:00 ngày N-2 — nhập lý do trình trễ hạn (≥ 5 ký tự)...">` : ''}
+                ${needActing ? `
+                <div>
+                    <div class="sap-filter-sub-label" style="margin-bottom:4px;">Lý do trình thay BS mổ chính (chỉ dành cho BS phụ mổ 1 trên lịch mổ hoặc BS chính khu vực POD):</div>
+                    <div class="sap-chip-group">
+                        ${SAP_PROXY_REASON_CHIPS.map(pc => `
+                        <button type="button" class="sap-chip ${curProxyChip === pc.value ? 'sap-chip--selected' : ''}"
+                            onclick="SurgeryApprovalPage._proxyChipDraft='${pc.value}';SurgeryApprovalPage._refreshOpenModal(${s.id});">${Utils.escapeHtml(pc.label)}</button>`).join('')}
+                    </div>
+                    ${curProxyChip === 'other' ? `<input id="sap-acting-reason" type="text" class="sap-input" style="margin-top:6px;" placeholder="Ghi rõ lý do trình thay khác (≥ 5 ký tự)...">` : ''}
+                </div>` : ''}
                 <div style="display:flex;justify-content:flex-end;">
                     <button type="button" class="sap-btn sap-btn--primary" onclick="SurgeryApprovalPage.submitRoutineForApproval(${s.id}, true)">
                         ${this._ico('🚀')} <span>Hoàn tất Trình duyệt mổ</span>
@@ -4574,11 +5032,8 @@ const SurgeryApprovalPage = {
         const isDeputy = actor.staffId === SAP_DEPUTY_ID;
         const hasDel = this._hasActiveDelegationForDeputy();
 
-        // Overflow menu items ("⋯")
+        // Overflow menu items ("⋯") — QĐ3: Ngoại lệ cấp cứu để đợt sau
         const moreItems = [];
-        if ((isAttending || isBcn) && !['approved', 'approved_with_exception'].includes(st)) {
-            moreItems.push({ label: '⚡ Ngoại lệ cấp cứu', fn: `SurgeryApprovalPage.toggleActionDrawer(${s.id}, 'emergency')` });
-        }
         if (isTrainee && ['draft_unsubmitted', 'returned_for_revision', 'resubmit_required'].includes(st)) {
             moreItems.push({ label: '🩺 Báo BS chính xác nhận', fn: `SurgeryApprovalPage.requestAttendingVerify(${s.id})` });
         }
@@ -4728,11 +5183,15 @@ const SurgeryApprovalPage = {
     async patchDraft(sid, draftPayload, silentToast = true) {
         const s = this._getCaseById(sid);
         if (!s) return null;
+        this._isDraftDirty = true;
+        this._pendingDraftPatch = draftPayload;
         try {
             const res = await this._api(`/api/surgery-approval/${sid}/draft`, 'POST', {
                 expectedCaseRevision: s.caseRevision,
                 ...draftPayload
             }, { allowSimulation: true });
+            this._isDraftDirty = false;
+            this._pendingDraftPatch = null;
             if (res && res.surgery) {
                 this._lastGateErrors = null;
                 this._syncSurgeryInStore(res.surgery);
@@ -4744,6 +5203,93 @@ const SurgeryApprovalPage = {
         } catch (err) {
             this._handleMutationError(sid, err);
             return null;
+        }
+    },
+
+    async toggleCustomOutsideCatalog(sid) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const pcObj = s.clinicalClassification?.procedureClass || {};
+        const curCustom = Boolean(pcObj.isCustomOutsideCatalog || pcObj.isCustomProcedure);
+        if (!curCustom) {
+            await this.patchDraft(sid, {
+                clinicalClassification: {
+                    procedureClass: {
+                        isCustomOutsideCatalog: true,
+                        customProcedureName: pcObj.customProcedureName || s.method || '',
+                        customReasonChip: pcObj.customReasonChip || 'modified_technique',
+                        proposedClass: pcObj.proposedClass || pcObj.suggestedClass || 'PT-II'
+                    }
+                }
+            });
+        } else {
+            await this.patchDraft(sid, {
+                clinicalClassification: {
+                    procedureClass: {
+                        isCustomOutsideCatalog: false,
+                        confirmedCatalogEntryId: pcObj.confirmedCatalogEntryId || null
+                    }
+                }
+            });
+        }
+    },
+
+    setTnmTimingTab(sid, tab) {
+        this._tnmTimingTab = tab === 'yc' ? 'yc' : 'c';
+        this._refreshOpenModal(sid);
+    },
+
+    async confirmMyDirectExamItems(sid) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        await this.patchDraft(sid, { bulkAction: 'confirm_my_direct_exam' }, false);
+    },
+
+    async toggleContributorDetails(sid) {
+        if (!this._contribExpanded) this._contribExpanded = {};
+        if (!this._contribCache) this._contribCache = {};
+        const nextOpen = !this._contribExpanded[sid];
+        this._contribExpanded[sid] = nextOpen;
+        this._refreshOpenModal(sid);
+        if (nextOpen) {
+            try {
+                const res = await this._api(`/api/surgery-approval/${sid}/attribution?limit=80`, 'GET', null, { allowSimulation: true });
+                if (res) {
+                    this._contribCache[sid] = res;
+                    this._refreshOpenModal(sid);
+                }
+            } catch (_) {}
+        }
+    },
+
+    setBcnVerifiedClassDraft(sid, field, val) {
+        if (!this._bcnVerifyDraft) this._bcnVerifyDraft = {};
+        if (!this._bcnVerifyDraft[sid]) this._bcnVerifyDraft[sid] = {};
+        this._bcnVerifyDraft[sid][field] = val;
+        this._refreshOpenModal(sid);
+    },
+
+    async verifyCustomProcedureClass(sid) {
+        const s = this._getCaseById(sid);
+        if (!s) return;
+        const pcObj = s.clinicalClassification?.procedureClass || {};
+        const draft = (this._bcnVerifyDraft && this._bcnVerifyDraft[sid]) || {};
+        const vClass = draft.verifiedClass || pcObj.verifiedClass || pcObj.proposedClass || '';
+        const vBasis = draft.verifiedBasisCode || pcObj.verifiedBasisCode || 'tt50_by_analogy';
+        const vNote = draft.verifiedBasisNote || pcObj.verifiedBasisNote || '';
+        try {
+            const res = await this._api(`/api/surgery-approval/${sid}/verify-procedure-class`, 'POST', {
+                expectedCaseRevision: s.caseRevision,
+                verifiedClass: vClass,
+                verifiedBasisCode: vBasis,
+                verifiedBasisNote: vNote
+            }, { allowSimulation: true });
+            if (res?.surgery) this._syncSurgeryInStore(res.surgery);
+            App.renderCurrentPage();
+            this._refreshOpenModal(sid);
+            Toast.success(`Đã xác minh chính thức hạng ${this._formatRankCode(vClass)}!`);
+        } catch (err) {
+            this._handleMutationError(sid, err);
         }
     },
 
@@ -5468,15 +6014,27 @@ const SurgeryApprovalPage = {
         await this.updateContextField(sid, 'cancerContext', { tumorLocation: nextLocs });
     },
 
-    async updateCancerStage(sid, stageKey, val) {
+    async updateCancerStage(sid, stageKey, val, timingTab = 'c') {
         const s = this._getCaseById(sid);
         if (!s) return;
-        const curStage = s.clinicalChips?.contextChips?.cancerContext?.clinicalStage || {};
+        const b3 = s.clinicalChips?.contextChips?.cancerContext || {};
+        if (timingTab === 'yc') {
+            const curYc = b3.restagingPostNeoadjuvant || {};
+            const mappedKey = stageKey === 'T' ? 'ycT' : (stageKey === 'N' ? 'ycN' : (stageKey === 'M' ? 'ycM' : stageKey));
+            await this.updateContextField(sid, 'cancerContext', {
+                restagingPostNeoadjuvant: {
+                    ...curYc,
+                    [mappedKey]: val
+                }
+            });
+            return;
+        }
+        const curBase = b3.baselineClinicalStage || b3.clinicalStage || {};
+        const mappedBaseKey = stageKey === 'T' ? 'cT' : (stageKey === 'N' ? 'cN' : (stageKey === 'M' ? 'cM' : stageKey));
+        const nextBase = { ...curBase, [mappedBaseKey]: val };
         await this.updateContextField(sid, 'cancerContext', {
-            clinicalStage: {
-                ...curStage,
-                [stageKey]: val
-            }
+            baselineClinicalStage: nextBase,
+            clinicalStage: nextBase
         });
     },
 
@@ -5582,15 +6140,20 @@ const SurgeryApprovalPage = {
         const cfg = this.getConfig();
         const actor = this.getEffectiveActor(s);
         const sla = this._computeSlaDisplay(s, cfg);
-        const urg = s.clinicalClassification?.urgencyLevel || 'elective';
-        const needLate = sla.isOverdue && ['elective', 'elective_service'].includes(urg) && String(s.approval?.lateReason || '').trim().length < 5;
+        const needLate = sla.isOverdue && String(s.approval?.lateReason || '').trim().length < 5;
         const needActing = !SAP_BCN_IDS.has(actor.staffId) && Number(actor.staffId) !== Number(s.mainSurgeon) && Number(actor.staffId) !== Number(s.coordinatingAttendingStaffId);
 
         let lateReason = s.approval?.lateReason || '';
+        let proxyReasonChip = '';
         let actingReason = '';
         if (fromExtraDrawer) {
             lateReason = document.getElementById('sap-late-reason')?.value?.trim() || lateReason;
-            actingReason = document.getElementById('sap-acting-reason')?.value?.trim() || '';
+            if (needActing) {
+                proxyReasonChip = this._proxyChipDraft || 'main_surgeon_in_or';
+                actingReason = document.getElementById('sap-acting-reason')?.value?.trim()
+                    || SAP_PROXY_REASON_CHIPS.find(x => x.value === proxyReasonChip)?.label
+                    || '';
+            }
         } else if (needLate || needActing) {
             this._activeActionDrawer = 'submit_extra';
             this._refreshOpenModal(sid);
@@ -5603,6 +6166,7 @@ const SurgeryApprovalPage = {
             expectedCaseRevision: s.caseRevision,
             ...(ckSync ? { draft: { preopChecklist: ckSync } } : {}),
             ...(lateReason ? { lateReason } : {}),
+            ...(proxyReasonChip ? { proxyReasonChip } : {}),
             ...(actingReason ? { actingForMainSurgeonReason: actingReason } : {})
         };
         try {
@@ -5655,6 +6219,15 @@ const SurgeryApprovalPage = {
         const backupReason = document.getElementById('sap-em-backup-reason')?.value?.trim() || '';
         const hasDel = this._hasActiveDelegationForDeputy();
         const canFinalApprove = actor.staffId === SAP_CHIEF_ID || (actor.staffId === SAP_DEPUTY_ID && (hasDel || s.approval?.status === 'emergency_exception_pending_ack'));
+        const pcObj = s.clinicalClassification?.procedureClass || {};
+        const bcnDraft = (this._bcnVerifyDraft && this._bcnVerifyDraft[sid]) || {};
+        const isCustom = Boolean(pcObj.isCustomOutsideCatalog || pcObj.isCustomProcedure);
+        const verClass = bcnDraft.verifiedClass || pcObj.verifiedClass || '';
+        const verBasis = bcnDraft.verifiedBasisCode || pcObj.verifiedBasisCode || 'tt50_by_analogy';
+        const verBasisNote = bcnDraft.verifiedBasisNote || pcObj.verifiedBasisNote || '';
+        const extPrivConf = bcnDraft.externalPrivilegeConfirmed !== undefined
+            ? Boolean(bcnDraft.externalPrivilegeConfirmed)
+            : Boolean(s.clinicalClassification?.columnCompliance?.externalPrivilegeConfirmed);
 
         try {
             // If case is in reapproval_required, BCN confirms re-submission atomically first
@@ -5679,6 +6252,12 @@ const SurgeryApprovalPage = {
                 expectedCaseRevision: s.caseRevision,
                 note,
                 verifyPrivilege: true,
+                externalPrivilegeConfirmed: extPrivConf || true,
+                ...(isCustom && verClass ? {
+                    verifiedProcedureClass: verClass,
+                    verifiedBasisCode: verBasis,
+                    verifiedBasisNote: verBasisNote
+                } : {}),
                 ...(backupReason ? { emergencyBackupReason: backupReason } : {})
             }, { allowSimulation: true });
 
@@ -5826,8 +6405,14 @@ const SurgeryApprovalPage = {
         const reasons = err?.payload?.details?.blockingReasons || err?.payload?.blockingReasons || [];
         const mapped = [];
 
-        if (code === 'LATE_REASON_REQUIRED' || code === 'ACTING_REASON_REQUIRED') {
+        if (code === 'LATE_REASON_REQUIRED' || code === 'ACTING_REASON_REQUIRED' || code === 'PROXY_SUBMIT_REASON_REQUIRED') {
             this._activeActionDrawer = 'submit_extra';
+            this._refreshOpenModal(sid);
+            Toast.warning(err.message);
+            return;
+        }
+        if (code === 'CUSTOM_PROCEDURE_VERIFICATION_REQUIRED' || code === 'VERIFIED_BASIS_NOTE_REQUIRED') {
+            this._bcnViewMode = 'summary';
             this._refreshOpenModal(sid);
             Toast.warning(err.message);
             return;

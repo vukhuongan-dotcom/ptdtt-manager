@@ -627,18 +627,18 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
                 },
                 headers={**base_headers, "X-Idempotency-Key": "tc22b-em"},
             )
-            self.assertEqual(em_res.status_code, 200, em_res.get_data(as_text=True))
-            em_surg = em_res.get_json()["surgery"]
-            self.assertEqual(em_surg["approval"]["status"], "emergency_exception_pending_ack")
-            def_top = em_surg["approval"].get("deferredItems") or []
-            def_em = em_surg["approval"]["emergencyException"].get("deferredItems") or []
-            for expected_def in (
-                "clinicalChips.surgicalHistory",
-                "clinicalChips.allergyHistory",
-                "clinicalChips.socialHabits",
-            ):
-                self.assertIn(expected_def, def_top)
-                self.assertIn(expected_def, def_em)
+            # QĐ3 (BS. Vũ Khương An chốt 02/11/2026): Đợt 1 chỉ áp luồng duyệt cho ca mổ chương trình đã có lịch;
+            # /submit-emergency bị khóa 403 NOT_IN_PHASE1_SCOPE, ca cấp cứu/bán khẩn mang trạng thái not_in_scope (không chặn mổ).
+            self.assertEqual(em_res.status_code, 403, em_res.get_data(as_text=True))
+            self.assertEqual(em_res.get_json().get("code"), "NOT_IN_PHASE1_SCOPE")
+            sample_em = copy.deepcopy(c_draft_after)
+            sample_em["surgeryType"] = "bankhan"
+            in_sc, sc_reason = eng.is_in_phase1_approval_scope(sample_em, eng.DEFAULT_SURGERY_APPROVAL_CONFIG)
+            self.assertFalse(in_sc)
+            self.assertEqual(sc_reason, "not_in_scope")
+            badge_meta = eng.get_approval_badge_meta(sample_em)
+            self.assertEqual(badge_meta.get("badgeCode"), "NOT_IN_SCOPE")
+            self.assertEqual(badge_meta.get("badgeLabel"), "")
 
     def test_08_v4_to_v5_migration_idempotency(self) -> None:
         samples = eng.build_sandbox_sample_surgeries(self.db, str(REPO_ROOT / "data"), str(REPO_ROOT))
