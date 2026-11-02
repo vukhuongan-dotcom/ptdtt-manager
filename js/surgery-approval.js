@@ -1157,23 +1157,151 @@ const SurgeryApprovalPage = {
 
     _getSimulatorRoleOptions() {
         const staffMap = new Map((Store.getAll('staff') || []).map(st => [Number(st.id), st]));
-        const colTag = { 1: 'Trưởng khoa', 2: 'Phó TK', 3: 'ĐD Trưởng', 4: 'Cột ĐB', 5: 'Cột ĐB', 6: 'Cột I', 7: 'Cột II', 8: 'Cột II', 9: 'Cột II', 10: 'Cột III', 11: 'Cột III', 12: 'Cột III' };
-        const dynamicIds = [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 43, 44, 46, 3];
-        const opts = [{ staffId: 0, label: 'Tài khoản hiện tại', shortLabel: 'Tài khoản thật' }];
-        const seen = new Set([0]);
+        const colTag = {
+            1: 'Trưởng khoa', 2: 'Phó TK', 3: 'ĐD Trưởng · Chỉ xem',
+            4: 'Cột ĐB', 5: 'Cột ĐB', 6: 'Cột I',
+            7: 'Cột II', 8: 'Cột II', 9: 'Cột II',
+            10: 'Cột III', 11: 'Cột III', 12: 'Cột III'
+        };
+        const traineePodTag = {
+            45: 'BSNT · HV Tổ 1', 46: 'BSNT · HV Tổ 1',
+            16: 'BS học viên · Tổ 2', 44: 'BSNT · HV Tổ 2', 50: 'BS học viên · Tổ 2',
+            43: 'BSNT · HV Tổ 3', 47: 'BSNT · HV Tổ 3', 48: 'BSNT · HV Tổ 3'
+        };
+        const dynamicIds = [
+            1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+            45, 46, 16, 44, 50, 43, 47, 48,
+            3
+        ];
+        const opts = [{ staffId: 0, tier: 'self', label: 'Tài khoản hiện tại', shortLabel: 'Tài khoản thật' }];
         for (const sid of dynamicIds) {
             const st = staffMap.get(sid);
             if (!st && !SAP_SIMULATOR_ROLES.some(r => r.staffId === sid)) continue;
-            seen.add(sid);
             const fullName = st ? `${st.title ? st.title + ' ' : ''}${st.name}` : (SAP_SIMULATOR_ROLES.find(r => r.staffId === sid)?.label || `Nhân sự #${sid}`);
-            const roleHint = colTag[sid] || (SAP_TRAINEE_IDS.has(sid) ? 'BS học viên' : '');
+            const isTr = SAP_TRAINEE_IDS.has(sid);
+            const roleHint = colTag[sid] || traineePodTag[sid] || (isTr ? 'BS học viên' : '');
+            const tier = isTr ? 'trainee' : (sid === 3 ? 'readonly' : 'attending');
+            const shortName = st ? st.name.split(' ').slice(-2).join(' ') : `#${sid}`;
             opts.push({
                 staffId: sid,
+                tier,
+                fullName,
+                roleHint,
                 label: `Giả lập [TEST]: ${fullName}${roleHint ? ` (${roleHint})` : ''}`,
-                shortLabel: `${st ? st.name.split(' ').slice(-2).join(' ') : `#${sid}`}${roleHint ? ` · ${roleHint}` : ''}`
+                shortLabel: `${shortName}${roleHint ? ` · ${roleHint}` : ''}`
             });
         }
         return opts;
+    },
+
+    _getDrawerSimulatorRoleOptions(s) {
+        const allOpts = this._getSimulatorRoleOptions();
+        const byId = new Map(allOpts.map(o => [o.staffId, o]));
+        const picked = [];
+        const pushOpt = (sid, suffix = '') => {
+            const base = byId.get(Number(sid));
+            if (!base || picked.some(x => x.staffId === base.staffId)) return;
+            picked.push(suffix ? { ...base, shortLabel: `${base.shortLabel}${suffix}` } : base);
+        };
+        pushOpt(0);
+        pushOpt(1);
+        pushOpt(2);
+        const mainSid = Number(s?.mainSurgeon || 0);
+        if (mainSid && SAP_ATTENDING_IDS.has(mainSid) && !SAP_BCN_IDS.has(mainSid)) {
+            pushOpt(mainSid, ' (BS chính ca này)');
+        }
+        const coordSid = Number(s?.coordinatingAttendingStaffId || 0);
+        if (coordSid && SAP_ATTENDING_IDS.has(coordSid) && coordSid !== mainSid && !SAP_BCN_IDS.has(coordSid)) {
+            pushOpt(coordSid, ' (BS phối hợp)');
+        }
+        const prepSid = Number(s?.podAssignment?.preparedByStaffId || 0);
+        const assistSid = Number(s?.assistSurgeon1 || 0);
+        const caseTraineeId = SAP_TRAINEE_IDS.has(prepSid) ? prepSid : (SAP_TRAINEE_IDS.has(assistSid) ? assistSid : 44);
+        pushOpt(caseTraineeId, (caseTraineeId === prepSid || caseTraineeId === assistSid) ? ' (HV ca này)' : '');
+        pushOpt(3);
+        const activeSim = Number(this._simulatedStaffId || 0);
+        if (activeSim > 0) pushOpt(activeSim);
+        return picked;
+    },
+
+    _renderSimulatedRolePermissionCard() {
+        const simId = Number(this._simulatedStaffId || 0);
+        if (!simId) return '';
+        const opt = this._getSimulatorRoleOptions().find(o => o.staffId === simId);
+        const roleTitle = opt ? `${opt.fullName} (${opt.roleHint})` : `Nhân sự #${simId}`;
+
+        if (SAP_TRAINEE_IDS.has(simId)) {
+            return `
+            <div class="sap-sim-perm-card" id="sap-sim-perm-card" role="region" aria-label="Quyền hạn của tài khoản Bác sĩ học viên đang giả lập">
+                <div class="sap-sim-perm-header">
+                    ${this._ico('🎓')} <strong>Quyền hạn tài khoản Học viên đang giả lập: ${Utils.escapeHtml(roleTitle)}</strong>
+                    <span class="sap-tag">Chưa xếp cột PT · Rà sơ bộ hồ sơ</span>
+                </div>
+                <div class="sap-sim-perm-grid">
+                    <div class="sap-sim-perm-col sap-sim-perm-col--allow">
+                        <div class="sap-sim-perm-col-title">${this._ico('✅')} ĐƯỢC PHÉP THỰC HIỆN</div>
+                        <ul class="sap-sim-perm-list">
+                            <li>Xem hàng đợi <strong>Ca tôi cần chuẩn bị</strong> (ca phụ mổ 1 hoặc thuộc buồng bệnh Tổ đặc trách POD mình phụ trách).</li>
+                            <li>Nhập & lưu nháp <strong>Bước ①</strong> (Buồng bệnh, Nhóm bệnh lý, tra cứu Kỹ thuật trong Danh mục 309 PT, Cấp độ khẩn) và <strong>Bước ②</strong> (04 nhóm Tiền sử theo Phiếu khám tiền mê BVBD, Kháng đông, Máu/Thiết bị, HMNT, Hồ sơ bệnh lý, dự thảo kế hoạch nguy cơ cao).</li>
+                            <li>Tại <strong>Bước ③</strong>: Đánh dấu <strong>Đạt sơ bộ</strong> (<code>prepared_ok</code>) hoặc dùng <strong>Xác nhận nhanh</strong> cho 3 mục chung (XN tiền phẫu, Khám tiền mê/CLS, Thủ tục chuẩn bị mổ) — ghi nhận <em>"HV rà sơ bộ (chờ BS chính)"</em>.</li>
+                            <li>Bấm <strong>Gửi BS chính xác nhận</strong> để chuyển ca sang <em>Chờ BS chính xác nhận</em> và báo thông báo cho BS mổ chính.</li>
+                        </ul>
+                    </div>
+                    <div class="sap-sim-perm-col sap-sim-perm-col--deny">
+                        <div class="sap-sim-perm-col-title">${this._ico('🔒')} BỊ KHÓA / CHẶN CỨNG (GIAO DIỆN & MÁY CHỦ 403)</div>
+                        <ul class="sap-sim-perm-list">
+                            <li><strong>Không đứng tên BS mổ chính</strong> trên lịch mổ.</li>
+                            <li><strong>Không được xác nhận 2 mục dành riêng cho BS mổ chính</strong> ở Bước ③: <em>Đã xem phim / nội soi gốc (CK-04)</em> và <em>Cam kết phẫu thuật & tư vấn NB (CK-08)</em>; không được chốt trạng thái <code>verified_ok</code> của BS chính.</li>
+                            <li><strong>Không được bấm Trình duyệt mổ</strong> hoặc <strong>Ngoại lệ cấp cứu</strong> lên Ban Chủ nhiệm khoa.</li>
+                            <li><strong>Không có quyền BCN:</strong> Không thể Tiền duyệt, Duyệt, Trả về, Tạm hoãn, Thu hồi hay mở Ủy quyền BCN.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        if (simId === 3) {
+            return `
+            <div class="sap-sim-perm-card" id="sap-sim-perm-card">
+                <div class="sap-sim-perm-header">
+                    ${this._ico('👀')} <strong>Quyền hạn đang giả lập: ${Utils.escapeHtml(roleTitle)}</strong>
+                </div>
+                <div style="font-size:13px;color:var(--text-secondary);">
+                    <strong>✅ Được phép:</strong> Xem danh sách ca mổ, trạng thái duyệt khoa, dự trù máu/vật tư/HMNT và bảng kiểm tiền phẫu để phối hợp điều dưỡng chu phẫu. ·
+                    <strong>🔒 Bị chặn cứng (403):</strong> Không chỉnh sửa chip lâm sàng, không tích bảng kiểm BS, không trình duyệt / phê duyệt.
+                </div>
+            </div>`;
+        }
+
+        if (simId === SAP_CHIEF_ID) {
+            return `
+            <div class="sap-sim-perm-card" id="sap-sim-perm-card">
+                <div class="sap-sim-perm-header">${this._ico('🛡️')} <strong>Quyền hạn đang giả lập: ${Utils.escapeHtml(roleTitle)}</strong></div>
+                <div style="font-size:13px;color:var(--text-secondary);">
+                    <strong>✅ Toàn quyền Trưởng khoa:</strong> Xem Tóm tắt BCN 1 trang, <strong>Duyệt chính thức</strong> (cấp tích xanh duyệt khoa), <strong>Duyệt & mở ca kế tiếp</strong>, Xác nhận ngoại lệ cấp cứu, Trả về yêu cầu bổ sung, Tạm hoãn / Gỡ tạm hoãn, Thu hồi duyệt khoa, Cấp ủy quyền cho Phó TK, và mổ chính mọi hạng PT kể cả <strong>PT Robot</strong>.
+                </div>
+            </div>`;
+        }
+
+        if (simId === SAP_DEPUTY_ID) {
+            const hasDel = this._hasActiveDelegationForDeputy();
+            return `
+            <div class="sap-sim-perm-card" id="sap-sim-perm-card">
+                <div class="sap-sim-perm-header">${this._ico('🛡️')} <strong>Quyền hạn đang giả lập: ${Utils.escapeHtml(roleTitle)}</strong></div>
+                <div style="font-size:13px;color:var(--text-secondary);">
+                    <strong>✅ Quyền Phó Trưởng khoa (Cột ĐB):</strong> Xem Tóm tắt BCN 1 trang, <strong>Tiền duyệt</strong> hồ sơ, Trả về bổ sung, Tạm hoãn sau duyệt, Xác nhận hậu kiểm ca cấp cứu ngoại lệ; ${hasDel ? '<strong>ĐANG CÓ ỦY QUYỀN HỢP LỆ → Được Duyệt chính thức / Gỡ tạm hoãn / Thu hồi</strong>.' : '<strong>🔒 Chưa có ủy quyền hiệu lực từ Trưởng khoa → Chỉ Tiền duyệt, chưa cấp tích xanh Duyệt cuối</strong> (trừ khi bật Ủy quyền BCN).'}
+                </div>
+            </div>`;
+        }
+
+        return `
+        <div class="sap-sim-perm-card" id="sap-sim-perm-card">
+            <div class="sap-sim-perm-header">${this._ico('🩺')} <strong>Quyền hạn đang giả lập: ${Utils.escapeHtml(roleTitle)}</strong></div>
+            <div style="font-size:13px;color:var(--text-secondary);">
+                <strong>✅ Được phép (BS mổ chính):</strong> Xác nhận chính thức Bước ①–②–③ (bao gồm <strong>CK-04 Phim/nội soi gốc</strong> & <strong>CK-08 Cam kết PT</strong>), <strong>Trình duyệt mổ</strong> lên BCN (kiểm tra đúng cột phẫu thuật 2026 theo QĐ 1073/QĐ-BVBD; bán khẩn xét tối đa +01 cột theo quy ước Khoa), Báo ngoại lệ cấp cứu, Tạm hoãn ca đã duyệt. ·
+                <strong>🔒 Bị chặn cứng (403):</strong> Không thể tự Tiền duyệt / Phê duyệt / Trả về / Gỡ tạm hoãn / Thu hồi duyệt khoa.
+            </div>
+        </div>`;
     },
 
     // ── Superadmin Canary Control & Zero-PHI Sandbox Toolbar (Zero <select> on mobile!) ──
@@ -1182,6 +1310,8 @@ const SurgeryApprovalPage = {
         const sandboxOnly = cfg.sandboxOnlyMode !== false;
         const sandboxCount = (Store._data?.surgeries || []).filter(s => s && s.isTestSandboxCase === true).length;
         const simOptions = this._getSimulatorRoleOptions();
+        const attendingRowOpts = simOptions.filter(r => r.tier === 'self' || r.tier === 'attending');
+        const traineeAndNurseOpts = simOptions.filter(r => r.tier === 'trainee' || r.tier === 'readonly');
 
         return `
         <div class="sap-canary-bar" id="sap-superadmin-toolbar">
@@ -1220,12 +1350,19 @@ const SurgeryApprovalPage = {
                     <button type="button" class="sap-chip ${cfg.checklistMode === 'enforced_gate' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.updateConfigField('checklistMode', 'enforced_gate')">Bắt buộc đủ mục</button>
                     <button type="button" class="sap-chip ${cfg.checklistMode === 'shadow_optional' ? 'sap-chip--selected' : ''}" onclick="SurgeryApprovalPage.updateConfigField('checklistMode', 'shadow_optional')">Khuyến khích</button>
                 </div>
-                <div class="sap-filter-sub-group">
-                    <span class="sap-filter-sub-label">Giả lập vai trò:</span>
-                    ${simOptions.slice(0, 9).map(r => `
+                <div class="sap-filter-sub-group" id="sap-sim-attending-row">
+                    <span class="sap-filter-sub-label">Giả lập vai trò (BCN & BS chính):</span>
+                    ${attendingRowOpts.map(r => `
                     <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === r.staffId ? 'sap-chip--selected' : ''}"
                         onclick="SurgeryApprovalPage.setSimulatedRole('${r.staffId}')">${Utils.escapeHtml(r.shortLabel)}</button>`).join('')}
                 </div>
+                <div class="sap-filter-sub-group" id="sap-sim-trainee-row">
+                    <span class="sap-filter-sub-label">${this._ico('🎓')} Giả lập BS học viên & ĐD:</span>
+                    ${traineeAndNurseOpts.map(r => `
+                    <button type="button" class="sap-chip ${Number(this._simulatedStaffId) === r.staffId ? 'sap-chip--selected' : ''}"
+                        onclick="SurgeryApprovalPage.setSimulatedRole('${r.staffId}')">${Utils.escapeHtml(r.shortLabel)}</button>`).join('')}
+                </div>
+                ${this._renderSimulatedRolePermissionCard()}
             </div>` : ''}
         </div>`;
     },
@@ -2752,7 +2889,7 @@ const SurgeryApprovalPage = {
             { num: 3, title: '③ Bảng kiểm', miss: step3Miss.length }
         ];
 
-        const simOpts = App.isSuperAdmin() && s.isTestSandboxCase ? this._getSimulatorRoleOptions().slice(0, 7) : [];
+        const simOpts = App.isSuperAdmin() && s.isTestSandboxCase ? this._getDrawerSimulatorRoleOptions(s) : [];
 
         return `
         <div class="sap-drawer-shell" data-case-drawer-id="${s.id}">
@@ -3722,7 +3859,9 @@ const SurgeryApprovalPage = {
         // Mục 2.4 Synced Summary Strip ("✓ theo mục ②")
         const ck03HighRisk = this._hasHighRiskPreopHistory(s.clinicalChips || {});
         const ck03Ok = ck03HighRisk
-            ? (ck['CK-03']?.state === 'verified_abnormal_planned' && Boolean(String(ck['CK-03']?.clinicalPlanNote || '').trim()))
+            ? ((isTrainee
+                ? ['prepared_ok', 'verified_abnormal_planned'].includes(ck['CK-03']?.state)
+                : ck['CK-03']?.state === 'verified_abnormal_planned') && Boolean(String(ck['CK-03']?.clinicalPlanNote || '').trim()))
             : ['verified_ok', 'verified_abnormal_planned', 'prepared_ok'].includes(ck['CK-03']?.state);
         const ck03TargetField = ck03HighRisk ? 'sap-f-high-risk-plan' : 'sap-f-comorbidities';
         const ck07Ok = ['verified_ok', 'prepared_ok'].includes(ck['CK-07']?.state);

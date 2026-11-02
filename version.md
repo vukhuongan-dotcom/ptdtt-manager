@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611021115`
+> 📌 **Current Build Stamp:** `2611021146`
 
 ---
 
@@ -64,6 +64,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 - Xác nhận hiệu lực `Quyết định 1073/QĐ-BVBD` (`12/06/2024` — chưa có văn bản thay thế) và bảng xếp cột bác sĩ chính Khoa PTĐTT năm 2026 (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`, thời hạn 01 năm, mỗi năm Bệnh viện xếp cột lại); bổ sung kiểm soát vượt cột theo tính chất mổ: mổ chương trình & mổ yêu cầu không được phép vượt cột (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`), mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP` nếu vượt từ 02 cột trở lên) (`[FEAT-200]`, build `v2610312158`).
 
 ### Fixed
+- Khắc phục lỗi cắt danh sách `.slice(0, 9)` trên Bảng Kiểm Thử Super Admin (`BUG-210`): hiển thị đầy đủ 08 tài khoản **Bác sĩ học viên / BSNT** (theo Tổ đặc trách 1–2–3), **BS chính Cột III** và **Điều dưỡng trưởng (Chỉ xem)**; tự động ghim đúng BS chính & Học viên phụ trách ca đang mở trong ngăn kéo chi tiết, đồng thời hiển thị trực quan thẻ đối chiếu **Quyền được thực hiện (✅) vs Quyền bị khóa 403 (🔒)** ngay khi chuyển vai trò giả lập (`[BUG-210]`, build `v2611021146`).
 - Mở rộng độ rộng Drawer hồ sơ Duyệt mổ trên giao diện Laptop/Desktop (`>= 960px`: `#modal.sap-drawer-right` từ `1040px` lên `min(1560px, 96vw)`, cột tóm tắt trái `.sap-left-rail` từ `280px` lên `clamp(385px, 28.5vw, 420px)` và lưới `.sap-exec-grid` cố định `2` cột rộng) giúp huy hiệu trạng thái + `TEST`, họ tên Bác sĩ mổ chính / Học viên chuẩn bị, nút điều hướng `⚡ Tóm tắt duyệt BCN` và các dòng thông tin lâm sàng nằm gọn trên 1 hàng, triệt tiêu rớt chữ đơn lẻ; bảo toàn nguyên trạng 100% bố cục Mobile (`<= 959px`) (`[BUG-206]`, commit `318bbb9`, build `v2611010935`).
 - Việt hóa 100% toàn bộ mã ngữ cảnh lâm sàng (`SAP_CONTEXT_ENUM_LABELS` cho `B1..B4` gồm `stoma_management` → `"Quản lý / Đóng hậu môn nhân tạo"`, `diverticulitis_appendicitis`, `rectal_prolapse`, `right_colon`, `adenocarcinoma`, `gist_submucosal`, `recurrent_pelvic_tumor`, `mri_fistula_done`...), kênh hội chẩn cấp cứu (`phone` → `"Điện thoại trực tiếp"`), trạng thái hoãn bảng kiểm cấp cứu (`deferred_emergency`), mã hạng `unclassified` và toàn bộ 26 mã hành động trong tab `Nhật ký duyệt` (`SAP_WAL_ACTION_LABELS`) trên cả 16 kịch bản Sandbox mà không thay đổi bất kỳ dòng code máy chủ nào (`[BUG-204]`, commit `e291d75`, build `v2611010920`).
 - Khắc phục triệt để lỗi chính tả biến dạng chữ hoa chữ số La Mã và từ viết tắt y khoa trong `Utils.toProperCase()` (`[Cột III Vượt 01 Cột PT-II]`, `PTNS`, `HV`, `TNT`, `GIST`, `PP`, `ESD`, `NSTH`, `CĐHA`, mã `TNM`), nhận diện đúng ranh giới sau dấu ngoặc `(`, `[`, `/` mà không làm ảnh hưởng tên riêng tiếng Việt (`[BUG-203]`, commit `84dfc26`, build `v2611010019`).

@@ -692,7 +692,87 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
         eng_code_after_docstring = eng_txt.split('"""', 2)[2]
         self.assertIsNone(re.search(r"\bmallampati\b", js_txt, re.I))
         self.assertIsNone(re.search(r"\bmallampati\b", eng_code_after_docstring, re.I))
-        self.assertIsNone(re.search(r"\basaScore\b|\basaClass\b", js_txt))
+        self.assertIsNone(r"\basaScore\b|\basaClass\b" if False else re.search(r"\basaScore\b|\basaClass\b", js_txt))
+
+    def test_10_bug210_simulator_exposes_all_trainees_and_enforces_trainee_rbac_matrix(self) -> None:
+        js_txt = (REPO_ROOT / "js" / "surgery-approval.js").read_text(encoding="utf-8")
+        self.assertNotIn("simOptions.slice(0, 9)", js_txt)
+        self.assertNotIn("_getSimulatorRoleOptions().slice(0, 7)", js_txt)
+        self.assertIn("sap-sim-trainee-row", js_txt)
+        self.assertIn("sap-sim-perm-card", js_txt)
+        self.assertIn("_getDrawerSimulatorRoleOptions", js_txt)
+        for tid in (16, 43, 44, 45, 46, 47, 48, 50):
+            self.assertIn(f"{tid}:", js_txt)
+
+        with tempfile.TemporaryDirectory() as td:
+            app, _ = _make_isolated_flask_env(pathlib.Path(td))
+            client = app.test_client()
+            trainee_headers = {
+                "Authorization": "Bearer test-token-anvk",
+                "X-Client-Build": "2611021146",
+                "X-Simulate-Staff-Id": "44",
+            }
+            seed_res = client.post(
+                "/api/surgery-approval/sandbox/seed",
+                json={},
+                headers={
+                    "Authorization": "Bearer test-token-anvk",
+                    "X-Client-Build": "2611021146",
+                    "X-Idempotency-Key": "seed-bug210",
+                },
+            )
+            self.assertEqual(seed_res.status_code, 200)
+            c0 = seed_res.get_json()["cases"][0]
+            sid = c0["id"]
+            rev = c0["caseRevision"]
+
+            # 1. ALLOWED: Trainee saves draft + marks CK-01 prepared_ok
+            ok_draft = client.post(
+                f"/api/surgery-approval/{sid}/draft",
+                json={
+                    "expectedCaseRevision": rev,
+                    "preopChecklist": {"CK-01": {"state": "prepared_ok"}},
+                },
+                headers={**trainee_headers, "X-Idempotency-Key": "tr-draft-ok"},
+            )
+            self.assertEqual(ok_draft.status_code, 200, ok_draft.get_data(as_text=True))
+            s_after = ok_draft.get_json()["surgery"]
+            self.assertEqual(s_after["preopChecklist"]["CK-01"]["state"], "prepared_ok")
+            self.assertEqual(s_after["preopChecklist"]["CK-01"]["preparedByStaffId"], 44)
+            rev = s_after["caseRevision"]
+
+            # 2. FORBIDDEN (403): Trainee cannot touch attending-only CK-04 / CK-08 or set verified_ok
+            for bad_payload, key in (
+                ({"preopChecklist": {"CK-04": {"state": "prepared_ok"}}}, "tr-ck04"),
+                ({"preopChecklist": {"CK-08": {"state": "prepared_ok"}}}, "tr-ck08"),
+                ({"preopChecklist": {"CK-01": {"state": "verified_ok"}}}, "tr-ver"),
+            ):
+                bad_res = client.post(
+                    f"/api/surgery-approval/{sid}/draft",
+                    json={"expectedCaseRevision": rev, **bad_payload},
+                    headers={**trainee_headers, "X-Idempotency-Key": key},
+                )
+                self.assertEqual(bad_res.status_code, 403, bad_res.get_data(as_text=True))
+
+            # 3. ALLOWED: Trainee calls /request-verify -> ready_for_attending
+            req_ver = client.post(
+                f"/api/surgery-approval/{sid}/request-verify",
+                json={"expectedCaseRevision": rev},
+                headers={**trainee_headers, "X-Idempotency-Key": "tr-req-ver"},
+            )
+            self.assertEqual(req_ver.status_code, 200, req_ver.get_data(as_text=True))
+            s_ready = req_ver.get_json()["surgery"]
+            self.assertEqual(s_ready["approval"]["status"], "ready_for_attending")
+            rev = s_ready["caseRevision"]
+
+            # 4. FORBIDDEN (403): Trainee cannot /submit, /submit-emergency, /approve, /return, /revoke
+            for ep in ("submit", "submit-emergency", "approve", "return", "revoke"):
+                ep_res = client.post(
+                    f"/api/surgery-approval/{sid}/{ep}",
+                    json={"expectedCaseRevision": rev},
+                    headers={**trainee_headers, "X-Idempotency-Key": f"tr-forbid-{ep}"},
+                )
+                self.assertEqual(ep_res.status_code, 403, f"{ep} must return 403 for trainee, got {ep_res.status_code}")
 
 
 if __name__ == "__main__":

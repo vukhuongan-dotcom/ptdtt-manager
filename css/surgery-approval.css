@@ -2355,6 +2355,72 @@
     }
 }
 
+/* ── Simulated Role Permission Summary Card (BUG-210) ── */
+.sap-sim-perm-card {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-left: 4px solid var(--brand-fill);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sap-sim-perm-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-heading);
+}
+
+.sap-sim-perm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.sap-sim-perm-col {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-default);
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text-primary);
+}
+
+.sap-sim-perm-col--allow {
+    border-top: 3px solid var(--success, #54A83C);
+}
+
+.sap-sim-perm-col--deny {
+    border-top: 3px solid var(--danger, #A90042);
+}
+
+.sap-sim-perm-col-title {
+    font-weight: 700;
+    font-size: 12.5px;
+    margin-bottom: 4px;
+    color: var(--text-heading);
+}
+
+.sap-sim-perm-list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+@media (max-width: 959px) {
+    .sap-sim-perm-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ── Reduced Motion Accessibility Guard (BƯỚC 5) ── */
 @media (prefers-reduced-motion: reduce) {
     #modal.sap-drawer-right,
