@@ -9974,45 +9974,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 }
 
-/* ── SurgiLog-Style TNM Description Cards, 1-Tap Login Picker, Contributor List & Dual KPI Bar (v6) ── */
-.login-staff-picker {
-    margin-bottom: 14px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--surface-1, #f8fafc);
-    border: 1px solid var(--border-default, #dbe3ef);
-}
-
-.login-staff-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    max-height: 156px;
-    overflow-y: auto;
-}
-
-.login-staff-chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-default, #cbd5e1);
-    background: #ffffff;
-    color: var(--text-heading, #1D2357);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.login-staff-chip:hover,
-.login-staff-chip.is-selected {
-    border-color: #1878B4;
-    background: #eef6fc;
-    color: #1D2357;
-}
-
+/* ── SurgiLog-Style TNM Description Cards, Contributor List & Dual KPI Bar (v6) ── */
 .sap-tnm-section {
     display: flex;
     flex-direction: column;

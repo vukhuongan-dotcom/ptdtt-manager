@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2611030107';
+const CACHE_NAME = 'ptdtt-v2611030526';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

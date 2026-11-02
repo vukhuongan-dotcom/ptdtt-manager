@@ -1990,48 +1990,6 @@ def auth_login():
         }
     })
 
-@app.route('/api/auth/staff-cards', methods=['GET'])
-def auth_staff_cards():
-    """Return active doctor/staff display cards for 1-tap selection on Login screen (zero credentials/secrets)."""
-    auth = _load_auth()
-    users = auth.get('users', {}) if isinstance(auth, dict) else {}
-    db_data = load_data()
-    departed_ids = {d.get('id') for d in (db_data.get('departedStaff') or []) if isinstance(d, dict)}
-    staff_map = {s.get('id'): s for s in (db_data.get('staff') or []) if isinstance(s, dict)}
-    cards = []
-    for uname, urec in users.items():
-        if not isinstance(urec, dict) or uname == 'guest' or urec.get('disabled'):
-            continue
-        sid = urec.get('staffId', 0)
-        if sid in departed_ids:
-            continue
-        s_obj = staff_map.get(sid) or {}
-        if s_obj.get('active') is False or str(s_obj.get('status', '')).lower() == 'inactive':
-            continue
-        role_str = str(s_obj.get('role') or urec.get('role') or '')
-        title_str = str(s_obj.get('title') or urec.get('title') or '')
-        name_str = str(s_obj.get('name') or urec.get('name') or uname)
-        if sid in (1, 2) or 'Trưởng khoa' in role_str or 'Phó trưởng khoa' in role_str:
-            group = 'bcn'
-        elif 'học viên' in role_str.lower() or 'nội trú' in role_str.lower() or sid in (16, 43, 44, 45, 46, 47, 48, 50):
-            group = 'trainee'
-        elif 'Bác sĩ' in role_str or sid in (4, 5, 6, 7, 8, 9, 10, 11, 12):
-            group = 'attending'
-        else:
-            group = 'nursing_admin'
-        cards.append({
-            'username': uname,
-            'staffId': sid,
-            'name': name_str,
-            'title': title_str,
-            'role': role_str,
-            'group': group,
-            'color': s_obj.get('color') or urec.get('color', '#1878B4'),
-        })
-    group_order = {'bcn': 0, 'attending': 1, 'trainee': 2, 'nursing_admin': 3}
-    cards.sort(key=lambda c: (group_order.get(c['group'], 9), int(c['staffId'] or 9999)))
-    return jsonify({'cards': cards})
-
 @app.route('/api/auth/logout', methods=['POST'])
 def auth_logout():
     """Acknowledge logout and record audit entry if valid token provided."""

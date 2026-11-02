@@ -623,8 +623,8 @@ const Auth = {
         }
     },
 
-    // Quick account switch on shared hospital PCs / ward iPads with unsaved-draft protection
-    async quickSwitchAccount(preselectUsername = '') {
+    // Safe logout with unsaved-draft protection on pre-op preparation drawer
+    async quickSwitchAccount() {
         if (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.hasUnsavedDraft === 'function' && SurgeryApprovalPage.hasUnsavedDraft()) {
             if (this._switchPromptOpen) return;
             this._switchPromptOpen = true;
@@ -633,17 +633,17 @@ const Auth = {
             Modal.open('⚠️ Hồ sơ chuẩn bị mổ chưa lưu nháp', `
                 <div style="font-size:0.9rem;line-height:1.5;margin-bottom:14px;">
                     Bạn đang có thay đổi chưa lưu trên hồ sơ duyệt mổ dưới phiên của <strong>${Utils.escapeHtml(curLabel)}</strong>.
-                    Trước khi chuyển tài khoản, vui lòng chọn:
+                    Trước khi đăng xuất, vui lòng chọn:
                 </div>
                 <div class="modal-footer" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
                     <button type="button" class="btn btn-secondary" onclick="Auth._cancelQuickSwitchPrompt()">Ở lại tiếp tục</button>
-                    <button type="button" class="btn btn-secondary" onclick="Auth._proceedQuickSwitch('${Utils.escapeHtml(preselectUsername)}', false)">Hủy thay đổi chưa lưu</button>
-                    <button type="button" class="btn btn-primary" onclick="Auth._proceedQuickSwitch('${Utils.escapeHtml(preselectUsername)}', true)">💾 Lưu nháp dưới tên tài khoản đang mở</button>
+                    <button type="button" class="btn btn-secondary" onclick="Auth._proceedQuickSwitch(false)">Hủy thay đổi chưa lưu</button>
+                    <button type="button" class="btn btn-primary" onclick="Auth._proceedQuickSwitch(true)">💾 Lưu nháp rồi đăng xuất</button>
                 </div>
             `);
             return;
         }
-        await this._executeQuickSwitchLogout(preselectUsername);
+        await this._executeQuickSwitchLogout();
     },
 
     _cancelQuickSwitchPrompt() {
@@ -651,7 +651,7 @@ const Auth = {
         Modal.close();
     },
 
-    async _proceedQuickSwitch(preselectUsername, saveFirst) {
+    async _proceedQuickSwitch(saveFirst) {
         this._switchPromptOpen = false;
         if (saveFirst && typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.flushPendingDraftBeforeSwitch === 'function') {
             const ok = await SurgeryApprovalPage.flushPendingDraftBeforeSwitch();
@@ -660,10 +660,10 @@ const Auth = {
             SurgeryApprovalPage.discardOpenDraft();
         }
         try { Modal.close(); } catch (_) {}
-        await this._executeQuickSwitchLogout(preselectUsername);
+        await this._executeQuickSwitchLogout();
     },
 
-    async _executeQuickSwitchLogout(preselectUsername = '') {
+    async _executeQuickSwitchLogout() {
         const tok = this.getToken();
         if (tok) {
             fetch('/api/auth/logout', {
@@ -674,7 +674,7 @@ const Auth = {
         }
         this.logout();
         if (typeof App !== 'undefined' && App.showLogin) {
-            App.showLogin(preselectUsername);
+            App.showLogin();
         }
     },
 
@@ -784,17 +784,9 @@ const Auth = {
     }
 };
 
-// ===== LOGIN PAGE RENDERER (with 1-Tap Staff Cards for Fast Ward Login) =====
+// ===== LOGIN PAGE RENDERER =====
 const LoginPage = {
-    _staffCards: null,
-    _selectedUsername: '',
-    _filterGroup: 'doctors',
-
-    render(preselectUsername = '') {
-        if (preselectUsername) {
-            this._selectedUsername = preselectUsername;
-        }
-        setTimeout(() => this._ensureStaffCardsLoaded(), 0);
+    render() {
         return `
         <div class="login-page">
             <button class="login-theme-toggle" onclick="App.toggleTheme()"
@@ -816,22 +808,18 @@ const LoginPage = {
 
                 <div class="login-error" id="login-error"></div>
 
-                <div class="login-staff-picker" id="login-staff-picker">
-                    ${this._renderStaffCardsInner()}
-                </div>
-
                 <form class="login-form" id="login-form" onsubmit="LoginPage.handleLogin(event)">
                     <div class="form-group">
                         <label class="form-label">Tên đăng nhập</label>
-                        <input class="form-input" type="text" id="login-username" name="username" value="${Utils.escapeHtml(this._selectedUsername || '')}" placeholder="Chạm thẻ tên phía trên hoặc nhập username" required ${this._selectedUsername ? '' : 'autofocus'}>
+                        <input class="form-input" type="text" id="login-username" name="username" autocomplete="username" placeholder="vd: vkan" required autofocus>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Mật khẩu cá nhân</label>
-                        <input class="form-input" type="password" id="login-password" name="password" placeholder="••••••" required ${this._selectedUsername ? 'autofocus' : ''}>
+                        <label class="form-label">Mật khẩu</label>
+                        <input class="form-input" type="password" id="login-password" name="password" autocomplete="current-password" placeholder="••••••" required>
                     </div>
                     <div class="login-remember-row">
                         <input type="checkbox" id="login-remember">
-                        <label for="login-remember">Ghi nhớ thiết bị cá nhân này (không chọn trên máy dùng chung tại khoa)</label>
+                        <label for="login-remember">Ghi nhớ thiết bị này</label>
                     </div>
                     <button type="submit" class="login-btn">Đăng nhập</button>
                 </form>
@@ -841,79 +829,6 @@ const LoginPage = {
                 </div>
             </div>
         </div>
-        `;
-    },
-
-    async _ensureStaffCardsLoaded() {
-        if (!Array.isArray(this._staffCards)) {
-            try {
-                const resp = await fetch('/api/auth/staff-cards', { cache: 'no-store' });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    this._staffCards = Array.isArray(data.cards) ? data.cards : [];
-                } else {
-                    this._staffCards = [];
-                }
-            } catch (_) {
-                this._staffCards = [];
-            }
-        }
-        const host = document.getElementById('login-staff-picker');
-        if (host) {
-            host.innerHTML = this._renderStaffCardsInner();
-        }
-    },
-
-    setFilterGroup(grp) {
-        this._filterGroup = grp;
-        const host = document.getElementById('login-staff-picker');
-        if (host) host.innerHTML = this._renderStaffCardsInner();
-    },
-
-    selectStaffCard(username) {
-        this._selectedUsername = username;
-        const uInp = document.getElementById('login-username');
-        const pInp = document.getElementById('login-password');
-        if (uInp) uInp.value = username;
-        const host = document.getElementById('login-staff-picker');
-        if (host) host.innerHTML = this._renderStaffCardsInner();
-        if (pInp) {
-            pInp.value = '';
-            pInp.focus();
-        }
-    },
-
-    _renderStaffCardsInner() {
-        if (!Array.isArray(this._staffCards) || this._staffCards.length === 0) {
-            return '';
-        }
-        const grp = this._filterGroup || 'doctors';
-        const filtered = this._staffCards.filter(c => {
-            if (grp === 'doctors') return c.group === 'bcn' || c.group === 'attending';
-            if (grp === 'trainee') return c.group === 'trainee';
-            if (grp === 'nursing') return c.group === 'nursing_admin';
-            return true;
-        });
-        const chips = filtered.map(c => {
-            const active = c.username === this._selectedUsername;
-            const shortTitle = (c.title || '').replace(/\s+/g, ' ').trim();
-            const label = shortTitle ? `${shortTitle} ${c.name}` : c.name;
-            return `<button type="button" class="login-staff-chip${active ? ' active' : ''}" onclick="LoginPage.selectStaffCard('${Utils.escapeHtml(c.username)}')" title="${Utils.escapeHtml(label)} (${Utils.escapeHtml(c.username)})">
-                <span class="login-staff-chip__dot" style="background:${Utils.escapeHtml(c.color || '#1878B4')}"></span>
-                <span class="login-staff-chip__name">${Utils.escapeHtml(c.name)}</span>
-            </button>`;
-        }).join('');
-
-        return `
-            <div class="login-staff-picker__hdr">
-                <span class="login-staff-picker__lbl">⚡ Chạm chọn nhanh tài khoản:</span>
-                <div class="login-staff-picker__tabs">
-                    <button type="button" class="login-staff-tab${grp === 'doctors' ? ' active' : ''}" onclick="LoginPage.setFilterGroup('doctors')">BS Khoa</button>
-                    <button type="button" class="login-staff-tab${grp === 'trainee' ? ' active' : ''}" onclick="LoginPage.setFilterGroup('trainee')">BSNT / HV</button>
-                    <button type="button" class="login-staff-tab${grp === 'nursing' ? ' active' : ''}" onclick="LoginPage.setFilterGroup('nursing')">ĐD / Khác</button>
-                </div>
-            </div>
-            <div class="login-staff-picker__grid">${chips}</div>
         `;
     },
 
@@ -942,7 +857,6 @@ const LoginPage = {
         }
 
         if (result.success) {
-            this._selectedUsername = '';
             App.onLoginSuccess();
         } else {
             const errEl = document.getElementById('login-error');

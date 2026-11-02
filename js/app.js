@@ -81,7 +81,7 @@ const App = {
     },
 
     // === Login Flow ===
-    showLogin(preselectUsername = '') {
+    showLogin() {
         if (this._idleTimer) {
             clearInterval(this._idleTimer);
             this._idleTimer = null;
@@ -109,7 +109,7 @@ const App = {
             loginContainer.id = 'login-container';
             document.body.appendChild(loginContainer);
         }
-        loginContainer.innerHTML = LoginPage.render(preselectUsername);
+        loginContainer.innerHTML = LoginPage.render();
     },
 
     async onLoginSuccess() {
@@ -412,7 +412,7 @@ const App = {
             ${Notifications.renderBellButton('mobile')}
             ${Utils.renderAvatar({ id: session.staffId, name: session.name, color: session.color || 'var(--gradient-accent)' }, 'sm', { extraClass: 'mobile-user-avatar' })}
             <span class="mobile-user-name" onclick="Auth.openChangePassword()" title="Chạm để đổi mật khẩu cá nhân" style="cursor:pointer;">${session.name}</span>
-            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đổi tài khoản / Đăng xuất" title="Đổi tài khoản nhanh / Đăng xuất">
+            <button class="mobile-logout-btn" id="mobile-logout-btn" aria-label="Đăng xuất" title="Đăng xuất">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
         `;
@@ -455,14 +455,11 @@ const App = {
                     <span class="user-role">${session.role}</span>
                 </div>
             </div>
-            <div class="sidebar-admin-btns">
+            ${session.isSuperAdmin ? `<div class="sidebar-admin-btns">
                 <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openChangePassword()" aria-label="Đổi mật khẩu" title="Đổi mật khẩu cá nhân">&#128273;<span class="sidebar-btn-text"> Đổi MK</span></button>
-                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.quickSwitchAccount()" aria-label="Đổi tài khoản nhanh" title="Đổi tài khoản nhanh trên máy dùng chung">&#128260;<span class="sidebar-btn-text"> Đổi TK</span></button>
-            </div>
-            ${session.isSuperAdmin ? `<div class="sidebar-admin-btns" style="margin-top:4px;">
                 <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="Auth.openManagePasswords()" aria-label="Quản lý tài khoản" title="Quản lý tài khoản">&#128101;<span class="sidebar-btn-text"> Quản lý TK</span></button>
-                <button class="btn btn-secondary btn-sm sidebar-admin-btns__btn" onclick="AuditLog.open()" aria-label="Lịch sử hoạt động" title="Lịch sử hoạt động">&#128203;<span class="sidebar-btn-text"> Nhật ký</span></button>
-            </div>` : ''}
+            </div>
+            <button class="btn btn-secondary btn-sm sidebar-full-btn" onclick="AuditLog.open()" aria-label="Lịch sử hoạt động" title="Lịch sử hoạt động">&#128203;<span class="sidebar-btn-text"> Lịch sử hoạt động</span></button>` : `<button class="btn btn-secondary btn-sm sidebar-full-btn" onclick="Auth.openChangePassword()" aria-label="Đổi mật khẩu" title="Đổi mật khẩu cá nhân">&#128273;<span class="sidebar-btn-text"> Đổi mật khẩu</span></button>`}
             <button class="btn btn-secondary btn-sm sidebar-full-btn-spaced" onclick="Onboarding.start()" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn sử dụng">&#10067;<span class="sidebar-btn-text"> Hướng dẫn sử dụng</span></button>
             <button class="logout-btn" id="logout-btn" aria-label="Đăng xuất" title="Đăng xuất">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-btn-icon" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>

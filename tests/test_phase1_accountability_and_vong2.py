@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end verification suite for Phase-1 Accountability, Personal Auth & Crosscheck Vòng 2:
-- QĐ1 & QĐ2: Login-once JWT (no /api/auth/verify-actor), staff-cards, mustChangePassword gate,
-  10-char password policy, sessionEpoch cross-device revocation.
+- QĐ1 & QĐ2: Login-once JWT (no /api/auth/verify-actor, no public /api/auth/staff-cards picker),
+  mustChangePassword gate, 10-char password policy, sessionEpoch cross-device revocation.
 - QĐ3: Phase-1 scope filter (elective scheduled only), 403 NOT_IN_PHASE1_SCOPE on /submit-emergency,
   sandboxOnlyMode 0% real patient touch.
 - Mục 2.D: 2-tier server-side multi-episode duplicate protection (episodeId, priorEpisodeId,
@@ -311,15 +311,9 @@ class Phase1AccountabilityAndVong2Tests(unittest.TestCase):
             reauth_res = client.post("/api/auth/verify-actor", json={"password": "AnStrong2026"})
             self.assertIn(reauth_res.status_code, (404, 405))
 
-            # 2. Verify GET /api/auth/staff-cards returns sorted cards with ZERO secrets
+            # 2. Verify NO public /api/auth/staff-cards picker exists — each user logs in with their own personal account
             cards_res = client.get("/api/auth/staff-cards")
-            self.assertEqual(cards_res.status_code, 200)
-            cards = cards_res.get_json()["cards"]
-            self.assertGreaterEqual(len(cards), 6)
-            self.assertEqual(cards[0]["group"], "bcn")
-            for c in cards:
-                self.assertNotIn("passwordHash", c)
-                self.assertNotIn("sessionEpoch", c)
+            self.assertIn(cards_res.status_code, (404, 405))
 
             # 3. Verify QĐ2: Login with default password == username ('ndtphu') sets mustChangePassword = True
             login_default = self._login_token(client, "ndtphu", "ndtphu")
