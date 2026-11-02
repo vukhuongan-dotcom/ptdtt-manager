@@ -552,7 +552,7 @@ const SurgeryPage = {
         </div>
         </div><!-- end .surgery-scroll-zone -->
         ${showApproval ? `<div class="sap-schedule-footer-legend" role="note">
-            <strong>Chú giải (Bước 1 nội bộ Khoa PTĐTT, độc lập HIS):</strong>
+            <strong>Chú giải (Duyệt nội bộ Khoa = Bước 01–04 toàn viện, độc lập HIS):</strong>
             <span><span aria-hidden="true">✅</span> Đã duyệt</span> ·
             <span><span aria-hidden="true">⏳</span> Chờ duyệt</span> ·
             <span><span aria-hidden="true">📝</span> Chưa trình</span> ·
@@ -1982,7 +1982,7 @@ const SurgeryPage = {
         });
 
         const exportWidthPx = showApproval ? 1220 : 1100;
-        const scopeLegendText = showApproval ? 'Chú giải (Bước 1 nội bộ Khoa PTĐTT, độc lập HIS): ✅ Đã duyệt · ⏳ Chờ duyệt · 📝 Chưa trình · ↩️ Trả về · ⏸️ Tạm hoãn · ⚡ Ngoại lệ' : '';
+        const scopeLegendText = showApproval ? 'Chú giải (Duyệt nội bộ Khoa = Bước 01–04 toàn viện, độc lập HIS): ✅ Đã duyệt · ⏳ Chờ duyệt · 📝 Chưa trình · ↩️ Trả về · ⏸️ Tạm hoãn · ⚡ Ngoại lệ' : '';
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
         container.innerHTML = `

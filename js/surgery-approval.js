@@ -489,7 +489,7 @@ const SurgeryApprovalPage = {
             checklistMode: 'enforced_gate',
             rolloutEffectiveSurgeryDate: '2026-11-02',
             nsthInternalPrecheckEnabled: false,
-            scopeLegendText: 'Chú giải (Bước 1 nội bộ Khoa PTĐTT, độc lập HIS): ✅ Đã duyệt · ⏳ Chờ duyệt · 📝 Chưa trình · ↩️ Trả về · ⏸️ Tạm hoãn · ⚡ Ngoại lệ'
+            scopeLegendText: 'Chú giải (Duyệt nội bộ Khoa = Bước 01–04 toàn viện, độc lập HIS): ✅ Đã duyệt · ⏳ Chờ duyệt · 📝 Chưa trình · ↩️ Trả về · ⏸️ Tạm hoãn · ⚡ Ngoại lệ'
         };
     },
 
@@ -626,7 +626,7 @@ const SurgeryApprovalPage = {
     renderScheduleBadge(surgery) {
         const meta = this.getScheduleShortBadgeMeta(surgery);
         if (!meta) return '';
-        const tooltip = `${meta.fullLabel} (Bước 1 nội bộ Khoa PTĐTT, độc lập HIS) — Bấm mở hồ sơ duyệt`;
+        const tooltip = `${meta.fullLabel} (Duyệt nội bộ Khoa = Bước 01–04 toàn viện, trước Bước 05 Tiền mê GMHS 1) — Bấm mở hồ sơ duyệt`;
         return `<button type="button" class="sap-badge sap-sched-badge ${meta.cssClass}" data-badge-code="${meta.badgeCode}" title="${Utils.escapeHtml(tooltip)}" aria-label="${Utils.escapeHtml(meta.shortLabel + ' — ' + (surgery.patientName || ''))}" onclick="event.stopPropagation();SurgeryApprovalPage.openCaseModal(${surgery.id}, { source: 'schedule' })">${this._ico(meta.icon)}<span>${Utils.escapeHtml(meta.shortLabel)}</span></button>`;
     },
 
@@ -1037,7 +1037,7 @@ const SurgeryApprovalPage = {
             <div class="sap-scope-compact" role="region" aria-label="Phạm vi duyệt mổ nội bộ tại khoa">
                 <div class="sap-scope-compact-main">
                     ${this._ico('🏥')}
-                    <span><strong>Bước 1 nội bộ Khoa PTĐTT (độc lập phần mềm HIS)</strong> — Nhãn Đã duyệt xác nhận hoàn tất rà soát chuyên môn tại khoa trước mổ.</span>
+                    <span><strong>Duyệt mổ nội bộ Khoa PTĐTT (= Bước 01–04 quy trình toàn viện HD.04.KHTH, độc lập HIS)</strong> — Nhãn Đã duyệt xác nhận hoàn tất rà soát tại khoa trước khi chuyển Bước 05 Khám tiền mê GMHS 1.</span>
                 </div>
                 <div class="sap-scope-compact-actions">
                     <button type="button" class="sap-btn sap-btn--ghost" onclick="SurgeryApprovalPage.toggleScopeDetail()" aria-expanded="${this._scopeDetailOpen}" aria-label="Chi tiết phạm vi độc lập HIS">
@@ -1050,7 +1050,7 @@ const SurgeryApprovalPage = {
             </div>
             ${this._scopeDetailOpen ? `
             <div class="sap-scope-detail">
-                Quy trình này chuẩn hóa kiểm tra chỉ định, xếp cột phẫu thuật viên 2026, thuốc chống huyết khối, cận lâm sàng tiền phẫu và cam kết phẫu thuật nội bộ tại Khoa PT Đại trực tràng; hoàn toàn không kết nối và không thay thế thủ tục ký duyệt mổ toàn viện trên phần mềm HIS.
+                Thực tế quy trình duyệt mổ chuyên môn nội bộ tại Khoa PT Đại trực tràng chính là phần chi tiết hóa <strong>Bước 01 đến Bước 04</strong> trong quy trình toàn viện (HD.04.KHTH — kiểm tra chỉ định, xếp cột phẫu thuật viên 2026, thuốc chống huyết khối, cận lâm sàng tiền phẫu và cam kết phẫu thuật), trước khi chuyển tiếp sang <strong>Bước 05 toàn viện (Khám tiền mê tại Khoa Gây mê hồi sức 1)</strong> và <strong>Bước 06–08 (Phòng KHTH / Ban Giám đốc duyệt trên HIS, in lưu HSBA)</strong>.
             </div>` : ''}` : ''}
 
             ${App.isSuperAdmin() ? this._renderCanaryToolbar(cfg) : (cfg.sandboxOnlyMode !== false ? `
