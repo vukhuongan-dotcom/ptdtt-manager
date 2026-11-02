@@ -412,6 +412,7 @@ const SAP_WAL_ACTION_LABELS = {
     sandbox_seed_samples: 'Khởi tạo bộ 16 ca mẫu [TEST]',
     sandbox_reseed_samples: 'Làm mới bộ 16 ca mẫu [TEST]',
     sandbox_cleanup_samples: 'Dọn dẹp toàn bộ ca mẫu [TEST]',
+    sandbox_create_from_schedule: 'Tạo ca giả lập [TEST] từ Lịch mổ tuần',
     disaster_restore_reconciled: 'Đồng bộ khôi phục dữ liệu dự phòng',
     tier_a_schedule_edit: 'Cập nhật thông tin lịch mổ',
     tier_a_schedule_edit_invalidated_approval: 'Sửa lịch mổ sau duyệt — chuyển Chờ duyệt lại',
@@ -499,11 +500,21 @@ const SurgeryApprovalPage = {
         return this.getConfig().rolloutAccessMode === 'all_staff';
     },
 
+    canAccessSandboxCases() {
+        if (!this.isFeatureVisibleForCurrentUser()) return false;
+        if (typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin()) return true;
+        const cfg = this.getConfig();
+        return cfg.rolloutAccessMode === 'all_staff' && cfg.sandboxOnlyMode !== false;
+    },
+
     isCaseApprovalEnabled(surgery) {
         if (!this.isFeatureVisibleForCurrentUser()) return false;
         if (!surgery || typeof surgery !== 'object') return false;
         if (this.getConfig().sandboxOnlyMode !== false) {
-            return surgery.isTestSandboxCase === true;
+            return surgery.isTestSandboxCase === true && this.canAccessSandboxCases();
+        }
+        if (surgery.isTestSandboxCase === true) {
+            return Boolean(typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin());
         }
         return true;
     },
@@ -1042,7 +1053,19 @@ const SurgeryApprovalPage = {
                 Quy trình này chuẩn hóa kiểm tra chỉ định, xếp cột phẫu thuật viên 2026, thuốc chống huyết khối, cận lâm sàng tiền phẫu và cam kết phẫu thuật nội bộ tại Khoa PT Đại trực tràng; hoàn toàn không kết nối và không thay thế thủ tục ký duyệt mổ toàn viện trên phần mềm HIS.
             </div>` : ''}` : ''}
 
-            ${App.isSuperAdmin() ? this._renderCanaryToolbar(cfg) : ''}
+            ${App.isSuperAdmin() ? this._renderCanaryToolbar(cfg) : (cfg.sandboxOnlyMode !== false ? `
+            <div class="sap-canary-bar" id="sap-staff-training-banner">
+                <div class="sap-canary-header">
+                    <div class="sap-canary-title">
+                        ${this._ico('🧪')} <span>Chế độ Tập huấn Quy trình Duyệt mổ [TEST] — Tách biệt 100% khỏi bệnh nhân thật</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                        <button type="button" class="sap-btn sap-btn--primary" onclick="App.navigate('surgery'); setTimeout(() => { if (typeof SurgeryPage !== 'undefined') SurgeryPage.openForm(0, null, { sandbox: true }); }, 80);">
+                            ${this._ico('📅')} <span>+ Tạo ca giả lập từ Lịch mổ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>` : '')}
 
             <div class="sap-top-nav-row">
                 <div class="sap-subtabs" role="tablist" aria-label="Chế độ xem Duyệt mổ tại khoa">
@@ -1327,6 +1350,9 @@ const SurgeryApprovalPage = {
                     </span>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button type="button" class="sap-btn" id="sap-btn-create-from-schedule" onclick="App.navigate('surgery'); setTimeout(() => { if (typeof SurgeryPage !== 'undefined') SurgeryPage.openForm(0, null, { sandbox: true }); }, 80);">
+                        ${this._ico('📅')} <span>+ Tạo ca giả lập từ Lịch mổ</span>
+                    </button>
                     <button type="button" class="sap-btn sap-btn--primary" id="sap-btn-seed-sandbox" onclick="SurgeryApprovalPage.seedSandboxCases(${sandboxCount > 0 ? 'true' : 'false'})">
                         ${this._ico('🎲')} <span>${sandboxCount > 0 ? `Tạo mới 16 ca TEST (${sandboxCount})` : 'Tạo 16 ca TEST'}</span>
                     </button>
@@ -1458,14 +1484,14 @@ const SurgeryApprovalPage = {
             const st = s.approval?.status;
             if (st === 'trashed_inactive') return false;
             if (sandboxOnly) {
-                if (s.isTestSandboxCase !== true || !App.isSuperAdmin()) return false;
+                if (s.isTestSandboxCase !== true || !this.canAccessSandboxCases()) return false;
                 if (this._filters.scope === 'week' && typeof SurgeryPage !== 'undefined') {
                     const weekDates = SurgeryPage.getWeekDates().map(d => SurgeryPage.dateStr(d));
                     return weekDates.includes(s.date);
                 }
                 return true;
             }
-            if (s.isTestSandboxCase === true) return App.isSuperAdmin();
+            if (s.isTestSandboxCase === true) return Boolean(typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin());
             if (st === 'legacy_exempt') return false;
             if (this._filters.scope === 'week' && typeof SurgeryPage !== 'undefined') {
                 const weekDates = SurgeryPage.getWeekDates().map(d => SurgeryPage.dateStr(d));
@@ -2140,6 +2166,9 @@ const SurgeryApprovalPage = {
 
     // ── BƯỚC 2.1, 3.2, 4.2: Open Case Right Drawer (Desktop min(1560px, 96vw) 2-Col / Mobile 100vw Full-Screen) ──
     async openCaseModal(surgeryId, opts = {}) {
+        if (typeof Store !== 'undefined' && Store._dirtyCollections?.has('surgeries') && Array.isArray(Store._collectionSaveWaiters) && Store._collectionSaveWaiters.length) {
+            await new Promise(resolve => Store._collectionSaveWaiters.push(resolve));
+        }
         await this.ensureCatalogLoaded();
         const s = this._getCaseById(surgeryId);
         if (!s) {

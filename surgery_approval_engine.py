@@ -299,6 +299,22 @@ def get_approval_config(db: dict) -> dict:
     return cfg
 
 
+def can_user_access_sandbox(user: dict, db: dict) -> bool:
+    """
+    Returns True when `user` is permitted to view/create/practice on `[TEST]` sandbox cases:
+    - Super Admin (`isSuperAdmin == True`): ALWAYS True.
+    - Authenticated staff: ONLY when `rolloutAccessMode == "all_staff"` AND `sandboxOnlyMode is True`
+      (Department Training Sandbox Mode — 100% isolated from real patients).
+    - In `superadmin_only` OR Full Live Clinical Mode (`sandboxOnlyMode is False`): False for non-SuperAdmins.
+    """
+    if not isinstance(user, dict):
+        return False
+    if bool(user.get("isSuperAdmin")):
+        return True
+    cfg = get_approval_config(db)
+    return cfg.get("rolloutAccessMode") == "all_staff" and cfg.get("sandboxOnlyMode") is True
+
+
 def strip_approval_metadata_from_real_surgeries(db: dict) -> int:
     """
     Removes all approval-engine metadata from real patient records (isTestSandboxCase != True)
@@ -1439,8 +1455,9 @@ def protect_and_reconcile_surgeries_put(
     trash_ids = {t.get("id") for t in (db.get("surgeriesTrash") or []) if isinstance(t, dict) and is_pos_int(t.get("id"))}
     old_map = {r.get("id"): r for r in (old_items or []) if isinstance(r, dict) and is_pos_int(r.get("id"))}
 
-    # Ensure non-superadmin cannot accidentally delete hidden sandbox cases when saving surgeries collection,
-    # AND forbid bypassing atomic trash by omitting any existing non-sandbox surgery record via bulk PUT!
+    # Ensure non-authorized users cannot accidentally delete hidden sandbox cases when saving surgeries collection,
+    # AND forbid bypassing atomic trash by omitting any existing visible surgery record via bulk PUT!
+    allow_sbx = can_user_access_sandbox(user, db)
     candidate_ids = {r.get("id") for r in candidate_items if isinstance(r, dict) and is_pos_int(r.get("id"))}
     hidden_sandbox_records = []
     for old_r in (old_items or []):
@@ -1448,7 +1465,7 @@ def protect_and_reconcile_surgeries_put(
             continue
         oid = old_r.get("id")
         if oid not in candidate_ids:
-            if old_r.get("isTestSandboxCase") is True and not user.get("isSuperAdmin"):
+            if old_r.get("isTestSandboxCase") is True and not allow_sbx:
                 hidden_sandbox_records.append(copy.deepcopy(old_r))
             else:
                 raise ApprovalEngineError(
@@ -1471,8 +1488,19 @@ def protect_and_reconcile_surgeries_put(
 
         if sid not in old_map:
             # Brand-new or Cloned case -> clean birth!
-            fresh = initialize_new_surgery_record(raw_new, catalog, db)
+            raw_clean = copy.deepcopy(raw_new)
+            wants_sandbox = raw_clean.get("isTestSandboxCase") is True
+            if wants_sandbox and allow_sbx:
+                raw_clean["isTestSandboxCase"] = True
+                pname = str(raw_clean.get("patientName") or "").strip()
+                if pname and "[test]" not in pname.lower():
+                    raw_clean["patientName"] = f"[TEST] {pname}"
+            else:
+                raw_clean.pop("isTestSandboxCase", None)
+            fresh = initialize_new_surgery_record(raw_clean, catalog, db)
             out_items.append(fresh)
+            if fresh.get("isTestSandboxCase") is True:
+                pending_wal_events.append((fresh, 0, int(fresh.get("caseRevision", 1) or 1), "sandbox_create_from_schedule", [], None))
             continue
 
         old_r = old_map[sid]
@@ -1486,8 +1514,16 @@ def protect_and_reconcile_surgeries_put(
                 "Bác sĩ học viên / Bác sĩ nội trú chưa xếp cột không được đứng tên BS mổ chính.",
             )
 
-        # Strip all server-owned fields from client payload and restore from old_r
+        # Strip all server-owned fields from client payload, lock isTestSandboxCase immutability, and restore from old_r
         merged = copy.deepcopy(norm_new)
+        if old_r.get("isTestSandboxCase") is True:
+            merged["isTestSandboxCase"] = True
+            pname = str(merged.get("patientName") or "").strip()
+            if pname and "[test]" not in pname.lower():
+                merged["patientName"] = f"[TEST] {pname}"
+        else:
+            merged.pop("isTestSandboxCase", None)
+
         if cfg.get("sandboxOnlyMode") is True and merged.get("isTestSandboxCase") is not True and old_r.get("isTestSandboxCase") is not True:
             for k in APPROVAL_METADATA_FIELDS_TO_STRIP:
                 merged.pop(k, None)
@@ -1884,12 +1920,22 @@ def build_approval_notifications(
     """
     cfg = get_approval_config(db)
     is_sandbox = surgery.get("isTestSandboxCase") is True
+    internal_staff_ids = {
+        s.get("id") for s in (db.get("staff") or [])
+        if isinstance(s, dict) and is_pos_int(s.get("id"))
+    }
 
     dedup_targets = []
     for rid in recipient_staff_ids:
         if is_pos_int(rid) and rid != actor_staff_id and rid not in dedup_targets:
-            if (cfg.get("rolloutAccessMode") == "superadmin_only" or is_sandbox) and rid != DEPUTY_STAFF_ID:
-                # Never leak canary/test notifications to non-superadmin staff bells!
+            if internal_staff_ids and rid not in internal_staff_ids:
+                # Skip external doctors (101..206) who do not have internal accounts
+                continue
+            if cfg.get("rolloutAccessMode") == "superadmin_only" and rid != DEPUTY_STAFF_ID:
+                # Never leak canary notifications to non-superadmin staff bells!
+                continue
+            if is_sandbox and cfg.get("sandboxOnlyMode") is not True and rid != DEPUTY_STAFF_ID:
+                # In Live Clinical Mode (sandboxOnlyMode == False), keep any [TEST] notifications strictly on Super Admin!
                 continue
             dedup_targets.append(rid)
 
@@ -1938,6 +1984,7 @@ def filter_db_payload_for_user(raw_data: dict, user: dict, strip_fields: set) ->
     """
     staff_id = (user or {}).get("staffId")
     is_sa = bool((user or {}).get("isSuperAdmin"))
+    allow_sbx = can_user_access_sandbox(user, raw_data)
 
     out = {}
     for k, v in raw_data.items():
@@ -1948,9 +1995,9 @@ def filter_db_payload_for_user(raw_data: dict, user: dict, strip_fields: set) ->
                 n for n in v
                 if isinstance(n, dict)
                 and n.get("toStaffId") == staff_id
-                and (is_sa or n.get("isTestSandboxCase") is not True)
+                and (allow_sbx or n.get("isTestSandboxCase") is not True)
             ]
-        elif k in ("surgeries", "surgeriesTrash") and isinstance(v, list) and not is_sa:
+        elif k in ("surgeries", "surgeriesTrash") and isinstance(v, list) and not allow_sbx:
             out[k] = [s for s in v if isinstance(s, dict) and s.get("isTestSandboxCase") is not True]
         elif k == "approvalDelegations" and isinstance(v, list):
             cfg_mode = get_approval_config(raw_data).get("rolloutAccessMode", "superadmin_only")

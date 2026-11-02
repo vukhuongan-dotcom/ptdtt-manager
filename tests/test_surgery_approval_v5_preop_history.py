@@ -789,6 +789,149 @@ class SurgeryApprovalV5PreopHistoryTests(unittest.TestCase):
         self.assertEqual(c07["approval"]["status"], "approved")
         self.assertTrue(c07["approval"]["isApprovalGreenTickValid"])
 
+    def test_12_create_sandbox_case_from_schedule_and_department_training_visibility(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp_dir = pathlib.Path(td)
+            data_path = tmp_dir / "data"
+            data_path.mkdir(parents=True, exist_ok=True)
+            data_dir = str(data_path)
+            db = {
+                "staff": copy.deepcopy(self.db["staff"]) + [
+                    {"id": 1, "name": "Nguyễn Phú Hữu", "title": "TS.BSCKII.", "role": "Trưởng khoa"},
+                    {"id": 2, "name": "Vũ Khương An", "title": "BSCKII.", "role": "Phó trưởng khoa"},
+                    {"id": 4, "name": "Vũ Ngọc Anh Tuấn", "title": "BSCKII.", "role": "Bác sĩ chính"},
+                    {"id": 45, "name": "Nguyễn Đức Thiên Phú", "title": "BSNT.", "role": "Bác sĩ nội trú"},
+                ],
+                "surgeries": [
+                    {
+                        "id": 1001,
+                        "patientName": "Lê Thị Bệnh Nhân Thật",
+                        "birthYear": 1972,
+                        "surgeryType": "chuongtrinh",
+                        "approachType": "noisoi",
+                        "date": "2026-11-05",
+                        "mainSurgeon": 4,
+                        "diagnosis": "Polyp đại tràng",
+                        "method": "PTNS cắt đoạn đại tràng",
+                    }
+                ],
+                "surgeriesTrash": [],
+                "notifications": [],
+                "surgeryApprovalConfig": {
+                    "rolloutAccessMode": "superadmin_only",
+                    "sandboxOnlyMode": True,
+                    "checklistMode": "enforced_gate",
+                    "rolloutEffectiveSurgeryDate": "2026-11-02",
+                },
+            }
+            sa_user = {"staffId": 2, "username": "vkan", "name": "BSCKII. Vũ Khương An", "role": "Phó trưởng khoa", "isSuperAdmin": True}
+            staff_doc = {"staffId": 4, "username": "tuanvna", "name": "BSCKII. Vũ Ngọc Anh Tuấn", "role": "Bác sĩ chính", "isSuperAdmin": False}
+
+            # 1. Super Admin creates a [TEST] case directly from Lịch mổ tuần
+            old_items = copy.deepcopy(db["surgeries"])
+            cand = copy.deepcopy(old_items) + [
+                {
+                    "id": 990001,
+                    "patientName": "Nguyễn Văn Minh",
+                    "birthYear": 1964,
+                    "admissionId": "TEST-261101",
+                    "surgeryType": "chuongtrinh",
+                    "approachType": "noisoi",
+                    "date": "2026-11-05",
+                    "duration": 150,
+                    "mainSurgeon": 4,
+                    "assistSurgeon1": 45,
+                    "diagnosis": "Ung thư đại tràng Sigma cT3N1M0",
+                    "method": "Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch",
+                    "isTestSandboxCase": True,
+                }
+            ]
+            reconciled = eng.protect_and_reconcile_surgeries_put(
+                user=sa_user,
+                old_items=old_items,
+                candidate_items=cand,
+                db=db,
+                data_dir=data_dir,
+                base_dir=str(REPO_ROOT),
+            )
+            db["surgeries"] = reconciled
+            real_after = next(s for s in reconciled if s["id"] == 1001)
+            sbx_after = next(s for s in reconciled if s["id"] == 990001)
+
+            # Real patient stays 100% untouched (no approval metadata in sandboxOnlyMode)
+            self.assertNotIn("approval", real_after)
+            self.assertNotIn("isTestSandboxCase", real_after)
+
+            # Sandbox case gets [TEST] prefix + full approval draft initialization + WAL hash chain
+            self.assertTrue(sbx_after.get("isTestSandboxCase"))
+            self.assertEqual(sbx_after["patientName"], "[TEST] Nguyễn Văn Minh")
+            self.assertEqual(sbx_after["approval"]["status"], "draft_unsubmitted")
+            self.assertEqual(sbx_after["caseRevision"], 1)
+            self.assertIsNotNone(sbx_after.get("preopChecklist"))
+            self.assertIsNotNone(sbx_after.get("clinicalChips"))
+            ok_chain, entries, err = eng.verify_approval_journal_chain(eng.get_journal_path(data_dir))
+            self.assertTrue(ok_chain, err)
+            self.assertEqual(entries[-1]["action"], "sandbox_create_from_schedule")
+
+            # 2. In superadmin_only mode, non-superadmin staff CANNOT see [TEST] cases
+            filtered_canary = eng.filter_db_payload_for_user(db, staff_doc, set())
+            self.assertEqual([s["id"] for s in filtered_canary["surgeries"]], [1001])
+
+            # 3. Switch to Department Training Mode (rolloutAccessMode='all_staff', sandboxOnlyMode=True)
+            db["surgeryApprovalConfig"]["rolloutAccessMode"] = "all_staff"
+            db["surgeryApprovalConfig"]["sandboxOnlyMode"] = True
+            self.assertTrue(eng.can_user_access_sandbox(staff_doc, db))
+            filtered_training = eng.filter_db_payload_for_user(db, staff_doc, set())
+            self.assertIn(990001, [s["id"] for s in filtered_training["surgeries"]])
+
+            # Non-superadmin attending doctor creates a [TEST] case in Department Training Mode -> allowed!
+            cand_staff = copy.deepcopy(db["surgeries"]) + [
+                {
+                    "id": 990002,
+                    "patientName": "[TEST] Trần Thị Tập Huấn",
+                    "birthYear": 1970,
+                    "surgeryType": "chuongtrinh",
+                    "approachType": "noisoi",
+                    "date": "2026-11-06",
+                    "mainSurgeon": 4,
+                    "diagnosis": "U trực tràng giữa",
+                    "method": "PTNS cắt trước thấp trực tràng",
+                    "isTestSandboxCase": True,
+                }
+            ]
+            reconciled_staff = eng.protect_and_reconcile_surgeries_put(
+                user=staff_doc,
+                old_items=db["surgeries"],
+                candidate_items=cand_staff,
+                db=db,
+                data_dir=data_dir,
+                base_dir=str(REPO_ROOT),
+            )
+            db["surgeries"] = reconciled_staff
+            sbx_staff = next(s for s in reconciled_staff if s["id"] == 990002)
+            self.assertTrue(sbx_staff.get("isTestSandboxCase"))
+            self.assertEqual(sbx_staff["approval"]["status"], "draft_unsubmitted")
+
+            # Notifications in Department Training Mode deliver [TEST] alerts to internal staff, skipping external doctor 105
+            notifs = eng.build_approval_notifications(
+                db,
+                sbx_staff,
+                actor_staff_id=45,
+                event_id="evt-train-1",
+                notif_type="surgery_ready_for_attending",
+                short_status_text="BS học viên đã chuẩn bị xong — mời BS chính kiểm tra",
+                recipient_staff_ids=[4, 105],
+            )
+            self.assertEqual([n["toStaffId"] for n in notifs], [4])
+            self.assertTrue(notifs[0]["message"].startswith("[TEST] "))
+
+            # 4. Switch to Full Live Clinical Mode (rolloutAccessMode='all_staff', sandboxOnlyMode=False):
+            # non-superadmin staff no longer see residual [TEST] cases!
+            db["surgeryApprovalConfig"]["sandboxOnlyMode"] = False
+            self.assertFalse(eng.can_user_access_sandbox(staff_doc, db))
+            filtered_live = eng.filter_db_payload_for_user(db, staff_doc, set())
+            self.assertEqual([s["id"] for s in filtered_live["surgeries"]], [1001])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -168,6 +168,13 @@ const SurgeryPage = {
     _selectedDayStr: null,
     _mobileViewMode: 'day', // 'day' | 'week'
     _showSandboxOnSchedule: false,
+    _openApprovalAfterSave: false,
+    _sampleSandboxIdx: 0,
+
+    canUseSandboxSchedule() {
+        if (typeof SurgeryApprovalPage === 'undefined') return false;
+        return Boolean(SurgeryApprovalPage.canAccessSandboxCases && SurgeryApprovalPage.canAccessSandboxCases());
+    },
 
     toggleSandboxSchedulePreview() {
         this._showSandboxOnSchedule = !this._showSandboxOnSchedule;
@@ -225,12 +232,7 @@ const SurgeryPage = {
     getSurgeries() {
         const all = this.getAllSurgeries();
         const weekDates = this.getWeekDates().map(d => this.dateStr(d));
-        const allowSandboxPreview = Boolean(
-            this._showSandboxOnSchedule
-            && typeof App !== 'undefined'
-            && App.isSuperAdmin
-            && App.isSuperAdmin()
-        );
+        const allowSandboxPreview = Boolean(this._showSandboxOnSchedule && this.canUseSandboxSchedule());
         return all.filter(s => weekDates.includes(s.date) && (!s.isTestSandboxCase || allowSandboxPreview));
     },
 
@@ -265,7 +267,7 @@ const SurgeryPage = {
 
     saveSurgeries(all) {
         Store._data.surgeries = all;
-        Store.saveCollections(['surgeries']);
+        return Store.saveCollections(['surgeries']);
     },
 
     setDoctorFilter(docId) {
@@ -330,10 +332,17 @@ const SurgeryPage = {
                 ${showApproval ? `<button class="btn btn-secondary" onclick="App.navigate('surgery-approval')" aria-label="Mở Tab Duyệt mổ tại khoa">
                     <span aria-hidden="true">📋</span> Duyệt mổ khoa
                 </button>` : ''}
-                ${(showApproval && typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin() && (Store._data?.surgeries || []).some(s => s.isTestSandboxCase)) ? `
+                ${(this.canUseSandboxSchedule() && (Store._data?.surgeries || []).some(s => s.isTestSandboxCase)) ? `
                 <button type="button" id="surg-toggle-sandbox-preview" class="btn btn-secondary"
                     onclick="SurgeryPage.toggleSandboxSchedulePreview()">
                     <span aria-hidden="true">${this._showSandboxOnSchedule ? '🙈' : '🧪'}</span> ${this._showSandboxOnSchedule ? 'Ẩn ca [TEST]' : 'Xem ca [TEST]'}
+                </button>` : ''}
+                ${(canEdit && this.canUseSandboxSchedule()) ? `
+                <button type="button" id="surg-create-sandbox-btn" class="btn btn-secondary"
+                    style="border-color:#d97706;color:#b45309;background:rgba(245,158,11,0.1);font-weight:600;"
+                    onclick="SurgeryPage.openForm(0, null, { sandbox: true })"
+                    aria-label="Tạo ca giả lập từ lịch mổ để thực hành quy trình duyệt mổ">
+                    <span aria-hidden="true">🧪</span> Tạo ca giả lập
                 </button>` : ''}
                 <button class="btn btn-secondary" onclick="SurgeryPage.openTrashModal()" title="Thùng rác ca mổ đã hủy (Tự động xóa vĩnh viễn sau 7 ngày)" aria-label="Thùng rác ca mổ đã hủy">
                     🗑️ Thùng rác ${Store.cleanSurgeriesTrash(7).length > 0 ? `<span class="badge badge-danger" style="background:#ef4444;color:#fff;font-size:0.75rem;padding:2px 6px;border-radius:10px;margin-left:4px;">${Store.cleanSurgeriesTrash(7).length}</span>` : ''}
@@ -718,7 +727,8 @@ const SurgeryPage = {
     },
 
     // Form
-    openForm(id, date) {
+    openForm(id, date, opts = {}) {
+        this._openApprovalAfterSave = false;
         const all = this.getAllSurgeries();
         const s = id ? all.find(x => String(x.id) === String(id)) : null;
         const targetWeekKey = s?.date ? s.date.substring(0, 10) : this.getWeekKey();
@@ -731,18 +741,45 @@ const SurgeryPage = {
             return !rl.includes('học viên') && !rl.includes('nội trú');
         });
         const extDocs = Store.getAll('externalDoctors') || [];
+        const canSandbox = this.canUseSandboxSchedule();
+        const isSandboxDefault = s ? Boolean(s.isTestSandboxCase) : Boolean(opts && opts.sandbox && canSandbox);
 
-        const formKey = `surgery-${id || 'new'}`;
-        Modal.open(s ? 'Chỉnh sửa ca mổ' : 'Thêm ca mổ', `
+        const formKey = `surgery-${id || (isSandboxDefault ? 'new-sandbox' : 'new')}`;
+        const modalTitle = s
+            ? (s.isTestSandboxCase ? '🧪 Chỉnh sửa ca giả lập [TEST]' : 'Chỉnh sửa ca mổ')
+            : (isSandboxDefault ? '🧪 Tạo ca giả lập từ Lịch mổ [TEST]' : 'Thêm ca mổ');
+
+        const sandboxBannerHtml = (!s && canSandbox) ? `
+            <div id="surg-sandbox-mode-box" style="margin-bottom:14px;padding:12px 14px;border-radius:10px;border:1.5px dashed ${isSandboxDefault ? '#d97706' : 'var(--border-default)'};background:${isSandboxDefault ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)'};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;flex:1;min-width:220px;">
+                    <input type="checkbox" id="surg-is-sandbox-case" name="isTestSandboxCase" value="1" ${isSandboxDefault ? 'checked' : ''} onchange="SurgeryPage._onSandboxModeToggle(this)" style="margin-top:3px;width:18px;height:18px;accent-color:#d97706;">
+                    <span>
+                        <strong style="display:block;font-size:0.92rem;color:var(--text-primary);">🧪 Ca giả lập đào tạo quy trình [TEST]</strong>
+                        <span style="display:block;font-size:0.8rem;color:var(--text-secondary);line-height:1.4;">Tự động gắn nhãn <code>[TEST]</code> & chuyển sang <strong>Tab Duyệt mổ</strong> để thực hành · Tách biệt 100% khỏi thống kê & xuất ảnh lịch mổ thật.</span>
+                    </span>
+                </label>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="SurgeryPage.fillSampleSandboxForm()" style="border-color:#d97706;color:#b45309;font-weight:600;white-space:nowrap;">
+                    ⚡ Điền nhanh ca mẫu
+                </button>
+            </div>
+        ` : (s && s.isTestSandboxCase ? `
+            <input type="hidden" name="isTestSandboxCase" value="1">
+            <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;border:1px solid #d97706;background:rgba(245,158,11,0.09);font-size:0.85rem;color:var(--text-primary);">
+                🧪 <strong>Ca giả lập đào tạo [TEST]</strong> — Mọi thay đổi trên lịch mổ sẽ đồng bộ trực tiếp sang <strong>Tab Duyệt mổ</strong> (0% ảnh hưởng bệnh nhân thật).
+            </div>
+        ` : '');
+
+        Modal.open(modalTitle, `
             <form onsubmit="SurgeryPage.save(event, ${id || 0})" data-autosave-key="${formKey}">
+                ${sandboxBannerHtml}
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Họ tên bệnh nhân</label>
-                        <input class="form-input" name="patientName" value="${s?.patientName || ''}" required placeholder="Nguyễn Văn A">
+                        <input class="form-input" name="patientName" value="${Utils.escapeHtml(s?.patientName || '')}" required placeholder="${isSandboxDefault ? '[TEST] Nguyễn Văn Minh' : 'Nguyễn Văn A'}">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Năm sinh</label>
-                        <input class="form-input" name="birthYear" value="${s?.birthYear || ''}" placeholder="1980" type="number" min="1900" max="2026">
+                        <input class="form-input" name="birthYear" value="${s?.birthYear || ''}" placeholder="1964" type="number" min="1900" max="2026">
                     </div>
                 </div>
                 <!-- Inline Duplicate Warning Banner -->
@@ -750,7 +787,7 @@ const SurgeryPage = {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Số nhập viện</label>
-                        <input class="form-input" name="admissionId" value="${s?.admissionId || ''}" placeholder="26014285">
+                        <input class="form-input" name="admissionId" value="${Utils.escapeHtml(s?.admissionId || '')}" placeholder="26014285">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại phẫu thuật</label>
@@ -811,21 +848,26 @@ const SurgeryPage = {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Chẩn đoán</label>
-                    <input class="form-input" name="diagnosis" value="${s?.diagnosis || ''}" placeholder="K đại tràng sigma">
+                    <input class="form-input" name="diagnosis" value="${Utils.escapeHtml(s?.diagnosis || '')}" placeholder="Ung thư đại tràng Sigma cT3N1M0">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Phương pháp phẫu thuật</label>
-                    <input class="form-input" name="method" value="${s?.method || ''}" placeholder="PTNS cắt đại tràng sigma">
+                    <input class="form-input" name="method" value="${Utils.escapeHtml(s?.method || '')}" placeholder="Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
-                    <textarea class="form-textarea" name="notes">${s?.notes || ''}</textarea>
+                    <textarea class="form-textarea" name="notes">${Utils.escapeHtml(s?.notes || '')}</textarea>
                 </div>
                 <div class="form-group" id="first-case-group">
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="flex-wrap:wrap;gap:8px;">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
-                    <button type="submit" class="btn btn-primary">${s ? 'Cập nhật' : 'Thêm ca mổ'}</button>
+                    <button type="button" id="surg-submit-open-approval-btn" class="btn btn-secondary"
+                        style="${isSandboxDefault ? 'border-color:#0284c7;color:#0369a1;background:rgba(14,165,233,0.1);font-weight:600;' : 'display:none;'}"
+                        onclick="SurgeryPage.submitAndOpenApproval(this)">
+                        📋 ${s ? 'Cập nhật & Sang Duyệt mổ' : 'Lưu & Sang Tab Duyệt mổ'}
+                    </button>
+                    <button type="submit" id="surg-submit-primary-btn" class="btn btn-primary">${s ? 'Cập nhật' : (isSandboxDefault ? '🧪 Lưu lên Lịch mổ' : 'Thêm ca mổ')}</button>
                 </div>
             </form>
         `);
@@ -839,37 +881,156 @@ const SurgeryPage = {
         this._checkAndShowInlineBanner(id);
     },
 
+    _onSandboxModeToggle(checkboxEl) {
+        const checked = Boolean(checkboxEl && checkboxEl.checked);
+        const box = document.getElementById('surg-sandbox-mode-box');
+        if (box) {
+            box.style.borderColor = checked ? '#d97706' : 'var(--border-default)';
+            box.style.background = checked ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)';
+        }
+        const primaryBtn = document.getElementById('surg-submit-primary-btn');
+        if (primaryBtn) primaryBtn.textContent = checked ? '🧪 Lưu lên Lịch mổ' : 'Thêm ca mổ';
+        const openAppBtn = document.getElementById('surg-submit-open-approval-btn');
+        if (openAppBtn) {
+            openAppBtn.style.display = checked ? '' : 'none';
+            if (checked) {
+                openAppBtn.style.borderColor = '#0284c7';
+                openAppBtn.style.color = '#0369a1';
+                openAppBtn.style.background = 'rgba(14,165,233,0.1)';
+                openAppBtn.style.fontWeight = '600';
+            }
+        }
+        const nameInput = document.querySelector('#modal input[name="patientName"]');
+        if (nameInput) nameInput.placeholder = checked ? '[TEST] Nguyễn Văn Minh' : 'Nguyễn Văn A';
+        const dateInput = document.querySelector('#modal input[name="date"]');
+        this._initFirstCaseCheckbox(null, dateInput ? dateInput.value : new Date().toISOString().split('T')[0]);
+        this._checkAndShowInlineBanner(0);
+    },
+
+    submitAndOpenApproval(btnEl) {
+        const form = btnEl ? btnEl.closest('form') : document.querySelector('#modal form');
+        if (!form) return;
+        this._openApprovalAfterSave = true;
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    },
+
+    fillSampleSandboxForm() {
+        const form = document.querySelector('#modal form');
+        if (!form) return;
+        const sbxCheckbox = document.getElementById('surg-is-sandbox-case');
+        if (sbxCheckbox && !sbxCheckbox.checked) {
+            sbxCheckbox.checked = true;
+            this._onSandboxModeToggle(sbxCheckbox);
+        }
+        const weekDates = this.getWeekDates();
+        const thursdayStr = weekDates[3] ? this.dateStr(weekDates[3]) : new Date().toISOString().split('T')[0];
+        const samples = [
+            {
+                patientName: '[TEST] Nguyễn Văn Minh',
+                birthYear: 1964,
+                admissionId: 'TEST-261101',
+                surgeryType: 'chuongtrinh',
+                approachType: 'noisoi',
+                date: thursdayStr,
+                duration: 150,
+                mainSurgeon: 4,
+                assistSurgeon1: 45,
+                diagnosis: 'Ung thư đại tràng Sigma cT3N1M0',
+                method: 'Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch',
+                notes: 'Ca giả lập thực hành quy trình Lịch mổ → Tab Duyệt mổ (Tổ 1: P.706)'
+            },
+            {
+                patientName: '[TEST] Trần Thị Thu Hà',
+                birthYear: 1968,
+                admissionId: 'TEST-261102',
+                surgeryType: 'chuongtrinh',
+                approachType: 'noisoi',
+                date: thursdayStr,
+                duration: 180,
+                mainSurgeon: 6,
+                assistSurgeon1: 44,
+                diagnosis: 'Ung thư trực tràng 1/3 giữa sau hóa xạ tiền phẫu (ycT2N0M0)',
+                method: 'Phẫu thuật nội soi cắt trước thấp trực tràng (LAR) + TME',
+                notes: 'Ca giả lập thực hành quy trình Lịch mổ → Tab Duyệt mổ (Tổ 2: P.710)'
+            },
+            {
+                patientName: '[TEST] Lê Hoàng Khôi',
+                birthYear: 1981,
+                admissionId: 'TEST-261103',
+                surgeryType: 'dichvu',
+                approachType: 'mo',
+                date: thursdayStr,
+                duration: 60,
+                mainSurgeon: 8,
+                assistSurgeon1: 43,
+                diagnosis: 'Rò hậu môn xuyên cơ thắt cao phức tạp tái phát',
+                method: 'Phẫu thuật cắt đường rò hậu môn + đặt Seton dẫn lưu',
+                notes: 'Ca giả lập thực hành quy trình Lịch mổ → Tab Duyệt mổ (Tổ 3: P.718)'
+            }
+        ];
+        const sample = samples[this._sampleSandboxIdx % samples.length];
+        this._sampleSandboxIdx += 1;
+
+        const setVal = (name, val) => {
+            const el = form.querySelector(`[name="${name}"]`);
+            if (el) el.value = val ?? '';
+        };
+        setVal('patientName', sample.patientName);
+        setVal('birthYear', sample.birthYear);
+        setVal('admissionId', sample.admissionId);
+        setVal('surgeryType', sample.surgeryType);
+        const typeEl = form.querySelector('[name="surgeryType"]');
+        if (typeEl) this._onSurgeryTypeChange(typeEl);
+        setVal('approachType', sample.approachType);
+        setVal('date', sample.date);
+        setVal('duration', sample.duration);
+        setVal('mainSurgeon', sample.mainSurgeon);
+        setVal('assistSurgeon1', sample.assistSurgeon1);
+        setVal('diagnosis', sample.diagnosis);
+        setVal('method', sample.method);
+        setVal('notes', sample.notes);
+
+        this._initFirstCaseCheckbox(null, sample.date);
+        this._checkAndShowInlineBanner(0);
+    },
+
     _initFirstCaseCheckbox(s, dateStr) {
         const group = document.getElementById('first-case-group');
         if (!group) return;
 
+        const sbxEl = document.getElementById('surg-is-sandbox-case');
+        const isSandbox = s ? Boolean(s.isTestSandboxCase) : Boolean(sbxEl && sbxEl.checked);
         const all = this.getAllSurgeries();
-        const existingFirst = all.find(x => x.date === dateStr && x.isFirstCase && (!s || String(x.id) !== String(s?.id)));
+        const existingFirst = all.find(x => x.date === dateStr && Boolean(x.isTestSandboxCase) === isSandbox && x.isFirstCase && (!s || String(x.id) !== String(s?.id)));
 
         if (existingFirst) {
-            const name = existingFirst.patientName;
+            const name = Utils.escapeHtml(existingFirst.patientName || '');
             group.innerHTML = `
                 <label class="first-case-label-disabled">
                     <input type="checkbox" disabled checked>
-                    <span class="first-case-label span">⭐ Ca đầu tiên trong ngày</span>
+                    <span class="first-case-label span">⭐ Ca đầu tiên trong ngày${isSandbox ? ' [TEST]' : ''}</span>
                 </label>
-                <div class="first-case-warning">⚠️ Đã có ca đầu tiên: <strong>${name}</strong></div>
+                <div class="first-case-warning">⚠️ Đã có ca đầu tiên${isSandbox ? ' [TEST]' : ''}: <strong>${name}</strong></div>
             `;
         } else {
             group.innerHTML = `
                 <label class="first-case-label">
                     <input type="checkbox" id="is-first-case" name="isFirstCase" ${s && s.isFirstCase ? 'checked' : ''}>
-                    <span class="first-case-label span">⭐ Ca đầu tiên trong ngày</span>
+                    <span class="first-case-label span">⭐ Ca đầu tiên trong ngày${isSandbox ? ' [TEST]' : ''}</span>
                 </label>
             `;
         }
 
         // Re-check when date changes
-        const dateInput = document.querySelector('input[name="date"]');
+        const dateInput = document.querySelector('#modal input[name="date"]');
         if (dateInput) {
-            dateInput.addEventListener('change', () => {
+            dateInput.onchange = () => {
                 this._initFirstCaseCheckbox(s, dateInput.value);
-            });
+            };
         }
     },
 
@@ -877,6 +1038,7 @@ const SurgeryPage = {
     _normalizePatientName(str) {
         if (!str) return '';
         return str.trim()
+            .replace(/^\[test\]\s*/i, '')
             .replace(/\s+/g, ' ')
             .toLowerCase()
             .replace(/đ/g, 'd')
@@ -916,9 +1078,11 @@ const SurgeryPage = {
 
         const all = this.getAllSurgeries();
         const matches = [];
+        const candSandbox = Boolean(candidate.isTestSandboxCase);
 
         for (const s of all) {
             if (currentId && String(s.id) === String(currentId)) continue;
+            if (Boolean(s.isTestSandboxCase) !== candSandbox) continue;
             const existName = this._normalizePatientName(s.patientName);
             const existAdm = (s.admissionId || '').trim();
             const existYear = s.birthYear ? parseInt(s.birthYear, 10) : null;
@@ -993,8 +1157,7 @@ const SurgeryPage = {
     },
 
     _bindRealtimeDuplicateCheck(currentId) {
-        const formKey = `surgery-${currentId || 'new'}`;
-        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
         if (!form) return;
 
         const checkFn = () => {
@@ -1014,8 +1177,7 @@ const SurgeryPage = {
     _checkAndShowInlineBanner(currentId) {
         const banner = document.getElementById('surgery-duplicate-banner');
         if (!banner) return;
-        const formKey = `surgery-${currentId || 'new'}`;
-        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
         if (!form) return;
 
         const formData = new FormData(form);
@@ -1023,7 +1185,8 @@ const SurgeryPage = {
             patientName: formData.get('patientName'),
             birthYear: formData.get('birthYear'),
             admissionId: formData.get('admissionId'),
-            date: formData.get('date')
+            date: formData.get('date'),
+            isTestSandboxCase: Boolean(formData.get('isTestSandboxCase'))
         };
 
         const matches = this._findDuplicateSurgeries(candidate, currentId);
@@ -1299,8 +1462,7 @@ const SurgeryPage = {
         this._closeDuplicateConfirmDialog();
 
         // Submit form again with override enabled
-        const formKey = `surgery-${currentId || 'new'}`;
-        const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
         if (form) {
             const submitEvent = new Event('submit', { cancelable: true });
             form.dispatchEvent(submitEvent);
@@ -1337,6 +1499,8 @@ const SurgeryPage = {
 
     save(e, id) {
         e.preventDefault();
+        const openApprovalAfter = Boolean(this._openApprovalAfterSave);
+        this._openApprovalAfterSave = false;
         const form = e.target;
         const submitBtn = form?.querySelector('button[type="submit"]');
         const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
@@ -1382,8 +1546,19 @@ const SurgeryPage = {
             const rawDuration = f.get('duration');
             const durationVal = rawDuration ? (parseInt(rawDuration, 10) || null) : null;
 
+            const all = this.getAllSurgeries();
+            const existingRec = id ? all.find(x => String(x.id) === String(id)) : null;
+            const isSandboxCase = existingRec
+                ? Boolean(existingRec.isTestSandboxCase)
+                : Boolean(f.get('isTestSandboxCase') && this.canUseSandboxSchedule());
+
+            const rawProperName = Utils.toProperCase(f.get('patientName'));
+            const normalizedPatientName = isSandboxCase
+                ? (/\[test\]/i.test(rawProperName) ? rawProperName : `[TEST] ${rawProperName}`)
+                : rawProperName.replace(/^\[test\]\s*/i, '');
+
             const candidateData = {
-                patientName: Utils.toProperCase(f.get('patientName')),
+                patientName: normalizedPatientName,
                 birthYear: f.get('birthYear') ? parseInt(f.get('birthYear'), 10) : '',
                 admissionId: f.get('admissionId') ? f.get('admissionId').trim() : '',
                 surgeryType: surgeryType,
@@ -1395,17 +1570,20 @@ const SurgeryPage = {
                 diagnosis: f.get('diagnosis') || '',
                 method: f.get('method') || '',
                 notes: f.get('notes') || '',
-                isFirstCase: !!f.get('isFirstCase')
+                isFirstCase: !!f.get('isFirstCase'),
+                ...(isSandboxCase ? { isTestSandboxCase: true } : {})
             };
 
             // Check for duplicates if not already overridden in this submit cycle
             if (!this._pendingOverride) {
+                if (openApprovalAfter) this._openApprovalAfterSave = true;
                 const matches = this._findDuplicateSurgeries(candidateData, id);
                 if (matches && matches.length > 0) {
                     restoreBtn();
                     this._showDuplicateConfirmDialog(matches, candidateData, id);
                     return;
                 }
+                this._openApprovalAfterSave = false;
             }
 
             const data = {
@@ -1417,7 +1595,7 @@ const SurgeryPage = {
                 this._pendingOverride = null;
             }
 
-            const all = this.getAllSurgeries();
+            let savedId = id;
             if (id) {
                 const idx = all.findIndex(x => String(x.id) === String(id));
                 if (idx !== -1) {
@@ -1433,23 +1611,60 @@ const SurgeryPage = {
                 }
             } else {
                 data.id = Date.now();
+                savedId = data.id;
                 data.createdBy = actorMeta;    // audit trail: who created
                 all.push(data);
             }
-            this.saveSurgeries(all);
+            const syncPromise = this.saveSurgeries(all);
 
             // P1: Clear auto-save draft on successful save
-            const formKey = `surgery-${id || 'new'}`;
+            const formKey = form?.getAttribute('data-autosave-key') || `surgery-${id || 'new'}`;
             try { Modal.clearDraft(formKey); } catch (_) {}
             try { Modal.close(); } catch (_) {}
 
-            // Switch selected day focus to the surgery's date so the user immediately sees the updated case
+            if (isSandboxCase) {
+                this._showSandboxOnSchedule = true;
+            }
+
+            // Switch selected week & day focus to the surgery's date so the user immediately sees the updated case
             if (surgeryDate) {
+                const parts = surgeryDate.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    if (!isNaN(target.getTime())) {
+                        const day = target.getDay();
+                        this.currentWeekStart = new Date(target);
+                        this.currentWeekStart.setDate(target.getDate() - (day === 0 ? 6 : day - 1));
+                        this.currentWeekStart.setHours(0, 0, 0, 0);
+                    }
+                }
                 this._selectedDayStr = surgeryDate;
             }
 
-            App.renderCurrentPage();
-            Toast.success(id ? 'Đã cập nhật ca mổ' : 'Đã thêm ca mổ');
+            if (openApprovalAfter && typeof SurgeryApprovalPage !== 'undefined') {
+                App.navigate('surgery-approval');
+                Promise.resolve(syncPromise).then(() => {
+                    if (typeof App !== 'undefined' && App.currentPage === 'surgery-approval') {
+                        App.renderCurrentPage();
+                    }
+                    SurgeryApprovalPage.openCaseModal(savedId, { source: 'schedule' });
+                });
+                Toast.success(id ? 'Đã cập nhật & mở hồ sơ trên Tab Duyệt mổ' : '🧪 Đã lưu ca giả lập & chuyển sang Tab Duyệt mổ');
+            } else {
+                App.renderCurrentPage();
+                if (isSandboxCase) {
+                    Promise.resolve(syncPromise).then(() => {
+                        if (typeof App !== 'undefined' && App.currentPage === 'surgery') {
+                            App.renderCurrentPage();
+                        }
+                    });
+                    Toast.success(id
+                        ? '🧪 Đã cập nhật ca giả lập [TEST] trên Lịch mổ'
+                        : '🧪 Đã thêm ca giả lập [TEST] lên Lịch mổ — Bấm nhãn 📝 Chưa trình trên thẻ ca hoặc mở Tab Duyệt mổ để thực hành!');
+                } else {
+                    Toast.success(id ? 'Đã cập nhật ca mổ' : 'Đã thêm ca mổ');
+                }
+            }
         } catch (err) {
             console.error('[SurgeryPage] save error:', err);
             Toast.error('Không thể lưu ca mổ: ' + (err.message || 'Lỗi không xác định'));

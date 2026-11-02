@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611021215`
+> 📌 **Current Build Stamp:** `2611021246`
 
 ---
 
@@ -56,6 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- FEAT: Tạo ca giả lập [TEST] trực tiếp từ Lịch mổ tuần liên thông sang Tab Duyệt mổ để tập huấn quy trình (0% ảnh hưởng bệnh nhân thật) (`[FEAT-212]`, build `v2611021246`).
 - Tạm cất dự trữ chip Bắc cầu Heparin / LMWH (shelved: true) tại Cụm 2B Thuốc chống huyết khối để sử dụng sau (`[FEAT-211]`, commit `61e3a4d`, build `v2611021215`).
 - Nâng cấp toàn diện Tab Duyệt mổ nội bộ Khoa PTĐTT lên phiên bản quy tắc `2026.11.v5` theo Phiếu khám tiền mê mẫu BVBD (Zero HIS Coupling, không nhập ASA/Mallampati): mở rộng `C-04` lên 13 bệnh nội khoa chọn lọc (lược bỏ Covid 19) kèm ghi chú điều trị; bổ sung `C-08` Tiền sử ngoại khoa/vô cảm & loại sẹo ổ bụng (cảnh báo đặt trocar khi mổ Nội soi/Robot trên nền sẹo mổ mở cũ), `C-09` Tiền sử dị ứng (`TC-21a` bắt buộc tên tác nhân khi chọn Thuốc/Phản vệ), `C-10` Thói quen rượu bia, thuốc lá kèm chip nhanh `[5] [10] [20] [30] gói/năm` (`TC-21b`) và chất gây nghiện (`TC-21c`); chia Bước ② thành Cụm 2A & Cụm 2B bảo toàn `9 chạm` ca thường quy, đồng bộ khóa an toàn `CK-03` (`TC-21d`), duyệt lại `Cũ → Mới` (`TC-22a`), hoãn cấp cứu (`TC-22b`), chuẩn hóa `Phương án 1` (tách riêng Quy ước điều phối bán khẩn nội bộ tại Khoa khỏi `QĐ 1073/QĐ-BVBD`) và Việt hóa 100% `Mốc hạn trình duyệt` (`[FEAT-209]`, commit `ccdef62`, build `v2611021115`).
 - Cập nhật ảnh chân dung studio chính thức cho ĐD. Đỗ Thị Bích Châu (ID 51) gồm 51.webp (256×256) và 51-lg.webp (480×600), bổ sung vào STAFF_PHOTO_IDS và STAFF_PHOTO_DIMS trong js/staff-photos.js (`[FEAT-208]`, commit `c91c8e9`, build `v2611011726`).

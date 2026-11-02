@@ -32,6 +32,7 @@ from surgery_approval_engine import (
     build_idempotency_record,
     build_initial_unverified_structures,
     build_sandbox_sample_surgeries,
+    can_user_access_sandbox,
     check_idempotency,
     compute_sla_status,
     find_active_delegation_for_deputy,
@@ -234,6 +235,12 @@ def register_surgery_approval_routes(app, sf_mod):
                         (t for t in (db.get("surgeriesTrash") or []) if isinstance(t, dict) and t.get("id") == surgery_id),
                         None,
                     )
+                if (
+                    isinstance(target_surgery, dict)
+                    and target_surgery.get("isTestSandboxCase") is True
+                    and not can_user_access_sandbox(real_user, db)
+                ):
+                    raise ApprovalEngineError(404, "SURGERY_NOT_FOUND", f"Không tìm thấy ca mổ #{surgery_id}.")
 
             actor = resolve_effective_actor(
                 real_user,
@@ -1637,7 +1644,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 if isinstance(s, dict) and s.get("isTestSandboxCase") is True
             }
             filtered = entries
-            if not real_user.get("isSuperAdmin"):
+            if not can_user_access_sandbox(real_user, db):
                 def _is_sandbox_log(ev):
                     act = str(ev.get("action") or "")
                     if act.startswith("sandbox_"):
@@ -1702,7 +1709,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(404, "SURGERY_NOT_FOUND", f"Không tìm thấy ca mổ #{sid}.")
 
             rec = copy.deepcopy(surgeries[idx])
-            if rec.get("isTestSandboxCase") is True and not real_user.get("isSuperAdmin"):
+            if rec.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
                 raise ApprovalEngineError(404, "SURGERY_NOT_FOUND", f"Không tìm thấy ca mổ #{sid}.")
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa.")
@@ -1799,7 +1806,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
 
             rec = copy.deepcopy(trash[t_idx])
-            if rec.get("isTestSandboxCase") is True and not real_user.get("isSuperAdmin"):
+            if rec.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền khôi phục.")
@@ -1913,7 +1920,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
 
             rec = trash[t_idx]
-            if rec.get("isTestSandboxCase") is True and not real_user.get("isSuperAdmin"):
+            if rec.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa vĩnh viễn.")
@@ -1969,11 +1976,12 @@ def register_surgery_approval_routes(app, sf_mod):
             revs = db.setdefault("_revisions", {})
             if updated > 0:
                 revs["notifications"] = int(revs.get("notifications", 1)) + 1
+            allow_sbx = can_user_access_sandbox(real_user, db)
             my_items = [
                 n for n in notifs
                 if isinstance(n, dict)
                 and n.get("toStaffId") == my_id
-                and (real_user.get("isSuperAdmin") or n.get("isTestSandboxCase") is not True)
+                and (allow_sbx or n.get("isTestSandboxCase") is not True)
             ]
             return {
                 "httpStatus": 200,
@@ -2011,11 +2019,12 @@ def register_surgery_approval_routes(app, sf_mod):
             revs = db.setdefault("_revisions", {})
             if removed > 0:
                 revs["notifications"] = int(revs.get("notifications", 1)) + 1
+            allow_sbx = can_user_access_sandbox(real_user, db)
             my_items = [
                 n for n in kept
                 if isinstance(n, dict)
                 and n.get("toStaffId") == my_id
-                and (real_user.get("isSuperAdmin") or n.get("isTestSandboxCase") is not True)
+                and (allow_sbx or n.get("isTestSandboxCase") is not True)
             ]
             return {
                 "httpStatus": 200,

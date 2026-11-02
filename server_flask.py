@@ -93,6 +93,7 @@ def add_no_cache_headers(response):
 from surgery_approval_engine import (
     PROTECTED_APPROVAL_COLLECTIONS,
     ApprovalEngineError,
+    can_user_access_sandbox,
     filter_db_payload_for_user,
     get_journal_path,
     protect_and_reconcile_surgeries_put,
@@ -947,9 +948,9 @@ def _authorize_and_prepare_items(user, collection, old_items, candidate_items, a
     # 15. notifications (per-user scoped + strict protection against surgery_approval forgery/tampering)
     if collection == 'notifications':
         my_id = (user or {}).get('staffId')
-        is_sa = _is_superadmin(user)
+        allow_sbx = can_user_access_sandbox(user, full_data)
         def _is_visible_mine(rec):
-            return isinstance(rec, dict) and rec.get('toStaffId') == my_id and (is_sa or rec.get('isTestSandboxCase') is not True)
+            return isinstance(rec, dict) and rec.get('toStaffId') == my_id and (allow_sbx or rec.get('isTestSandboxCase') is not True)
 
         old_by_id = {r.get('id'): r for r in (old_items or []) if isinstance(r, dict) and _is_pos_int(r.get('id'))}
         my_old = [r for r in (old_items or []) if _is_visible_mine(r)]
@@ -1126,7 +1127,8 @@ def get_data():
     safe_data['_revisions'] = {col: int(revisions.get(col, 1)) for col in WRITE_COLLECTIONS}
 
     data_str = json.dumps(safe_data, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
-    etag_seed = f"uid:{live_user.get('staffId')}:sa:{int(bool(live_user.get('isSuperAdmin')))}:" + data_str
+    allow_sbx = can_user_access_sandbox(live_user, data)
+    etag_seed = f"uid:{live_user.get('staffId')}:sa:{int(bool(live_user.get('isSuperAdmin')))}:sbx:{int(allow_sbx)}:" + data_str
     etag = '"' + hashlib.md5(etag_seed.encode('utf-8')).hexdigest() + '"'
     if request.headers.get('If-None-Match') == etag:
         resp_304 = make_response('', 304)
@@ -1229,10 +1231,10 @@ def get_surgeries_filtered():
     except ApprovalEngineError as e:
         return jsonify(e.to_dict()), e.status_code
 
-    is_sa = bool(live_user.get('isSuperAdmin'))
+    allow_sbx = can_user_access_sandbox(live_user, data)
     surgeries = [
         s for s in data.get('surgeries', [])
-        if isinstance(s, dict) and (is_sa or s.get('isTestSandboxCase') is not True)
+        if isinstance(s, dict) and (allow_sbx or s.get('isTestSandboxCase') is not True)
     ]
 
     from_date = request.args.get('from')
@@ -1269,15 +1271,15 @@ def get_collection(collection):
     except ApprovalEngineError as e:
         return jsonify(e.to_dict()), e.status_code
 
-    is_sa = bool(live_user.get('isSuperAdmin'))
+    allow_sbx = can_user_access_sandbox(live_user, data)
     raw_items = data.get(collection, [])
     if collection == 'notifications':
         my_id = live_user.get('staffId')
         items = [
             n for n in raw_items
-            if isinstance(n, dict) and n.get('toStaffId') == my_id and (is_sa or n.get('isTestSandboxCase') is not True)
+            if isinstance(n, dict) and n.get('toStaffId') == my_id and (allow_sbx or n.get('isTestSandboxCase') is not True)
         ]
-    elif collection in ('surgeries', 'surgeriesTrash') and not is_sa:
+    elif collection in ('surgeries', 'surgeriesTrash') and not allow_sbx:
         items = [s for s in raw_items if isinstance(s, dict) and s.get('isTestSandboxCase') is not True]
     else:
         items = raw_items
@@ -1374,14 +1376,15 @@ def put_collection(collection):
 
             # Filter visible server items for per-user / sandbox comparisons
             def _filter_visible(item_list):
+                allow_sbx = can_user_access_sandbox(live_user, data)
                 if collection == 'notifications':
                     return [
                         n for n in item_list
                         if isinstance(n, dict)
                         and n.get('toStaffId') == live_user.get('staffId')
-                        and (live_user.get('isSuperAdmin') or n.get('isTestSandboxCase') is not True)
+                        and (allow_sbx or n.get('isTestSandboxCase') is not True)
                     ]
-                if collection == 'surgeries' and not live_user.get('isSuperAdmin'):
+                if collection == 'surgeries' and not allow_sbx:
                     return [s for s in item_list if isinstance(s, dict) and s.get('isTestSandboxCase') is not True]
                 return item_list
 
@@ -1522,9 +1525,15 @@ def put_collection(collection):
                 cur_db = load_data()
                 srv_rev = int(cur_db.get('_revisions', {}).get(collection, 1))
                 raw_srv_items = cur_db.get(collection, [])
+                allow_sbx_err = can_user_access_sandbox(user_obj, cur_db)
                 if collection == 'notifications':
-                    raw_srv_items = [n for n in raw_srv_items if isinstance(n, dict) and n.get('toStaffId') == user_obj.get('staffId')]
-                elif collection == 'surgeries' and not user_obj.get('isSuperAdmin'):
+                    raw_srv_items = [
+                        n for n in raw_srv_items
+                        if isinstance(n, dict)
+                        and n.get('toStaffId') == user_obj.get('staffId')
+                        and (allow_sbx_err or n.get('isTestSandboxCase') is not True)
+                    ]
+                elif collection == 'surgeries' and not allow_sbx_err:
                     raw_srv_items = [s for s in raw_srv_items if isinstance(s, dict) and s.get('isTestSandboxCase') is not True]
                 payload_err['serverItems'] = raw_srv_items
                 payload_err['serverRevision'] = srv_rev
