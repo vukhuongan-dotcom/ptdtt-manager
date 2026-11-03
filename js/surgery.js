@@ -523,7 +523,7 @@ const SurgeryPage = {
                                     <span class="surgery-card-order">${idx + 1}</span>
                                     <span class="surgery-type-dot" style="background:${typeInfo.color}" title="${typeInfo.label}"></span>
                                     <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
-                                    <span class="surgery-card-yob">${s.birthYear || ''}</span>
+                                    <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
                                 ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
