@@ -6753,7 +6753,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 .surgery-day-body {
-    padding: 8px;
+    padding: 6px;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -6784,7 +6784,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 3px 6px;
+    gap: 4px 6px;
     padding: 7px 10px;
     min-width: 0;
 }
@@ -6803,16 +6803,15 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     margin: 0;
 }
 .surgery-card-compact-row .surgery-card-compact-name {
-    flex: 0 1 auto;
-    max-width: calc(100% - 65px);
-    min-width: 50px;
+    flex: 1 1 auto;
+    min-width: 80px;
     font-weight: 600;
     font-size: 0.78rem;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
+    line-height: 1.35;
 }
 .surgery-card-compact-row .surgery-card-yob {
     font-size: 0.68rem;
@@ -6820,6 +6819,58 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     flex-shrink: 0;
     white-space: nowrap;
 }
+
+/* Weekly 7-column grid: inline typographic flow so full patient name + birth year + badge never clip */
+.surgery-week-grid .surgery-card-compact-row {
+    display: block;
+    padding: 7px 8px;
+    line-height: 1.42;
+}
+.surgery-week-grid .surgery-card-compact-row .surgery-card-order {
+    display: inline-flex;
+    vertical-align: middle;
+    width: 18px;
+    height: 18px;
+    font-size: 0.66rem;
+    margin-right: 3px;
+    position: relative;
+    top: -1px;
+}
+.surgery-week-grid .surgery-card-compact-row .surgery-type-dot {
+    display: inline-block;
+    vertical-align: middle;
+    width: 7px;
+    height: 7px;
+    margin: 0 3px 0 0;
+    position: relative;
+    top: -1px;
+}
+.surgery-week-grid .surgery-card-compact-row .surgery-card-compact-name {
+    display: inline;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
+    word-break: normal;
+    line-height: 1.4;
+}
+.surgery-week-grid .surgery-card-compact-row .surgery-card-yob {
+    display: inline;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-left: 3px;
+}
+.surgery-week-grid .surgery-card-compact-row .badge-duplicate-patient,
+.surgery-week-grid .surgery-card-compact-row .badge-different-patient {
+    margin: 2px 0 0 2px;
+    padding: 1px 6px;
+    font-size: 0.66rem;
+}
+
 .surgery-card-order {
     width: 20px;
     height: 20px;
@@ -6843,13 +6894,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-weight: 600;
     font-size: 0.78rem;
     color: var(--text-primary);
-    white-space: normal;          /* allow wrap in fixed-width column */
+    white-space: normal;
     overflow: visible;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;        /* max 2 lines, still truncate if very long */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.3;
+    overflow-wrap: break-word;
+    line-height: 1.35;
 }
 .surgery-card-yob {
     font-size: 0.68rem;
@@ -6862,12 +6910,32 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.25s ease, padding 0.25s ease;
-    padding: 0 10px;
+    padding: 0 8px;
 }
 .surgery-card.surgery-expanded .surgery-card-detail {
-    max-height: 300px;
-    padding: 0 10px 10px;
+    max-height: 1200px;
+    padding: 0 8px 8px;
     border-top: 1px solid var(--border);
+}
+.surgery-card-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 7px 0 5px;
+}
+.surgery-card-meta-row .surgery-card-type-tag {
+    margin: 0;
+}
+.surgery-card-approach-tag {
+    display: inline-block;
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
 }
 .surgery-card-type-tag {
     display: inline-block;
@@ -6905,21 +6973,17 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 0.72rem;
     color: var(--primary-dark);
     font-weight: 500;
-    margin-bottom: 3px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    margin-bottom: 4px;
+    line-height: 1.38;
+    overflow-wrap: break-word;
 }
 .surgery-card-method {
     font-size: 0.7rem;
     color: var(--text-muted);
     font-style: italic;
     margin-bottom: 6px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.38;
+    overflow-wrap: break-word;
 }
 .surgery-card-footer {
     display: flex;
@@ -6932,6 +6996,8 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     font-size: 0.7rem;
     color: var(--text-secondary);
     font-weight: 500;
+    line-height: 1.35;
+    overflow-wrap: break-word;
 }
 .surgery-card-duration {
     font-size: 0.68rem;
@@ -7072,7 +7138,12 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: var(--warning);
 }
 /* Card action buttons row */
-.surg-card-actions { margin-top: 6px; display: flex; gap: 4px; }
+.surg-card-actions {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
 
 /* ===== PHASE 5: Flat Surgery Badges & KPI Bullet Chart ===== */
 .badge-robot {
@@ -7129,13 +7200,19 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 /* Inline btn variants (small, padding override) */
 .btn-card-action {
+    flex: 1 1 auto;
     font-size: var(--text-xxs, 0.6667rem);
-    padding: 2px 8px;
+    padding: 3px 6px;
+    white-space: nowrap;
+    justify-content: center;
 }
 .btn-card-action-danger {
+    flex: 1 1 auto;
     font-size: var(--text-xxs, 0.6667rem);
-    padding: 2px 8px;
+    padding: 3px 6px;
     color: var(--danger);
+    white-space: nowrap;
+    justify-content: center;
 }
 /* Required star */
 .form-required { color: var(--danger); }

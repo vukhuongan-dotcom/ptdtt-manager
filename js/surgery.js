@@ -170,6 +170,8 @@ const SurgeryPage = {
     _showSandboxOnSchedule: false,
     _openApprovalAfterSave: false,
     _sampleSandboxIdx: 0,
+    _allExpanded: false,
+    _expandedCardIds: new Set(),
 
     canUseSandboxSchedule() {
         if (typeof SurgeryApprovalPage === 'undefined') return false;
@@ -386,7 +388,7 @@ const SurgeryPage = {
                     </select>
                 </div>
                 <button class="btn btn-secondary btn-sm" onclick="SurgeryPage.toggleAllCards()" id="surgery-toggle-btn" title="Thu gọn / Mở rộng tất cả" aria-label="Thu gọn hoặc mở rộng tất cả thẻ ca mổ">
-                    <span id="surgery-toggle-icon">📂</span> <span id="surgery-toggle-text">Mở rộng</span>
+                    <span id="surgery-toggle-icon">${this._allExpanded ? '📁' : '📂'}</span> <span id="surgery-toggle-text">${this._allExpanded ? 'Thu gọn' : 'Mở rộng'}</span>
                 </button>
             </div>
         </div>
@@ -516,9 +518,13 @@ const SurgeryPage = {
                     <div class="surgery-day-body">
                         ${daySurgeries.length ? daySurgeries.map((s, idx) => {
                 const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
+                const approachLabel = (s.surgeryType === 'robot' && s.approachType === 'robot')
+                    ? ''
+                    : (({ mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'NSTH', robot: 'Robot' })[s.approachType] || '');
                 const showCaseApproval = showApproval && SurgeryApprovalPage.isCaseApprovalEnabled(s);
+                const isCardExpanded = Boolean(this._allExpanded || (this._expandedCardIds && this._expandedCardIds.has(String(s.id))));
                 return `
-                            <div class="surgery-card surgery-compact" data-surgery-id="${s.id}" onclick="SurgeryPage.toggleCard(this, event)">
+                            <div class="surgery-card ${isCardExpanded ? 'surgery-expanded' : 'surgery-compact'}" data-surgery-id="${s.id}" onclick="SurgeryPage.toggleCard(this, event)">
                                 <div class="surgery-card-compact-row">
                                     <span class="surgery-card-order">${idx + 1}</span>
                                     <span class="surgery-type-dot" style="background:${typeInfo.color}" title="${typeInfo.label}"></span>
@@ -528,10 +534,13 @@ const SurgeryPage = {
                                 </div>
                                 ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
                                 <div class="surgery-card-detail">
-                                    <div class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</div>
+                                    <div class="surgery-card-meta-row">
+                                        <span class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</span>
+                                        ${approachLabel ? `<span class="surgery-card-approach-tag">${approachLabel}</span>` : ''}
+                                    </div>
                                     ${s.duration ? `<div class="surg-card-duration">⏱ ${s.duration} phút</div>` : ''}
-                                    ${s.diagnosis ? `<div class="surgery-card-diagnosis">${s.diagnosis}</div>` : ''}
-                                    ${s.method ? `<div class="surgery-card-method">${s.method}</div>` : ''}
+                                    ${s.diagnosis ? `<div class="surgery-card-diagnosis">📋 ${Utils.escapeHtml(s.diagnosis)}</div>` : ''}
+                                    ${s.method ? `<div class="surgery-card-method">🔬 ${Utils.escapeHtml(s.method)}</div>` : ''}
                                     <div class="surgery-card-footer">
                                         <span class="surgery-card-surgeons">🔪 ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
                                     </div>
@@ -583,12 +592,21 @@ const SurgeryPage = {
     toggleCard(el, event) {
         event.stopPropagation();
         el.classList.toggle('surgery-compact');
-        el.classList.toggle('surgery-expanded');
+        const expanded = el.classList.toggle('surgery-expanded');
+        const sid = el.getAttribute('data-surgery-id');
+        if (sid && this._expandedCardIds) {
+            if (expanded) this._expandedCardIds.add(String(sid));
+            else this._expandedCardIds.delete(String(sid));
+        }
     },
 
     toggleAllCards() {
-        const cards = document.querySelectorAll('.surgery-card');
-        const allExpanded = [...cards].every(c => c.classList.contains('surgery-expanded'));
+        const cards = document.querySelectorAll('.surgery-week-grid .surgery-card');
+        const allExpanded = cards.length > 0 && [...cards].every(c => c.classList.contains('surgery-expanded'));
+        this._allExpanded = !allExpanded;
+        if (!this._allExpanded && this._expandedCardIds) {
+            this._expandedCardIds.clear();
+        }
         cards.forEach(c => {
             if (allExpanded) {
                 c.classList.add('surgery-compact');
@@ -596,6 +614,8 @@ const SurgeryPage = {
             } else {
                 c.classList.remove('surgery-compact');
                 c.classList.add('surgery-expanded');
+                const sid = c.getAttribute('data-surgery-id');
+                if (sid && this._expandedCardIds) this._expandedCardIds.add(String(sid));
             }
         });
         const icon = document.getElementById('surgery-toggle-icon');
