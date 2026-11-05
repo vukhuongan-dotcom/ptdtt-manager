@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Cập nhật ảnh đại diện & chân dung quy chuẩn cho ĐD. Ừng Phương Minh Oanh (ID 49) [FEAT-222] (v2611060526) (`[FEAT-222]`, build `v2611060526`).
+- Cập nhật ảnh đại diện & chân dung quy chuẩn cho ĐD. Ừng Phương Minh Oanh (ID 49) [FEAT-222] (v2611060526) (`[FEAT-222]`, commit `6c97918`, build `v2611060526`).
 - Cập nhật ảnh đại diện & chân dung studio quy chuẩn cho ĐD Trưởng Nguyễn Thị Ngọc Thùy (ID 3) và ĐD Nguyễn Thị Thanh Trúc (ID 52) gồm ảnh tròn 256x256 và chân dung 480x600, bổ sung vào STAFF_PHOTO_IDS, STAFF_PHOTO_DIMS và bộ kiểm thử TC-16 (build v2611031508) (`[FEAT-219]`, commit `3f38009`, build `v2611031508`).
 - Triển khai Đợt 1 Ghi nhận trách nhiệm đa bác sĩ chuẩn bị mổ, xác thực tài khoản cá nhân 1 lần (`mustChangePassword`, `sessionEpoch`, cô lập đa tab `_authEpoch`, thẻ tên 1 chạm), kiểm tra chống trùng đa đợt 2 tầng phía máy chủ (`episodeId` + `admissionId`), tách `proposedClass`/`verifiedClass` kỹ thuật ngoài DM 309, giao diện thẻ `TNM` chuẩn SurgiLog khóa phiên bản (`AJCC 8 Ch.20` & `AJCC Version 9 Anus`, tách `cTNM`/`ycTNM`), nhật ký chuỗi băm kép (`txEventId`, đọc đuôi thích ứng `>64 KiB`, xoay sổ `.seq_*.jsonl.gz`), quy chế trình thay (`assistSurgeon1` & `BS chính POD`), BCN tự duyệt minh bạch và 02 hệ KPI độc lập; giữ nguyên chế độ Demo trên bệnh nhân giả `[TEST]` (`sandboxOnlyMode = true`) đến hết `08/11/2026` (dự kiến áp dụng thực tế từ Thứ Hai `09/11/2026`) (`[FEAT-216]`, commit `79ee1dc`, build `v2611030107`).
 - FEAT: Nâng thời gian tự đăng xuất khi không hoạt động từ 5 phút lên 10 phút, cảnh báo trước 1 phút ở phút thứ 9 trong js/app.js (`[FEAT-215]`, commit `9ec1ff6`, build `v2611021947`).
