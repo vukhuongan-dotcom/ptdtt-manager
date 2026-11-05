@@ -539,10 +539,10 @@ runTest('TC-15', '100% Tiếng Việt thuần túy trên 6 trục và 19 phân n
 });
 
 // =========================================================================
-// TC-16: CSS Bundle & Synchronous Versioning (2611031611)
+// TC-16: CSS Bundle & Synchronous Versioning (2611060526)
 // =========================================================================
-runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS (gồm BS Phương ID 16) + 18 ĐD/HL/TK (gồm ĐD Trưởng Thùy ID 3, ĐD Bích Châu ID 51, ĐD Thanh Trúc ID 52) và phiên bản 2611031611 trên toàn hệ thống', () => {
-    const EXPECTED_VER = '2611031611';
+runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS (gồm BS Phương ID 16) + 19 ĐD/HL/TK (gồm ĐD Trưởng Thùy ID 3, ĐD Oanh ID 49, ĐD Bích Châu ID 51, ĐD Thanh Trúc ID 52) và phiên bản 2611060526 trên toàn hệ thống', () => {
+    const EXPECTED_VER = '2611060526';
     const bundlePath = path.join(ROOT_DIR, 'css/app.bundle.css');
     assert(fs.existsSync(bundlePath), 'css/app.bundle.css phải tồn tại');
     const bundleContent = fs.readFileSync(bundlePath, 'utf8');
@@ -573,8 +573,8 @@ runTest('TC-16', 'Đồng bộ CSS Bundle (css/app.bundle.css), ảnh avatar BS 
         assert(staffPhotosJs.includes(`${id}: { w: 480, h: 600 }`), `STAFF_PHOTO_DIMS[${id}] phải là 480x600`);
     });
 
-    // Verify all 18 ĐD, HL, TK staff avatars & STAFF_PHOTO_DIMS (480x600)
-    [3, 24, 25, 26, 27, 28, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 51, 52].forEach(id => {
+    // Verify all 19 ĐD, HL, TK staff avatars & STAFF_PHOTO_DIMS (480x600)
+    [3, 24, 25, 26, 27, 28, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 49, 51, 52].forEach(id => {
         assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}.webp`)), `img/staff/${id}.webp phải tồn tại`);
         assert(fs.existsSync(path.join(ROOT_DIR, `img/staff/${id}-lg.webp`)), `img/staff/${id}-lg.webp phải tồn tại`);
         assert(staffPhotosJs.includes(`${id}: { w: 480, h: 600 }`), `STAFF_PHOTO_DIMS[${id}] phải là 480x600`);

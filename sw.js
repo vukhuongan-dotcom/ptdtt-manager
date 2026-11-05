@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2611031611';
+const CACHE_NAME = 'ptdtt-v2611060526';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -69,7 +69,7 @@ const STATIC_ASSETS = [
     '/img/staff/27.webp', '/img/staff/28.webp', '/img/staff/29.webp', '/img/staff/30.webp',
     '/img/staff/31.webp', '/img/staff/32.webp', '/img/staff/33.webp', '/img/staff/35.webp',
     '/img/staff/36.webp', '/img/staff/37.webp', '/img/staff/38.webp', '/img/staff/39.webp',
-    '/img/staff/40.webp', '/img/staff/51.webp', '/img/staff/52.webp'
+    '/img/staff/40.webp', '/img/staff/49.webp', '/img/staff/51.webp', '/img/staff/52.webp'
 ];
 const STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
 
