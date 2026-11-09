@@ -56,6 +56,8 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- Bổ sung bài báo cáo khoa học "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam" của TS.BSCKII. Nguyễn Phú Hữu và vai trò Đồng Chủ tọa đoàn Phiên 1 Chuyên đề Ngoại khoa tại HNKHKT BVĐKKV Thủ Đức 2026 (ID 36), cập nhật seed data và bump build v2611092230 (`[FEAT-224]`, build `v2611092230`).
+- Nâng cấp cổng Auto-Registry và Hook Chaining Dispatcher theo chuẩn Rule v2:R45 (hỗ trợ upsert 2 giai đoạn, kiểm chứng biên lai VerificationReceipt v1 và tương thích đa môi trường) (`[FEAT-223]`).
 - Cập nhật ảnh đại diện & chân dung quy chuẩn cho ĐD. Ừng Phương Minh Oanh (ID 49) [FEAT-222] (v2611060526) (`[FEAT-222]`, commit `6c97918`, build `v2611060526`).
 - Cập nhật ảnh đại diện & chân dung studio quy chuẩn cho ĐD Trưởng Nguyễn Thị Ngọc Thùy (ID 3) và ĐD Nguyễn Thị Thanh Trúc (ID 52) gồm ảnh tròn 256x256 và chân dung 480x600, bổ sung vào STAFF_PHOTO_IDS, STAFF_PHOTO_DIMS và bộ kiểm thử TC-16 (build v2611031508) (`[FEAT-219]`, commit `3f38009`, build `v2611031508`).
 - Triển khai Đợt 1 Ghi nhận trách nhiệm đa bác sĩ chuẩn bị mổ, xác thực tài khoản cá nhân 1 lần (`mustChangePassword`, `sessionEpoch`, cô lập đa tab `_authEpoch`, thẻ tên 1 chạm), kiểm tra chống trùng đa đợt 2 tầng phía máy chủ (`episodeId` + `admissionId`), tách `proposedClass`/`verifiedClass` kỹ thuật ngoài DM 309, giao diện thẻ `TNM` chuẩn SurgiLog khóa phiên bản (`AJCC 8 Ch.20` & `AJCC Version 9 Anus`, tách `cTNM`/`ycTNM`), nhật ký chuỗi băm kép (`txEventId`, đọc đuôi thích ứng `>64 KiB`, xoay sổ `.seq_*.jsonl.gz`), quy chế trình thay (`assistSurgeon1` & `BS chính POD`), BCN tự duyệt minh bạch và 02 hệ KPI độc lập; giữ nguyên chế độ Demo trên bệnh nhân giả `[TEST]` (`sandboxOnlyMode = true`) đến hết `08/11/2026` (dự kiến áp dụng thực tế từ Thứ Hai `09/11/2026`) (`[FEAT-216]`, commit `79ee1dc`, build `v2611030107`).
@@ -89,6 +91,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [2.6.0] - 2026-10-29
 
 ### Added
+- Bổ sung bài báo cáo khoa học "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam" của TS.BSCKII. Nguyễn Phú Hữu và vai trò Đồng Chủ tọa đoàn Phiên 1 Chuyên đề Ngoại khoa tại HNKHKT BVĐKKV Thủ Đức 2026 (ID 36), cập nhật seed data và bump build v2611092230 (`[FEAT-224]`, build `v2611092230`).
 - Ghi nhận bài báo cáo khoa học của TS. BSCKII. Nguyễn Phú Hữu tại Hội nghị Cần Thơ 2026 vào phân hệ Báo cáo khoa học & Hội nghị (`[FEAT-197]`, build `v2610291102`).
 - Xây dựng phân hệ Duyệt mổ chuyên môn nội bộ tại Khoa PTĐTT kèm Checklist tiền phẫu 8 mục (`CK-01..CK-08`) và hệ thống Clinical Chips (`[FEAT-195]`, build `v2610281755`).
 - Cập nhật đầy đủ bộ ảnh chân dung chuẩn studio (`256×256` `.webp` và `480×600` `-lg.webp`) cho 10 Bác sĩ cơ hữu, BS. Phương và 15 Điều dưỡng, Hộ lý, Thư ký y khoa (`[FEAT-186]`, `[FEAT-189]`, `[FEAT-190]`).
@@ -111,6 +114,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [2.5.0] - 2026-08-25
 
 ### Added
+- Bổ sung bài báo cáo khoa học "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam" của TS.BSCKII. Nguyễn Phú Hữu và vai trò Đồng Chủ tọa đoàn Phiên 1 Chuyên đề Ngoại khoa tại HNKHKT BVĐKKV Thủ Đức 2026 (ID 36), cập nhật seed data và bump build v2611092230 (`[FEAT-224]`, build `v2611092230`).
 - Nâng cấp giao diện Lịch mổ Robot trên thiết bị di động và trình xử lý sự kiện chúc mừng sinh nhật nhân sự (`v2608251015`).
 - Hợp nhất đặc tả SSoT 6 Version Markers và hoàn thiện Báo cáo 16h Thứ 7 cùng tính năng phân công lịch tuần (`v2608231548`).
 

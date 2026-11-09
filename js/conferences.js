@@ -9,6 +9,30 @@ const CONF_REGIONS = {
 // Chỉ lưu hội nghị mà khoa có báo cáo
 const CONF_SEED_DATA = [
     {
+        name: "HNKHKT BVĐKKV THỦ ĐỨC 2026",
+        nameVi: "Hội nghị Khoa học Kỹ thuật Bệnh viện ĐKKV Thủ Đức năm 2026: Nâng cao năng lực - Phát triển toàn diện - Định hướng chuyên sâu",
+        dates: "12/11/2026",
+        startDate: "2026-11-12",
+        endDate: "2026-11-12",
+        location: "TPHCM",
+        venue: "Hội trường A, Bệnh viện Đa khoa Khu vực Thủ Đức (Số 64 Lê Văn Chí, P. Linh Xuân, TP. Hồ Chí Minh)",
+        region: "domestic",
+        organizer: "Bệnh viện Đa khoa Khu vực Thủ Đức",
+        website: "https://www.benhvienkhuvucthuduc.vn",
+        note: "TS.BSCKII. Nguyễn Phú Hữu tham gia 2 vai trò: (1) Báo cáo viên Phiên 1: Chuyên đề Ngoại khoa (09:00 - 09:15, HT A); (2) Đồng Chủ tọa đoàn Phiên 1: Chuyên đề Ngoại khoa (08:30 - 10:45, HT A) cùng TS.BS Nguyễn Sĩ Bảo (ĐHQG TP.HCM) và BS.CKII Đỗ Quang Sang (PGĐ BV ĐKKV Thủ Đức).",
+        presentations: [
+            {
+                date: "2026-11-12",
+                session: "Phiên 1 (Hội trường A): Chuyên đề Ngoại khoa",
+                time: "09:00 - 09:15",
+                title: "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam",
+                presenter: "TS. BSCKII Nguyễn Phú Hữu",
+                language: "vi",
+                note: "Trưởng khoa Phẫu thuật Đại trực tràng BV Bình Dân, Phó Chủ tịch Chi hội Phẫu thuật Robot Việt Nam. Đồng thời là Đồng Chủ tọa đoàn Phiên 1 (Chuyên đề Ngoại khoa, 08:30 - 10:45)."
+            }
+        ]
+    },
+    {
         name: "HNKHKT MỞ RỘNG BVĐK TP. CẦN THƠ 2026",
         nameVi: "Hội nghị Khoa học Kỹ thuật Mở rộng năm 2026: Hội nhập và phát triển trong kỷ nguyên số",
         dates: "22/10/2026",
