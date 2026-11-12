@@ -174,6 +174,43 @@ const GlobalSearch = {
             }
         });
 
+        // Search NCKH & Sáng kiến (strictly BCN-only)
+        const isBcnAdmin = typeof App !== 'undefined' && typeof App.isAdmin === 'function' && App.isAdmin();
+        if (isBcnAdmin) {
+            const nckhItems = Store.getAll('nckhItems') || [];
+            const catLabels = {
+                topic_approved: 'ĐT xét duyệt',
+                topic_accepted: 'ĐT nghiệm thu',
+                initiative_approved: 'SKCT xét duyệt',
+                initiative_recognized: 'SKCT công nhận'
+            };
+            nckhItems.forEach(item => {
+                const hay = [
+                    item.title,
+                    item.decisionNumber,
+                    item.principalInvestigator,
+                    ...(Array.isArray(item.collaborators) ? item.collaborators : []),
+                    ...(Array.isArray(item.authors) ? item.authors.map(a => a.name) : [])
+                ].map(x => this.normalize(x || '')).join(' ');
+                if (hay.includes(nq)) {
+                    results.push({
+                        type: 'nckh',
+                        icon: '🎓',
+                        iconBg: 'var(--primary-a10)',
+                        name: item.title,
+                        detail: `${item.decisionNumber ? item.decisionNumber + ' · ' : ''}Năm ${item.year || ''}${item.principalInvestigator ? ' · ' + item.principalInvestigator : ''}`,
+                        badge: catLabels[item.category] || 'NCKH',
+                        badgeBg: 'var(--primary-a10)',
+                        badgeColor: 'var(--primary)',
+                        action: () => {
+                            if (typeof NckhPage !== 'undefined') NckhPage._activeTab = item.category || 'dashboard';
+                            App.navigate('nckh');
+                        }
+                    });
+                }
+            });
+        }
+
         // Navigation items
         const navItems = [
             { name: 'Tổng quan', detail: 'Dashboard', icon: '📊', page: 'dashboard' },
@@ -183,9 +220,10 @@ const GlobalSearch = {
             { name: 'Kế hoạch', detail: 'Lịch kế hoạch', icon: '📅', page: 'plans' },
             { name: 'Phân công tuần', detail: 'Lịch phân công', icon: '📆', page: 'schedule' },
             { name: 'Lịch mổ tuần', detail: 'Surgery schedule', icon: '🔪', page: 'surgery' },
-            { name: 'Thống kê PT', detail: 'Surgery stats', icon: '📈', page: 'surgery-stats' },
+            ...(isBcnAdmin ? [{ name: 'Thống kê PT', detail: 'Surgery stats', icon: '📈', page: 'surgery-stats' }] : []),
             { name: 'Sinh hoạt chuyên môn', detail: 'Lịch SHCM & bài báo cáo', icon: '🔬', page: 'research' },
             { name: 'Hội nghị', detail: 'Hội nghị y khoa', icon: '👥', page: 'conferences' },
+            ...(isBcnAdmin ? [{ name: 'Nghiên cứu KH', detail: 'Nghiên cứu khoa học & Sáng kiến cải tiến (NCKH)', icon: '🎓', page: 'nckh' }] : []),
             { name: 'Báo cáo', detail: 'Báo cáo khoa', icon: '📄', page: 'reports' },
         ];
         navItems.forEach(n => {
@@ -216,14 +254,14 @@ const GlobalSearch = {
 
         // Group by type
         const groups = {};
-        const groupLabels = { nav: 'Trang', staff: 'Nhân sự', surgery: 'Ca phẫu thuật', research: 'Sinh hoạt chuyên môn', plan: 'Kế hoạch', patient: 'Bệnh nhân' };
+        const groupLabels = { nav: 'Trang', staff: 'Nhân sự', surgery: 'Ca phẫu thuật', research: 'Sinh hoạt chuyên môn', nckh: 'Nghiên cứu khoa học & Sáng kiến', plan: 'Kế hoạch', patient: 'Bệnh nhân' };
         this.results.forEach((r, idx) => {
             if (!groups[r.type]) groups[r.type] = [];
             groups[r.type].push({ ...r, idx });
         });
 
         let html = '';
-        const order = ['nav', 'staff', 'surgery', 'research', 'plan', 'patient'];
+        const order = ['nav', 'staff', 'surgery', 'research', 'nckh', 'plan', 'patient'];
         order.forEach(type => {
             if (!groups[type]) return;
             html += `<div class="search-group-label">${groupLabels[type]} (${groups[type].length})</div>`;

@@ -15,6 +15,9 @@ const AuditLog = {
         title: 'Tiêu đề', presenter: 'Báo cáo viên', location: 'Địa điểm',
         assignee: 'Phân công', dueDate: 'Hạn chót', priority: 'Ưu tiên',
         content: 'Nội dung',
+        category: 'Phân mục', year: 'Năm', decisionNumber: 'Số QĐ',
+        decisionDate: 'Ngày ký QĐ', councilDate: 'Ngày họp HĐ', reviewDate: 'Ngày xét duyệt',
+        principalInvestigator: 'Chủ nhiệm đề tài', rating: 'Kết quả nghiệm thu',
     },
 
     _actionLabels: {
@@ -24,6 +27,8 @@ const AuditLog = {
         'collection.put.staffStatuses': '📊 Trạng thái NS',
         'collection.put.schedules': '📅 Lịch mổ',
         'collection.put.shcmSchedule': '📋 Kế hoạch SHCM',
+        'collection.put.conferences': '🎤 Hội nghị',
+        'collection.put.nckhItems': '🎓 NCKH & Sáng kiến',
         'collection.put.tasks': '✅ Công việc',
         'collection.put.plans': '📋 Kế hoạch',
         'collection.put.notifications': '🔔 Thông báo',
@@ -187,6 +192,7 @@ const AuditLog = {
                 'collection.put.externalDoctors':['danh sách bác sĩ ngoài', 'bác sĩ'],
                 'collection.put.reports7h':      ['báo cáo 7 giờ', 'báo cáo'],
                 'collection.put.reports16h':     ['báo cáo 16 giờ', 'báo cáo'],
+                'collection.put.nckhItems':      ['danh sách NCKH & sáng kiến', 'hồ sơ'],
             };
             const info = collMap[action];
             const listName = info ? info[0] : 'dữ liệu';

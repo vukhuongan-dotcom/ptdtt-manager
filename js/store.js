@@ -4,7 +4,7 @@ const PENDING_KEY = 'ptdtt_pending_v1';
 const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
 const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2611122040;
+const CLIENT_BUILD = 2611122150;
 
 const COLLECTION_SYNC_ORDER = [
     'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
@@ -12,7 +12,7 @@ const COLLECTION_SYNC_ORDER = [
     'surgeries', 'surgeriesTrash',
     'schedules', 'reports16h', 'reports7h',
     'tasks', 'tasksTrash', 'notifications',
-    'conferences', 'patients', 'rooms', 'surgerySchedule'
+    'conferences', 'nckhItems', 'patients', 'rooms', 'surgerySchedule'
 ];
 
 const Store = {
@@ -262,6 +262,7 @@ const Store = {
                 patients: [...SAMPLE_PATIENTS],
                 schedules: [...SAMPLE_SCHEDULES],
                 conferences: [],
+                nckhItems: [],
                 nextIds: {
                     staff: maxStaffId + 1,
                     externalDoctors: 200,
@@ -270,6 +271,7 @@ const Store = {
                     patients: Math.max(0, ...SAMPLE_PATIENTS.map(p => p.id || 0)) + 1,
                     schedules: Math.max(0, ...SAMPLE_SCHEDULES.map(s => s.id || 0)) + 1,
                     conferences: 1,
+                    nckhItems: 1,
                     reports16h: 1,
                     reports7h: 1
                 }
@@ -307,6 +309,10 @@ const Store = {
             if (!this._data.conferences) this._data.conferences = [];
             if (!this._data.nextIds.conferences) {
                 this._data.nextIds.conferences = Math.max(0, ...this._data.conferences.map(item => item?.id || 0)) + 1;
+            }
+            if (!this._data.nckhItems) this._data.nckhItems = [];
+            if (!this._data.nextIds.nckhItems) {
+                this._data.nextIds.nckhItems = Math.max(0, ...this._data.nckhItems.map(item => item?.id || 0)) + 1;
             }
             // Reports collections
             if (!this._data.reports16h) this._data.reports16h = [];

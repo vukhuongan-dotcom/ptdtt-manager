@@ -21,6 +21,7 @@ const App = {
         'surgery-stats': SurgeryStatsPage,
         research: ResearchPage,
         conferences: ConferencesPage,
+        nckh: NckhPage,
         reports: ReportsPage,
     },
 
@@ -127,7 +128,7 @@ const App = {
     },
 
     // Pages that require admin role to access
-    _adminOnlyPages: ['surgery-stats'],
+    _adminOnlyPages: ['surgery-stats', 'nckh'],
 
     // Pages that require super admin role to access
     _superAdminOnlyPages: [],
@@ -215,7 +216,7 @@ const App = {
 
         content.addEventListener('touchstart', (e) => {
             if (e.touches.length !== 1) return;
-            ignoreSwipe = !!(e.target && e.target.closest && e.target.closest('.surgery-scroll-zone, .schedule-table-wrap, .staff-filters-scroll, .table-responsive'));
+            ignoreSwipe = !!(e.target && e.target.closest && e.target.closest('.surgery-scroll-zone, .schedule-table-wrap, .staff-filters-scroll, .table-responsive, .nckh-subtabs-wrap, .nckh-table-card, .nckh-staff-table-wrap'));
             if (ignoreSwipe) return;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
@@ -263,6 +264,9 @@ const App = {
         this._adminOnlyPages.forEach(page => {
             const navItem = document.getElementById(`nav-${page}`);
             if (navItem) navItem.style.display = isAdmin ? '' : 'none';
+            if (!isAdmin && this.currentPage === page) {
+                this.navigate('dashboard');
+            }
         });
         // Super-admin-only pages
         this._superAdminOnlyPages.forEach(page => {

@@ -3959,6 +3959,7 @@ def filter_db_payload_for_user(raw_data: dict, user: dict, strip_fields: set) ->
     """
     staff_id = (user or {}).get("staffId")
     is_sa = bool((user or {}).get("isSuperAdmin"))
+    is_bcn = bool((user or {}).get("isAdmin") or is_sa)
     allow_sbx = can_user_access_sandbox(user, raw_data)
 
     out = {}
@@ -3972,6 +3973,8 @@ def filter_db_payload_for_user(raw_data: dict, user: dict, strip_fields: set) ->
                 and n.get("toStaffId") == staff_id
                 and (allow_sbx or n.get("isTestSandboxCase") is not True)
             ]
+        elif k == "nckhItems" and isinstance(v, list):
+            out[k] = v if is_bcn else []
         elif k in ("surgeries", "surgeriesTrash") and isinstance(v, list) and not allow_sbx:
             out[k] = [s for s in v if isinstance(s, dict) and s.get("isTestSandboxCase") is not True]
         elif k == "approvalDelegations" and isinstance(v, list):

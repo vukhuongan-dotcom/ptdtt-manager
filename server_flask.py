@@ -57,7 +57,7 @@ WRITE_COLLECTIONS = {
     'staff', 'staffStatuses', 'schedules', 'tasks', 'tasksTrash', 'plans', 'patients',
     'reports7h', 'reports16h', 'shcmSchedule', 'surgerySchedule', 'surgeries', 'surgeriesTrash',
     'notifications', 'rooms', 'departedStaff', 'externalDoctors', 'shcmSettings',
-    'conferences', 'specialTeams'
+    'conferences', 'nckhItems', 'specialTeams'
 }
 
 # ────────────────────────────── Flask App ──────────────────────────────
@@ -257,6 +257,7 @@ _DIFF_LABEL_FIELDS = {
     'plans':          ['title', 'type', 'date', 'status', 'assignee'],
     'tasks':          ['title', 'assignee', 'status', 'dueDate', 'priority'],
     'notifications':  ['title', 'content', 'type'],
+    'nckhItems':      ['category', 'title', 'decisionNumber', 'year', 'principalInvestigator', 'status', 'note'],
 }
 
 def _record_label(rec, collection):
@@ -617,6 +618,29 @@ def _validate_collection_schema(collection, items):
                 return False, f'Trùng lặp weekKey="{wk}" trong schedules.'
             seen_natural.add(wk)
 
+        if collection == 'nckhItems':
+            cat = r.get('category')
+            valid_cats = {'topic_approved', 'topic_accepted', 'initiative_approved', 'initiative_recognized'}
+            if cat not in valid_cats:
+                return False, f'Bản ghi nckhItems (id={rid}) có category "{cat}" không hợp lệ.'
+            title = r.get('title')
+            if not isinstance(title, str) or not title.strip():
+                return False, f'Bản ghi nckhItems (id={rid}) thiếu tên đề tài / sáng kiến.'
+            yr = r.get('year')
+            if yr is not None and (isinstance(yr, bool) or not isinstance(yr, int) or yr < 2000 or yr > 2100):
+                return False, f'Bản ghi nckhItems (id={rid}) có năm "{yr}" không hợp lệ.'
+            for df in ('decisionDate', 'councilDate', 'reviewDate'):
+                dval = r.get(df)
+                if dval not in (None, '') and not _is_valid_iso_date(dval):
+                    return False, f'Bản ghi nckhItems (id={rid}) có trường {df}="{dval}" không hợp lệ (YYYY-MM-DD).'
+            authors = r.get('authors')
+            if authors is not None:
+                if not isinstance(authors, list):
+                    return False, f'Bản ghi nckhItems (id={rid}) có trường authors không phải danh sách.'
+                for a_idx, a_obj in enumerate(authors):
+                    if not isinstance(a_obj, dict) or not str(a_obj.get('name') or '').strip():
+                        return False, f'Tác giả thứ {a_idx + 1} của nckhItems (id={rid}) thiếu họ tên.'
+
     return True, None
 
 def _record_primary_key(collection, rec):
@@ -874,9 +898,9 @@ def _authorize_and_prepare_items(user, collection, old_items, candidate_items, a
                 break
         return effective
 
-    # 2–6 & 17–20: Admin-only collections
+    # 2–6 & 17–21: Admin-only collections
     if collection in ('departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses', 'conferences',
-                      'tasksTrash', 'patients', 'rooms', 'surgerySchedule'):
+                      'nckhItems', 'tasksTrash', 'patients', 'rooms', 'surgerySchedule'):
         if not _is_admin(user):
             raise CollectionAuthError(403, f'Chỉ Quản trị viên mới có quyền cập nhật {collection}.')
         return _stamp_audit_fields(user, old_items, candidate_items, collection)
@@ -1180,7 +1204,7 @@ def get_data():
 
     data_str = json.dumps(safe_data, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
     allow_sbx = can_user_access_sandbox(live_user, data)
-    etag_seed = f"uid:{live_user.get('staffId')}:sa:{int(bool(live_user.get('isSuperAdmin')))}:sbx:{int(allow_sbx)}:" + data_str
+    etag_seed = f"uid:{live_user.get('staffId')}:adm:{int(bool(_is_admin(live_user)))}:sa:{int(bool(live_user.get('isSuperAdmin')))}:sbx:{int(allow_sbx)}:" + data_str
     etag = '"' + hashlib.md5(etag_seed.encode('utf-8')).hexdigest() + '"'
     if request.headers.get('If-None-Match') == etag:
         resp_304 = make_response('', 304)
@@ -1324,6 +1348,8 @@ def get_collection(collection):
         return jsonify(e.to_dict()), e.status_code
 
     allow_sbx = can_user_access_sandbox(live_user, data)
+    if collection == 'nckhItems' and not _is_admin(live_user):
+        return jsonify({'error': 'Chỉ Ban Chủ nhiệm Khoa mới có quyền truy cập dữ liệu Nghiên cứu khoa học.'}), 403
     raw_items = data.get(collection, [])
     if collection == 'notifications':
         my_id = live_user.get('staffId')
@@ -1419,6 +1445,8 @@ def put_collection(collection):
             )
             user_obj = live_user
             username = live_user.get('sub', username)
+            if collection == 'nckhItems' and not _is_admin(live_user):
+                raise CollectionAuthError(403, 'Chỉ Ban Chủ nhiệm Khoa mới có quyền cập nhật dữ liệu Nghiên cứu khoa học.')
 
             old_items = data.get(collection, [])
             if not isinstance(old_items, list):
@@ -1429,6 +1457,8 @@ def put_collection(collection):
             # Filter visible server items for per-user / sandbox comparisons
             def _filter_visible(item_list):
                 allow_sbx = can_user_access_sandbox(live_user, data)
+                if collection == 'nckhItems' and not _is_admin(live_user):
+                    return []
                 if collection == 'notifications':
                     return [
                         n for n in item_list
@@ -2593,6 +2623,187 @@ def _normalize_legacy_db_ids():
             save_data(db_data)
             print('[DB] ✅ Normalized legacy collection IDs and nextIds counters in db.json')
 
+
+NCKH_DEFAULT_SEED_ITEMS = [
+    {
+        'id': 1,
+        'category': 'topic_approved',
+        'title': 'So sánh kết quả giữa thực hiện miệng nối trong và ngoài ổ bụng trong phẫu thuật nội soi điều trị ung thư đại tràng trái tại Bệnh viện Bình Dân',
+        'level': 'cap_co_so',
+        'year': 2026,
+        'principalInvestigator': 'TS.BS. Nguyễn Phú Hữu',
+        'collaborators': ['BS.CKII. Nguyễn Chí Nguyện', 'BS. Giao Hữu Trường Quy'],
+        'decisionNumber': '417/QĐ-BVBD',
+        'decisionDate': '2026-03-20',
+        'councilDate': '2026-03-25',
+        'status': 'accepted',
+        'linkedRecordId': 3,
+        'note': 'Đã nghiệm thu theo Quyết định số 1895/QĐ-BVBD ngày 23/09/2026',
+    },
+    {
+        'id': 2,
+        'category': 'topic_approved',
+        'title': 'So sánh kết quả sớm phẫu thuật nội soi bảo tồn và không bảo tồn động mạch đại tràng trái trong điều trị ung thư trực tràng',
+        'level': 'cap_co_so',
+        'year': 2026,
+        'principalInvestigator': 'BS.CKII. Nguyễn Phú Hữu',
+        'collaborators': ['BS. Giao Hữu Trường Quy', 'BS. Nguyễn Hùng Phúc'],
+        'decisionNumber': '2125/QĐ-BVBD',
+        'decisionDate': '2025-12-12',
+        'councilDate': '2025-12-17',
+        'status': 'accepted',
+        'linkedRecordId': 4,
+        'note': 'Đề tài kế hoạch năm 2026; đã nghiệm thu theo Quyết định số 1896/QĐ-BVBD ngày 23/09/2026',
+    },
+    {
+        'id': 3,
+        'category': 'topic_accepted',
+        'title': 'So sánh kết quả giữa thực hiện miệng nối trong và ngoài ổ bụng trong phẫu thuật nội soi điều trị ung thư đại tràng trái tại Bệnh viện Bình Dân',
+        'level': 'cap_co_so',
+        'year': 2026,
+        'principalInvestigator': 'TS.BS. Nguyễn Phú Hữu',
+        'collaborators': ['BS.CKII. Nguyễn Chí Nguyện', 'BS. Giao Hữu Trường Quy'],
+        'decisionNumber': '1895/QĐ-BVBD',
+        'decisionDate': '2026-09-23',
+        'councilDate': '2026-09-25',
+        'rating': 'Đạt',
+        'status': 'accepted',
+        'linkedRecordId': 1,
+        'sourceDecisionNumber': '417/QĐ-BVBD',
+        'note': 'Xét duyệt đề cương theo Quyết định số 417/QĐ-BVBD ngày 20/03/2026',
+    },
+    {
+        'id': 4,
+        'category': 'topic_accepted',
+        'title': 'So sánh kết quả sớm phẫu thuật nội soi bảo tồn và không bảo tồn động mạch đại tràng trái trong điều trị ung thư đại tràng sigma và trực tràng tại Bệnh viện Bình Dân',
+        'level': 'cap_co_so',
+        'year': 2026,
+        'principalInvestigator': 'TS.BS. Nguyễn Phú Hữu',
+        'collaborators': [
+            'BS. Giao Hữu Trường Quy',
+            'BS. Nguyễn Hùng Phúc',
+            'BS.CKII. Nguyễn Chí Nguyện',
+            'ĐD. Nguyễn Thị Ngọc Thùy',
+            'ĐD. Trần Thanh Danh',
+        ],
+        'decisionNumber': '1896/QĐ-BVBD',
+        'decisionDate': '2026-09-23',
+        'councilDate': '2026-09-25',
+        'rating': 'Đạt',
+        'status': 'accepted',
+        'linkedRecordId': 2,
+        'sourceDecisionNumber': '2125/QĐ-BVBD',
+        'note': 'Xét duyệt đề cương theo Quyết định số 2125/QĐ-BVBD ngày 12/12/2025',
+    },
+    {
+        'id': 5,
+        'category': 'initiative_approved',
+        'title': 'Phiếu thông tin hướng dẫn chăm sóc hậu môn nhân tạo tại nhà',
+        'year': 2026,
+        'block': 'Khối Tổng quát',
+        'department': 'Phẫu Thuật Đại Trực tràng',
+        'reviewDate': '2026-09-25',
+        'authors': [
+            {'name': 'Nguyễn Thị Ngọc Thùy', 'contributionPercent': 20},
+            {'name': 'Trần Thanh Danh', 'contributionPercent': 20},
+            {'name': 'Bùi Thị Mộng Trinh', 'contributionPercent': 20},
+            {'name': 'Nguyễn Thị Huyền', 'contributionPercent': 20},
+            {'name': 'Huỳnh Kim Xuân Hằng', 'contributionPercent': 20},
+        ],
+        'status': 'recognized',
+        'linkedRecordId': 7,
+        'note': 'Đã được công nhận theo Quyết định số 1905/QĐ-BVBD ngày 25/09/2026',
+    },
+    {
+        'id': 6,
+        'category': 'initiative_approved',
+        'title': 'Nâng cao hiệu quả, chất lượng chăm sóc hậu môn nhân tạo thông qua việc thành lập câu lạc bộ hậu môn nhân tạo hoạt động tại khoa',
+        'year': 2026,
+        'block': 'Khối Tổng quát',
+        'department': 'Phẫu Thuật Đại Trực tràng',
+        'reviewDate': '2026-09-25',
+        'authors': [
+            {'name': 'Phạm Thị Thanh Thảo', 'contributionPercent': 20},
+            {'name': 'Phan Thị Thủy Tiên', 'contributionPercent': 20},
+            {'name': 'Phan Thị Cẩm Tiên', 'contributionPercent': 20},
+            {'name': 'Nguyễn Như Hiền', 'contributionPercent': 20},
+            {'name': 'Lê Thị Thu Trang', 'contributionPercent': 20},
+        ],
+        'status': 'recognized',
+        'linkedRecordId': 8,
+        'note': 'Đã được công nhận theo Quyết định số 1905/QĐ-BVBD ngày 25/09/2026',
+    },
+    {
+        'id': 7,
+        'category': 'initiative_recognized',
+        'title': 'Phiếu thông tin hướng dẫn chăm sóc hậu môn nhân tạo tại nhà',
+        'year': 2026,
+        'block': 'Khối Tổng quát',
+        'department': 'Phẫu Thuật Đại Trực tràng',
+        'decisionNumber': '1905/QĐ-BVBD',
+        'decisionDate': '2026-09-25',
+        'sttInDecision': 4,
+        'authors': [
+            {'name': 'Nguyễn Thị Ngọc Thùy', 'contributionPercent': 20},
+            {'name': 'Trần Thanh Danh', 'contributionPercent': 20},
+            {'name': 'Bùi Thị Mộng Trinh', 'contributionPercent': 20},
+            {'name': 'Nguyễn Thị Huyền', 'contributionPercent': 20},
+            {'name': 'Huỳnh Kim Xuân Hằng', 'contributionPercent': 20},
+        ],
+        'status': 'recognized',
+        'linkedRecordId': 5,
+        'note': 'Đính kèm Quyết định 1905/QĐ-BVBD ngày 25/09/2026 của Bệnh viện Bình Dân',
+    },
+    {
+        'id': 8,
+        'category': 'initiative_recognized',
+        'title': 'Nâng cao hiệu quả, chất lượng chăm sóc hậu môn nhân tạo thông qua việc thành lập câu lạc bộ hậu môn nhân tạo hoạt động tại khoa',
+        'year': 2026,
+        'block': 'Khối Tổng quát',
+        'department': 'Phẫu Thuật Đại Trực tràng',
+        'decisionNumber': '1905/QĐ-BVBD',
+        'decisionDate': '2026-09-25',
+        'sttInDecision': 5,
+        'authors': [
+            {'name': 'Phạm Thị Thanh Thảo', 'contributionPercent': 20},
+            {'name': 'Phan Thị Thủy Tiên', 'contributionPercent': 20},
+            {'name': 'Phan Thị Cẩm Tiên', 'contributionPercent': 20},
+            {'name': 'Nguyễn Như Hiền', 'contributionPercent': 20},
+            {'name': 'Lê Thị Thu Trang', 'contributionPercent': 20},
+        ],
+        'status': 'recognized',
+        'linkedRecordId': 6,
+        'note': 'Đính kèm Quyết định 1905/QĐ-BVBD ngày 25/09/2026 của Bệnh viện Bình Dân',
+    },
+]
+
+
+def _ensure_nckh_bootstrapped():
+    """Idempotently seed initial NCKH & Sáng kiến 2026 records once when 'nckhItems' key is absent."""
+    _ensure_data_dir()
+    with _data_lock:
+        try:
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                db_data = json.load(f)
+        except Exception:
+            return
+        if not isinstance(db_data, dict) or 'nckhItems' in db_data:
+            return
+        db_data['nckhItems'] = copy.deepcopy(NCKH_DEFAULT_SEED_ITEMS)
+        next_ids = db_data.setdefault('nextIds', {})
+        next_ids['nckhItems'] = max((it.get('id', 0) for it in NCKH_DEFAULT_SEED_ITEMS), default=0) + 1
+        revs = db_data.setdefault('_revisions', {})
+        revs.setdefault('nckhItems', 1)
+        db_data['_lastModified'] = datetime.now().isoformat()
+        tmp = DATA_FILE + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(db_data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, DATA_FILE)
+        print(f'[DB] ✅ Bootstrapped nckhItems with {len(NCKH_DEFAULT_SEED_ITEMS)} initial 2026 records')
+
+
 # ────────────────────────────── Init ──────────────────────────────
 import sys as _sys
 register_surgery_approval_routes(app, _sys.modules[__name__])
@@ -2601,6 +2812,7 @@ _ensure_data_dir()
 _ensure_log_dir()
 _cleanup_old_logs(90)
 _normalize_legacy_db_ids()
+_ensure_nckh_bootstrapped()
 _init_auth_from_db()
 _purge_legacy_db_auth_fields()
 ensure_approval_bootstrapped(_sys.modules[__name__])
