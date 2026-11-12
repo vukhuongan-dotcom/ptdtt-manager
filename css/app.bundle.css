@@ -448,6 +448,10 @@ body {
     overflow: hidden;
     height: 100vh;
 }
+body.modal-open {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+}
 
 h1, h2, h3, h4, h5, h6, .page-title, .brand-name, .btn, .nav-item, .logo-title, .modal-title {
     font-family: var(--font-display);
@@ -610,7 +614,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 .card:hover { border-color: rgba(0,0,0,0.12); }
 
 /* Inputs */
-.form-group { margin-bottom: 16px; }
+.form-group { margin-bottom: 16px; min-width: 0; max-width: 100%; }
 .form-label {
     display: block;
     font-size: 0.8rem;
@@ -622,6 +626,9 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 }
 .form-input, .form-select, .form-textarea {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     padding: 10px 14px;
     background: var(--bg-primary);
     border: 1px solid var(--border-light);
@@ -1406,10 +1413,18 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 1100;
     animation: fadeIn 0.2s ease;
 }
 .modal-overlay.active { display: flex; }
+.modal-overlay.active::before {
+    content: '';
+    position: fixed;
+    inset: -50vh -50vw;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: -1;
+    pointer-events: auto;
+}
 
 .modal {
     background: var(--bg-secondary);
@@ -1455,7 +1470,10 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
 .modal-close:hover { background: var(--danger); color: white; }
 .modal-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     padding: 20px 24px;
 }
@@ -14526,9 +14544,41 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     .search-box { width: 100%; }
 
     /* ---- Form ---- */
-    .form-row { grid-template-columns: 1fr !important; gap: 8px !important; }
-    .form-input, .form-select, .form-textarea { font-size: 16px; } /* prevents iOS zoom */
-    .form-group { margin-bottom: 10px; }
+    .form-row {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 8px !important;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .form-input, .form-select, .form-textarea {
+        font-size: 16px; /* prevents iOS zoom */
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+    input[type="date"].form-input {
+        -webkit-appearance: none;
+        appearance: none;
+        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        text-align: left;
+        min-height: 42px;
+    }
+    input[type="date"].form-input::-webkit-date-and-time-value {
+        text-align: left;
+        margin: 0;
+    }
+    .form-group,
+    .modal-body form {
+        margin-bottom: 10px;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+    .modal-body form { margin-bottom: 0; }
     .form-label { font-size: 0.72rem; margin-bottom: 4px; }
 
     /* U0 A1: Xóa override btn-icon 32px — giữ 44x44px từ base.css (WCAG 2.5.5) */
@@ -14799,46 +14849,84 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         grid-template-columns: 1fr !important;
     }
 
-    /* ===== MODAL — Bottom Sheet style ===== */
-    .modal-overlay {
+    /* ===== MODAL — Bottom Sheet style (Isolated from .sap-drawer-overlay / .sap-drawer-right) ===== */
+    .modal-overlay:not(.sap-drawer-overlay) {
         align-items: flex-end !important;
+        padding: 0 !important;
+        top: var(--vv-offset-top, 0px);
+        height: var(--vvh, 100dvh);
     }
-    .modal, .modal-content {
+    .modal:not(.sap-drawer-right), .modal-content:not(.sap-drawer-right) {
         width: 100% !important;
-        max-width: none !important;
-        margin: 0;
-        border-radius: 16px 16px 0 0;
-        max-height: 90dvh;  /* A M4: dvh (dynamic viewport height) — trừ bàn phím ảo Android */
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        border-bottom: none !important;
+        max-height: calc(var(--vvh, 100dvh) - max(env(safe-area-inset-top, 0px), 12px)) !important;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
-        animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden !important;
+        animation: sheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
-    .modal-header {
-        padding: 14px 16px;
+    .modal:not(.sap-drawer-right) > .modal-header {
+        position: relative;
+        padding: 16px calc(18px + env(safe-area-inset-right, 0px)) 12px calc(18px + env(safe-area-inset-left, 0px)) !important;
         flex-shrink: 0;
         background: var(--bg-secondary);
         z-index: 2;
-        border-radius: 16px 16px 0 0;
+        border-radius: 20px 20px 0 0 !important;
     }
-    .modal-body {
-        flex: 1;
+    .modal:not(.sap-drawer-right) > .modal-header::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: var(--text-muted);
+        border-radius: 2px;
+        opacity: 0.35;
+    }
+    .modal:not(.sap-drawer-right) > .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
+        overflow-x: hidden !important;
+        overscroll-behavior-y: contain;
         -webkit-overflow-scrolling: touch;
-        padding: 12px 14px;
+        padding: 16px calc(18px + env(safe-area-inset-right, 0px)) 0 calc(18px + env(safe-area-inset-left, 0px)) !important;
     }
-    .modal-footer {
+    .modal:not(.sap-drawer-right) > .modal-body > *:last-child:not(form) {
+        padding-bottom: 16px;
+    }
+    .modal:not(.sap-drawer-right) .modal-footer {
         flex-shrink: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        position: sticky;
+        bottom: 0;
         background: var(--bg-secondary);
-        z-index: 2;
-        padding: 10px 14px;
+        z-index: 5;
+        margin: 12px 0 0 0 !important;
+        padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)) 0 !important;
         border-top: 1px solid var(--border);
         box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
         gap: 8px;
     }
-    .modal-footer .btn {
+    .modal:not(.sap-drawer-right) .modal-footer .btn {
         flex: 1;
         justify-content: center;
+    }
+    /* When virtual keyboard is open (.kb-open): demote .modal-footer to static at bottom of form */
+    .modal-overlay.kb-open:not(.sap-drawer-overlay) .modal:not(.sap-drawer-right) {
+        max-height: calc(var(--vvh, 100dvh) - max(env(safe-area-inset-top, 0px), 6px)) !important;
+    }
+    .modal-overlay.kb-open:not(.sap-drawer-overlay) .modal:not(.sap-drawer-right) .modal-footer {
+        position: static !important;
+        box-shadow: none !important;
+        padding: 12px 0 12px 0 !important;
     }
     .modal-title { font-size: 1rem; }
 
@@ -14972,10 +15060,6 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         .main-content {
             padding-bottom: calc(68px + env(safe-area-inset-bottom));
         }
-        /* Modal footer: không bị chạm home bar */
-        .modal-footer {
-            padding-bottom: calc(10px + env(safe-area-inset-bottom));
-        }
     }
     @media (max-width: 768px) {
         .surgery-sticky-header {
@@ -15002,54 +15086,12 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
 /* ===== MOBILE UX 2026 ENHANCEMENTS ===== */
 @media (max-width: 768px) {
-    /* 1. Bottom Sheet Modal */
-    .modal-overlay {
-        align-items: flex-end !important;
-        padding: 0 !important;
-    }
-    .modal {
-        width: 100% !important;
-        max-width: 100% !important;
-        max-height: 88vh !important;
-        border-radius: 20px 20px 0 0 !important;
-        margin: 0 !important;
-        border-bottom: none !important;
-        animation: sheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    }
-    .modal-header {
-        position: relative;
-        border-radius: 20px 20px 0 0 !important;
-        padding: 16px 18px 12px !important;
-    }
-    .modal-header::before {
-        content: '';
-        position: absolute;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 40px;
-        height: 4px;
-        background: var(--text-muted);
-        border-radius: 2px;
-        opacity: 0.35;
-    }
-    .modal-body {
-        padding: 16px 18px !important;
-    }
-    .modal-footer {
-        padding: 12px 18px !important;
-        position: sticky;
-        bottom: 0;
-        background: var(--bg-secondary);
-        z-index: 5;
-    }
-
-    /* 2. iOS Zoom Prevention on ALL input elements */
+    /* 1. iOS Zoom Prevention on ALL input elements */
     input, select, textarea, .form-input, .form-select, .form-textarea {
         font-size: 16px !important;
     }
 
-    /* 3. Active Touch Feedback */
+    /* 2. Active Touch Feedback */
     button:active,
     .btn:active,
     .nav-item:active,

@@ -777,9 +777,9 @@ const SurgeryPage = {
             : (isSandboxDefault ? '🧪 Tạo ca giả lập từ Lịch mổ [TEST]' : 'Thêm ca mổ');
 
         const sandboxBannerHtml = (!s && canSandbox) ? `
-            <div id="surg-sandbox-mode-box" style="margin-bottom:14px;padding:12px 14px;border-radius:10px;border:1.5px dashed ${isSandboxDefault ? '#d97706' : 'var(--border-default)'};background:${isSandboxDefault ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)'};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;flex:1;min-width:220px;">
-                    <input type="checkbox" id="surg-is-sandbox-case" name="isTestSandboxCase" value="1" ${isSandboxDefault ? 'checked' : ''} onchange="SurgeryPage._onSandboxModeToggle(this)" style="margin-top:3px;width:18px;height:18px;accent-color:#d97706;">
+            <div id="surg-sandbox-mode-box" style="margin-bottom:14px;padding:12px 14px;border-radius:10px;border:1.5px dashed ${isSandboxDefault ? '#d97706' : 'var(--border-default)'};background:${isSandboxDefault ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)'};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-width:0;max-width:100%;">
+                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;flex:1 1 180px;min-width:0;max-width:100%;">
+                    <input type="checkbox" id="surg-is-sandbox-case" name="isTestSandboxCase" value="1" ${isSandboxDefault ? 'checked' : ''} onchange="SurgeryPage._onSandboxModeToggle(this)" style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:#d97706;">
                     <span>
                         <strong style="display:block;font-size:0.92rem;color:var(--text-primary);">🧪 Ca giả lập đào tạo quy trình [TEST]</strong>
                         <span style="display:block;font-size:0.8rem;color:var(--text-secondary);line-height:1.4;">Tự động gắn nhãn <code>[TEST]</code> & chuyển sang <strong>Tab Duyệt mổ</strong> để thực hành · Tách biệt 100% khỏi thống kê & xuất ảnh lịch mổ thật.</span>

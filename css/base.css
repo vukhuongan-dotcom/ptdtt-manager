@@ -29,6 +29,10 @@ body {
     overflow: hidden;
     height: 100vh;
 }
+body.modal-open {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+}
 
 h1, h2, h3, h4, h5, h6, .page-title, .brand-name, .btn, .nav-item, .logo-title, .modal-title {
     font-family: var(--font-display);
@@ -191,7 +195,7 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 .card:hover { border-color: rgba(0,0,0,0.12); }
 
 /* Inputs */
-.form-group { margin-bottom: 16px; }
+.form-group { margin-bottom: 16px; min-width: 0; max-width: 100%; }
 .form-label {
     display: block;
     font-size: 0.8rem;
@@ -203,6 +207,9 @@ h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); }
 }
 .form-input, .form-select, .form-textarea {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     padding: 10px 14px;
     background: var(--bg-primary);
     border: 1px solid var(--border-light);

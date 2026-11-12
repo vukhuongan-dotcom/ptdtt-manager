@@ -589,11 +589,254 @@ const Modal = {
     _escHandler: null,
     _trapHandler: null,      // U3: focus trap handler
     _triggerElement: null,   // U3: element đã focus trước khi mở modal
+    _openFocusTimerId: null,
+    _vpSyncActive: false,
+    _vvRafId: null,
+    _wasKbOpen: false,
+    _pendingFocusScroll: false,
+    _baseLayoutWidth: 0,
+    _baseLayoutHeight: 0,
+    _savedScrollY: 0,
+    _vvResizeHandler: null,
+    _vvScrollHandler: null,
+    _winOrientationHandler: null,
+    _modalFocusInHandler: null,
+    _modalFocusOutHandler: null,
+    _overlayTouchMoveHandler: null,
+
+    _getViewportMetrics() {
+        const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+        if (vv && typeof vv.height === 'number') {
+            return {
+                width: vv.width || window.innerWidth || 0,
+                height: vv.height || window.innerHeight || 0,
+                offsetTop: vv.offsetTop || 0,
+                offsetLeft: vv.offsetLeft || 0,
+                scale: vv.scale || 1
+            };
+        }
+        return {
+            width: typeof window !== 'undefined' ? (window.innerWidth || 0) : 0,
+            height: typeof window !== 'undefined' ? (window.innerHeight || 0) : 0,
+            offsetTop: 0,
+            offsetLeft: 0,
+            scale: 1
+        };
+    },
+
+    _isKeyboardEditable(el) {
+        if (!el || el.disabled || el.readOnly) return false;
+        const modalBody = document.getElementById('modal-body');
+        if (!modalBody || !modalBody.contains(el)) return false;
+        const tag = String(el.tagName || '').toUpperCase();
+        if (tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable) return true;
+        if (tag === 'INPUT') {
+            const type = String(el.getAttribute('type') || 'text').toLowerCase();
+            return !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'file', 'color', 'hidden'].includes(type);
+        }
+        return false;
+    },
+
+    _ensureFocusedFieldVisible(el) {
+        const modalBody = document.getElementById('modal-body');
+        if (!modalBody || !el || !modalBody.contains(el)) return;
+        const elRect = el.getBoundingClientRect();
+        const bodyRect = modalBody.getBoundingClientRect();
+        if (bodyRect.height <= 0) return;
+        const m = this._getViewportMetrics();
+        const vvTop = m.offsetTop || 0;
+        const vvBottom = vvTop + (m.height || window.innerHeight || bodyRect.bottom);
+        const visibleTop = Math.max(bodyRect.top, vvTop);
+        const visibleBottom = Math.min(bodyRect.bottom, vvBottom);
+        if (visibleBottom <= visibleTop) return;
+
+        if (elRect.bottom > visibleBottom - 16) {
+            modalBody.scrollTop += Math.ceil(elRect.bottom - visibleBottom + 28);
+        } else if (elRect.top < visibleTop + 16) {
+            modalBody.scrollTop = Math.max(0, modalBody.scrollTop - Math.ceil(visibleTop - elRect.top + 28));
+        }
+    },
+
+    _syncVisualViewport(reason = '') {
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('modal');
+        if (!overlay || !overlay.classList.contains('active')) return;
+
+        const isDrawer = overlay.classList.contains('sap-drawer-overlay')
+            || Boolean(modal && modal.classList.contains('sap-drawer-right'));
+        const isDesktop = (typeof window !== 'undefined' ? window.innerWidth : 1024) > 768;
+
+        if (isDrawer || isDesktop) {
+            overlay.classList.remove('kb-open');
+            overlay.style.removeProperty('--vvh');
+            overlay.style.removeProperty('--vv-offset-top');
+            this._wasKbOpen = false;
+            this._pendingFocusScroll = false;
+            return;
+        }
+
+        const m = this._getViewportMetrics();
+        const curW = window.innerWidth || m.width || 0;
+        const docH = Math.max(
+            (document.documentElement && document.documentElement.clientHeight) || 0,
+            window.innerHeight || 0
+        );
+
+        if (!this._baseLayoutHeight || Math.abs(curW - this._baseLayoutWidth) > 40 || reason === 'orientationchange') {
+            this._baseLayoutWidth = curW;
+            this._baseLayoutHeight = Math.max(docH, m.height || 0);
+        } else if (m.scale <= 1.05 && m.height > this._baseLayoutHeight) {
+            this._baseLayoutHeight = m.height;
+        }
+
+        overlay.style.setProperty('--vvh', `${Math.round(m.height)}px`);
+        overlay.style.setProperty('--vv-offset-top', `${Math.max(0, Math.round(m.offsetTop || 0))}px`);
+
+        const kbDelta = Math.max(0, this._baseLayoutHeight - m.height - (m.offsetTop || 0));
+        const activeEl = document.activeElement;
+        const editableFocused = this._isKeyboardEditable(activeEl);
+        const isKbOpen = (m.scale <= 1.05) && (kbDelta > 110 || (editableFocused && kbDelta > 60));
+
+        const justOpenedKb = isKbOpen && !this._wasKbOpen;
+        const shouldScrollField = (reason === 'focusin' || this._pendingFocusScroll || justOpenedKb) && editableFocused;
+
+        overlay.classList.toggle('kb-open', isKbOpen);
+        this._wasKbOpen = isKbOpen;
+        this._pendingFocusScroll = false;
+
+        if (shouldScrollField) {
+            this._ensureFocusedFieldVisible(activeEl);
+        }
+    },
+
+    _scheduleViewportSync(reason = '') {
+        if (reason === 'focusin') {
+            this._pendingFocusScroll = true;
+        }
+        if (this._vvRafId !== null && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this._vvRafId);
+            this._vvRafId = null;
+        }
+        if (typeof requestAnimationFrame === 'function') {
+            this._vvRafId = requestAnimationFrame(() => {
+                this._vvRafId = null;
+                this._syncVisualViewport(reason);
+            });
+        } else {
+            this._syncVisualViewport(reason);
+        }
+    },
+
+    _setupViewportSync() {
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('modal');
+        if (!overlay || !modal) return;
+
+        this._vpSyncActive = true;
+        this._wasKbOpen = false;
+        this._pendingFocusScroll = false;
+        this._baseLayoutWidth = window.innerWidth || 0;
+        this._baseLayoutHeight = Math.max(
+            (document.documentElement && document.documentElement.clientHeight) || 0,
+            window.innerHeight || 0
+        );
+
+        this._vvResizeHandler = () => this._scheduleViewportSync('vv-resize');
+        this._vvScrollHandler = () => this._scheduleViewportSync('vv-scroll');
+        this._winOrientationHandler = () => this._scheduleViewportSync('orientationchange');
+        this._modalFocusInHandler = (e) => {
+            if (this._isKeyboardEditable(e.target)) {
+                this._scheduleViewportSync('focusin');
+            }
+        };
+        this._modalFocusOutHandler = () => this._scheduleViewportSync('focusout');
+        this._overlayTouchMoveHandler = (e) => {
+            if (e.target === overlay) {
+                e.preventDefault();
+            }
+        };
+
+        if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+            window.visualViewport.addEventListener('resize', this._vvResizeHandler);
+            window.visualViewport.addEventListener('scroll', this._vvScrollHandler);
+        }
+        window.addEventListener('resize', this._vvResizeHandler);
+        window.addEventListener('orientationchange', this._winOrientationHandler);
+        modal.addEventListener('focusin', this._modalFocusInHandler);
+        modal.addEventListener('focusout', this._modalFocusOutHandler);
+        overlay.addEventListener('touchmove', this._overlayTouchMoveHandler, { passive: false });
+
+        this._syncVisualViewport('open');
+    },
+
+    _teardownViewportSync(opts = {}) {
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('modal');
+
+        if (this._vvRafId !== null && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this._vvRafId);
+            this._vvRafId = null;
+        }
+        if (this._openFocusTimerId !== null) {
+            clearTimeout(this._openFocusTimerId);
+            this._openFocusTimerId = null;
+        }
+
+        if (window.visualViewport && typeof window.visualViewport.removeEventListener === 'function') {
+            if (this._vvResizeHandler) window.visualViewport.removeEventListener('resize', this._vvResizeHandler);
+            if (this._vvScrollHandler) window.visualViewport.removeEventListener('scroll', this._vvScrollHandler);
+        }
+        if (this._vvResizeHandler) window.removeEventListener('resize', this._vvResizeHandler);
+        if (this._winOrientationHandler) window.removeEventListener('orientationchange', this._winOrientationHandler);
+        if (modal && this._modalFocusInHandler) modal.removeEventListener('focusin', this._modalFocusInHandler);
+        if (modal && this._modalFocusOutHandler) modal.removeEventListener('focusout', this._modalFocusOutHandler);
+        if (overlay && this._overlayTouchMoveHandler) overlay.removeEventListener('touchmove', this._overlayTouchMoveHandler);
+
+        this._vvResizeHandler = null;
+        this._vvScrollHandler = null;
+        this._winOrientationHandler = null;
+        this._modalFocusInHandler = null;
+        this._modalFocusOutHandler = null;
+        this._overlayTouchMoveHandler = null;
+        this._vpSyncActive = false;
+        this._wasKbOpen = false;
+        this._pendingFocusScroll = false;
+
+        if (overlay) {
+            overlay.classList.remove('kb-open');
+            overlay.style.removeProperty('--vvh');
+            overlay.style.removeProperty('--vv-offset-top');
+        }
+
+        if (!opts.keepScrollLock && document.body) {
+            const wasLocked = document.body.classList.contains('modal-open');
+            document.body.classList.remove('modal-open');
+            if (wasLocked && typeof window.scrollTo === 'function') {
+                const curY = window.scrollY || window.pageYOffset || 0;
+                if (curY !== this._savedScrollY) {
+                    try { window.scrollTo(0, this._savedScrollY); } catch (_) {}
+                }
+            }
+        }
+    },
 
     open(title, bodyHTML) {
         const overlay = document.getElementById('modal-overlay');
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
+
+        // Idempotent cleanup if opening while another modal is already active
+        if (this._vpSyncActive || this._openFocusTimerId !== null) {
+            this._teardownViewportSync({ keepScrollLock: true });
+        }
+        if (modal) modal.classList.remove('sap-modal-xl', 'sap-drawer-right');
+        if (overlay) overlay.classList.remove('sap-drawer-overlay', 'kb-open');
+
+        // Lock background scroll and preserve scrollY on first open
+        if (document.body && !document.body.classList.contains('modal-open')) {
+            this._savedScrollY = window.scrollY || window.pageYOffset || 0;
+            document.body.classList.add('modal-open');
+        }
 
         document.getElementById('modal-title').textContent = title;
         modalBody.innerHTML = bodyHTML;
@@ -608,6 +851,9 @@ const Modal = {
         overlay.style.removeProperty('display');
         overlay.classList.add('active');
         overlay.setAttribute('aria-hidden', 'false');
+
+        // Setup VisualViewport & keyboard sync
+        this._setupViewportSync();
 
         // P3.3: Esc key — close modal
         if (this._escHandler) document.removeEventListener('keydown', this._escHandler);
@@ -643,7 +889,9 @@ const Modal = {
         document.addEventListener('keydown', this._trapHandler);
 
         // Move focus & reset scroll về đầu trang sau khi render xong
-        setTimeout(() => {
+        this._openFocusTimerId = setTimeout(() => {
+            this._openFocusTimerId = null;
+            if (!overlay.classList.contains('active')) return;
             if (modal) modal.scrollTop = 0;
             if (modalBody) modalBody.scrollTop = 0;
 
@@ -666,15 +914,17 @@ const Modal = {
 
             if (modal) modal.scrollTop = 0;
             if (modalBody) modalBody.scrollTop = 0;
+            this._syncVisualViewport('post-open');
         }, 50);
     },
 
     close() {
+        this._teardownViewportSync({ keepScrollLock: false });
         const modalEl = document.getElementById('modal');
         if (modalEl) modalEl.classList.remove('sap-modal-xl', 'sap-drawer-right');
         const overlay = document.getElementById('modal-overlay');
         if (overlay) {
-            overlay.classList.remove('active', 'sap-drawer-overlay');
+            overlay.classList.remove('active', 'sap-drawer-overlay', 'kb-open');
             overlay.setAttribute('aria-hidden', 'true');
         }
         if (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage._onModalClosed === 'function') {
@@ -702,7 +952,9 @@ const Modal = {
         }
         // U3: Restore focus về element trước khi mở modal
         if (this._triggerElement && typeof this._triggerElement.focus === 'function') {
-            try { this._triggerElement.focus(); } catch (_) {}
+            try { this._triggerElement.focus({ preventScroll: true }); } catch (_) {
+                try { this._triggerElement.focus(); } catch (__) {}
+            }
             this._triggerElement = null;
         }
     },

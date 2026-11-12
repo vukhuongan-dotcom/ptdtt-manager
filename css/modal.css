@@ -6,10 +6,18 @@
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 1100;
     animation: fadeIn 0.2s ease;
 }
 .modal-overlay.active { display: flex; }
+.modal-overlay.active::before {
+    content: '';
+    position: fixed;
+    inset: -50vh -50vw;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: -1;
+    pointer-events: auto;
+}
 
 .modal {
     background: var(--bg-secondary);
@@ -55,7 +63,10 @@
 .modal-close:hover { background: var(--danger); color: white; }
 .modal-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     padding: 20px 24px;
 }
