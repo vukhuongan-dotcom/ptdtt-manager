@@ -92,7 +92,7 @@ const NCKH_SEED_DATA = [
         year: 2026,
         block: 'Khối Tổng quát',
         department: 'Phẫu Thuật Đại Trực tràng',
-        reviewDate: '2026-09-25',
+        submissionDate: '',
         authors: [
             { name: 'Nguyễn Thị Ngọc Thùy', contributionPercent: 20 },
             { name: 'Trần Thanh Danh', contributionPercent: 20 },
@@ -111,7 +111,7 @@ const NCKH_SEED_DATA = [
         year: 2026,
         block: 'Khối Tổng quát',
         department: 'Phẫu Thuật Đại Trực tràng',
-        reviewDate: '2026-09-25',
+        submissionDate: '',
         authors: [
             { name: 'Phạm Thị Thanh Thảo', contributionPercent: 20 },
             { name: 'Phan Thị Thủy Tiên', contributionPercent: 20 },
@@ -199,6 +199,34 @@ const NckhPage = {
         return Utils.escapeHtml(val == null ? '' : String(val));
     },
 
+    _getInitiativeSubmissionDate(item, linkedRec = null) {
+        if (!item) return '';
+        if (typeof item.submissionDate === 'string' && item.submissionDate.trim()) {
+            return item.submissionDate.trim();
+        }
+        // Ignore legacy seed decisionDate ('2026-09-25') on seed items 5 & 6 when submissionDate was not yet entered
+        if ((item.id === 5 || item.id === 6) && item.reviewDate === '2026-09-25' && !('submissionDate' in item)) {
+            return '';
+        }
+        if (typeof item.reviewDate === 'string' && item.reviewDate.trim()) {
+            return item.reviewDate.trim();
+        }
+        if (linkedRec) {
+            return this._getInitiativeSubmissionDate(linkedRec, null);
+        }
+        return '';
+    },
+
+    _getCustomInitiativeNote(item) {
+        const raw = String(item?.note || '').trim();
+        if (!raw) return '';
+        // Suppress auto-generated notes that duplicate the Decision column/badge
+        if (/^(Đã được công nhận theo Quyết định số|Đính kèm Quyết định)\s+/i.test(raw)) {
+            return '';
+        }
+        return raw;
+    },
+
     _ensureOfflineSeed() {
         if (!this._canAccess()) return;
         const existing = Store.getAll('nckhItems');
@@ -220,8 +248,8 @@ const NckhPage = {
             const ya = Number(a.year || 0);
             const yb = Number(b.year || 0);
             if (yb !== ya) return yb - ya;
-            const da = a.decisionDate || a.councilDate || a.reviewDate || '';
-            const db = b.decisionDate || b.councilDate || b.reviewDate || '';
+            const da = a.decisionDate || a.councilDate || a.submissionDate || a.reviewDate || '';
+            const db = b.decisionDate || b.councilDate || b.submissionDate || b.reviewDate || '';
             if (db !== da) return db.localeCompare(da);
             return (Number(a.sttInDecision || 999) - Number(b.sttInDecision || 999)) || (Number(b.id || 0) - Number(a.id || 0));
         });
@@ -832,20 +860,34 @@ const NckhPage = {
             const linkedRec = item.linkedRecordId ? Store.getById('nckhItems', Number(item.linkedRecordId)) : null;
             const isAlreadyRecognized = item.status === 'recognized' || Boolean(linkedRec && linkedRec.category === 'initiative_recognized');
             const sttDisplay = isRecognizedTab && item.sttInDecision ? `${idx + 1} (QĐ #${item.sttInDecision})` : `${idx + 1}`;
+            const subDate = this._getInitiativeSubmissionDate(item, linkedRec);
+            const customNote = this._getCustomInitiativeNote(item);
 
-            const authorsLines = authors.map(a => `<div class="nckh-author-line">${this._esc(a.name)}</div>`).join('');
-            const pctLines = authors.map(a => `<div class="nckh-pct-line">${a.contributionPercent != null ? `${this._esc(a.contributionPercent)}%` : '—'}</div>`).join('');
+            const authorsGridHtml = authors.length
+                ? `<div class="nckh-author-grid">${authors.map(a => `
+                    <div class="nckh-author-chip">
+                        <span class="nckh-author-chip-name">${this._esc(a.name)}</span>
+                        <span class="nckh-author-chip-pct">${a.contributionPercent != null ? `${this._esc(a.contributionPercent)}%` : '—'}</span>
+                    </div>
+                `).join('')}</div>`
+                : '—';
 
             const decisionMeta = isRecognizedTab
                 ? `
                     ${item.decisionNumber ? `<div class="nckh-dec-strong">📜 ${this._esc(item.decisionNumber)}</div>` : ''}
-                    ${item.decisionDate ? `<div class="nckh-dec-sub">Ngày ${this._fmtDate(item.decisionDate)}</div>` : ''}
+                    ${item.decisionDate ? `<div class="nckh-dec-sub">Ngày ký: ${this._fmtDate(item.decisionDate)}</div>` : ''}
+                    ${subDate ? `<div class="nckh-dec-sub">🗓️ Nộp xét duyệt: ${this._fmtDate(subDate)}</div>` : ''}
                     <span class="nckh-status-pill is-success">🏆 Công nhận</span>
                 `
                 : `
-                    ${item.reviewDate ? `<div class="nckh-dec-sub">🗓️ Duyệt: ${this._fmtDate(item.reviewDate)}</div>` : `<div class="nckh-dec-sub">Năm ${this._esc(item.year || '')}</div>`}
+                    <div class="nckh-dec-sub">🗓️ Nộp xét duyệt: <strong>${subDate ? this._fmtDate(subDate) : 'Chưa cập nhật'}</strong></div>
                     ${isAlreadyRecognized
-                        ? `<span class="nckh-status-pill is-success">✅ Đã công nhận${linkedRec?.decisionNumber ? ` (${this._esc(linkedRec.decisionNumber)})` : ''}</span>`
+                        ? `
+                            <div class="nckh-status-stack">
+                                <span class="nckh-status-pill is-success">✅ Đã công nhận</span>
+                                ${linkedRec?.decisionNumber ? `<div class="nckh-dec-ref">📜 QĐ ${this._esc(linkedRec.decisionNumber)}</div>` : ''}
+                            </div>
+                        `
                         : `<span class="nckh-status-pill is-pending">⏳ Chờ công nhận</span>`}
                 `;
 
@@ -855,14 +897,13 @@ const NckhPage = {
                     <td class="nckh-col-title">
                         <div class="nckh-init-title">${this._esc(item.title)}</div>
                         <div class="nckh-init-submeta">
-                            <span>Năm ${this._esc(item.year || '')}</span>
-                            ${item.block ? `<span>· ${this._esc(item.block)}</span>` : ''}
-                            ${item.note ? `<span>· ${this._esc(item.note)}</span>` : ''}
+                            <span class="nckh-meta-tag">Năm ${this._esc(item.year || '')}</span>
+                            ${item.block ? `<span class="nckh-meta-tag">${this._esc(item.block)}</span>` : ''}
+                            <span class="nckh-meta-tag">🏥 ${this._esc(item.department || 'Phẫu Thuật Đại Trực tràng')}</span>
                         </div>
+                        ${customNote ? `<div class="nckh-init-note">📝 ${this._esc(customNote)}</div>` : ''}
                     </td>
-                    <td class="nckh-col-authors">${authorsLines || '—'}</td>
-                    <td class="nckh-col-dept">${this._esc(item.department || 'Phẫu Thuật Đại Trực tràng')}</td>
-                    <td class="text-center nckh-col-pct">${pctLines || '—'}</td>
+                    <td class="nckh-col-authors">${authorsGridHtml}</td>
                     <td class="nckh-col-decision">${decisionMeta}</td>
                     <td class="nckh-col-actions">
                         <div class="nckh-table-actions">
@@ -883,6 +924,8 @@ const NckhPage = {
             const authors = Array.isArray(item.authors) ? item.authors : [];
             const linkedRec = item.linkedRecordId ? Store.getById('nckhItems', Number(item.linkedRecordId)) : null;
             const isAlreadyRecognized = item.status === 'recognized' || Boolean(linkedRec && linkedRec.category === 'initiative_recognized');
+            const subDate = this._getInitiativeSubmissionDate(item, linkedRec);
+            const customNote = this._getCustomInitiativeNote(item);
 
             return `
                 <article class="nckh-init-mobile-card" data-record-id="${item.id}">
@@ -891,7 +934,7 @@ const NckhPage = {
                             <span class="nckh-badge nckh-badge--navy">#${idx + 1}${isRecognizedTab && item.sttInDecision ? ` (STT QĐ: ${item.sttInDecision})` : ''} · Năm ${this._esc(item.year || '')}</span>
                             ${item.block ? `<span class="nckh-badge nckh-badge--muted">${this._esc(item.block)}</span>` : ''}
                             ${item.decisionNumber ? `<span class="nckh-badge nckh-badge--decision">📜 ${this._esc(item.decisionNumber)}${item.decisionDate ? ` · ${this._fmtDate(item.decisionDate)}` : ''}</span>` : ''}
-                            ${(!isRecognizedTab && item.reviewDate) ? `<span class="nckh-badge nckh-badge--council">🗓️ Xét duyệt: ${this._fmtDate(item.reviewDate)}</span>` : ''}
+                            ${subDate ? `<span class="nckh-badge nckh-badge--council">🗓️ Ngày nộp xét duyệt: ${this._fmtDate(subDate)}</span>` : ''}
                         </div>
                         <div>
                             ${isRecognizedTab
@@ -919,7 +962,7 @@ const NckhPage = {
                         `).join('')}
                     </div>
 
-                    ${item.note ? `<div class="nckh-topic-footnote"><span>📝 ${this._esc(item.note)}</span></div>` : ''}
+                    ${customNote ? `<div class="nckh-topic-footnote"><span>📝 ${this._esc(customNote)}</span></div>` : ''}
 
                     <div class="nckh-card-actions">
                         ${(!isRecognizedTab && !isAlreadyRecognized) ? `
@@ -949,13 +992,11 @@ const NckhPage = {
                 <table class="nckh-init-table">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width:68px">STT</th>
-                            <th>Tên sáng kiến</th>
-                            <th style="width:210px">Tác giả</th>
-                            <th style="width:160px">Khoa/Phòng</th>
-                            <th class="text-center" style="width:110px">Tỉ lệ đóng góp (%)</th>
-                            <th style="width:165px">${isRecognizedTab ? 'Quyết định công nhận' : 'Trạng thái xét duyệt'}</th>
-                            <th style="width:160px">Thao tác</th>
+                            <th class="text-center nckh-col-stt">STT</th>
+                            <th class="nckh-col-title">Tên sáng kiến cải tiến</th>
+                            <th class="nckh-col-authors">Nhóm tác giả & Tỉ lệ đóng góp (%)</th>
+                            <th class="nckh-col-decision">${isRecognizedTab ? 'Quyết định công nhận' : 'Ngày nộp & Trạng thái'}</th>
+                            <th class="nckh-col-actions">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1343,6 +1384,7 @@ const NckhPage = {
         setVal('block', src.block || 'Khối Tổng quát');
         setVal('department', src.department || 'Phẫu Thuật Đại Trực tràng');
         setVal('linkedRecordId', src.id);
+        setVal('submissionDate', this._getInitiativeSubmissionDate(src));
 
         const rowsEl = document.getElementById('nckh-author-rows');
         if (rowsEl && Array.isArray(src.authors) && src.authors.length > 0) {
@@ -1445,6 +1487,7 @@ const NckhPage = {
                 </div>
 
                 ${isRecognized ? `
+                    <input type="hidden" name="submissionDate" value="${this._esc(this._getInitiativeSubmissionDate(existing, prefillSrc))}">
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Số Quyết định công nhận</label>
@@ -1462,13 +1505,13 @@ const NckhPage = {
                 ` : `
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Ngày xét duyệt</label>
-                            <input type="date" class="form-input" name="reviewDate" value="${this._esc(existing?.reviewDate || '')}">
+                            <label class="form-label">Ngày nộp xét duyệt</label>
+                            <input type="date" class="form-input" name="submissionDate" value="${this._esc(this._getInitiativeSubmissionDate(existing))}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Trạng thái</label>
                             <select class="form-select" name="status">
-                                <option value="approved" ${(existing?.status || 'approved') === 'approved' ? 'selected' : ''}>Đã xét duyệt (chờ công nhận)</option>
+                                <option value="approved" ${(existing?.status || 'approved') === 'approved' ? 'selected' : ''}>Đã nộp xét duyệt (chờ công nhận)</option>
                                 <option value="recognized" ${existing?.status === 'recognized' ? 'selected' : ''}>Đã được công nhận</option>
                             </select>
                         </div>
@@ -1544,12 +1587,19 @@ const NckhPage = {
         if (category === 'initiative_recognized') {
             recordData.decisionNumber = String(fd.get('decisionNumber') || '').trim();
             recordData.decisionDate = String(fd.get('decisionDate') || '').trim();
+            const subDate = String(fd.get('submissionDate') || '').trim();
+            if (subDate) {
+                recordData.submissionDate = subDate;
+                recordData.reviewDate = subDate;
+            }
             const sttVal = parseInt(fd.get('sttInDecision'), 10);
             recordData.sttInDecision = Number.isFinite(sttVal) && sttVal > 0 ? sttVal : null;
             recordData.status = 'recognized';
             if (linkedRecordId) recordData.linkedRecordId = linkedRecordId;
         } else {
-            recordData.reviewDate = String(fd.get('reviewDate') || '').trim();
+            const subDate = String(fd.get('submissionDate') || fd.get('reviewDate') || '').trim();
+            recordData.submissionDate = subDate;
+            recordData.reviewDate = subDate;
             recordData.status = String(fd.get('status') || 'approved');
             if (linkedRecordId) recordData.linkedRecordId = linkedRecordId;
         }
@@ -1676,9 +1726,9 @@ const NckhPage = {
                     </td>
                     <td style="padding:10px 12px;font-size:12px;color:#334155;width:165px">
                         ${isRec && s.decisionNumber ? `<div style="font-weight:700;color:#1D2357">${this._esc(s.decisionNumber)}</div>` : ''}
-                        ${isRec && s.decisionDate ? `<div>Ngày: ${this._fmtDate(s.decisionDate)}</div>` : ''}
-                        ${!isRec && s.reviewDate ? `<div>Duyệt: ${this._fmtDate(s.reviewDate)}</div>` : ''}
-                        <div style="color:#15803d;font-weight:700">${isRec || s.status === 'recognized' ? 'Được công nhận' : 'Đã xét duyệt'}</div>
+                        ${isRec && s.decisionDate ? `<div>Ngày ký: ${this._fmtDate(s.decisionDate)}</div>` : ''}
+                        ${!isRec && this._getInitiativeSubmissionDate(s) ? `<div>Nộp xét duyệt: ${this._fmtDate(this._getInitiativeSubmissionDate(s))}</div>` : ''}
+                        <div style="color:#15803d;font-weight:700">${isRec || s.status === 'recognized' ? 'Được công nhận' : 'Đã nộp xét duyệt'}</div>
                     </td>
                 </tr>
             `).join('');

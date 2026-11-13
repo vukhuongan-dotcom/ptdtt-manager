@@ -257,7 +257,7 @@ _DIFF_LABEL_FIELDS = {
     'plans':          ['title', 'type', 'date', 'status', 'assignee'],
     'tasks':          ['title', 'assignee', 'status', 'dueDate', 'priority'],
     'notifications':  ['title', 'content', 'type'],
-    'nckhItems':      ['category', 'title', 'decisionNumber', 'year', 'principalInvestigator', 'status', 'note'],
+    'nckhItems':      ['category', 'title', 'decisionNumber', 'submissionDate', 'year', 'principalInvestigator', 'status', 'note'],
 }
 
 def _record_label(rec, collection):
@@ -629,7 +629,7 @@ def _validate_collection_schema(collection, items):
             yr = r.get('year')
             if yr is not None and (isinstance(yr, bool) or not isinstance(yr, int) or yr < 2000 or yr > 2100):
                 return False, f'Bản ghi nckhItems (id={rid}) có năm "{yr}" không hợp lệ.'
-            for df in ('decisionDate', 'councilDate', 'reviewDate'):
+            for df in ('decisionDate', 'councilDate', 'submissionDate', 'reviewDate'):
                 dval = r.get(df)
                 if dval not in (None, '') and not _is_valid_iso_date(dval):
                     return False, f'Bản ghi nckhItems (id={rid}) có trường {df}="{dval}" không hợp lệ (YYYY-MM-DD).'
@@ -2702,7 +2702,7 @@ NCKH_DEFAULT_SEED_ITEMS = [
         'year': 2026,
         'block': 'Khối Tổng quát',
         'department': 'Phẫu Thuật Đại Trực tràng',
-        'reviewDate': '2026-09-25',
+        'submissionDate': '',
         'authors': [
             {'name': 'Nguyễn Thị Ngọc Thùy', 'contributionPercent': 20},
             {'name': 'Trần Thanh Danh', 'contributionPercent': 20},
@@ -2721,7 +2721,7 @@ NCKH_DEFAULT_SEED_ITEMS = [
         'year': 2026,
         'block': 'Khối Tổng quát',
         'department': 'Phẫu Thuật Đại Trực tràng',
-        'reviewDate': '2026-09-25',
+        'submissionDate': '',
         'authors': [
             {'name': 'Phạm Thị Thanh Thảo', 'contributionPercent': 20},
             {'name': 'Phan Thị Thủy Tiên', 'contributionPercent': 20},
@@ -2787,7 +2787,35 @@ def _ensure_nckh_bootstrapped():
                 db_data = json.load(f)
         except Exception:
             return
-        if not isinstance(db_data, dict) or 'nckhItems' in db_data:
+        if not isinstance(db_data, dict):
+            return
+        if 'nckhItems' in db_data:
+            # One-time idempotent migration for seed initiatives (id 5, 6): replace decisionDate-derived reviewDate with submissionDate
+            items = db_data.get('nckhItems')
+            migrated = False
+            if isinstance(items, list):
+                for it in items:
+                    if (
+                        isinstance(it, dict)
+                        and it.get('id') in (5, 6)
+                        and it.get('category') == 'initiative_approved'
+                        and 'submissionDate' not in it
+                        and it.get('reviewDate') == '2026-09-25'
+                    ):
+                        it['submissionDate'] = ''
+                        it.pop('reviewDate', None)
+                        migrated = True
+            if migrated:
+                revs = db_data.setdefault('_revisions', {})
+                revs['nckhItems'] = int(revs.get('nckhItems', 1)) + 1
+                db_data['_lastModified'] = datetime.now().isoformat()
+                tmp = DATA_FILE + '.tmp'
+                with open(tmp, 'w', encoding='utf-8') as f:
+                    json.dump(db_data, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, DATA_FILE)
+                print('[DB] ✅ Migrated seed nckhItems (id 5, 6) reviewDate -> submissionDate')
             return
         db_data['nckhItems'] = copy.deepcopy(NCKH_DEFAULT_SEED_ITEMS)
         next_ids = db_data.setdefault('nextIds', {})

@@ -224,7 +224,7 @@ class TestFeat226NckhTab(unittest.TestCase):
         context.add_init_script(
             f"""
             localStorage.setItem('ptdtt_cache_ver', '2609281105');
-            localStorage.setItem('ptdtt_sw_build', '2611122150');
+            localStorage.setItem('ptdtt_sw_build', '2611131015');
             localStorage.setItem('ptdtt_jwt', {json.dumps(token)});
             sessionStorage.setItem('ptdtt_jwt', {json.dumps(token)});
             localStorage.setItem('ptdtt_session', {json.dumps(session_json)});
@@ -437,6 +437,29 @@ class TestFeat226NckhTab(unittest.TestCase):
                 self.assertNotIn("13:30", body_text)
                 self.assertNotIn("14:25", body_text)
                 self.assertNotIn("Phản biện 1", body_text)
+                if cat.startswith("initiative_"):
+                    # BUG-227: Verify 5-column layout, wide title column (>= 320px), compact row height (<= 170px), and "Nộp xét duyệt" label
+                    init_metrics = page.evaluate(
+                        """() => {
+                            const thCount = document.querySelectorAll('.nckh-init-table thead th').length;
+                            const firstRow = document.querySelector('.nckh-init-table tbody tr');
+                            const titleCell = firstRow.querySelector('.nckh-col-title');
+                            return {
+                                thCount,
+                                titleWidth: titleCell.getBoundingClientRect().width,
+                                rowHeight: firstRow.getBoundingClientRect().height,
+                                authorChipCount: firstRow.querySelectorAll('.nckh-author-chip').length,
+                            };
+                        }"""
+                    )
+                    self.assertEqual(init_metrics["thCount"], 5, "SKCT table must use 5 balanced columns (BUG-227)")
+                    self.assertGreaterEqual(init_metrics["titleWidth"], 320, f"SKCT title column too narrow: {init_metrics}")
+                    self.assertLessEqual(init_metrics["rowHeight"], 170, f"SKCT 5-author row too tall: {init_metrics}")
+                    self.assertEqual(init_metrics["authorChipCount"], 5)
+                    if cat == "initiative_approved":
+                        self.assertIn("Nộp xét duyệt:", body_text)
+                        self.assertNotIn("Duyệt: 25/09/2026", body_text)
+                        self.assertNotIn("Đã được công nhận theo Quyết định số 1905/QĐ-BVBD ngày 25/09/2026", body_text)
         finally:
             ctx.close()
 
@@ -476,9 +499,11 @@ class TestFeat226NckhTab(unittest.TestCase):
             page.click('.nckh-subtab[data-subtab="initiative_approved"]')
             page.click("#nckh-primary-add-btn")
             page.wait_for_selector("#nckh-initiative-form", timeout=5000)
+            form_text = page.locator("#nckh-initiative-form").inner_text()
+            self.assertIn("ngày nộp xét duyệt", form_text.lower(), "SKCT form must label date as 'Ngày nộp xét duyệt' (BUG-227)")
             page.fill('#nckh-initiative-form textarea[name="title"]', "Sáng kiến E2E chuẩn hoá bảng kiểm ERAS 2027")
             page.fill('#nckh-initiative-form input[name="year"]', "2027")
-            page.fill('#nckh-initiative-form input[name="reviewDate"]', "2027-08-20")
+            page.fill('#nckh-initiative-form input[name="submissionDate"]', "2027-08-20")
             # Add 3 more author rows (total 4 authors) and click "⚡ Chia đều %" -> 25% each
             for _ in range(3):
                 page.click('#nckh-initiative-form button:has-text("+ Thêm tác giả")')
