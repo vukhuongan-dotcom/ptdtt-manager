@@ -224,7 +224,7 @@ class TestFeat226NckhTab(unittest.TestCase):
         context.add_init_script(
             f"""
             localStorage.setItem('ptdtt_cache_ver', '2609281105');
-            localStorage.setItem('ptdtt_sw_build', '2611131015');
+            localStorage.setItem('ptdtt_sw_build', '2611160654');
             localStorage.setItem('ptdtt_jwt', {json.dumps(token)});
             sessionStorage.setItem('ptdtt_jwt', {json.dumps(token)});
             localStorage.setItem('ptdtt_session', {json.dumps(session_json)});

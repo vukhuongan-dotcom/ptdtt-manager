@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611131015`
+> 📌 **Current Build Stamp:** `2611160654`
 
 ---
 
@@ -56,6 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- Cập nhật lịch SHCM Khoa PTĐTT đến 07/06/2027: bổ sung 3 buổi 19/10, 02/11, 16/11 và tịnh tiến +6 tuần cho 14 buổi tiếp theo (FEAT-228) (`[FEAT-228]`, build `v2611160654`).
 - Bổ sung Tab Nghiên cứu khoa học (NCKH) dành riêng cho Ban Chủ nhiệm (5 sub-tabs: Dashboard, Đề tài xét duyệt, Đề tài nghiệm thu, Sáng kiến xét duyệt, Sáng kiến công nhận; form CRUD, Chia đều %, chuyển trạng thái 1 chạm, xuất ảnh 2K PNG và 8 bản ghi QĐ 2026) (`[FEAT-226]`, commit `8f98799`, build `v2611122150`).
 - Bổ sung bài báo cáo khoa học "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam" của TS.BSCKII. Nguyễn Phú Hữu và vai trò Đồng Chủ tọa đoàn Phiên 1 Chuyên đề Ngoại khoa tại HNKHKT BVĐKKV Thủ Đức 2026 (ID 36), cập nhật seed data và bump build v2611092230 (`[FEAT-224]`, commit `276c9e0`, build `v2611092230`).
 - Nâng cấp cổng Auto-Registry và Hook Chaining Dispatcher theo chuẩn Rule v2:R45 (hỗ trợ upsert 2 giai đoạn, kiểm chứng biên lai VerificationReceipt v1 và tương thích đa môi trường) (`[FEAT-223]`, commit `276c9e0`).
