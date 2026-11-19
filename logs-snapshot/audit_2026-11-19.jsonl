@@ -94,3 +94,6 @@
 {"ts": "2026-11-19T19:06:24.194395", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
 {"ts": "2026-11-19T19:26:03.838276", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
 {"ts": "2026-11-19T19:50:37.934793", "user": "nmnphuong", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 2}}
+{"ts": "2026-11-19T20:45:44.593356", "user": "nmnphuong", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "171.243.49.72", "remaining": 4}}
+{"ts": "2026-11-19T20:46:02.562113", "user": "dctu", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-19T21:08:13.169119", "user": "dctu", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
