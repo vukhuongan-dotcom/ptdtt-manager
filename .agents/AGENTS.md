@@ -1,5 +1,28 @@
 # AGENTS.md — PTDTT Manager Project Rules
 
+---
+
+## 0.1 QUY CHUẨN VIẾT PLAN CHUẨN V3 & TỰ ĐỘNG KẾ THỪA THAY ĐỔI HỆ THỐNG (RULE v2:R02 & v2:R24.3–R24.4)
+1. **Đặt tên file Plan có ngữ cảnh & Không tạo file dư thừa (`Rule v2:R24.1–R24.2`):**
+   - Chỉ tạo duy nhất 01 file kế hoạch: `plan_<noi_dung_ngan_gon>.md` (ví dụ: `plan_deploy_v2.md`, `plan_fix_bug_123.md`) với `RequestFeedback: true, UserFacing: true`.
+   - Tuyệt đối cấm tạo file `implementation_plan.md` dưới bất kỳ hình thức nào.
+2. **Cấu trúc Hình Tháp Ngược & Khuyến Nghị Mô Hình ở Vị Trí Thứ 3 (`C1–C4` — `Rule v2:R24.3` / `GEMINI.md §0.1`):**
+   - **`C1` — `## 1. Đề Xuất Tổng Thể (Executive Proposal)`:** Bắt buộc có Callout `> [!IMPORTANT]` nêu giải pháp cốt lõi (BLUF), mục tiêu và phạm vi ngay dưới `# H1`.
+   - **`C2` — `## 2. Việc Cần Quyết Định (Decisions Required)`:** Bắt buộc có Callout `> [!WARNING]` và/hoặc bảng chốt phương án cần Bác sĩ phê duyệt ngay đầu Plan.
+   - **`C3` — Vị trí thứ 3 ngay sau Quyết định (`## 3. Khuyến Nghị Mô Hình Thực Thi (Execution Model Recommendation)`):** Đặt duy nhất 01 mục khuyến nghị mô hình ngay sau `## 2.` (hoặc `### 🤖 Khuyến Nghị Mô Hình Thực Thi` ở cuối `## 2.`), chọn đúng **1 trong 7 cấu hình nội sinh chuẩn**:
+     * 🧠 `Gemini 4 Argon (High/Medium/Low)` — chủ lực kỹ thuật/lâm sàng/pháp lý; **sàn tối thiểu cho 100% script `.pptx`, `.docx` NĐ 30/ISO, Typst/PDF, `.xlsx`, Web UI**.
+     * 🧪 `Gemini 4 Hydrogen (XHigh/High/Medium/Low)` — thuật toán ràng buộc biên khó cần `XHigh`, kiểm toán chéo độc lập, soi điểm mù Paul–Elder (`adhd`, `grill-me`).
+     * 💠 `Gemini 4 Neon (XHigh/High/Medium/Low)` — điểm ngọt tốc độ–biên (`1M`/`512K`), refactor đa tệp cấp repo, chuỗi workflow nhiều công cụ (`tool-heavy`), tra cứu y văn/y sinh học ít ảo giác.
+     * 💎 `Gemini 4 Carbon (High/Medium/Low)` — suy luận sâu nhất, kiến trúc liên dự án, bảo mật/`WAL+CAS`, pháp lý/NCKH, toán thống kê phức tạp.
+     * ⚡ `Orchestrator (Argon)` (`gemini-pro-orchestrator-argon`) — điều phối 2 Pha nhanh, tiết kiệm quota cho đa số feature/refactor, Web UI, script, pipeline tài liệu.
+     * 🚀 `Orchestrator (Neon)` (`gemini-pro-orchestrator-neon`) — điều phối 2 Pha cân bằng-cao (`Neon Planner` + `Hydrogen Executor`) cho tính năng liên module Web y tế, refactor đa tệp, pipeline y khoa đa công cụ.
+     * 🎯 `Orchestrator (Carbon)` (`gemini-pro-orchestrator`) — điều phối 2 Pha chuyên sâu (kèm phanh an toàn lần 2 `enter_plan_mode`) cho đại phẫu kiến trúc, DB/Git/VPS, RCA đa lớp, `/swarm`.
+   - **`C4` — `## 4..N. Chi Tiết 1..K — ...`:** Đánh số tuần tự các mục `Chi Tiết 1..K — <Tiêu đề>` ngay sau mục Khuyến nghị Mô hình (hoặc `## 3..N` nếu mục mô hình là H3 cuối phần 2), khối cuối gồm 2 mục Paul–Elder & `Verification Gates`.
+3. **Cấm Tuyệt Đối Model Bên Thứ 3 (`C5` — `Rule v2:R24.4`):** Tuyệt đối không đề xuất/nhắc model bên thứ 3 (`Claude`, `Opus`, `Sonnet`, `Haiku`, `GPT-OSS`, `GPT-4`, `GPT-5`, `ChatGPT`, `Anthropic`, `OpenAI`) trong mục khuyến nghị mô hình của Plan; kiểm chứng tự động qua `ag_lint.py --check brain`.
+4. **Tự Động Kế Thừa Thay Đổi Mang Tính Hệ Thống Theo Mốc Thời Gian (`Rule v2:R02 §5`):** Mọi thay đổi mang tính hệ thống của Bộ Quy tắc Toàn cục Antigravity (`rules.md`, `GEMINI.md`, `AGENTS.md`) tự động có hiệu lực áp dụng xuôi chiều cho dự án này tính từ thời điểm ban hành (`Time-Anchor`, giữ nguyên các tài liệu/artifact lịch sử đã đóng băng trước thời điểm đó trừ khi có yêu cầu riêng).
+
+---
+
 ## Thống kê phẫu thuật
 
 ### Phân nhóm phẫu thuật khi báo cáo
@@ -163,6 +186,3 @@ Mỗi khi Agent thực hiện bất kỳ việc **SỬA LỖI (BUG)** hoặc **P
 > 🔒 **NGUYÊN TẮC BẢO MẬT & ZERO-PHI BẮT BUỘC (LUẬT 91/2025/QH15)**
 1. **Tuân thủ pháp luật:** Nghiêm ngặt tuân thủ Luật Khám bệnh, chữa bệnh số 15/2023/QH15, Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 và Nghị định số 356/2025/NĐ-CP.
 2. **Chế độ Strict Zero-PHI:** Toàn bộ dữ liệu phẫu thuật lưu trữ trong `data/db.json` và các bản sao lưu `data/snapshots/`, `data_backups/` phải được khử định danh (De-identified); tuyệt đối cấm đưa thông tin định danh cá nhân nhạy cảm của người bệnh (số CCCD/CMND, địa chỉ nhà riêng, số điện thoại) vào kho lưu trữ mã nguồn Git công khai.
-
-
-

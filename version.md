@@ -56,6 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- Đồng bộ quy chuẩn Plan V3 từ 5 lên 7 cấu hình nội sinh AG (bổ sung Gemini 4 Neon & Orchestrator Neon) (`[FEAT-229]`).
 - Cập nhật lịch SHCM Khoa PTĐTT đến 07/06/2027: bổ sung 3 buổi 19/10, 02/11, 16/11 và tịnh tiến +6 tuần cho 14 buổi tiếp theo (FEAT-228) (`[FEAT-228]`, commit `478a689`, build `v2611160654`).
 - Bổ sung Tab Nghiên cứu khoa học (NCKH) dành riêng cho Ban Chủ nhiệm (5 sub-tabs: Dashboard, Đề tài xét duyệt, Đề tài nghiệm thu, Sáng kiến xét duyệt, Sáng kiến công nhận; form CRUD, Chia đều %, chuyển trạng thái 1 chạm, xuất ảnh 2K PNG và 8 bản ghi QĐ 2026) (`[FEAT-226]`, commit `8f98799`, build `v2611122150`).
 - Bổ sung bài báo cáo khoa học "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam" của TS.BSCKII. Nguyễn Phú Hữu và vai trò Đồng Chủ tọa đoàn Phiên 1 Chuyên đề Ngoại khoa tại HNKHKT BVĐKKV Thủ Đức 2026 (ID 36), cập nhật seed data và bump build v2611092230 (`[FEAT-224]`, commit `276c9e0`, build `v2611092230`).
