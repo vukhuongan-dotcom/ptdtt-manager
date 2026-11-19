@@ -124,53 +124,69 @@ log "  📊 Tổng backup local: $REMAINING files"
 # ════════════════════════════════════
 log "2/3 🐙 GitHub backup..."
 
-cd "$APP_DIR"
-
-# Ensure backup branch exists
-if ! git show-ref --verify --quiet refs/heads/backup 2>/dev/null; then
-    git branch backup 2>/dev/null || true
-fi
-
-# Stash current state, switch to backup branch, commit data, switch back
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
-
 # Use worktree to avoid disrupting the running service
 BACKUP_WORKTREE="/tmp/ptdtt-backup-worktree"
-rm -rf "$BACKUP_WORKTREE"
 
-git worktree add "$BACKUP_WORKTREE" backup 2>/dev/null || {
-    # If worktree fails, create backup branch from main
-    git branch -D backup 2>/dev/null || true
-    git branch backup
-    git worktree add "$BACKUP_WORKTREE" backup
+# BUG-228: the GitHub mirror is best-effort and must never block step 3 (pull_ready),
+# which is the only off-site copy. errexit is not active inside an `if` condition,
+# so every critical command checks its own status explicitly.
+github_backup() {
+    cd "$APP_DIR" || return 1
+
+    if ! git show-ref --verify --quiet refs/heads/backup 2>/dev/null; then
+        git branch backup 2>/dev/null || true
+    fi
+
+    rm -rf "$BACKUP_WORKTREE"
+    # BUG-228: a crashed run leaves a stale worktree registration that blocks `worktree add`.
+    git worktree prune 2>/dev/null || true
+
+    if ! git worktree add "$BACKUP_WORKTREE" backup 2>/dev/null; then
+        # If worktree fails, create backup branch from main
+        git branch -D backup 2>/dev/null || true
+        git branch backup || return 1
+        git worktree add "$BACKUP_WORKTREE" backup || return 1
+    fi
+
+    # Copy consistent staged runtime data & closed journal archive segments to backup worktree
+    mkdir -p "$BACKUP_WORKTREE/data" "$BACKUP_WORKTREE/journal_archive" || return 1
+    shopt -s nullglob
+    for path in "$STAGING_DIR"/data/*; do
+        cp -R "$path" "$BACKUP_WORKTREE/data/" 2>/dev/null || true
+    done
+    shopt -u nullglob
+    sync_closed_journal_segments "$BACKUP_WORKTREE/journal_archive" || return 1
+    mkdir -p "$BACKUP_WORKTREE/logs-snapshot"
+    # Only copy latest audit log (not all)
+    cp "$APP_DIR/logs/audit_${DAY_TAG}.jsonl" "$BACKUP_WORKTREE/logs-snapshot/" 2>/dev/null || true
+
+    cd "$BACKUP_WORKTREE" || return 1
+    git add -A 2>/dev/null || return 1
+    if git diff --cached --quiet 2>/dev/null; then
+        log "  ℹ️ Không có thay đổi — skip commit"
+        return 0
+    fi
+    # BUG-228: --no-verify because the R45 code hooks call scripts/ that the data-only
+    # backup branch does not contain; this commit holds runtime data, not source code.
+    git commit --no-verify -m "backup: ${DAY_TAG} daily backup" \
+        --author="PTDTT Backup <backup@khoaptdtt.info.vn>" >/dev/null 2>&1 || return 1
+    if git push origin backup --force 2>/dev/null; then
+        log "  ✅ GitHub: pushed to 'backup' branch"
+    else
+        log "  ❌ GitHub push failed"
+    fi
 }
 
-# Copy consistent staged runtime data & closed journal archive segments to backup worktree
-mkdir -p "$BACKUP_WORKTREE/data" "$BACKUP_WORKTREE/journal_archive"
-shopt -s nullglob
-for path in "$STAGING_DIR"/data/*; do
-    cp -R "$path" "$BACKUP_WORKTREE/data/" 2>/dev/null || true
-done
-shopt -u nullglob
-sync_closed_journal_segments "$BACKUP_WORKTREE/journal_archive"
-mkdir -p "$BACKUP_WORKTREE/logs-snapshot"
-# Only copy latest audit log (not all)
-cp "$APP_DIR/logs/audit_${DAY_TAG}.jsonl" "$BACKUP_WORKTREE/logs-snapshot/" 2>/dev/null || true
-
-cd "$BACKUP_WORKTREE"
-git add -A 2>/dev/null
-if git diff --cached --quiet 2>/dev/null; then
-    log "  ℹ️ Không có thay đổi — skip commit"
+if github_backup; then
+    :
 else
-    git commit -m "backup: ${DAY_TAG} daily backup" --author="PTDTT Backup <backup@khoaptdtt.info.vn>" 2>/dev/null
-    git push origin backup --force 2>/dev/null && \
-        log "  ✅ GitHub: pushed to 'backup' branch" || \
-        log "  ❌ GitHub push failed"
+    log "  ❌ GitHub backup failed — tiếp tục bước 3 (pull_ready)"
 fi
 
-# Cleanup worktree
+# Cleanup worktree (always, so the next run starts clean)
 cd "$APP_DIR"
 git worktree remove "$BACKUP_WORKTREE" --force 2>/dev/null || rm -rf "$BACKUP_WORKTREE"
+git worktree prune 2>/dev/null || true
 
 # ════════════════════════════════════
 # 3. STAGE VERIFIED PULL ARTIFACT OUTSIDE WEB ROOT (for authenticated Mac SSH pull)
