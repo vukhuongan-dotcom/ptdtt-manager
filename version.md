@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Đồng bộ quy chuẩn Plan V3 từ 5 lên 7 cấu hình nội sinh AG (bổ sung Gemini 4 Neon & Orchestrator Neon) (`[FEAT-229]`).
+- Đồng bộ quy chuẩn Plan V3 từ 5 lên 7 cấu hình nội sinh AG (bổ sung Gemini 4 Neon & Orchestrator Neon) (`[FEAT-229]`, commit `af4dd66`).
 - Cập nhật lịch SHCM Khoa PTĐTT đến 07/06/2027: bổ sung 3 buổi 19/10, 02/11, 16/11 và tịnh tiến +6 tuần cho 14 buổi tiếp theo (FEAT-228) (`[FEAT-228]`, commit `478a689`, build `v2611160654`).
 - Bổ sung Tab Nghiên cứu khoa học (NCKH) dành riêng cho Ban Chủ nhiệm (5 sub-tabs: Dashboard, Đề tài xét duyệt, Đề tài nghiệm thu, Sáng kiến xét duyệt, Sáng kiến công nhận; form CRUD, Chia đều %, chuyển trạng thái 1 chạm, xuất ảnh 2K PNG và 8 bản ghi QĐ 2026) (`[FEAT-226]`, commit `8f98799`, build `v2611122150`).
 - Bổ sung bài báo cáo khoa học "Kết quả Bệnh viện Bình Dân 10 năm đầu tiên triển khai phẫu thuật Robot tại Việt Nam" của TS.BSCKII. Nguyễn Phú Hữu và vai trò Đồng Chủ tọa đoàn Phiên 1 Chuyên đề Ngoại khoa tại HNKHKT BVĐKKV Thủ Đức 2026 (ID 36), cập nhật seed data và bump build v2611092230 (`[FEAT-224]`, commit `276c9e0`, build `v2611092230`).
@@ -75,6 +75,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 - Xác nhận hiệu lực `Quyết định 1073/QĐ-BVBD` (`12/06/2024` — chưa có văn bản thay thế) và bảng xếp cột bác sĩ chính Khoa PTĐTT năm 2026 (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`, thời hạn 01 năm, mỗi năm Bệnh viện xếp cột lại); bổ sung kiểm soát vượt cột theo tính chất mổ: mổ chương trình & mổ yêu cầu không được phép vượt cột (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`), mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP` nếu vượt từ 02 cột trở lên) (`[FEAT-200]`, build `v2610312158`).
 
 ### Fixed
+- Sửa sao lưu off-site bị kẹt từ 31/10: bước GitHub không còn chặn bước pull_ready (`[BUG-228]`, commit `ecbcac1`) (`[BUG-228]`).
 - BUG-227: Chuẩn hóa nhãn 'Ngày nộp xét duyệt' cho Sáng kiến cải tiến (SKCT) và tái cấu trúc bảng SKCT Desktop sang bố cục 5 cột cố định (table-layout: fixed, lưới tác giả 2 cột .nckh-author-grid, dải meta-tag Khoa/Khối 1 dòng, khử lặp ghi chú Quyết định) (`[BUG-227]`, commit `c68ba5d`, build `v2611131015`).
 - Chuẩn hóa toàn diện giao diện modal Thêm ca mổ trên iPhone Air (iOS WebKit) so với Android (Blink): chống tràn ngang input[type=date], nâng z-index .modal-overlay lên 1100, xóa khe hở 16px dưới .modal-footer sticky và bổ sung đồng bộ VisualViewport (.kb-open) khi mở bàn phím ảo (BUG-225, commit 95a6bbc, build v2611122040) (`[BUG-225]`).
 - Khắc phục triệt để lỗi cắt cụt họ tên bệnh nhân (`Nguyễn...`, `Phạm T...`) và cắt bớt chẩn đoán/phương pháp trên thẻ Lịch mổ tuần giao diện Laptop: chuyển dòng tiêu đề thẻ sang dòng chảy văn bản tự nhiên hiển thị trọn vẹn 100% họ tên + năm sinh + huy hiệu trên cả 7 cột (`1280px..1920px`), hiển thị đầy đủ 100% loại mổ, đường mổ, thời lượng, chẩn đoán, phương pháp PT, phẫu thuật viên khi mở rộng thẻ, chống gãy dọc 3 nút thao tác và giữ nguyên trạng thái mở rộng khi lọc/đồng bộ (`[BUG-221]`, commit `4ca82ff`, build `v2611031611`).
