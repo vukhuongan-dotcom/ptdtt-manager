@@ -68,7 +68,10 @@ const ResearchPage = {
             return true;
         });
 
+        const nextSession = this._getNextUpcomingSession(allItems);
+
         return `
+        <div id="research-page" class="rsch-page">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Sinh hoạt Chuyên môn</h1>
@@ -82,7 +85,26 @@ const ResearchPage = {
                     ${Utils.plusIcon()} Thêm bài SHCM
                 </button>` : ''}
             </div>
+            <div class="rsch-mobile-hdr-tools">
+                ${canEdit
+                    ? `<button type="button" class="rsch-mobile-primary-btn" onclick="ResearchPage.openForm()" aria-label="Thêm bài sinh hoạt chuyên môn mới">＋ Thêm</button>`
+                    : `<button type="button" class="rsch-mobile-primary-btn" onclick="ResearchPage.exportImage()" aria-label="Xuất hình lịch sinh hoạt chuyên môn">📸 Xuất</button>`}
+                <button type="button" class="rsch-mobile-more-btn" id="rsch-mobile-more-btn" onclick="ResearchPage.openMobileToolsSheet()" aria-label="Tiện ích sinh hoạt chuyên môn" title="Tiện ích">⋮</button>
+            </div>
         </div>
+
+        ${nextSession ? `
+        <div class="rsch-mobile-next-card">
+            <div class="rsch-mnext-top">
+                <span class="rsch-mnext-kicker">📌 Buổi SHCM sắp tới</span>
+                <span class="rsch-mnext-badge">${nextSession.countdownLabel}</span>
+            </div>
+            <div class="rsch-mnext-title">${nextSession.item.title || 'Chưa có tên đề tài'}</div>
+            <div class="rsch-mnext-meta">
+                <span>👨‍⚕️ ${nextSession.item.doctorName || '—'}</span>
+                <span>📅 ${nextSession.dateLabel} · ⏰ ${settings.defaultTime || '15:30'} (${parseInt(settings.defaultDuration) || 30}p)</span>
+            </div>
+        </div>` : ''}
 
         <!-- Stats cards -->
         <div class="rsch-stats">
@@ -232,8 +254,7 @@ const ResearchPage = {
                                 ${(isDone && !isSuperAdmin) ? `
                                     <span class="rsch-locked-pill" title="Bài đã trình đã khoá — Chỉ Super Admin mới được sửa/xoá">🔒 Đã khoá</span>
                                 ` : `
-                                    <button class="btn-icon" onclick="ResearchPage.openForm(${item.id})" title="${isDone ? 'Sửa (Super Admin)' : 'Sửa'}" aria-label="Sửa bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span></button>
-                                    <button class="btn-icon" onclick="ResearchPage.deleteItem(${item.id})" title="${isDone ? 'Xoá (Super Admin)' : 'Xoá'}" aria-label="Xoá bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">🗑️</button>
+                                    <button type="button" class="rsch-card-more-btn" data-rsch-more="${item.id}" onclick="ResearchPage.openMobileItemActionSheet(${item.id})" aria-label="Thao tác bài SHCM ${(item.title || '').replace(/"/g, '&quot;')}">⋮</button>
                                 `}
                             </div>
                             ` : ''}
@@ -242,6 +263,7 @@ const ResearchPage = {
                     `;
                 }).join('')}
             </div>
+        </div>
         </div>
         `;
     },
@@ -850,6 +872,128 @@ const ResearchPage = {
             Toast.error('Lỗi xuất hình: ' + err.message);
         } finally {
             if (btn) { btn.disabled = false; btn.textContent = '📸 Xuất hình'; }
+        }
+    },
+
+    // ===== FEAT-239: MOBILE HELPERS & BOTTOM SHEETS =====
+    _getNextUpcomingSession(allItems) {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const upcoming = (allItems || [])
+            .filter(i => i.status !== 'done' && i.presentDate && i.presentDate >= today)
+            .sort((a, b) => a.presentDate.localeCompare(b.presentDate));
+        if (!upcoming.length) return null;
+        const item = upcoming[0];
+        const parts = String(item.presentDate).split('-').map(n => parseInt(n, 10));
+        const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const targetMid = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+        const daysUntil = Math.round((targetMid - todayMid) / 86400000);
+        const countdownLabel = daysUntil <= 0 ? 'Hôm nay' : (daysUntil === 1 ? 'Ngày mai' : `Còn ${daysUntil} ngày`);
+        const dateLabel = `${pad(targetMid.getDate())}/${pad(targetMid.getMonth() + 1)}/${targetMid.getFullYear()}`;
+        return { item, daysUntil, countdownLabel, dateLabel };
+    },
+
+    openMobileToolsSheet() {
+        const canEdit = this._canEdit();
+        Modal.open('Tiện ích SHCM', `
+            <div class="rsch-sheet-actions">
+                <button type="button" class="rsch-sheet-btn" onclick="Modal.close();ResearchPage.exportImage()">
+                    <span>📸 Xuất hình lịch SHCM</span><span>PNG</span>
+                </button>
+                ${canEdit ? `
+                <button type="button" class="rsch-sheet-btn" onclick="Modal.close();ResearchPage.openMobileSettingsSheet()">
+                    <span>⚙️ Giờ mặc định & Thời lượng</span><span>Cài đặt</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    openMobileSettingsSheet() {
+        if (!this._canEdit()) return;
+        const settings = this._getSettings();
+        Modal.open('Cài đặt giờ SHCM mặc định', `
+            <div class="rsch-msettings-form">
+                <div class="rsch-msettings-field">
+                    <label class="rsch-msettings-label" for="shcm-mobile-default-time">⚙️ Giờ mặc định</label>
+                    <input type="time" id="shcm-mobile-default-time" class="form-input" value="${settings.defaultTime || '15:30'}">
+                </div>
+                <div class="rsch-msettings-field">
+                    <label class="rsch-msettings-label" for="shcm-mobile-default-dur">⏱️ Thời lượng (phút)</label>
+                    <input type="number" id="shcm-mobile-default-dur" class="form-input" value="${parseInt(settings.defaultDuration) || 30}" min="0" max="120" step="5">
+                </div>
+                <div class="modal-footer rsch-msettings-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="button" class="btn btn-primary" onclick="ResearchPage.saveMobileSettings()">💾 Lưu cài đặt</button>
+                </div>
+            </div>
+        `);
+    },
+
+    saveMobileSettings() {
+        if (!this._canEdit()) return;
+        const time = document.getElementById('shcm-mobile-default-time')?.value || '15:30';
+        const durVal = parseInt(document.getElementById('shcm-mobile-default-dur')?.value) || 30;
+        const dur = durVal + 'm';
+        const all = Store.getAll('shcmSettings');
+        if (all && all.length > 0) {
+            Store.update('shcmSettings', all[0].id, { defaultTime: time, defaultDuration: dur });
+        } else {
+            Store.add('shcmSettings', { defaultTime: time, defaultDuration: dur });
+        }
+        Modal.close();
+        Toast.success('Đã lưu cài đặt giờ SHCM');
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
+        }
+    },
+
+    openMobileItemActionSheet(id) {
+        if (!this._canEdit()) return;
+        const item = Store.getById('shcmSchedule', id);
+        if (!item) return;
+        const isSuperAdmin = (typeof App !== 'undefined' && App.isSuperAdmin) ? App.isSuperAdmin() : false;
+        if (item.status === 'done' && !isSuperAdmin) {
+            Toast.warning('Bài đã trình đã khoá — Chỉ Super Admin mới được thay đổi');
+            return;
+        }
+        Modal.open(item.title || 'Thao tác bài SHCM', `
+            <div class="rsch-sheet-actions">
+                <div class="rsch-sheet-section-lbl">Đổi nhanh trạng thái 1 chạm</div>
+                <div class="rsch-sheet-status-grid">
+                    ${Object.entries(SHCM_STATUSES).map(([key, st]) => `
+                        <button type="button" class="rsch-sheet-btn ${item.status === key ? 'is-active' : ''}" data-rsch-quick-status="${key}" onclick="ResearchPage.setQuickStatus(${item.id}, '${key}')">
+                            <span>${st.icon} ${st.label}</span>
+                            <span>${item.status === key ? 'Hiện tại' : 'Chọn'}</span>
+                        </button>
+                    `).join('')}
+                </div>
+                <button type="button" class="rsch-sheet-btn" onclick="Modal.close();ResearchPage.openForm(${item.id})">
+                    <span>✏️ Sửa chi tiết bài SHCM</span><span>Mở form</span>
+                </button>
+                <button type="button" class="rsch-sheet-btn is-danger" onclick="Modal.close();ResearchPage.deleteItem(${item.id})">
+                    <span>🗑️ Xoá bài SHCM</span><span>Xoá</span>
+                </button>
+            </div>
+        `);
+    },
+
+    setQuickStatus(id, newStatus) {
+        if (!this._canEdit()) return;
+        if (!SHCM_STATUSES[newStatus]) return;
+        const item = Store.getById('shcmSchedule', id);
+        if (!item) return;
+        const isSuperAdmin = (typeof App !== 'undefined' && App.isSuperAdmin) ? App.isSuperAdmin() : false;
+        if (item.status === 'done' && !isSuperAdmin) {
+            Toast.warning('Bài đã trình đã khoá — Chỉ Super Admin mới được thay đổi');
+            return;
+        }
+        Store.update('shcmSchedule', id, { status: newStatus });
+        this._syncPlan(Store.getById('shcmSchedule', id));
+        Modal.close();
+        Toast.success(`Đã cập nhật trạng thái: ${SHCM_STATUSES[newStatus].label}`);
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
         }
     },
 

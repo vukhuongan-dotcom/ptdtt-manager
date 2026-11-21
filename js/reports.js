@@ -1,6 +1,8 @@
 // ===== REPORTS PAGE — Báo cáo hàng ngày =====
 const ReportsPage = {
     activeTab: 'report16h',
+    _hasUserChosenTab: false,
+    _lastRoleUser: null,
     selectedDate: (() => {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -10,29 +12,74 @@ const ReportsPage = {
     _showArchive7h: false,
     _historyPreviewCount: 10,
 
+    _resolveDefaultTab() {
+        const session = (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') ? Auth.getSession() : null;
+        const role = session?.role || '';
+        return /điều dưỡng|hộ lý/i.test(role) ? 'report7h' : 'report16h';
+    },
+
     render() {
+        const session = (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') ? Auth.getSession() : null;
+        const curUser = session?.username || null;
+        if (curUser !== this._lastRoleUser) {
+            this._lastRoleUser = curUser;
+            this._hasUserChosenTab = false;
+        }
+        if (!this._hasUserChosenTab) {
+            this.activeTab = this._resolveDefaultTab();
+        }
+        const isAdmin = (typeof App !== 'undefined' && typeof App.isAdmin === 'function') ? App.isAdmin() : false;
+        if (this.activeTab === 'stats' && !isAdmin) {
+            this.activeTab = this._resolveDefaultTab();
+        }
+
+        const todayRep16 = this.activeTab === 'report16h'
+            ? (Store.getAll('reports16h') || []).find(r => r.date === this.selectedDate)
+            : null;
+        const todayRep7 = this.activeTab === 'report7h'
+            ? (Store.getAll('reports7h') || []).find(r => r.date === this.selectedDate)
+            : null;
+
+        let mobilePrimaryBtn = '';
+        if (this.activeTab === 'report16h') {
+            mobilePrimaryBtn = todayRep16
+                ? `<button type="button" class="rpt-mobile-primary-btn" onclick="ReportsPage.exportReportImage()" aria-label="Xuất hình báo cáo 16h">📸 Xuất</button>`
+                : `<button type="button" class="rpt-mobile-primary-btn" onclick="ReportsPage.openReport16hForm('${this.selectedDate}')" aria-label="Tạo báo cáo 16h">＋ Tạo</button>`;
+        } else if (this.activeTab === 'report7h') {
+            mobilePrimaryBtn = todayRep7
+                ? `<button type="button" class="rpt-mobile-primary-btn" onclick="ReportsPage.exportReport7hImage()" aria-label="Xuất hình báo cáo 7h">📸 Xuất</button>`
+                : `<button type="button" class="rpt-mobile-primary-btn" onclick="ReportsPage.openReport7hForm('${this.selectedDate}')" aria-label="Tạo báo cáo 7h">＋ Tạo</button>`;
+        }
+
         return `
+        <div id="reports-page" class="rpt-page">
         <div class="page-header rpt-header-row" style="align-items:flex-start">
             <div>
                 <h1 class="page-title">Báo cáo</h1>
                 <p class="page-subtitle">Báo cáo tình hình khoa hàng ngày</p>
             </div>
             <button onclick="ReportsPage.showGuide()" class="rpt-guide-btn">📖 Hướng dẫn</button>
+            <div class="rpt-mobile-hdr-tools">
+                ${mobilePrimaryBtn}
+                <button type="button" class="rpt-mobile-more-btn" id="rpt-mobile-more-btn" onclick="ReportsPage.openMobileToolsSheet()" aria-label="Tiện ích Báo cáo" title="Tiện ích">⋮</button>
+            </div>
         </div>
 
         <div class="staff-subtabs">
-            <button class="staff-subtab ${this.activeTab === 'report16h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report16h')">
+            <button class="staff-subtab ${this.activeTab === 'report16h' ? 'active' : ''}" data-rpt-tab="report16h" onclick="ReportsPage.switchTab('report16h')">
                 🩺 Báo cáo 16h <span class="staff-subtab-count">BS trực khoa</span>
             </button>
-            <button class="staff-subtab ${this.activeTab === 'report7h' ? 'active' : ''}" onclick="ReportsPage.switchTab('report7h')">
+            <button class="staff-subtab ${this.activeTab === 'report7h' ? 'active' : ''}" data-rpt-tab="report7h" onclick="ReportsPage.switchTab('report7h')">
                 👩‍⚕️ Báo cáo 7h <span class="staff-subtab-count">ĐD trực BV</span>
             </button>
-            <button class="staff-subtab ${this.activeTab === 'stats' ? 'active' : ''}" onclick="ReportsPage.switchTab('stats')">
+            ${isAdmin ? `
+            <button class="staff-subtab ${this.activeTab === 'stats' ? 'active' : ''}" data-rpt-tab="stats" onclick="ReportsPage.switchTab('stats')">
                 📊 Thống kê <span class="staff-subtab-count">Biểu đồ</span>
-            </button>
+            </button>` : ''}
         </div>
 
         ${this.activeTab === 'report16h' ? this.renderReport16h() : this.activeTab === 'report7h' ? this.renderReport7h() : this.renderStats()}
+        </div>
         `;
     },
 
@@ -42,6 +89,7 @@ const ReportsPage = {
             Toast.show('⛔ Tab Thống kê chỉ dành cho quản trị viên.', 'error');
             return;
         }
+        this._hasUserChosenTab = true;
         this.activeTab = tab;
         App.renderCurrentPage();
     },
@@ -63,11 +111,13 @@ const ReportsPage = {
         const isWeekend = this._isWeekend(this.selectedDate);
 
         return `
-        <div class="rpt-header-row">
+        <div class="rpt-header-row rpt-toolbar-row">
             <div class="rpt-date-controls">
                 <label class="rpt-label-date" for="rpt-16h-date-input">Ngày:</label>
+                <button type="button" class="rpt-date-step-btn" onclick="ReportsPage.stepDate(-1)" aria-label="Ngày hôm trước" title="Ngày hôm trước">◀</button>
                 <input type="date" id="rpt-16h-date-input" aria-label="Chọn ngày báo cáo" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
-                <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
+                <button type="button" class="rpt-date-step-btn" onclick="ReportsPage.stepDate(1)" aria-label="Ngày hôm sau" title="Ngày hôm sau">▶</button>
+                <button class="btn btn-secondary btn-sm rpt-archive-btn rpt-today-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
             <div class="rpt-export-btns">
                 ${todayReport ? `<button class="btn btn-sm rpt-export-orange" onclick="ReportsPage.exportReportImage()">
@@ -236,13 +286,56 @@ const ReportsPage = {
     },
 
     _renderHistoryTable(tableHead, rows, style = '') {
-        return `<div class="card staff-table-card" style="${style}"><table>
+        return `<div class="card staff-table-card rpt-desktop-history" style="${style}"><table>
             ${tableHead}
             <tbody>${rows}</tbody>
         </table></div>`;
     },
 
-    _renderHistoryWithArchive({ type, reports, previewCount, tableHead, rowRenderer, emptyMessage }) {
+    _renderHistoryCards16h(items) {
+        return `<div class="rpt-mobile-history-cards">
+            ${items.map(r => `
+                <div class="rpt-history-card ${r.date === this.selectedDate ? 'is-active' : ''}" role="button" tabindex="0" onclick="ReportsPage.viewDate('${r.date}', 'report16h')">
+                    <div class="rpt-hc-top">
+                        <div>
+                            <div class="rpt-hc-date">${this.formatDateShort(r.date)} · ${this.getDayOfWeek(r.date)}</div>
+                            <div class="rpt-hc-reporter">👤 ${r.reporterName || '—'}</div>
+                        </div>
+                        <span class="rpt-hc-total">${r.totalPatients || '—'} BN</span>
+                    </div>
+                    <div class="rpt-hc-meta">
+                        <span class="rpt-hc-chip is-in">Nhập +${r.admissions || 0}</span>
+                        <span class="rpt-hc-chip is-out">Xuất -${r.discharges || 0}</span>
+                        <span class="rpt-hc-chip is-op">Mổ ${r.surgeryTotal || 0}</span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+    },
+
+    _renderHistoryCards7h(items) {
+        return `<div class="rpt-mobile-history-cards">
+            ${items.map(r => `
+                <div class="rpt-history-card ${r.date === this.selectedDate ? 'is-active' : ''}" role="button" tabindex="0" onclick="ReportsPage.viewDate('${r.date}', 'report7h')">
+                    <div class="rpt-hc-top">
+                        <div>
+                            <div class="rpt-hc-date">${this.formatDateShort(r.date)} · ${this.getDayOfWeek(r.date)}</div>
+                            <div class="rpt-hc-reporter">👩‍⚕️ ${r.reporterName || '—'}</div>
+                        </div>
+                        <span class="rpt-hc-total">${r.totalPatients || '—'} BN</span>
+                    </div>
+                    <div class="rpt-hc-meta">
+                        <span class="rpt-hc-chip is-red">HSCC ${r.fromHSCC || 0}</span>
+                        <span class="rpt-hc-chip is-blue">Hồi tỉnh ${r.fromHoiTinh || 0}</span>
+                        <span class="rpt-hc-chip is-purple">ICU ${r.fromICU || 0}</span>
+                        <span class="rpt-hc-chip is-in">Giải áp ${r.fromGiaiAp || 0}</span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+    },
+
+    _renderHistoryWithArchive({ type, reports, previewCount, tableHead, rowRenderer, cardRenderer, emptyMessage }) {
         const sorted = [...reports].sort((a, b) => b.date.localeCompare(a.date));
         const recent = sorted.slice(0, previewCount);
         const archive = sorted.slice(previewCount);
@@ -256,6 +349,9 @@ const ReportsPage = {
         }
 
         let html = this._renderHistoryTable(tableHead, rowRenderer(recent));
+        if (typeof cardRenderer === 'function') {
+            html += cardRenderer(recent);
+        }
         if (!archive.length) return html;
 
         html += `<div class="rpt-archive-section">
@@ -263,6 +359,7 @@ const ReportsPage = {
                 ${showArchive ? '📁 Ẩn lưu trữ' : `📂 Xem lưu trữ (${archive.length} báo cáo cũ)`}
             </button>
             ${showArchive ? this._renderHistoryTable(tableHead, rowRenderer(archive), 'margin-top:8px;opacity:0.88') : ''}
+            ${(showArchive && typeof cardRenderer === 'function') ? cardRenderer(archive) : ''}
         </div>`;
 
         return html;
@@ -278,6 +375,7 @@ const ReportsPage = {
             previewCount: this._historyPreviewCount,
             tableHead,
             rowRenderer: items => this._renderHistoryRows(items),
+            cardRenderer: items => this._renderHistoryCards16h(items),
             emptyMessage: 'Chưa có lịch sử báo cáo'
         });
     },
@@ -303,11 +401,11 @@ const ReportsPage = {
             <div class="rpt-summary-cell">
                 <div class="rpt-summary-label" style="color:${color}">${label}</div>
                 <div class="rpt-summary-value-row">
-                    <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
-                        style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" style="width:44px;text-align:center;font-size:1rem;font-weight:700;border:2px solid ${color}44;border-radius:6px;padding:3px 1px;color:${color}">
-                    <button type="button" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
-                        style="width:28px;height:28px;border:none;border-radius:6px;background:${color}18;color:${color};font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+                    <button type="button" class="rpt-stepper-btn" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                        style="background:${color}18;color:${color}" aria-label="Giảm ${label}">−</button>
+                    <input type="number" class="rpt-stepper-input" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" style="border:2px solid ${color}44;color:${color}">
+                    <button type="button" class="rpt-stepper-btn" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                        style="background:${color}18;color:${color}" aria-label="Tăng ${label}">+</button>
                 </div>
             </div>`;
 
@@ -319,15 +417,17 @@ const ReportsPage = {
             <div class="rpt-summary-cell">
                 <div class="rpt-summary-label" style="color:${color}">${label}</div>
                 <div class="rpt-summary-value-row">
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" readonly
-                        style="width:52px;text-align:center;font-size:1.1rem;font-weight:800;border:2px solid ${color}44;border-radius:6px;padding:4px 1px;color:${color};background:${color}08;cursor:default">
+                    <input type="number" class="rpt-stepper-input rpt-stepper-readonly" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" readonly
+                        style="border:2px solid ${color}44;color:${color};background:${color}08;cursor:default">
                 </div>
             </div>`;
 
         // Doctor chips (exclude trưởng/phó khoa)
         const docChips = doctors.map(d => {
+            const isSelf = session?.name && d.name === session.name;
+            const isSelected = d.name === defaultReporter;
             return `<button type="button" onclick="document.querySelector('#r16h-reporter').value='${d.name}';document.querySelectorAll('.r16h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='var(--primary,#0f172a)';this.style.color='#fff';this.style.borderColor='var(--primary,#0f172a)'"
-                class="r16h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${d.name === defaultReporter ? 'var(--primary)' : 'var(--border,#cbd5e1)'};background:${d.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary,#f1f5f9)'};color:${d.name === defaultReporter ? '#fff' : 'var(--text-secondary,#334155)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${d.name}</button>`;
+                class="r16h-chip report-chip ${isSelf ? 'is-self' : ''} ${isSelected ? 'active' : ''}" style="padding:6px 6px;border-radius:6px;border:1px solid ${isSelected ? 'var(--primary)' : 'var(--border,#cbd5e1)'};background:${isSelected ? 'var(--primary)' : 'var(--bg-tertiary,#f1f5f9)'};color:${isSelected ? '#fff' : 'var(--text-secondary,#334155)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${isSelf ? '★ ' : ''}${d.name}</button>`;
         }).join('');
 
         const nextDay = this._getNextSurgeryDay(date);
@@ -335,7 +435,7 @@ const ReportsPage = {
         const isFri = this._isFriday(date);
 
         Modal.open(`🩺 Báo cáo 16h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
-            <form onsubmit="ReportsPage.saveReport16h(event, '${date}')">
+            <form class="rpt-mobile-form" onsubmit="ReportsPage.saveReport16h(event, '${date}')">
 
                 <!-- Row 1: Tổng BN + Mổ chưa về -->
                 <div class="rpt-form-2col">
@@ -343,8 +443,8 @@ const ReportsPage = {
                         <div style="flex:1;color:#fff">
                             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:600">TỔNG BN</div>
                         </div>
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
-                            style="width:62px;text-align:center;font-size:1.5rem;font-weight:800;border:none;border-radius:8px;padding:4px;background:rgba(255,255,255,0.12);color:#fff">
+                        <input type="number" class="rpt-stepper-input-lg" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
+                            style="width:66px;text-align:center;font-size:1.5rem;font-weight:800;border:none;border-radius:8px;padding:4px;background:rgba(255,255,255,0.12);color:#fff">
                     </div>
                     <div style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fef3c7;border-radius:10px;border:1px solid #fbbf24">
                         <div class="rpt-form-half">
@@ -400,10 +500,10 @@ const ReportsPage = {
                 <!-- Row 5: Notes (collapsed) -->
                 <details style="margin-bottom:8px" ${e.notes ? 'open' : ''}>
                     <summary class="rpt-details-toggle">📝 Ghi chú thêm (bấm để mở)</summary>
-                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.82rem">${e.notes || ''}</textarea>
+                    <textarea class="rpt-form-textarea" name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.82rem">${e.notes || ''}</textarea>
                 </details>
 
-                <div class="modal-footer" style="padding-top:6px;border-top:1px solid var(--border)">
+                <div class="modal-footer rpt-modal-footer-sticky" style="padding-top:6px;border-top:1px solid var(--border)">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">💾 Lưu báo cáo</button>
                 </div>
@@ -742,11 +842,13 @@ const ReportsPage = {
         const latestReport = this._getLatestReport(reports);
 
         return `
-        <div class="rpt-header-row">
+        <div class="rpt-header-row rpt-toolbar-row">
             <div class="rpt-date-controls">
                 <label class="rpt-label-date" for="rpt-7h-date-input">Ngày:</label>
+                <button type="button" class="rpt-date-step-btn" onclick="ReportsPage.stepDate(-1)" aria-label="Ngày hôm trước" title="Ngày hôm trước">◀</button>
                 <input type="date" id="rpt-7h-date-input" aria-label="Chọn ngày báo cáo" value="${this.selectedDate}" onchange="ReportsPage.changeDate(this.value)" class="rpt-date-input">
-                <button class="btn btn-secondary btn-sm rpt-archive-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
+                <button type="button" class="rpt-date-step-btn" onclick="ReportsPage.stepDate(1)" aria-label="Ngày hôm sau" title="Ngày hôm sau">▶</button>
+                <button class="btn btn-secondary btn-sm rpt-archive-btn rpt-today-btn" onclick="ReportsPage.goToday()">Hôm nay</button>
             </div>
             <div class="rpt-export-btns">
                 ${todayReport ? `<button class="btn btn-sm rpt-export-orange" onclick="ReportsPage.exportReport7hImage()">
@@ -859,6 +961,7 @@ const ReportsPage = {
             previewCount: this._historyPreviewCount,
             tableHead,
             rowRenderer: items => this._renderHistoryRows7h(items),
+            cardRenderer: items => this._renderHistoryCards7h(items),
             emptyMessage: 'Chưa có báo cáo nào'
         });
     },
@@ -879,22 +982,24 @@ const ReportsPage = {
         // Stepper helper
         const stepper = (name, val, color) => `
             <div class="rpt-summary-value-row">
-                <button type="button" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
-                    style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-                <input type="number" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" style="width:52px;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid ${color}44;border-radius:8px;padding:4px 2px;color:${color}"
+                <button type="button" class="rpt-stepper-btn" onclick="this.parentNode.querySelector('input').stepDown();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                    style="background:${color}22;color:${color}" aria-label="Giảm">−</button>
+                <input type="number" class="rpt-stepper-input" inputmode="numeric" pattern="[0-9]*" name="${name}" value="${val}" min="0" style="border:2px solid ${color}44;color:${color}"
                     oninput="ReportsPage._toggle7hDetail('${name}', this.value)">
-                <button type="button" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
-                    style="width:32px;height:32px;border:none;border-radius:8px;background:${color}22;color:${color};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+                <button type="button" class="rpt-stepper-btn" onclick="this.parentNode.querySelector('input').stepUp();this.parentNode.querySelector('input').dispatchEvent(new Event('input'))"
+                    style="background:${color}22;color:${color}" aria-label="Tăng">+</button>
             </div>`;
 
         // Nurse chips — 3-column grid with full names
         const nurseChips = nurses.length > 0 ? nurses.map(n => {
+            const isSelf = session?.name && n.name === session.name;
+            const isSelected = n.name === defaultReporter;
             return `<button type="button" onclick="document.querySelector('#r7h-reporter').value='${n.name}';document.querySelectorAll('.r7h-chip').forEach(c=>{c.style.background='';c.style.color='';c.style.borderColor='';c.classList.remove('active')});this.style.background='#1878B4';this.style.color='#fff';this.style.borderColor='#1878B4'"
-                class="r7h-chip report-chip" style="padding:6px 6px;border-radius:6px;border:1px solid ${n.name === defaultReporter ? 'var(--primary)' : 'var(--border)'};background:${n.name === defaultReporter ? 'var(--primary)' : 'var(--bg-tertiary)'};color:${n.name === defaultReporter ? '#fff' : 'var(--text-primary)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${n.name}</button>`;
+                class="r7h-chip report-chip ${isSelf ? 'is-self' : ''} ${isSelected ? 'active' : ''}" style="padding:6px 6px;border-radius:6px;border:1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'};background:${isSelected ? 'var(--primary)' : 'var(--bg-tertiary)'};color:${isSelected ? '#fff' : 'var(--text-primary)'};font-size:0.8rem;cursor:pointer;transition:all .15s;text-align:center">${isSelf ? '★ ' : ''}${n.name}</button>`;
         }).join('') : '';
 
         Modal.open(`👩‍⚕️ Báo cáo 7h — ${this.getDayOfWeek(date)}, ${this.formatDateVN(date)}`, `
-            <form onsubmit="ReportsPage.saveReport7h(event, '${date}')">
+            <form class="rpt-mobile-form" onsubmit="ReportsPage.saveReport7h(event, '${date}')">
 
                 <!-- Row 1: Tổng BN -->
                 <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(135deg,#1D2357,#1878B4);border-radius:10px;margin-bottom:10px">
@@ -902,7 +1007,7 @@ const ReportsPage = {
                         <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.85);font-weight:600">TỔNG SỐ BỆNH NHÂN</div>
                         <div style="font-size:0.85rem;color:rgba(255,255,255,0.9);margin-top:2px">${this.getDayOfWeek(date)} — ${this.formatDateVN(date)}</div>
                     </div>
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
+                    <input type="number" class="rpt-stepper-input-lg" inputmode="numeric" pattern="[0-9]*" name="totalPatients" value="${defaultPatients}" required min="0"
                         style="width:72px;text-align:center;font-size:1.6rem;font-weight:800;border:none;border-radius:10px;padding:6px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(4px)">
                 </div>
 
@@ -928,19 +1033,19 @@ const ReportsPage = {
 
                 <!-- Row 3: Auto-expand detail fields (hidden by default when count=0) -->
                 <div id="detail-fromHSCC" style="display:${(e.fromHSCC > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🚑 Chi tiết HSCC: tên BN / phòng..."
+                    <input type="text" class="rpt-form-detail-input" name="fromHSCCDetail" value="${e.fromHSCCDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🚑 Chi tiết HSCC: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid #fca5a5;border-radius:6px;font-size:0.88rem;background:#fff5f5">
                 </div>
                 <div id="detail-fromHoiTinh" style="display:${(e.fromHoiTinh > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
+                    <input type="text" class="rpt-form-detail-input" name="fromHoiTinhDetail" value="${e.fromHoiTinhDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🏥 Chi tiết Hồi tỉnh: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid var(--primary-dark,#93c5fd);border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
                 <div id="detail-fromICU" style="display:${(e.fromICU > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromICUDetail" value="${e.fromICUDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🏨 Chi tiết ICU: tên BN / phòng..."
+                    <input type="text" class="rpt-form-detail-input" name="fromICUDetail" value="${e.fromICUDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🏨 Chi tiết ICU: tên BN / phòng..."
                         style="width:100%;padding:8px 10px;border:1px solid #c4b5fd;border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
                 <div id="detail-fromGiaiAp" style="display:${(e.fromGiaiAp > 0) ? 'block' : 'none'};margin-bottom:6px">
-                    <input type="text" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
+                    <input type="text" class="rpt-form-detail-input" name="fromGiaiApDetail" value="${e.fromGiaiApDetail || ''}" autocorrect="off" autocapitalize="words" placeholder="🔄 Chi tiết Giải áp: tên khoa / số ca..."
                         style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:6px;font-size:0.88rem;background:var(--bg-tertiary)">
                 </div>
 
@@ -954,10 +1059,10 @@ const ReportsPage = {
                 <!-- Row 5: Notes (collapsed) -->
                 <details style="margin-bottom:10px" ${e.notes ? 'open' : ''}>
                     <summary class="rpt-details-toggle" style="font-size:0.85rem;padding:4px 0">📝 Ghi chú thêm (bấm để mở)</summary>
-                    <textarea name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.88rem">${e.notes || ''}</textarea>
+                    <textarea class="rpt-form-textarea" name="notes" rows="2" placeholder="Ghi chú khác (nếu có)..." style="margin-top:4px;width:100%;font-size:0.88rem">${e.notes || ''}</textarea>
                 </details>
 
-                <div class="modal-footer" style="padding-top:8px;border-top:1px solid var(--border)">
+                <div class="modal-footer rpt-modal-footer-sticky" style="padding-top:8px;border-top:1px solid var(--border)">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="submit" class="btn btn-primary">💾 Lưu báo cáo</button>
                 </div>
@@ -1215,9 +1320,65 @@ const ReportsPage = {
 
     // ========== HELPERS ==========
     changeDate(date) { this.selectedDate = date; App.renderCurrentPage(); },
+    stepDate(deltaDays) {
+        const d = this._parseDate(this.selectedDate);
+        d.setDate(d.getDate() + (parseInt(deltaDays, 10) || 0));
+        this.selectedDate = this._localDateStr(d);
+        App.renderCurrentPage();
+    },
     goToday() { this.selectedDate = this._localDateStr(new Date()); App.renderCurrentPage(); },
+    openMobileToolsSheet() {
+        const isAdmin = (typeof App !== 'undefined' && typeof App.isAdmin === 'function') ? App.isAdmin() : false;
+        const is16 = this.activeTab === 'report16h';
+        const is7 = this.activeTab === 'report7h';
+        const has16 = (Store.getAll('reports16h') || []).some(r => r.date === this.selectedDate);
+        const has7 = (Store.getAll('reports7h') || []).some(r => r.date === this.selectedDate);
+
+        Modal.open('Tiện ích Báo cáo', `
+            <div class="rpt-sheet-actions">
+                <button type="button" class="rpt-sheet-btn ${is16 ? 'is-active' : ''}" onclick="Modal.close();ReportsPage.switchTab('report16h')">
+                    <span>🩺 Báo cáo 16h (BS trực khoa)</span>
+                    <span>${is16 ? 'Đang mở' : 'Chuyển'}</span>
+                </button>
+                <button type="button" class="rpt-sheet-btn ${is7 ? 'is-active' : ''}" onclick="Modal.close();ReportsPage.switchTab('report7h')">
+                    <span>👩‍⚕️ Báo cáo 7h (ĐD trực BV)</span>
+                    <span>${is7 ? 'Đang mở' : 'Chuyển'}</span>
+                </button>
+                ${isAdmin ? `
+                <button type="button" class="rpt-sheet-btn ${this.activeTab === 'stats' ? 'is-active' : ''}" onclick="Modal.close();ReportsPage.switchTab('stats')">
+                    <span>📊 Biểu đồ thống kê khoa</span>
+                    <span>${this.activeTab === 'stats' ? 'Đang mở' : 'Chuyển'}</span>
+                </button>` : ''}
+                ${is16 ? `
+                <button type="button" class="rpt-sheet-btn" onclick="Modal.close();ReportsPage.openReport16hForm('${this.selectedDate}')">
+                    <span>${has16 ? '✏️ Sửa báo cáo 16h hôm nay' : '＋ Tạo báo cáo 16h hôm nay'}</span>
+                    <span>${this.formatDateShort(this.selectedDate)}</span>
+                </button>
+                ${has16 ? `<button type="button" class="rpt-sheet-btn" onclick="Modal.close();ReportsPage.exportReportImage()">
+                    <span>📸 Xuất hình trực khoa 16h</span>
+                    <span>JPEG</span>
+                </button>` : ''}` : ''}
+                ${is7 ? `
+                <button type="button" class="rpt-sheet-btn" onclick="Modal.close();ReportsPage.openReport7hForm('${this.selectedDate}')">
+                    <span>${has7 ? '✏️ Sửa báo cáo 7h hôm nay' : '＋ Tạo báo cáo 7h hôm nay'}</span>
+                    <span>${this.formatDateShort(this.selectedDate)}</span>
+                </button>
+                ${has7 ? `<button type="button" class="rpt-sheet-btn" onclick="Modal.close();ReportsPage.exportReport7hImage()">
+                    <span>📸 Xuất hình báo cáo 7h</span>
+                    <span>JPEG</span>
+                </button>` : ''}` : ''}
+                <button type="button" class="rpt-sheet-btn" onclick="Modal.close();ReportsPage.showGuide()">
+                    <span>📖 Hướng dẫn ghi nhận báo cáo</span>
+                    <span>Xem</span>
+                </button>
+            </div>
+        `);
+    },
     viewDate(date, tab) {
-        if (tab) this.activeTab = tab;
+        if (tab) {
+            this.activeTab = tab;
+            this._hasUserChosenTab = true;
+        }
         this.selectedDate = date;
         App.renderCurrentPage();
         setTimeout(() => {

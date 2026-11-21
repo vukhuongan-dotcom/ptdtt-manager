@@ -15,6 +15,7 @@ const SurgeryStatsPage = {
     logbookFilterApproach: 'all', // 'all' | 'noisoi' | 'mo' | 'robot' | 'nsth'
     logbookFilterType: 'all', // 'all' | 'chuongtrinh' | 'yeucau' | 'bankhan' | 'robot'
     summaryCohortFilter: 'all', // 'all' | 'internal_attending' | 'internal_trainee' | 'external'
+    _mobileCompareOpen: false,
 
     setSummaryCohortFilter(filter) {
         this.summaryCohortFilter = filter || 'all';
@@ -1074,6 +1075,7 @@ const SurgeryStatsPage = {
         const isAllPeriod = this.period === 'all';
 
         return `
+        <div id="surgery-stats-page" class="sstats-page">
         <div class="page-header sstats-header">
             <div>
                 <h1 class="page-title">Thống Kê Phẫu Thuật & Hồ Sơ Bác Sĩ</h1>
@@ -1090,6 +1092,9 @@ const SurgeryStatsPage = {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     Xuất sổ tổng hợp ca mổ toàn khoa
                 </button>` : ''}
+            </div>
+            <div class="sstats-mobile-hdr-tools">
+                <button type="button" class="sstats-mobile-more-btn" id="sstats-mobile-more-btn" onclick="SurgeryStatsPage.openMobileToolsSheet()" aria-label="Tiện ích thống kê phẫu thuật" title="Tiện ích">⋮</button>
             </div>
         </div>
 
@@ -1132,6 +1137,7 @@ const SurgeryStatsPage = {
         ${this.activeTab === 'radar' 
             ? this._renderRadarDashboard(surgeries, allDocs) 
             : this._renderSummaryTable(surgeries, allDocs)}
+        </div>
         `;
     },
 
@@ -1183,16 +1189,13 @@ const SurgeryStatsPage = {
         ` : ''}
 
         <!-- DOCTOR SELECTOR ROW -->
+        ${(() => { const showCompareMobile = hasCompare || this._mobileCompareOpen; return `
         <div class="card sstats-doctor-selector-card">
             <div class="sstats-selector-header">
                 <div>
                     <h3 class="sstats-selector-title">👥 Thiết Lập Hồ Sơ & Đối Chuẩn Phẫu Thuật Viên</h3>
                     <p class="sstats-selector-subtitle">Phân loại 6 trục năng lực — Khoa PTĐTT, BV Bình Dân (2026) <i>(Tham khảo Cleveland Clinic DDSI / ASCRS)</i></p>
                 </div>
-                <button class="export-btn btn-export-profile" onclick="SurgeryStatsPage.exportProfileImage()" title="Xuất hình ảnh toàn bộ hồ sơ bác sĩ (2K/Retina)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Xuất hồ sơ bác sĩ
-                </button>
             </div>
             
             <div class="sstats-selector-row">
@@ -1212,10 +1215,14 @@ const SurgeryStatsPage = {
                     </div>
                 </div>
 
-                <div class="sstats-vs-badge ${hasCompare ? '' : 'disabled'}">${hasCompare ? 'VS' : '—'}</div>
+                <button type="button" class="btn btn-secondary btn-sm sstats-mobile-compare-toggle ${showCompareMobile ? 'is-open' : ''}" data-sstats-compare-toggle="1" onclick="SurgeryStatsPage.toggleMobileCompare()">
+                    ${showCompareMobile ? '✕ Ẩn BS 2 (so sánh)' : '＋ So sánh với BS 2'}
+                </button>
+
+                <div class="sstats-vs-badge ${hasCompare ? '' : 'disabled'} ${showCompareMobile ? '' : 'is-mobile-collapsed'}">${hasCompare ? 'VS' : '—'}</div>
 
                 <!-- DOCTOR 2 SELECTOR (CRIMSON / DANGER) -->
-                <div class="sstats-doc-box sstats-doc-box-compare ${hasCompare ? '' : 'is-none'}">
+                <div class="sstats-doc-box sstats-doc-box-compare ${hasCompare ? '' : 'is-none'} ${showCompareMobile ? '' : 'is-mobile-collapsed'}">
                     <div class="sstats-doc-box-badge" style="background:${hasCompare ? 'var(--state-danger)' : 'var(--slate-700)'};color:#ffffff">
                         ${hasCompare ? 'Bác sĩ 2 (Màu Đỏ Rose)' : 'Bác sĩ 2 (Để trống)'}
                     </div>
@@ -1228,7 +1235,7 @@ const SurgeryStatsPage = {
                         </select>
                     </div>
                 </div>
-            </div>
+            </div>`; })()}
 
             <!-- ROLE SCOPE SELECTOR -->
             <div class="sstats-role-scope-bar">
@@ -1671,6 +1678,10 @@ const SurgeryStatsPage = {
             }
 
             const displayCases = this.showAllLogbookCases ? filteredCases : filteredCases.slice(0, 100);
+            const activeFilterCount = (this.logbookFilterAxis !== 'all' ? 1 : 0)
+                + (this.logbookFilterSubAxis !== 'all' ? 1 : 0)
+                + (this.logbookFilterApproach !== 'all' ? 1 : 0)
+                + (this.logbookFilterType !== 'all' ? 1 : 0);
 
             return `
             <div class="card sstats-logbook-card" id="sstats-logbook-section">
@@ -1683,18 +1694,23 @@ const SurgeryStatsPage = {
 
                 <!-- THANH BỘ LỌC TÌM KIẾM NHANH (FILTER TOOLBAR) -->
                 <div class="sstats-filter-toolbar">
-                    <div class="sstats-filter-search-box">
-                        <span class="sstats-filter-search-icon">🔍</span>
-                        <input type="text" 
-                               id="sstats-logbook-search-input" 
-                               class="form-control sstats-filter-search-input" 
-                               aria-label="Tìm kiếm sổ tay phẫu thuật"
-                               placeholder="Tìm tên BN, năm sinh, chẩn đoán, PP mổ..." 
-                               value="${(this.logbookSearch || '').replace(/"/g, '&quot;')}" 
-                               oninput="SurgeryStatsPage.setLogbookSearch(this.value)">
-                        ${this.logbookSearch ? `
-                            <button class="sstats-clear-search-btn" onclick="SurgeryStatsPage.setLogbookSearch('')" aria-label="Xóa tìm kiếm" title="Xóa tìm kiếm">✕</button>
-                        ` : ''}
+                    <div class="sstats-filter-search-row">
+                        <div class="sstats-filter-search-box">
+                            <span class="sstats-filter-search-icon">🔍</span>
+                            <input type="text" 
+                                   id="sstats-logbook-search-input" 
+                                   class="form-control sstats-filter-search-input" 
+                                   aria-label="Tìm kiếm sổ tay phẫu thuật"
+                                   placeholder="Tìm tên BN, năm sinh, chẩn đoán, PP mổ..." 
+                                   value="${(this.logbookSearch || '').replace(/"/g, '&quot;')}" 
+                                   oninput="SurgeryStatsPage.setLogbookSearch(this.value)">
+                            ${this.logbookSearch ? `
+                                <button class="sstats-clear-search-btn" onclick="SurgeryStatsPage.setLogbookSearch('')" aria-label="Xóa tìm kiếm" title="Xóa tìm kiếm">✕</button>
+                            ` : ''}
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm sstats-mobile-logbook-filter-btn ${activeFilterCount > 0 ? 'has-filters' : ''}" id="sstats-mobile-logbook-filter-btn" onclick="SurgeryStatsPage.openMobileLogbookFilterSheet(${p1.unclassifiedCount || 0})">
+                            🎛️ Bộ lọc${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                        </button>
                     </div>
                     <div class="sstats-filter-controls">
                         <select class="form-control sstats-filter-select" aria-label="Lọc theo nhóm Radar 6 trục" onchange="SurgeryStatsPage.setLogbookFilterAxis(this.value)">
@@ -1753,6 +1769,7 @@ const SurgeryStatsPage = {
                             </button>
                         </div>
                     ` : `
+                        <div class="sstats-desktop-logbook-table">
                         <table class="sstats-table">
                             <thead>
                                 <tr>
@@ -1802,6 +1819,8 @@ const SurgeryStatsPage = {
                                 }).join('')}
                             </tbody>
                         </table>
+                        </div>
+                        ${this._renderMobileLogbookCards(displayCases, allDocs)}
                         <div class="sstats-logbook-footer">
                             <span class="sstats-more-hint">
                                 ${this.showAllLogbookCases 
@@ -2106,6 +2125,7 @@ const SurgeryStatsPage = {
                         ` : ''}
                     </div>
                 </div>
+                <div class="sstats-desktop-summary-table">
                 <table class="sstats-table">
                     <thead>
                         <tr>
@@ -2155,6 +2175,8 @@ const SurgeryStatsPage = {
                         </tr>
                     </tfoot>
                 </table>
+                </div>
+                ${this._renderMobileRankingCards(displayedStats, types, grandByType, allStats, totalAll)}
             </div>
         `}
         `;
@@ -3186,6 +3208,218 @@ const SurgeryStatsPage = {
             }
         } catch (e) {
             console.warn('Watermark error:', e);
+        }
+    },
+
+    // ===== FEAT-239: MOBILE HELPERS & BOTTOM SHEETS =====
+    toggleMobileCompare() {
+        const show = this.compareDoctorId !== 'none' || this._mobileCompareOpen;
+        if (show) {
+            this._mobileCompareOpen = false;
+            if (this.compareDoctorId !== 'none') {
+                this.compareDoctorId = 'none';
+            }
+        } else {
+            this._mobileCompareOpen = true;
+        }
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
+        }
+    },
+
+    openMobileToolsSheet() {
+        const s = Auth.getSession();
+        const isAdmin = s && s.isAdmin;
+        const canExportProfile = this.activeTab === 'radar';
+        Modal.open('Tiện ích Thống kê PT', `
+            <div class="sstats-sheet-actions">
+                <button type="button" class="sstats-sheet-btn ${this.activeTab === 'radar' ? 'is-active' : ''}" onclick="Modal.close();SurgeryStatsPage.setActiveTab('radar')">
+                    <span>🎯 Hồ sơ & Radar 6 trục</span><span>${this.activeTab === 'radar' ? 'Đang xem' : 'Chuyển'}</span>
+                </button>
+                <button type="button" class="sstats-sheet-btn ${this.activeTab === 'summary' ? 'is-active' : ''}" onclick="Modal.close();SurgeryStatsPage.setActiveTab('summary')">
+                    <span>📋 Bảng tổng hợp toàn khoa</span><span>${this.activeTab === 'summary' ? 'Đang xem' : 'Chuyển'}</span>
+                </button>
+                ${canExportProfile ? `
+                <button type="button" class="sstats-sheet-btn" onclick="Modal.close();SurgeryStatsPage.exportProfileImage()">
+                    <span>🖼️ Xuất hồ sơ bác sĩ (2K PNG)</span><span>Tải về</span>
+                </button>` : ''}
+                ${isAdmin ? `
+                <button type="button" class="sstats-sheet-btn" onclick="Modal.close();SurgeryStatsPage.exportExcel()">
+                    <span>📊 Xuất sổ tổng hợp ca mổ (Excel)</span><span>Tải về</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    _renderMobileRankingCards(displayedStats, types, grandByType, allStats, totalAll) {
+        return `
+        <div class="sstats-mobile-ranking-list">
+            ${displayedStats.map((docStat, idx) => {
+                const extBadge = docStat.doctor.isExternal ? '<span class="sstats-rk-ext">Ngoài khoa</span>' : '';
+                return `
+                <div class="sstats-ranking-card" role="button" tabindex="0" data-sstats-doc="${docStat.doctor.id}" onclick="SurgeryStatsPage.openMobileDoctorDetailSheet('${docStat.doctor.id}')">
+                    <div class="sstats-rk-hdr">
+                        <span class="sstats-rk-rank">#${idx + 1}</span>
+                        ${Utils.renderAvatar ? Utils.renderAvatar(docStat.doctor, 'sm', { extraClass: 'sstats-doc-avatar' }) : ''}
+                        <div class="sstats-rk-info">
+                            <div class="sstats-rk-name">${docStat.doctor.name} ${extBadge}</div>
+                            <div class="sstats-rk-role">${docStat.doctor.role || ''}</div>
+                        </div>
+                        <div class="sstats-rk-nums">
+                            <span class="sstats-rk-main">${docStat.total} MC</span>
+                            ${docStat.assistTotal > 0 ? `<span class="sstats-rk-assist">+${docStat.assistTotal} phụ</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="sstats-rk-chips">
+                        ${types.map(t => {
+                            const cnt = docStat.byType[t] || 0;
+                            if (cnt === 0) return '';
+                            const st = SURGERY_TYPES[t];
+                            const bg = t === 'yeucau' ? st.color : `${st.color}1F`;
+                            const fg = t === 'yeucau' ? st.onColor : st.color;
+                            return `<span class="sstats-rk-chip" style="background:${bg};color:${fg}">${st.label}: ${cnt}</span>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }).join('')}
+            <div class="sstats-ranking-total-card">
+                <div class="sstats-rk-tot-hdr">
+                    <span>TỔNG CỘNG TOÀN KHOA</span>
+                    <strong>${totalAll} ca MC · ${allStats.reduce((s, d) => s + d.assistTotal, 0)} ca phụ</strong>
+                </div>
+                <div class="sstats-rk-chips">
+                    ${types.map(t => `<span class="sstats-rk-chip">${SURGERY_TYPES[t].label}: <strong>${grandByType[t]}</strong></span>`).join('')}
+                </div>
+            </div>
+        </div>`;
+    },
+
+    openMobileDoctorDetailSheet(docId) {
+        const allStats = this.computeDetailedStats();
+        const docStat = allStats.find(d => this.normId(d.doctor.id) === this.normId(docId));
+        if (!docStat) return;
+        Modal.open(`${docStat.doctor.name} (${docStat.total} MC)`, `
+            <div class="sstats-mobile-doc-sheet">
+                ${this._renderDoctorDetail(docStat)}
+            </div>
+        `);
+    },
+
+    _renderMobileLogbookCards(displayCases, allDocs) {
+        return `
+        <div class="sstats-mobile-logbook-cards">
+            ${displayCases.map((s, idx) => {
+                const axis = this.classifySurgery(s);
+                const axisInfo = (axis === 'unclassified') ? this.UNCLASSIFIED_AXIS : this.CLINICAL_AXES[axis];
+                const resolvedType = SurgeryMetrics.resolveSurgeryType(s);
+                const typeInfo = SURGERY_TYPES[resolvedType] || (resolvedType === 'robot' ? { label: 'Robot', color: 'var(--surgery-robot, #333C83)' } : SURGERY_TYPES.chuongtrinh);
+                const resolvedApproach = SurgeryMetrics.resolveApproach(s);
+                const approachMap = { mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'NSTH', robot: 'Robot', unknown: 'Chưa rõ' };
+                const doc = allDocs.find(d => this.normId(d.id) === this.normId(s.mainSurgeon));
+                const docName = doc ? doc.name : (s.mainSurgeon ? `BS #${s.mainSurgeon}` : '—');
+                const dateStr = Utils.formatDate(s.date);
+                const durStr = s.duration ? `${s.duration}p` : '—';
+                return `
+                <div class="sstats-case-card" role="button" tabindex="0" onclick="SurgeryPage.viewDetail(${s.id})">
+                    <div class="sstats-cc-top">
+                        <span class="sstats-cc-idx">#${idx + 1} · ${dateStr}</span>
+                        <span class="surgery-type-badge" style="background:${typeInfo.color};color:${typeInfo.onColor || '#fff'}">${typeInfo.label}</span>
+                    </div>
+                    <div class="sstats-cc-patient">${s.patientName || (s.id ? 'BN #' + s.id : '—')} <span class="sstats-cc-byear">${s.birthYear ? `(${s.birthYear})` : ''}</span></div>
+                    <div class="sstats-cc-diag">${s.diagnosis || '—'}</div>
+                    <div class="sstats-cc-method">${s.method || '—'}</div>
+                    <div class="sstats-cc-chips">
+                        <span class="sstats-radar-tag" style="background:${axisInfo.color}18;color:${axisInfo.color};border:1px solid ${axisInfo.color}40">${axisInfo.icon} ${axisInfo.label}</span>
+                        <span class="approach-tag approach-${resolvedApproach}">${approachMap[resolvedApproach] || resolvedApproach}</span>
+                    </div>
+                    <div class="sstats-cc-meta">
+                        <span>🔪 ${docName}</span>
+                        <span>⏱️ ${durStr}</span>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+    },
+
+    _renderSubAxisOptionsHtml(axis, currentSubAxis) {
+        if (!axis || axis === 'all' || !this.SUB_AXIS_MAP[axis]) return '';
+        return `
+            <div class="sstats-mfilter-field">
+                <label class="sstats-mfilter-label" for="sstats-mfilter-subaxis">Phân nhóm con</label>
+                <select id="sstats-mfilter-subaxis" class="form-control sstats-mfilter-select">
+                    <option value="all">Tất cả phân nhóm con</option>
+                    ${Object.entries(this.SUB_AXIS_MAP[axis]).map(([subKey, subName]) => `
+                        <option value="${subKey}" ${currentSubAxis === subKey ? 'selected' : ''}>${subName}</option>
+                    `).join('')}
+                </select>
+            </div>
+        `;
+    },
+
+    _onMobileLogbookAxisChange(axis) {
+        const wrap = document.getElementById('sstats-mfilter-subaxis-wrap');
+        if (!wrap) return;
+        wrap.innerHTML = this._renderSubAxisOptionsHtml(axis, 'all');
+    },
+
+    openMobileLogbookFilterSheet(unclassifiedCount = 0) {
+        Modal.open('Bộ lọc Nhật ký Phẫu thuật', `
+            <div class="sstats-mfilter-form">
+                <div class="sstats-mfilter-field">
+                    <label class="sstats-mfilter-label" for="sstats-mfilter-axis">Nhóm Radar 6 trục</label>
+                    <select id="sstats-mfilter-axis" class="form-control sstats-mfilter-select" onchange="SurgeryStatsPage._onMobileLogbookAxisChange(this.value)">
+                        <option value="all">🎯 Tất cả nhóm Radar (6 trục)</option>
+                        ${Object.entries(this.CLINICAL_AXES).map(([k, ax]) => `
+                            <option value="${k}" ${this.logbookFilterAxis === k ? 'selected' : ''}>${ax.icon} ${ax.label}</option>
+                        `).join('')}
+                        ${unclassifiedCount > 0 ? `
+                            <option value="unclassified" ${this.logbookFilterAxis === 'unclassified' ? 'selected' : ''}>⚠️ Chưa phân loại (${unclassifiedCount})</option>
+                        ` : ''}
+                    </select>
+                </div>
+                <div id="sstats-mfilter-subaxis-wrap">
+                    ${this._renderSubAxisOptionsHtml(this.logbookFilterAxis, this.logbookFilterSubAxis)}
+                </div>
+                <div class="sstats-mfilter-field">
+                    <label class="sstats-mfilter-label" for="sstats-mfilter-approach">Đường mổ</label>
+                    <select id="sstats-mfilter-approach" class="form-control sstats-mfilter-select">
+                        <option value="all">🔪 Tất cả đường mổ</option>
+                        <option value="noisoi" ${this.logbookFilterApproach === 'noisoi' ? 'selected' : ''}>🔬 Nội soi</option>
+                        <option value="mo" ${this.logbookFilterApproach === 'mo' ? 'selected' : ''}>🔪 Mổ mở</option>
+                        <option value="robot" ${this.logbookFilterApproach === 'robot' ? 'selected' : ''}>🤖 Robot</option>
+                        <option value="nsth" ${this.logbookFilterApproach === 'nsth' ? 'selected' : ''}>⚡ NSTH</option>
+                    </select>
+                </div>
+                <div class="sstats-mfilter-field">
+                    <label class="sstats-mfilter-label" for="sstats-mfilter-type">Loại phẫu thuật</label>
+                    <select id="sstats-mfilter-type" class="form-control sstats-mfilter-select">
+                        <option value="all">📋 Tất cả loại PT</option>
+                        <option value="chuongtrinh" ${this.logbookFilterType === 'chuongtrinh' ? 'selected' : ''}>📅 Chương trình</option>
+                        <option value="yeucau" ${this.logbookFilterType === 'yeucau' ? 'selected' : ''}>⭐ Yêu cầu</option>
+                        <option value="bankhan" ${this.logbookFilterType === 'bankhan' ? 'selected' : ''}>🚨 Bán khẩn</option>
+                        <option value="robot" ${this.logbookFilterType === 'robot' ? 'selected' : ''}>🤖 Robot</option>
+                    </select>
+                </div>
+                <div class="modal-footer sstats-mfilter-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close();SurgeryStatsPage.resetLogbookFilters()">✕ Đặt lại</button>
+                    <button type="button" class="btn btn-primary" onclick="SurgeryStatsPage.applyMobileLogbookFilterSheet()">✓ Áp dụng</button>
+                </div>
+            </div>
+        `);
+    },
+
+    applyMobileLogbookFilterSheet() {
+        const axisEl = document.getElementById('sstats-mfilter-axis');
+        const subEl = document.getElementById('sstats-mfilter-subaxis');
+        const appEl = document.getElementById('sstats-mfilter-approach');
+        const typeEl = document.getElementById('sstats-mfilter-type');
+        this.logbookFilterAxis = axisEl ? axisEl.value : 'all';
+        this.logbookFilterSubAxis = (subEl && this.SUB_AXIS_MAP[this.logbookFilterAxis]) ? subEl.value : 'all';
+        this.logbookFilterApproach = appEl ? appEl.value : 'all';
+        this.logbookFilterType = typeEl ? typeEl.value : 'all';
+        Modal.close();
+        if (typeof App !== 'undefined' && App.renderCurrentPage) {
+            App.renderCurrentPage();
         }
     }
 };

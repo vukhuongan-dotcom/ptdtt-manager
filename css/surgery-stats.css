@@ -1561,4 +1561,615 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
+/* ===== FEAT-239: DESKTOP HIDES & SHARED SHEET STYLES ===== */
+.sstats-mobile-hdr-tools,
+.sstats-mobile-compare-toggle,
+.sstats-mobile-logbook-filter-btn,
+.sstats-mobile-ranking-list,
+.sstats-mobile-logbook-cards {
+    display: none;
+}
+
+.sstats-filter-search-row {
+    display: contents;
+}
+
+.sstats-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sstats-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    touch-action: manipulation;
+}
+
+.sstats-sheet-btn.is-active {
+    border-color: var(--accent, #1878B4);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.sstats-mfilter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sstats-mfilter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sstats-mfilter-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+@media (min-width: 769px) {
+    .sstats-mobile-hdr-tools,
+    .sstats-mobile-compare-toggle,
+    .sstats-mobile-logbook-filter-btn,
+    .sstats-mobile-ranking-list,
+    .sstats-mobile-logbook-cards {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #surgery-stats-page {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #surgery-stats-page > .page-header.sstats-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        min-height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        margin-bottom: 0;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.16);
+    }
+
+    #surgery-stats-page > .page-header.sstats-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    #surgery-stats-page > .page-header.sstats-header .page-title {
+        color: #FFFFFF;
+        font-size: 0.98rem;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #surgery-stats-page > .page-header.sstats-header .page-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.72rem;
+        margin: 2px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #surgery-stats-page .sstats-header-actions {
+        display: none !important;
+    }
+
+    #surgery-stats-page .sstats-mobile-hdr-tools {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .sstats-mobile-more-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.14);
+        color: #FFFFFF;
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    .sstats-view-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        width: 100%;
+    }
+
+    .sstats-view-tab {
+        min-height: 44px;
+        padding: 8px 10px;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .sstats-controls {
+        margin-bottom: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .sstats-controls::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sstats-period-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+        width: max-content;
+    }
+
+    .sstats-period-btn {
+        min-height: 44px;
+        padding: 8px 14px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 0.82rem;
+    }
+
+    .sstats-nav .btn-icon {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .sstats-selector-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sstats-doc-select {
+        font-size: 16px !important;
+        min-height: 44px;
+        height: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 10px 34px 10px 12px;
+        background-color: var(--bg-secondary);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+        color: var(--text-primary);
+    }
+
+    .sstats-mobile-compare-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        width: 100%;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .sstats-vs-badge.is-mobile-collapsed,
+    .sstats-doc-box-compare.is-mobile-collapsed {
+        display: none !important;
+    }
+
+    .sstats-role-scope-tabs {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        width: 100%;
+    }
+
+    .sstats-role-scope-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sstats-role-scope-btn {
+        min-height: 44px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .sstats-compare-kpi-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    .sstats-compare-kpi-grid.is-single {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+    }
+
+    .sstats-compare-kpi-card {
+        padding: 10px 12px;
+        min-width: 0;
+    }
+
+    .sstats-radar-layout-grid {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .sstats-radar-card,
+    .sstats-radar-canvas-container,
+    .sstats-matrix-card,
+    .sstats-logbook-card,
+    .sstats-main-table-card {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .sstats-radar-canvas-container {
+        overflow: hidden;
+    }
+
+    .sstats-radar-svg {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    .sstats-rb-pills-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+    }
+
+    .sstats-matrix-table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .sstats-filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .sstats-filter-search-row {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .sstats-filter-search-box {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #sstats-logbook-search-input {
+        font-size: 16px !important;
+        min-height: 44px;
+    }
+
+    .sstats-mobile-logbook-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 8px 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 0.82rem;
+    }
+
+    .sstats-mobile-logbook-filter-btn.has-filters {
+        border-color: var(--accent, #1878B4);
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 700;
+    }
+
+    .sstats-filter-controls,
+    .sstats-desktop-logbook-table,
+    .sstats-desktop-summary-table {
+        display: none !important;
+    }
+
+    .sstats-mobile-logbook-cards,
+    .sstats-mobile-ranking-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sstats-case-card,
+    .sstats-ranking-card {
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        cursor: pointer;
+        touch-action: manipulation;
+        min-width: 0;
+    }
+
+    .sstats-cc-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .sstats-cc-idx {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .sstats-cc-patient {
+        font-size: 0.94rem;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .sstats-cc-byear {
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+    }
+
+    .sstats-cc-diag,
+    .sstats-cc-method {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .sstats-cc-method {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .sstats-cc-chips,
+    .sstats-rk-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .sstats-cc-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        border-top: 1px dashed var(--border);
+        padding-top: 6px;
+    }
+
+    .sstats-summary-cards {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        gap: 8px;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .sstats-summary-cards::-webkit-scrollbar,
+    .sstats-cohort-filter-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sstats-summary-card {
+        flex: 0 0 auto;
+        min-width: 96px;
+        padding: 10px 12px;
+    }
+
+    .sstats-cohort-filter-bar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        gap: 6px;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .sstats-cohort-filter-btn {
+        min-height: 44px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 0.78rem;
+    }
+
+    .sstats-rk-hdr {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sstats-rk-rank {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--accent, #1878B4);
+        min-width: 26px;
+    }
+
+    .sstats-rk-info {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .sstats-rk-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .sstats-rk-role {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+    }
+
+    .sstats-rk-ext {
+        font-size: 0.68rem;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .sstats-rk-nums {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        flex-shrink: 0;
+    }
+
+    .sstats-rk-main {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: var(--primary);
+    }
+
+    .sstats-rk-assist {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #6366f1;
+    }
+
+    .sstats-rk-chip {
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+    }
+
+    .sstats-ranking-total-card {
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--accent, #1878B4);
+        background: var(--primary-soft);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sstats-rk-tot-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--primary);
+        flex-wrap: wrap;
+    }
+
+    .sstats-mfilter-select {
+        font-size: 16px !important;
+        min-height: 44px;
+        height: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 10px 34px 10px 12px;
+        background-color: var(--bg-secondary);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+        color: var(--text-primary);
+    }
+
+    .sstats-mfilter-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        padding: 10px 0 calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        margin-top: 4px;
+    }
+
+    .sstats-mfilter-footer .btn {
+        min-height: 44px;
+        flex: 1 1 auto;
+    }
+
+    .sstats-mobile-doc-sheet .sstats-detail-panel {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    /* Dark Mode #0C1022 Zero-Teal */
+    [data-theme="dark"] #surgery-stats-page > .page-header.sstats-header {
+        background: linear-gradient(135deg, #0C1022 0%, #131A35 60%, #1878B4 100%);
+        border: 1px solid rgba(178, 193, 253, 0.16);
+    }
+
+    [data-theme="dark"] .sstats-case-card,
+    [data-theme="dark"] .sstats-ranking-card,
+    [data-theme="dark"] .sstats-sheet-btn {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.16);
+        color: #E2E8F0;
+    }
+
+    [data-theme="dark"] .sstats-doc-select,
+    [data-theme="dark"] .sstats-mfilter-select {
+        background-color: #0C1022;
+        border-color: rgba(178, 193, 253, 0.16);
+        color: #E2E8F0;
+    }
+
+    [data-theme="dark"] .sstats-ranking-total-card {
+        background: rgba(56, 189, 248, 0.14);
+        border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    [data-theme="dark"] .sstats-rk-main,
+    [data-theme="dark"] .sstats-rk-tot-hdr {
+        color: #38BDF8;
+    }
+}
+
+
 

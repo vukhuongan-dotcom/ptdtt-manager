@@ -19,17 +19,37 @@ const SchedulePage = {
     weekOffset: 0,
     _selectedMobileDayIdx: null,
     _mobileViewMode: 'day', // 'day' | 'table'
+    _myOnlyFilter: false,
+    _mobileRobotExpanded: false,
+    _isDirtyByWeek: {},
+    _suppressMobileDayRefresh: false,
 
     // Staff with schedule editing permission (in addition to admins)
     _scheduleEditors: [3, 12], // staffId 3 = Nguyễn Thị Ngọc Thùy (ĐD Trưởng), 12 = Phạm Thị Tuyết Minh
 
     selectMobileDay(idx) {
         this._selectedMobileDayIdx = parseInt(idx);
+        this._myOnlyFilter = false;
+        this._mobileViewMode = 'day';
         App.renderCurrentPage();
     },
 
     setMobileViewMode(mode) {
         this._mobileViewMode = mode;
+        this._myOnlyFilter = false;
+        App.renderCurrentPage();
+    },
+
+    toggleMyScheduleFilter() {
+        this._myOnlyFilter = !this._myOnlyFilter;
+        if (this._myOnlyFilter) {
+            this._mobileViewMode = 'day';
+        }
+        App.renderCurrentPage();
+    },
+
+    toggleMobileRobotSection() {
+        this._mobileRobotExpanded = !this._mobileRobotExpanded;
         App.renderCurrentPage();
     },
 
@@ -381,6 +401,11 @@ const SchedulePage = {
 
         const schedule = this.getScheduleData(weekKey);
         const today = this._localDateStr(new Date());
+        const selfStaffId = session?.staffId ? parseInt(session.staffId, 10) : null;
+        const isDirty = !!(this._isDirtyByWeek && this._isDirtyByWeek[weekKey]);
+        const dirtyPositions = (isDirty && this._lastKnownPositionsByWeek && this._lastKnownPositionsByWeek[weekKey])
+            ? this._lastKnownPositionsByWeek[weekKey]
+            : null;
 
         const startStr = dates[0].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const endStr = dates[6].toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -390,17 +415,44 @@ const SchedulePage = {
         const effectivePositions = {};
         SCHEDULE_POSITIONS.forEach(pos => {
             effectivePositions[pos.key] = {};
-            const data = schedule?.positions?.[pos.key] || {};
+            const baseData = schedule?.positions?.[pos.key] || {};
+            const dirtyData = dirtyPositions?.[pos.key] || null;
             for (let slot = 0; slot < pos.slots; slot++) {
                 DAYS.forEach((d, dayIdx) => {
                     const cellKey = `${d}_${slot}`;
-                    const val = (data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
+                    let val;
+                    if (dirtyPositions) {
+                        val = (dirtyData && cellKey in dirtyData) ? dirtyData[cellKey] : '';
+                    } else {
+                        val = (baseData && cellKey in baseData) ? baseData[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
+                    }
                     if (val) effectivePositions[pos.key][cellKey] = parseInt(val);
                 });
             }
         });
 
         const activeConflicts = this.checkScheduleConflicts(effectivePositions);
+
+        // Self assignment check across T2–CN
+        const myShiftsByDay = DAYS.map((dayKey, dayIdx) => {
+            if (!selfStaffId) return [];
+            const items = [];
+            SCHEDULE_POSITIONS.forEach(pos => {
+                const posData = effectivePositions[pos.key] || {};
+                const matchedSlots = [];
+                for (let slot = 0; slot < pos.slots; slot++) {
+                    const cellKey = `${dayKey}_${slot}`;
+                    if (parseInt(posData[cellKey], 10) === selfStaffId) {
+                        const slotLbl = pos.slotLabels ? pos.slotLabels[slot] : (pos.slots > 1 ? `#${slot + 1}` : '');
+                        matchedSlots.push(slotLbl);
+                    }
+                }
+                if (matchedSlots.length > 0) {
+                    items.push({ pos, matchedSlots });
+                }
+            });
+            return items;
+        });
 
         // Selected mobile day index
         if (this._selectedMobileDayIdx === null || this._selectedMobileDayIdx < 0 || this._selectedMobileDayIdx > 6) {
@@ -412,7 +464,117 @@ const SchedulePage = {
         const currentUndoStack = this._getUndoStack(weekKey);
         const undoCount = currentUndoStack.length;
 
+        const renderDayCardBodyHtml = () => {
+            if (this._myOnlyFilter) {
+                const myDaysCount = myShiftsByDay.filter(arr => arr.length > 0).length;
+                if (!selfStaffId || myDaysCount === 0) {
+                    return `
+                    <div class="card schedule-day-card">
+                        <div class="schedule-day-card-header">
+                            <div>
+                                <div class="schedule-day-card-title">👤 Lịch của tôi (${startStr} – ${endStr})</div>
+                                <div class="schedule-day-card-sub">Tổng hợp vị trí mang tên ${session?.name || 'bạn'} trong tuần</div>
+                            </div>
+                        </div>
+                        <div class="schedule-day-card-body">
+                            <p class="text-muted" style="text-align:center;padding:18px 8px;margin:0;font-size:0.86rem">Tuần này chưa có vị trí phân công nào mang tên bạn.</p>
+                        </div>
+                    </div>`;
+                }
+                return `
+                <div class="card schedule-day-card">
+                    <div class="schedule-day-card-header">
+                        <div>
+                            <div class="schedule-day-card-title">👤 Lịch của tôi (${myDaysCount} ngày có lịch)</div>
+                            <div class="schedule-day-card-sub">${session?.name || ''} · ${startStr} – ${endStr}</div>
+                        </div>
+                    </div>
+                    <div class="schedule-day-card-body">
+                        ${dates.map((d, dIdx) => {
+                            const list = myShiftsByDay[dIdx] || [];
+                            if (!list.length) return '';
+                            const isTodayD = this._localDateStr(d) === today;
+                            return `
+                            <div class="sched-my-day-group ${isTodayD ? 'is-today' : ''}">
+                                <div class="sched-my-day-hdr">
+                                    <span>📅 ${DAY_LABELS[dIdx]} (${d.getDate()}/${d.getMonth() + 1})</span>
+                                    ${isTodayD ? '<span class="sched-my-today-badge">Hôm nay</span>' : ''}
+                                </div>
+                                <div class="sched-my-day-items">
+                                    ${list.map(({ pos, matchedSlots }) => `
+                                        <div class="sched-my-pos-row" style="border-left:3px solid ${pos.color}" ${isAdmin ? `role="button" tabindex="0" onclick="SchedulePage.openMobileDutyPicker('${pos.key}', ${dIdx})"` : ''}>
+                                            <span class="sched-my-pos-name">${pos.label}</span>
+                                            <span class="sched-my-pos-slots">${matchedSlots.filter(Boolean).join(', ') || 'Phân công'}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }
+
+            const selDate = dates[selectedMobileDayIdx] || dates[0];
+            const dayKey = DAYS[selectedMobileDayIdx] || DAYS[0];
+            const dayLabel = DAY_LABELS[selectedMobileDayIdx] || DAY_LABELS[0];
+            const isToday = this._localDateStr(selDate) === today;
+            return `
+            <div class="card schedule-day-card">
+                <div class="schedule-day-card-header ${isToday ? 'today' : ''}">
+                    <div>
+                        <div class="schedule-day-card-title">📅 ${dayLabel} — ${selDate.getDate()}/${selDate.getMonth() + 1}/${selDate.getFullYear()}</div>
+                        <div class="schedule-day-card-sub">${isAdmin ? 'Chạm vào từng vị trí bên dưới để chọn/đổi nhân sự' : (isToday ? '⭐️ Hôm nay' : 'Phân công nhân sự theo vị trí')}</div>
+                    </div>
+                </div>
+                <div class="schedule-day-card-body">
+                    ${SCHEDULE_POSITIONS.map(pos => {
+                        const posData = effectivePositions[pos.key] || {};
+                        const assignedStaff = [];
+                        for (let slot = 0; slot < pos.slots; slot++) {
+                            const cellKey = `${dayKey}_${slot}`;
+                            const staffId = posData[cellKey];
+                            if (staffId) {
+                                const staffName = this.getShortName(staffId);
+                                const label = pos.slotLabels ? pos.slotLabels[slot] : (slot === 0 && pos.key === 'mo' ? 'Ca đầu' : `#${slot + 1}`);
+                                const cellConf = activeConflicts.find(c => c.day === dayKey && parseInt(c.staffId, 10) === parseInt(staffId, 10) && c.duties.some(dt => dt.posKey === pos.key && dt.cellKey === cellKey));
+                                assignedStaff.push({
+                                    staffId,
+                                    staffName,
+                                    label,
+                                    slot,
+                                    isSelf: !!(selfStaffId && parseInt(staffId, 10) === selfStaffId),
+                                    confSymbol: cellConf ? (cellConf.isHardBlock ? ' 🛑' : '*') : '',
+                                    confCls: cellConf ? (cellConf.isHardBlock ? ' is-hard' : ' is-soft') : '',
+                                });
+                            }
+                        }
+                        const editAttrs = isAdmin
+                            ? `role="button" tabindex="0" data-sched-pos="${pos.key}" onclick="SchedulePage.openMobileDutyPicker('${pos.key}', ${selectedMobileDayIdx})"`
+                            : '';
+                        return `
+                        <div class="schedule-day-duty-item ${isAdmin ? 'is-editable' : ''}" style="border-left: 3px solid ${pos.color}" ${editAttrs}>
+                            <div class="schedule-day-duty-top">
+                                <div class="schedule-day-duty-name">
+                                    <span class="schedule-duty-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pos.color};margin-right:6px;flex-shrink:0;"></span>
+                                    <span>${pos.label}</span>
+                                </div>
+                                ${isAdmin ? '<span class="sched-duty-edit-hint" aria-hidden="true">✏️</span>' : ''}
+                            </div>
+                            <div class="schedule-day-duty-assigned">
+                                ${assignedStaff.length ? assignedStaff.map(a => `
+                                    <span class="schedule-duty-pill ${a.isSelf ? 'sched-pill-self' : ''}${a.confCls}">
+                                        ${pos.slotLabels ? `<strong class="sched-slot-prefix">${a.label}:</strong> ` : ''}<strong>${a.staffName}${a.confSymbol}</strong>
+                                    </span>
+                                `).join('') : '<span class="text-muted" style="font-size:0.78rem">— Chưa phân công —</span>'}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        };
+
         return `
+        <div id="schedule-page" class="sched-page">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Lịch phân công tuần</h1>
@@ -420,6 +582,13 @@ const SchedulePage = {
                     Khoa Phẫu thuật Đại trực tràng — ${startStr} – ${endStr}
                     ${isLocked ? `<span class="schedule-locked-badge" style="margin-left:8px;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;background:${isSuperAdmin ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.12)'};color:${isSuperAdmin ? '#d97706' : '#dc2626'};border:1px solid ${isSuperAdmin ? 'rgba(234,179,8,0.3)' : 'rgba(239,68,68,0.3)'}">🔒 Lịch tuần đã khóa ${isSuperAdmin ? '(Super Admin đang mở quyền)' : '(Chỉ Super Admin mới được sửa)'}</span>` : ''}
                 </p>
+            </div>
+            <div class="sched-mobile-hdr-tools">
+                ${isAdmin ? `
+                <button type="button" class="sched-mobile-hdr-btn" id="mobile-undo-schedule-btn" onclick="SchedulePage.undo()" aria-label="Hoàn tác thao tác chỉnh sửa" ${undoCount > 0 ? '' : 'disabled'}>↩️${undoCount > 0 ? ` <span>${undoCount}</span>` : ''}</button>
+                <button type="button" class="sched-mobile-hdr-btn is-save ${isDirty ? 'is-dirty' : ''}" id="mobile-save-schedule-btn" onclick="SchedulePage.saveSchedule()" aria-label="Lưu lịch phân công tuần">💾 Lưu${isDirty ? '<span class="sched-dirty-dot" aria-hidden="true"></span>' : ''}</button>
+                ` : ''}
+                <button type="button" class="sched-mobile-more-btn" id="sched-mobile-more-btn" onclick="SchedulePage.openMobileToolsSheet()" aria-label="Tiện ích lịch phân công" title="Tiện ích">⋮</button>
             </div>
             <div class="schedule-header-actions">
                 <div class="schedule-primary-actions">
@@ -451,20 +620,22 @@ const SchedulePage = {
             </div>
         </div>
 
-        ${activeConflicts.length > 0 ? `
+        ${activeConflicts.length > 0 ? (() => {
+            const hardCount = activeConflicts.filter(c => c.isHardBlock).length;
+            return `
         <div class="schedule-conflict-banner">
-            <div class="schedule-alert-icon">⚠️</div>
+            <div class="schedule-alert-icon">${hardCount > 0 ? '🛑' : '⚠️'}</div>
             <div class="schedule-alert-content">
-                <div class="schedule-alert-title">CẢNH BÁO TRÙNG LẶP LỊCH MỔ & LỊCH TRỰC (${activeConflicts.length} TRƯỜNG HỢP *):</div>
+                <div class="schedule-alert-title">CẢNH BÁO XUNG ĐỘT LỊCH PHÂN CÔNG (${activeConflicts.length} TRƯỜNG HỢP):</div>
                 <ul class="schedule-alert-list">
                     ${activeConflicts.map(c => `
-                        <li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị trùng: <em>${c.details}</em></li>
+                        <li><strong>${c.dayName}:</strong> <span style="font-weight:700">${c.staffName}</span> bị trùng: <em>${c.details}</em> ${c.isHardBlock ? '<strong style="color:#b91c1c">[CẤM LƯU 🛑]</strong>' : '<span style="color:#b45309">[CẢNH BÁO *]</span>'}</li>
                     `).join('')}
                 </ul>
-                <div class="schedule-alert-sub">⚠️ Các bác sĩ bị trùng lịch mổ & trực được tô màu cảnh báo kèm dấu (*). Lịch vẫn cho phép lưu bình thường.</div>
+                <div class="schedule-alert-sub">${hardCount > 0 ? '🛑 TRỰC KHOA không được trùng với Lịch mổ. Vui lòng điều chỉnh lại trước khi lưu!' : '⚠️ Trực BV trùng với Lịch mổ: Đã đánh dấu (*) cảnh báo nhưng vẫn cho phép lưu lịch.'}</div>
             </div>
-        </div>
-        ` : ''}
+        </div>`;
+        })() : ''}
 
         ${showReminder ? `
         <div class="schedule-alert-banner">
@@ -495,73 +666,35 @@ const SchedulePage = {
         <!-- MOBILE DAY PICKER BAR -->
         <div class="schedule-mobile-day-picker">
             <div class="schedule-mobile-view-toggle">
-                <button class="sched-view-btn ${this._mobileViewMode === 'day' ? 'active' : ''}" onclick="SchedulePage.setMobileViewMode('day')">
-                    📱 Xem theo ngày
+                <button type="button" class="sched-view-btn ${this._mobileViewMode === 'day' && !this._myOnlyFilter ? 'active' : ''}" onclick="SchedulePage.setMobileViewMode('day')">
+                    📱 Theo ngày
                 </button>
-                <button class="sched-view-btn ${this._mobileViewMode === 'table' ? 'active' : ''}" onclick="SchedulePage.setMobileViewMode('table')">
-                    📊 Xem bảng tuần
+                <button type="button" class="sched-view-btn ${this._myOnlyFilter ? 'active' : ''}" data-sched-my-filter="1" onclick="SchedulePage.toggleMyScheduleFilter()">
+                    👤 Lịch của tôi
+                </button>
+                <button type="button" class="sched-view-btn ${this._mobileViewMode === 'table' && !this._myOnlyFilter ? 'active' : ''}" onclick="SchedulePage.setMobileViewMode('table')">
+                    📊 Bảng tuần
                 </button>
             </div>
             <div class="schedule-day-pills-row">
                 ${dates.map((d, i) => {
-                    const isSelected = i === selectedMobileDayIdx;
+                    const isSelected = i === selectedMobileDayIdx && !this._myOnlyFilter;
                     const dateStr = this._localDateStr(d);
                     const isToday = dateStr === today;
+                    const hasMyDuty = (myShiftsByDay[i] || []).length > 0;
                     return `
-                    <button type="button" class="schedule-day-pill ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}" onclick="SchedulePage.selectMobileDay(${i})" aria-label="${DAY_LABELS[i]} ${d.getDate()}/${d.getMonth()+1}">
+                    <button type="button" class="schedule-day-pill ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''} ${hasMyDuty ? 'has-my-duty' : ''}" onclick="SchedulePage.selectMobileDay(${i})" aria-label="${DAY_LABELS[i]} ${d.getDate()}/${d.getMonth()+1}">
                         <span class="sched-pill-name">${DAYS[i]}</span>
                         <span class="sched-pill-date">${d.getDate()}/${d.getMonth()+1}</span>
+                        ${hasMyDuty ? '<span class="sched-my-dot" aria-hidden="true"></span>' : ''}
                     </button>`;
                 }).join('')}
             </div>
         </div>
 
         <!-- MOBILE DAY CARD VIEW -->
-        <div class="schedule-mobile-day-view ${this._mobileViewMode === 'day' ? 'active' : ''}">
-            ${(() => {
-                const selDate = dates[selectedMobileDayIdx] || dates[0];
-                const dayKey = DAYS[selectedMobileDayIdx] || DAYS[0];
-                const dayLabel = DAY_LABELS[selectedMobileDayIdx] || DAY_LABELS[0];
-                const isToday = this._localDateStr(selDate) === today;
-                return `
-                <div class="card schedule-day-card">
-                    <div class="schedule-day-card-header ${isToday ? 'today' : ''}">
-                        <div>
-                            <div class="schedule-day-card-title">📅 ${dayLabel} — ${selDate.getDate()}/${selDate.getMonth() + 1}/${selDate.getFullYear()}</div>
-                            <div class="schedule-day-card-sub">${isToday ? '⭐️ Hôm nay' : 'Phân công nhân sự theo vị trí'}</div>
-                        </div>
-                    </div>
-                    <div class="schedule-day-card-body">
-                        ${SCHEDULE_POSITIONS.map(pos => {
-                            const posData = effectivePositions[pos.key] || {};
-                            const assignedStaff = [];
-                            for (let slot = 0; slot < pos.slots; slot++) {
-                                const cellKey = `${dayKey}_${slot}`;
-                                const staffId = posData[cellKey];
-                                if (staffId) {
-                                    const staffName = this.getShortName(staffId);
-                                    const label = pos.slotLabels ? pos.slotLabels[slot] : (slot === 0 && pos.key === 'mo' ? 'Ca đầu' : `#${slot+1}`);
-                                    assignedStaff.push({ staffId, staffName, label, slot });
-                                }
-                            }
-                            return `
-                            <div class="schedule-day-duty-item" style="border-left: 3px solid ${pos.color}">
-                                <div class="schedule-day-duty-name">
-                                    <span class="schedule-duty-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pos.color};margin-right:6px;flex-shrink:0;"></span>
-                                    <span>${pos.label}</span>
-                                </div>
-                                <div class="schedule-day-duty-assigned">
-                                    ${assignedStaff.length ? assignedStaff.map(a => `
-                                        <span class="schedule-duty-pill">
-                                            ${pos.slotLabels ? `<strong style="font-size:0.75rem;color:var(--text-muted);">${a.label}:</strong> ` : ''}<strong>${a.staffName}</strong>
-                                        </span>
-                                    `).join('') : '<span class="text-muted" style="font-size:0.75rem">— Chưa phân công —</span>'}
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>`;
-            })()}
+        <div id="schedule-mobile-day-view" class="schedule-mobile-day-view ${this._mobileViewMode === 'day' ? 'active' : ''}">
+            ${renderDayCardBodyHtml()}
         </div>
 
         <div class="schedule-table-wrap ${this._mobileViewMode === 'day' ? 'mobile-hidden' : ''}">
@@ -581,7 +714,7 @@ const SchedulePage = {
                     </tr>
                 </thead>
                 <tbody>
-                    ${SCHEDULE_POSITIONS.map(pos => this.renderPositionRow(pos, dates, schedule, isAdmin, weekKey, activeConflicts)).join('')}
+                    ${SCHEDULE_POSITIONS.map(pos => this.renderPositionRow(pos, dates, schedule, isAdmin, weekKey, activeConflicts, dirtyPositions)).join('')}
                 </tbody>
             </table>
         </div>
@@ -595,12 +728,14 @@ const SchedulePage = {
         </div>
 
         ${this.renderRobotSection(schedule, dates, isAdmin)}
+        </div>
         `;
     },
 
-    renderPositionRow(pos, dates, schedule, isAdmin, weekKey, activeConflicts = []) {
+    renderPositionRow(pos, dates, schedule, isAdmin, weekKey, activeConflicts = [], dirtyPositions = null) {
         const staffOptions = this.getStaffOptions(pos.staffFilter);
         const data = schedule?.positions?.[pos.key] || {};
+        const dirtyData = dirtyPositions?.[pos.key] || null;
 
         let rows = '';
         for (let slot = 0; slot < pos.slots; slot++) {
@@ -618,7 +753,9 @@ const SchedulePage = {
             const isLeadSlot = slot === 0 && (pos.key === 'trucKhoa' || pos.key === 'mo');
             dates.forEach((d, dayIdx) => {
                 const cellKey = `${DAYS[dayIdx]}_${slot}`;
-                const val = (data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey));
+                const val = dirtyPositions
+                    ? ((dirtyData && cellKey in dirtyData) ? dirtyData[cellKey] : '')
+                    : ((data && cellKey in data) ? data[cellKey] : (schedule ? '' : this.getDefaultCellVal(pos.key, cellKey, weekKey)));
                 const slotLabel = pos.slotLabels ? pos.slotLabels[slot] : '';
                 const leadClass = isLeadSlot ? ' schedule-lead-slot' : '';
 
@@ -728,6 +865,158 @@ const SchedulePage = {
             btn.style.opacity = '0.5';
             btn.style.cursor = 'not-allowed';
         }
+        const mobileBtn = document.getElementById('mobile-undo-schedule-btn');
+        if (mobileBtn) {
+            mobileBtn.innerHTML = count > 0 ? `↩️ <span>${count}</span>` : '↩️';
+            if (count > 0) mobileBtn.removeAttribute('disabled');
+            else mobileBtn.setAttribute('disabled', 'true');
+        }
+    },
+
+    _updateMobileDirtyUI(weekKey) {
+        if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+        const isDirty = !!this._isDirtyByWeek[weekKey];
+        const mobileSave = document.getElementById('mobile-save-schedule-btn');
+        if (mobileSave) {
+            mobileSave.classList.toggle('is-dirty', isDirty);
+            mobileSave.innerHTML = `💾 Lưu${isDirty ? '<span class="sched-dirty-dot" aria-hidden="true"></span>' : ''}`;
+        }
+    },
+
+    openMobileToolsSheet() {
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        const isAdmin = this.canEditSchedule(weekKey);
+        Modal.open('Tiện ích Lịch Phân Công', `
+            <div class="sched-sheet-actions">
+                <button type="button" class="sched-sheet-btn" onclick="Modal.close();SchedulePage.exportPDF()">
+                    <span>📄 Xuất ảnh Lịch phân công tuần</span>
+                    <span>PNG</span>
+                </button>
+                <button type="button" class="sched-sheet-btn" onclick="Modal.close();SchedulePage.exportRobotImage()">
+                    <span>🤖 Xuất ảnh Lịch phụ mổ Robot</span>
+                    <span>PNG</span>
+                </button>
+                ${isAdmin ? `
+                <button type="button" class="sched-sheet-btn" onclick="Modal.close();SchedulePage.copyFromPrevWeek()">
+                    <span>📋 Sao chép lịch từ tuần trước</span>
+                    <span>Tuần trước</span>
+                </button>
+                <button type="button" class="sched-sheet-btn is-danger" onclick="Modal.close();SchedulePage.clearSchedule()">
+                    <span>🗑️ Xoá các vị trí linh hoạt tuần này</span>
+                    <span>Xoá</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    openMobileDutyPicker(posKey, dayIdx) {
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+        if (!this.canEditSchedule(weekKey)) {
+            Toast.warning('🔒 Lịch tuần này đã khóa hoặc bạn không có quyền chỉnh sửa.');
+            return;
+        }
+        const pos = SCHEDULE_POSITIONS.find(p => p.key === posKey);
+        if (!pos) return;
+        const safeDayIdx = Math.max(0, Math.min(6, parseInt(dayIdx, 10) || 0));
+        const dayKey = DAYS[safeDayIdx];
+        const selDate = dates[safeDayIdx];
+        const dayLabel = DAY_LABELS[safeDayIdx];
+        const staffOptions = this.getStaffOptions(pos.staffFilter);
+
+        const currentPositions = {};
+        document.querySelectorAll('.schedule-select').forEach(sel => {
+            const p = sel.dataset.pos;
+            const c = sel.dataset.cell;
+            if (!currentPositions[p]) currentPositions[p] = {};
+            if (sel.value) currentPositions[p][c] = parseInt(sel.value, 10);
+        });
+        const conflicts = this.checkScheduleConflicts(currentPositions);
+
+        const slotsHtml = [];
+        for (let slot = 0; slot < pos.slots; slot++) {
+            const cellKey = `${dayKey}_${slot}`;
+            const curVal = currentPositions[pos.key]?.[cellKey] || '';
+            const slotTitle = pos.slotLabels ? pos.slotLabels[slot] : `Vị trí #${slot + 1}`;
+            slotsHtml.push(`
+                <div class="sched-picker-slot-row">
+                    <div class="sched-picker-slot-hdr">
+                        <span class="sched-picker-slot-title">${slotTitle}</span>
+                        <button type="button" class="sched-picker-clear-btn" onclick="const s=document.getElementById('sched-picker-slot-${slot}');if(s){s.value='';}">✕ Trống</button>
+                    </div>
+                    <select id="sched-picker-slot-${slot}" class="form-select sched-picker-select" data-slot="${slot}" aria-label="${pos.label} ${slotTitle}">
+                        <option value="">— Chưa phân công —</option>
+                        ${staffOptions.map(s => {
+                            const stConf = conflicts.find(c => c.day === dayKey && c.staffId === s.id);
+                            const symbol = stConf ? (stConf.isHardBlock ? ' 🛑' : ' *') : '';
+                            return `<option value="${s.id}" ${parseInt(curVal, 10) === s.id ? 'selected' : ''}>${s.title ? s.title + ' ' : ''}${s.name}${symbol}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+            `);
+        }
+
+        Modal.open(`${pos.label} — ${dayLabel} (${selDate.getDate()}/${selDate.getMonth() + 1})`, `
+            <div class="sched-duty-picker">
+                <input type="search" id="sched-picker-search" class="form-input sched-picker-search" placeholder="🔍 Tìm nhanh bác sĩ / điều dưỡng..." aria-label="Tìm nhân sự" oninput="SchedulePage._filterPickerOptions(this.value)">
+                <div class="sched-picker-slots">
+                    ${slotsHtml.join('')}
+                </div>
+                <div class="modal-footer sched-picker-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
+                    <button type="button" class="btn btn-primary" id="sched-picker-apply-btn" onclick="SchedulePage.applyMobileDutyPicker('${pos.key}', ${safeDayIdx})">✓ Áp dụng</button>
+                </div>
+            </div>
+        `);
+    },
+
+    _filterPickerOptions(query) {
+        const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();
+        const q = norm(query);
+        document.querySelectorAll('.sched-picker-select').forEach(sel => {
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+                const match = !q || norm(opt.textContent).includes(q);
+                opt.hidden = !match && !opt.selected;
+            });
+        });
+    },
+
+    applyMobileDutyPicker(posKey, dayIdx) {
+        const pos = SCHEDULE_POSITIONS.find(p => p.key === posKey);
+        if (!pos) return;
+        const safeDayIdx = Math.max(0, Math.min(6, parseInt(dayIdx, 10) || 0));
+        const dayKey = DAYS[safeDayIdx];
+        const dates = this.getWeekDates(this.weekOffset);
+        const weekKey = this.getWeekKey(dates);
+
+        this._suppressMobileDayRefresh = true;
+        let changedCount = 0;
+        try {
+            for (let slot = 0; slot < pos.slots; slot++) {
+                const pickerSel = document.getElementById(`sched-picker-slot-${slot}`);
+                const tableSel = document.querySelector(`.schedule-select[data-pos="${posKey}"][data-cell="${dayKey}_${slot}"]`);
+                if (!pickerSel || !tableSel) continue;
+                if (tableSel.value !== pickerSel.value) {
+                    tableSel.value = pickerSel.value;
+                    this.onCellChange(tableSel);
+                    changedCount++;
+                }
+            }
+        } finally {
+            this._suppressMobileDayRefresh = false;
+        }
+        Modal.close();
+        if (changedCount > 0) {
+            if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+            this._isDirtyByWeek[weekKey] = true;
+            this._selectedMobileDayIdx = safeDayIdx;
+            App.renderCurrentPage();
+        }
     },
 
     async undo() {
@@ -768,6 +1057,8 @@ const SchedulePage = {
 
         if (!this._lastKnownPositionsByWeek) this._lastKnownPositionsByWeek = {};
         this._lastKnownPositionsByWeek[currentWeekKey] = state.positions ? JSON.parse(JSON.stringify(state.positions)) : {};
+        if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+        this._isDirtyByWeek[currentWeekKey] = false;
 
         App.renderCurrentPage();
         Toast.info('Đã hoàn tác thao tác vừa rồi!', 'Hoàn tác');
@@ -777,6 +1068,8 @@ const SchedulePage = {
         this.pushUndoState();
         const dates = this.getWeekDates(this.weekOffset);
         const weekKey = this.getWeekKey(dates);
+        if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+        this._isDirtyByWeek[weekKey] = true;
         const pos = el.dataset.pos;
         const cell = el.dataset.cell;
 
@@ -886,6 +1179,7 @@ const SchedulePage = {
         } else if (bannerEl) {
             bannerEl.style.display = 'none';
         }
+        this._updateMobileDirtyUI(weekKey);
     },
 
     _upsertSchedule(weekKey, dates, updates) {
@@ -1001,6 +1295,11 @@ const SchedulePage = {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa lưu được lịch phân công. Vui lòng thử lại.');
         }
 
+        if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+        this._isDirtyByWeek[weekKey] = false;
+        if (this._lastKnownPositionsByWeek) delete this._lastKnownPositionsByWeek[weekKey];
+        this._updateMobileDirtyUI(weekKey);
+
         if (softWarnings.length > 0) {
             Toast.warning(`⚠️ Đã lưu lịch phân công (ghi nhận ${softWarnings.length} trường hợp Trực BV trùng mổ có dấu *).`);
         } else {
@@ -1068,6 +1367,9 @@ const SchedulePage = {
         if (!saved?.ok) {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa xoá được lịch phân công. Vui lòng thử lại.');
         }
+        if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+        this._isDirtyByWeek[weekKey] = false;
+        if (this._lastKnownPositionsByWeek) delete this._lastKnownPositionsByWeek[weekKey];
         App.renderCurrentPage();
         Toast.success('Đã xoá các vị trí linh hoạt (giữ nguyên vị trí cố định).', 'Xoá lịch');
     },
@@ -1221,8 +1523,24 @@ const SchedulePage = {
             </div>`;
         };
 
+        const robotCardCls = this._mobileRobotExpanded ? 'is-mobile-expanded' : 'is-mobile-collapsed';
+
         return `
-        <div class="card robot-surgery-card robot-surgery-card--mt">
+        <div class="sched-robot-mobile-summary">
+            <div class="sched-robot-sum-left">
+                <span class="sched-robot-sum-title">🤖 Phụ mổ Robot tuần này: <strong>${allRobotEntries.length} ca</strong></span>
+                <span class="sched-robot-sum-sub">${displayedEntries.length ? `${countBadgeText}` : 'Bấm Xem nhanh hoặc sang Điều phối Robot'}</span>
+            </div>
+            <div class="sched-robot-sum-actions">
+                <button type="button" class="btn btn-secondary btn-sm sched-robot-toggle-btn" onclick="SchedulePage.toggleMobileRobotSection()">
+                    ${this._mobileRobotExpanded ? 'Thu gọn' : 'Xem nhanh'}
+                </button>
+                <button type="button" class="btn btn-primary btn-sm sched-robot-goto-btn" onclick="App.navigate('robot-schedule')">
+                    Tab Robot →
+                </button>
+            </div>
+        </div>
+        <div class="card robot-surgery-card robot-surgery-card--mt ${robotCardCls}">
             <div class="flex justify-between items-center robot-card-header mb-12 flex-wrap gap-8">
                 <div class="flex items-center gap-8 flex-wrap">
                     <h3 class="robot-card-title">🤖 Lịch phụ mổ Robot</h3>
@@ -1516,6 +1834,10 @@ const SchedulePage = {
         if (!saved?.ok) {
             return Toast.error(saved?.errors?.[0]?.message || 'Chưa sao chép được lịch tuần.');
         }
+
+        if (!this._isDirtyByWeek) this._isDirtyByWeek = {};
+        this._isDirtyByWeek[weekKey] = false;
+        if (this._lastKnownPositionsByWeek) delete this._lastKnownPositionsByWeek[weekKey];
 
         // Re-render to show copied data
         App.renderCurrentPage();

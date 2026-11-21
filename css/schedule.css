@@ -767,6 +767,449 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 @media (min-width: 769px) {
     .robot-table-wrap { display: block; }
     .robot-mobile-cards { display: none; }
+    .sched-mobile-hdr-tools,
+    .sched-robot-mobile-summary {
+        display: none !important;
+    }
+    .schedule-header-actions {
+        display: flex;
+    }
 }
+
+/* ===== FEAT-239: MOBILE SCHEDULE UX + BOTTOM SHEET PICKER ===== */
+.sched-mobile-hdr-tools,
+.sched-robot-mobile-summary {
+    display: none;
+}
+
+.sched-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sched-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    touch-action: manipulation;
+}
+
+.sched-sheet-btn.is-danger {
+    color: var(--danger, #dc2626);
+    border-color: rgba(220, 38, 38, 0.28);
+}
+
+.sched-duty-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sched-picker-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sched-picker-slot-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+}
+
+.sched-picker-slot-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sched-picker-slot-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sched-picker-clear-btn {
+    min-height: 44px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+    #schedule-page {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #schedule-page > .page-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 10px;
+        min-height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        margin-bottom: 0;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.16);
+    }
+
+    #schedule-page > .page-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    #schedule-page > .page-header .page-title {
+        color: #FFFFFF;
+        font-size: 0.98rem;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #schedule-page > .page-header .page-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.72rem;
+        margin: 2px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #schedule-page .schedule-header-actions {
+        display: none !important;
+    }
+
+    #schedule-page .sched-mobile-hdr-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .sched-mobile-hdr-btn {
+        position: relative;
+        min-height: 44px;
+        min-width: 44px;
+        padding: 6px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        background: rgba(255, 255, 255, 0.16);
+        color: #FFFFFF;
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        touch-action: manipulation;
+        white-space: nowrap;
+    }
+
+    .sched-mobile-hdr-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .sched-mobile-hdr-btn.is-save.is-dirty {
+        background: #16a34a;
+        border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .sched-dirty-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #FBBF24;
+        display: inline-block;
+        margin-left: 2px;
+    }
+
+    .sched-mobile-more-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.14);
+        color: #FFFFFF;
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    .schedule-mobile-view-toggle {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .sched-view-btn {
+        padding: 8px 6px;
+        font-size: 0.78rem;
+        min-height: 44px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .schedule-day-pill {
+        position: relative;
+        min-width: 44px;
+        min-height: 52px;
+        padding: 6px 4px;
+    }
+
+    .sched-my-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--accent, #1878B4);
+        display: inline-block;
+        margin-top: 2px;
+    }
+
+    .schedule-duty-pill.sched-pill-self {
+        background: var(--primary-soft, rgba(24, 120, 180, 0.12));
+        border-color: var(--accent, #1878B4);
+        color: var(--primary);
+        font-weight: 700;
+    }
+
+    .sched-slot-prefix {
+        font-weight: 600;
+        opacity: 0.85;
+    }
+
+    .schedule-day-duty-item.is-editable {
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .schedule-day-duty-item.is-editable:active {
+        transform: scale(0.99);
+        border-color: var(--accent, #1878B4);
+    }
+
+    .sched-duty-edit-hint {
+        margin-left: auto;
+        font-size: 0.78rem;
+        opacity: 0.7;
+    }
+
+    .sched-my-day-group {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+        background: var(--bg-primary);
+    }
+
+    .sched-my-day-group.is-today {
+        border-color: var(--accent, #1878B4);
+    }
+
+    .sched-my-day-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .sched-my-today-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    .sched-my-day-items {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .sched-my-pos-row {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    .sched-my-pos-name {
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+
+    .sched-my-pos-slots {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .sched-robot-mobile-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        flex-wrap: wrap;
+    }
+
+    .sched-robot-sum-left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        flex: 1 1 180px;
+    }
+
+    .sched-robot-sum-title {
+        font-size: 0.85rem;
+        color: var(--text-primary);
+    }
+
+    .sched-robot-sum-sub {
+        font-size: 0.73rem;
+        color: var(--text-muted);
+    }
+
+    .sched-robot-sum-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .sched-robot-toggle-btn,
+    .sched-robot-goto-btn {
+        min-height: 44px;
+        padding: 8px 10px;
+        white-space: nowrap;
+        font-size: 0.78rem;
+    }
+
+    .robot-surgery-card.is-mobile-collapsed {
+        display: none;
+    }
+
+    .robot-surgery-card.is-mobile-expanded {
+        display: block;
+    }
+
+    .sched-picker-search,
+    .sched-picker-select {
+        font-size: 16px !important;
+        min-height: 44px;
+        width: 100%;
+    }
+
+    .sched-picker-select {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 44px;
+        padding: 10px 34px 10px 12px;
+        background-color: var(--bg-secondary);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+        color: var(--text-primary);
+    }
+
+    .sched-picker-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        padding: 10px 0 calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        margin-top: 4px;
+    }
+
+    .sched-picker-footer .btn {
+        min-height: 44px;
+        flex: 1 1 auto;
+    }
+
+    /* Dark Mode #0C1022 Zero-Teal */
+    [data-theme="dark"] #schedule-page > .page-header {
+        background: linear-gradient(135deg, #0C1022 0%, #131A35 60%, #1878B4 100%);
+        border: 1px solid rgba(178, 193, 253, 0.16);
+    }
+
+    [data-theme="dark"] .sched-robot-mobile-summary,
+    [data-theme="dark"] .sched-my-day-group,
+    [data-theme="dark"] .sched-sheet-btn {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.16);
+        color: #E2E8F0;
+    }
+
+    [data-theme="dark"] .sched-my-pos-row,
+    [data-theme="dark"] .sched-picker-slot-row,
+    [data-theme="dark"] .sched-picker-select {
+        background-color: #0C1022;
+        border-color: rgba(178, 193, 253, 0.16);
+        color: #E2E8F0;
+    }
+
+    [data-theme="dark"] .schedule-duty-pill.sched-pill-self {
+        background: rgba(56, 189, 248, 0.18);
+        border-color: #38BDF8;
+        color: #E0F2FE;
+    }
+}
+
 
 

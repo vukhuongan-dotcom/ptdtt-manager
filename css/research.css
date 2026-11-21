@@ -459,3 +459,308 @@
     border-color: rgba(251,191,36,0.3);
     color: #fbbf24;
 }
+
+/* ===== FEAT-239: SHCM MOBILE UX + SPOTLIGHT + BOTTOM SHEET ===== */
+.rsch-mobile-hdr-tools,
+.rsch-mobile-next-card {
+    display: none;
+}
+
+.rsch-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rsch-sheet-section-lbl {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 2px 2px 0;
+}
+
+.rsch-sheet-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rsch-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    touch-action: manipulation;
+}
+
+.rsch-sheet-btn.is-active {
+    border-color: var(--accent, #1878B4);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.rsch-sheet-btn.is-danger {
+    color: var(--danger, #dc2626);
+    border-color: rgba(220, 38, 38, 0.28);
+}
+
+.rsch-msettings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rsch-msettings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rsch-msettings-label {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+@media (min-width: 769px) {
+    .rsch-mobile-hdr-tools,
+    .rsch-mobile-next-card {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #research-page {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #research-page > .page-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        min-height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        margin-bottom: 0;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.16);
+    }
+
+    #research-page > .page-header .page-title {
+        color: #FFFFFF;
+        font-size: 1.05rem;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    #research-page > .page-header .page-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.74rem;
+        margin: 2px 0 0;
+    }
+
+    #research-page .rsch-header-actions,
+    #research-page .rsch-stats,
+    #research-page .rsch-settings-card {
+        display: none !important;
+    }
+
+    #research-page .rsch-mobile-hdr-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .rsch-mobile-primary-btn {
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        background: rgba(255, 255, 255, 0.18);
+        color: #FFFFFF;
+        font-size: 0.82rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        touch-action: manipulation;
+    }
+
+    .rsch-mobile-more-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.14);
+        color: #FFFFFF;
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    .rsch-mobile-next-card {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent, #1878B4);
+        background: var(--bg-secondary);
+        box-shadow: 0 3px 10px rgba(29, 35, 87, 0.06);
+    }
+
+    .rsch-mnext-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .rsch-mnext-kicker {
+        font-size: 0.74rem;
+        font-weight: 800;
+        color: var(--accent, #1878B4);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .rsch-mnext-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    .rsch-mnext-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.35;
+    }
+
+    .rsch-mnext-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .rsch-controls-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .rsch-filter-pills {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        gap: 6px;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+
+    .rsch-filter-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    #research-page .rsch-pill-btn {
+        min-height: 44px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    #research-page .rsch-search-input,
+    #shcm-mobile-default-time,
+    #shcm-mobile-default-dur {
+        font-size: 16px !important;
+        min-height: 44px;
+    }
+
+    .rsch-card-more-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .rsch-msettings-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        padding: 10px 0 calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .rsch-msettings-footer .btn {
+        min-height: 44px;
+        flex: 1 1 auto;
+    }
+
+    /* Dark Mode #0C1022 Zero-Teal */
+    [data-theme="dark"] #research-page > .page-header {
+        background: linear-gradient(135deg, #0C1022 0%, #131A35 60%, #1878B4 100%);
+        border: 1px solid rgba(178, 193, 253, 0.16);
+    }
+
+    [data-theme="dark"] .rsch-mobile-next-card,
+    [data-theme="dark"] .rsch-card-more-btn,
+    [data-theme="dark"] .rsch-sheet-btn {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.16);
+        color: #E2E8F0;
+    }
+
+    [data-theme="dark"] .rsch-mnext-kicker {
+        color: #38BDF8;
+    }
+
+    [data-theme="dark"] .rsch-mnext-badge {
+        background: rgba(56, 189, 248, 0.18);
+        color: #7DD3FC;
+    }
+}
+
