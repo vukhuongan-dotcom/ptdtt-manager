@@ -1,0 +1,11 @@
+{"ts": "2026-11-21T06:11:53.335208", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T06:14:59.907438", "user": "ttdanh", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T06:20:45.357154", "user": "ttdanh", "action": "collection.put.reports7h", "ip": "127.0.0.1", "details": {"count": 228, "nextId": 1, "revision": 56, "added": 1, "removed": 0, "changed": 0, "diff": {"added": [], "removed": [], "changed": []}}}
+{"ts": "2026-11-21T06:42:07.514518", "user": "ndtphu", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T06:50:12.842575", "user": "ptctien", "action": "auth.login.fail", "ip": "127.0.0.1", "details": {"reason": "wrong_password", "ip": "113.161.37.144", "remaining": 4}}
+{"ts": "2026-11-21T06:50:18.641278", "user": "ptctien", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T07:00:47.645440", "user": "tpquan", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T08:16:41.825803", "user": "vcnguyen", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 2}}
+{"ts": "2026-11-21T08:53:54.238805", "user": "vkan", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T09:38:04.978619", "user": "ndluan", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
+{"ts": "2026-11-21T10:21:23.071297", "user": "hbsang", "action": "auth.login.success", "ip": "127.0.0.1", "details": {"mustChangePassword": false, "sessionEpoch": 1}}
