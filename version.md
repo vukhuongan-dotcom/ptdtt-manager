@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Chuẩn hóa ô Thời gian dự kiến & Ngày mổ bằng lịch chọn ngày không nhập tay và giới hạn công suất Robot tối đa 3 ca/ngày (Ca 1–Ca 3) (FEAT-232) (`[FEAT-232]`, build `v2611211250`).
+- Chuẩn hóa ô Thời gian dự kiến & Ngày mổ bằng lịch chọn ngày không nhập tay và giới hạn công suất Robot tối đa 3 ca/ngày (Ca 1–Ca 3) (FEAT-232) (`[FEAT-232]`, commit `d5fb107`, build `v2611211250`).
 - Tích hợp phân hệ Điều phối Lịch mổ Robot liên thông nguyên tử 2 chiều với Lịch mổ tuần, Dual-WAL, Zero-Local-PHI & Mẫu in A5 P.CTXH (FEAT-231) (`[FEAT-231]`, commit `f212713`, build `v2611211215`).
 - Đồng bộ quy chuẩn khuyến nghị 7 mô hình Plan theo Google Antigravity v2.34.0 (`[FEAT-230]`, commit `f212713`).
 - Đồng bộ quy chuẩn Plan V3 từ 5 lên 7 cấu hình nội sinh AG (bổ sung Gemini 4 Neon & Orchestrator Neon) (`[FEAT-229]`, commit `af4dd66`).
