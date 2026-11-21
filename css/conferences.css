@@ -620,3 +620,328 @@
 [data-theme="dark"] .cp-stat-lang   .cp-stat-num { color: #60a5fa; }
 [data-theme="dark"] .cp-stat-lang-vi .cp-stat-num { color: #34d399; }
 [data-theme="dark"] .cp-stat-upcoming .cp-stat-big { color: #fbbf24; }
+
+/* ===== FEAT-241: BÁO CÁO KHOA HỌC MOBILE UX + BUG-240 WHITE TITLE ===== */
+.conf-mobile-hdr-tools,
+.cp-mobile-pres-toggle,
+.cp-pres-mobile-more,
+.cp-footer-mobile {
+    display: none;
+}
+
+.cp-footer-desktop {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.conf-sheet-meta {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.conf-sheet-subnote {
+    margin-top: 4px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.conf-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.conf-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+    touch-action: manipulation;
+}
+
+.conf-sheet-btn span:last-child {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.conf-sheet-btn.is-danger {
+    color: #DC2626;
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+@media (min-width: 769px) {
+    .conf-mobile-hdr-tools,
+    .cp-mobile-pres-toggle,
+    .cp-pres-mobile-more,
+    .cp-footer-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #conferences-page {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #conferences-page > .page-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        min-height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        margin-bottom: 0;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.16);
+    }
+
+    #conferences-page > .page-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    #conferences-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
+        color: #FFFFFF;
+        font-size: 1rem;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #conferences-page > .page-header .page-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.72rem;
+        margin: 2px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #conferences-page .conf-desktop-add-btn,
+    #conferences-page .cp-pres-desktop-actions,
+    #conferences-page .cp-footer-desktop {
+        display: none !important;
+    }
+
+    #conferences-page .conf-mobile-hdr-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .conf-mobile-add-btn {
+        min-height: 44px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: none;
+        background: rgba(255, 255, 255, 0.94);
+        color: #1D2357;
+        font-size: 0.82rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        touch-action: manipulation;
+    }
+
+    #conferences-page .cp-stats-row {
+        display: flex !important;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 8px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 0;
+        padding-bottom: 2px;
+    }
+
+    #conferences-page .cp-stats-row::-webkit-scrollbar,
+    #conferences-page .conf-time-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    #conferences-page .cp-stat-card {
+        flex: 0 0 auto;
+        min-width: 132px;
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    #conferences-page .cp-stat-big {
+        font-size: 1.3rem;
+    }
+
+    #conferences-page .conf-time-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 0 !important;
+        padding-bottom: 2px;
+    }
+
+    #conferences-page .conf-time-tab {
+        min-height: 44px;
+        padding: 8px 16px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    #conferences-page .cp-card {
+        padding: 12px;
+        border-radius: 14px;
+    }
+
+    #conferences-page .cp-conf-name,
+    #conferences-page .cp-conf-name-vi,
+    #conferences-page .cp-pres-title,
+    #conferences-page .cp-pres-who {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    #conferences-page .cp-mobile-pres-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        padding: 8px 12px;
+        margin: 8px 0 6px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--primary);
+        font-size: 0.84rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #conferences-page .cp-pres-list.is-mobile-collapsed {
+        display: none !important;
+    }
+
+    #conferences-page .cp-pres-row {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px 8px;
+        padding: 10px 10px;
+        align-items: center;
+    }
+
+    #conferences-page .cp-pres-row:has(.cp-pres-mobile-more) {
+        padding-right: 54px;
+    }
+
+    #conferences-page .cp-pres-mobile-more {
+        position: absolute;
+        top: 8px;
+        right: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        font-weight: 800;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #conferences-page .cp-footer-mobile {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    #conferences-page .cp-mobile-add-pres-btn {
+        min-height: 44px;
+        padding: 8px 14px;
+    }
+
+    #conferences-page .cp-card-more-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    [data-theme="dark"] #conferences-page > .page-header {
+        background: linear-gradient(135deg, #0C1022 0%, #1D2357 60%, #1878B4 100%);
+    }
+
+    [data-theme="dark"] #conferences-page .cp-card {
+        background: #141B2D;
+        border-color: rgba(148, 163, 184, 0.16);
+    }
+
+    [data-theme="dark"] #conferences-page .cp-mobile-pres-toggle,
+    [data-theme="dark"] #conferences-page .cp-pres-mobile-more,
+    [data-theme="dark"] #conferences-page .cp-card-more-btn,
+    [data-theme="dark"] .conf-sheet-btn,
+    [data-theme="dark"] .conf-sheet-meta {
+        background: #141B2D;
+        border-color: rgba(148, 163, 184, 0.22);
+        color: #F1F5F9;
+    }
+}

@@ -167,6 +167,7 @@ const SurgeryPage = {
     _filterType: 'all',
     _selectedDayStr: null,
     _mobileViewMode: 'day', // 'day' | 'week'
+    _mobileQuickFilter: 'all', // 'all' | 'mine' | 'robot' | 'yeucau'
     _showSandboxOnSchedule: false,
     _openApprovalAfterSave: false,
     _sampleSandboxIdx: 0,
@@ -292,6 +293,11 @@ const SurgeryPage = {
         App.renderCurrentPage();
     },
 
+    setMobileQuickFilter(q) {
+        this._mobileQuickFilter = q || 'all';
+        App.renderCurrentPage();
+    },
+
     render() {
         if (!this.currentWeekStart) this.init();
         const weekKey = this.getWeekKey();
@@ -324,6 +330,7 @@ const SurgeryPage = {
         const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
 
         return `
+        <div id="surgery-page" class="surg-page">
         <div class="surgery-sticky-header">
         <div class="page-header">
             <div>
@@ -358,6 +365,10 @@ const SurgeryPage = {
                 ${canEdit ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()" aria-label="Thêm ca phẫu thuật mới">
                     ${Utils.plusIcon()} Thêm ca mổ
                 </button>` : ''}
+            </div>
+            <div class="surg-mobile-hdr-tools">
+                ${canEdit ? `<button type="button" class="surg-mobile-primary-btn" onclick="SurgeryPage.openForm(null, '${selectedDayStr}')" aria-label="Thêm ca phẫu thuật mới">＋ Thêm ca</button>` : ''}
+                <button type="button" class="surg-mobile-more-btn" id="surg-mobile-more-btn" onclick="SurgeryPage.openMobileToolsSheet()" aria-label="Tiện ích lịch mổ tuần" title="Tiện ích">⋮</button>
             </div>
         </div>
 
@@ -418,6 +429,14 @@ const SurgeryPage = {
                     </button>`;
                 }).join('')}
             </div>
+            <div class="surg-mobile-quick-filters" role="group" aria-label="Lọc nhanh ca mổ">
+                ${[
+                    { key: 'all', label: 'Tất cả' },
+                    { key: 'mine', label: '👤 Ca của tôi' },
+                    { key: 'robot', label: '🤖 Robot' },
+                    { key: 'yeucau', label: '⭐ Yêu cầu' }
+                ].map(q => `<button type="button" class="surg-qfilter-pill ${this._mobileQuickFilter === q.key ? 'active' : ''}" data-surg-qfilter="${q.key}" onclick="SurgeryPage.setMobileQuickFilter('${q.key}')">${q.label}</button>`).join('')}
+            </div>
         </div>
 
         <div class="surgery-summary-panel">
@@ -455,14 +474,28 @@ const SurgeryPage = {
         <div class="surgery-mobile-day-view ${this._mobileViewMode === 'day' ? 'active' : ''}">
             ${(() => {
                 const selDateObj = weekDates.find(d => this.dateStr(d) === selectedDayStr) || weekDates[0];
-                const daySurgeries = sortSurgeries(this.getFilteredSurgeries(selectedDayStr), selDateObj);
+                const sessionStaffId = Number(Auth.getSession()?.staffId || 0);
+                const rawDaySurgeries = sortSurgeries(this.getFilteredSurgeries(selectedDayStr), selDateObj);
+                const daySurgeries = rawDaySurgeries.filter(s => {
+                    if (this._mobileQuickFilter === 'mine') {
+                        if (!sessionStaffId) return false;
+                        return [s.mainSurgeon, s.assistSurgeon1, s.assistSurgeon2, s.assistSurgeon3].some(id => Number(id) === sessionStaffId);
+                    }
+                    if (this._mobileQuickFilter === 'robot') {
+                        return s.surgeryType === 'robot' || s.approachType === 'robot' || Boolean(s.robotCaseId);
+                    }
+                    if (this._mobileQuickFilter === 'yeucau') {
+                        return s.surgeryType === 'yeucau';
+                    }
+                    return true;
+                });
                 const dayNameLong = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'][selDateObj.getDay()];
                 return `
                 <div class="surg-day-focus-card card">
                     <div class="surg-day-focus-header">
                         <div>
                             <div class="surg-day-focus-title">📅 ${dayNameLong} — ${selDateObj.getDate()}/${selDateObj.getMonth() + 1}/${selDateObj.getFullYear()}</div>
-                            <div class="surg-day-focus-subtitle">${daySurgeries.length} ca phẫu thuật ${this._filterDoctor !== 'all' ? '(đã lọc theo BS)' : ''}</div>
+                            <div class="surg-day-focus-subtitle">${daySurgeries.length} ca phẫu thuật ${this._mobileQuickFilter !== 'all' ? `(lọc từ ${rawDaySurgeries.length} ca)` : (this._filterDoctor !== 'all' ? '(đã lọc theo BS)' : '')}</div>
                         </div>
                         ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="SurgeryPage.openForm(null,'${selectedDayStr}')">+ Thêm ca</button>` : ''}
                     </div>
@@ -470,33 +503,29 @@ const SurgeryPage = {
                         ${daySurgeries.length ? daySurgeries.map((s, idx) => {
                             const typeInfo = SURGERY_TYPES[s.surgeryType] || SURGERY_TYPES.chuongtrinh;
                             const showCaseApproval = showApproval && SurgeryApprovalPage.isCaseApprovalEnabled(s);
+                            const mainDocName = Utils.getStaffName(s.mainSurgeon);
+                            const assistName = s.assistSurgeon1 ? Utils.getStaffName(s.assistSurgeon1) : '';
+                            const clinicalText = [s.diagnosis, s.method].filter(Boolean).join(' · ');
                             return `
-                            <div class="surgery-card surgery-expanded surg-mobile-full-card" data-surgery-id="${s.id}">
-                                <div class="surgery-card-compact-row">
-                                    <span class="surgery-card-order">${idx + 1}</span>
-                                    <span class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</span>
-                                    <span class="surgery-card-compact-name">${Utils.toProperCase(s.patientName)}</span>
-                                    <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
-                                    ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
-                                </div>
-                                <div class="surgery-card-detail" style="max-height:none;padding:0 12px 12px;">
-                                    ${s.diagnosis ? `<div class="surgery-card-diagnosis">📋 ${s.diagnosis}</div>` : ''}
-                                    ${s.method ? `<div class="surgery-card-method">🔬 ${s.method}</div>` : ''}
-                                    <div class="surgery-card-footer">
-                                        <span class="surgery-card-surgeons">🔪 <strong>BS:</strong> ${Utils.getStaffName(s.mainSurgeon)}${s.assistSurgeon1 ? ' / ' + Utils.getStaffName(s.assistSurgeon1) : ''}</span>
-                                        ${s.duration ? `<span class="surg-card-duration">⏱ ${s.duration}p</span>` : ''}
+                            <div class="surgery-card surgery-expanded surg-mobile-full-card" data-surgery-id="${s.id}" role="button" tabindex="0" onclick="SurgeryPage.viewDetail(${s.id})">
+                                <div class="surg-mc-top">
+                                    <div class="surg-mc-top-left">
+                                        <span class="surgery-card-order">${idx + 1}</span>
+                                        <span class="surgery-card-type-tag" style="background:${typeInfo.color};color:${typeInfo.onColor}">${typeInfo.label}</span>
+                                        ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                     </div>
-                                    ${showCaseApproval ? `<div class="surgery-card-compact-approval" style="padding:6px 0 0 0;">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
-                                    ${canEdit ? `<div class="surg-card-actions">
-                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.openForm(${s.id})">✏ Sửa</button>
-                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
-                                        <button class="btn btn-secondary btn-sm btn-card-action-danger" onclick="event.stopPropagation();SurgeryPage.deleteSurgery(${s.id})">🗑 Xoá</button>
-                                    </div>` : `<div class="surg-card-actions-single">
-                                        <button class="btn btn-secondary btn-sm btn-card-action" onclick="event.stopPropagation();SurgeryPage.viewDetail(${s.id})">🔍 Chi tiết</button>
-                                    </div>`}
+                                    ${showCaseApproval ? `<div class="surg-mc-top-right">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
+                                </div>
+                                <div class="surg-mc-mid">
+                                    <div class="surg-mc-patient">${Utils.toProperCase(s.patientName)} <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span></div>
+                                    ${clinicalText ? `<div class="surg-mc-clinical">${Utils.escapeHtml(clinicalText)}</div>` : ''}
+                                </div>
+                                <div class="surg-mc-bottom">
+                                    <div class="surg-mc-surgeon">🔪 <strong>${mainDocName}</strong>${assistName ? ` · Phụ: ${assistName}` : ''}${s.duration ? ` · ⏱ ${s.duration}p` : ''}</div>
+                                    <button type="button" class="surg-card-more-btn" data-surg-more="${s.id}" onclick="event.stopPropagation();SurgeryPage.openMobileCardSheet(${s.id})" aria-label="Thao tác ca mổ ${Utils.escapeHtml(s.patientName || '')}">⋮</button>
                                 </div>
                             </div>`;
-                        }).join('') : `<div class="surgery-empty">Không có ca mổ trong ngày này</div>`}
+                        }).join('') : `<div class="surgery-empty">Không có ca mổ phù hợp trong ngày này</div>`}
                     </div>
                 </div>`;
             })()}
@@ -571,6 +600,7 @@ const SurgeryPage = {
             <span><span aria-hidden="true">⚡</span> Ngoại lệ</span>
             <span class="sap-schedule-footer-hint">(Bấm vào nhãn trên thẻ để mở thẳng hồ sơ duyệt ca mổ)</span>
         </div>` : ''}
+        </div>
         `;
     },
 
@@ -2237,5 +2267,69 @@ const SurgeryPage = {
             Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
             document.body.removeChild(container);
         });
+    },
+
+    // ===== FEAT-241: MOBILE TOOLS & CARD SHEETS =====
+    openMobileToolsSheet() {
+        const weekKey = this.getWeekKey();
+        const canEdit = canEditSurgery(weekKey);
+        const showApproval = typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser();
+        const canSandbox = this.canUseSandboxSchedule();
+        const hasSandboxCases = (Store._data?.surgeries || []).some(s => s.isTestSandboxCase);
+        const trashCount = Store.cleanSurgeriesTrash(7).length;
+        Modal.open('Tiện ích Lịch mổ tuần', `
+            <div class="surg-sheet-actions">
+                ${showApproval ? `
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();App.navigate('surgery-approval')">
+                    <span>📋 Duyệt mổ tại khoa</span><span>Mở tab</span>
+                </button>` : ''}
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryPage.exportTomorrowImage()">
+                    <span>📷 Xuất danh sách ngày mai</span><span>PNG 2K</span>
+                </button>
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryPage.exportCustomDateImage()">
+                    <span>📅 Xuất lịch mổ theo ngày</span><span>Chọn ngày</span>
+                </button>
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryPage.openTrashModal()">
+                    <span>🗑️ Thùng rác ca mổ đã hủy</span><span>${trashCount} ca</span>
+                </button>
+                ${canSandbox && hasSandboxCases ? `
+                <button type="button" class="surg-sheet-btn ${this._showSandboxOnSchedule ? 'is-active' : ''}" onclick="Modal.close();SurgeryPage.toggleSandboxSchedulePreview()">
+                    <span>${this._showSandboxOnSchedule ? '🙈 Ẩn ca [TEST]' : '🧪 Xem ca [TEST] trên lịch'}</span><span>Sandbox</span>
+                </button>` : ''}
+                ${canEdit && canSandbox ? `
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryPage.openForm(0, null, { sandbox: true })">
+                    <span>🧪 Tạo ca giả lập duyệt mổ</span><span>Demo</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    openMobileCardSheet(id) {
+        const s = this.getAllSurgeries().find(x => Number(x.id) === Number(id));
+        if (!s) return;
+        const weekKey = this.getWeekKey();
+        const canEdit = canEditSurgery(weekKey);
+        const showApproval = typeof SurgeryApprovalPage !== 'undefined'
+            && SurgeryApprovalPage.isFeatureVisibleForCurrentUser()
+            && SurgeryApprovalPage.isCaseApprovalEnabled(s)
+            && s.approachType !== 'nsth';
+        Modal.open(`${Utils.toProperCase(s.patientName || 'Ca phẫu thuật')}`, `
+            <div class="surg-sheet-actions">
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryPage.viewDetail(${s.id})">
+                    <span>🔍 Xem chi tiết ca mổ</span><span>Chi tiết</span>
+                </button>
+                ${showApproval ? `
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryApprovalPage.openCaseModal(${s.id})">
+                    <span>🩺 Mở hồ sơ duyệt mổ khoa</span><span>Duyệt mổ</span>
+                </button>` : ''}
+                ${canEdit ? `
+                <button type="button" class="surg-sheet-btn" onclick="Modal.close();SurgeryPage.openForm(${s.id})">
+                    <span>✏️ Sửa thông tin ca mổ</span><span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="surg-sheet-btn is-danger" onclick="Modal.close();SurgeryPage.deleteSurgery(${s.id})">
+                    <span>🗑️ Đưa vào thùng rác</span><span>Xoá</span>
+                </button>` : ''}
+            </div>
+        `);
     }
 };

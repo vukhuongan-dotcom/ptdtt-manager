@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611212030`
+> 📌 **Current Build Stamp:** `2611212135`
 
 ---
 
@@ -56,6 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- Thiết kế lại giao diện Mobile (Android & iPhone, Sáng/Tối #0C1022) cho 6 tab: Lịch mổ tuần, Duyệt mổ, Nhân sự, Kế hoạch hoạt động, Báo cáo khoa học & Nghiên cứu khoa học (`[FEAT-241]`, build `v2611212135`).
 - Thiết kế lại giao diện Mobile (Android Chrome & iPhone WebKit, Sáng/Tối #0C1022) cho 4 tab Báo cáo, Lịch phân công tuần, Thống kê phẫu thuật và Sinh hoạt chuyên môn: Header Navy-Ocean <=80px, Bottom Sheet •••, form 1 tay 44px, sửa Day View + Lịch của tôi, bỏ nút Xuất hồ sơ BS trùng, Ranking/Logbook Cards + bộ lọc, SHCM spotlight + đổi trạng thái 1 chạm (FEAT-239) (`[FEAT-239]`, commit `b1305cc`, build `v2611211822`).
 - Thêm thông báo giới thiệu bộ 14 icon điều hướng mới kèm ý nghĩa (hiển thị tự động trong 1 tuần 21/11–28/11/2026 khi đăng nhập, user tự tắt từng lần hoặc vĩnh viễn theo tài khoản) (FEAT-238) (`[FEAT-238]`, commit `7717737`, build `v2611211733`).
 - Thiết kế lại thanh tab Mobile dạng Icon-Only (bỏ tên tab, giữ chiều cao thoải mái), tái thiết kế bộ 14 icon Duotone Y khoa không trùng lặp dùng chung Desktop & Mobile, đồng bộ thứ tự 14 tab ưu tiên lâm sàng trên cả Laptop lẫn Mobile, kèm tên tab động trên Mobile Header và tooltip nhấn giữ 350ms (FEAT-237) (`[FEAT-237]`, commit `b48be84`, build `v2611211720`).

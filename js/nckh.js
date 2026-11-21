@@ -407,10 +407,11 @@ const NckhPage = {
                         <p class="page-subtitle">Quản lý đề tài NCKH cấp cơ sở và sáng kiến cải tiến kỹ thuật — Khoa Phẫu thuật Đại trực tràng</p>
                     </div>
                     <div class="page-actions nckh-header-actions">
-                        <button type="button" class="btn btn-secondary" onclick="NckhPage.exportImage()" title="Xuất ảnh báo cáo 2K PNG">
+                        <button type="button" class="btn btn-secondary nckh-desktop-export-btn" onclick="NckhPage.exportImage()" title="Xuất ảnh báo cáo 2K PNG">
                             📷 Xuất ảnh
                         </button>
                         ${this._renderPrimaryAddButton()}
+                        <button type="button" class="nckh-mobile-more-btn" id="nckh-mobile-more-btn" onclick="NckhPage.openMobileToolsSheet()" aria-label="Xuất ảnh và tạo nhanh hồ sơ NCKH" title="Tiện ích">⋮</button>
                     </div>
                 </div>
 
@@ -579,7 +580,7 @@ const NckhPage = {
         const staffStats = this._computeStaffStats(allFiltered);
 
         const quickActionsHtml = `
-            <div class="nckh-quick-add-bar">
+            <div class="nckh-quick-add-bar nckh-desktop-only">
                 <span class="nckh-quick-add-label">Nhập nhanh hồ sơ:</span>
                 <div class="nckh-quick-add-btns">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="NckhPage.openTopicForm('topic_approved')">+ Đề tài xét duyệt</button>
@@ -709,7 +710,7 @@ const NckhPage = {
                     ${staffStats.length === 0
                         ? `<div class="nckh-muted-empty">Chưa có dữ liệu nhân sự tham gia.</div>`
                         : `
-                        <div class="nckh-staff-table-wrap">
+                        <div class="nckh-staff-table-wrap nckh-desktop-only">
                             <table class="nckh-staff-table">
                                 <thead>
                                     <tr>
@@ -732,6 +733,22 @@ const NckhPage = {
                                     `).join('')}
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="nckh-mobile-only nckh-staff-ranking-cards">
+                            ${staffStats.map((st, rIdx) => `
+                                <div class="nckh-rank-card">
+                                    <div class="nckh-rank-num">#${rIdx + 1}</div>
+                                    <div class="nckh-rank-main">
+                                        <div class="nckh-rank-name">${this._esc(st.name)}</div>
+                                        <div class="nckh-rank-pills">
+                                            <span>CNĐT: <strong>${st.piCount || 0}</strong></span>
+                                            <span>CTV: <strong>${st.collabCount || 0}</strong></span>
+                                            <span>SKCT: <strong>${st.initCount || 0}</strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="nckh-total-pill">${st.total}</div>
+                                </div>
+                            `).join('')}
                         </div>
                     `}
                 </div>
@@ -779,6 +796,7 @@ const NckhPage = {
                                     ? `<span class="nckh-status-pill is-success">✅ Đã nghiệm thu${linkedRec?.decisionNumber ? ` (${this._esc(linkedRec.decisionNumber)})` : ''}</span>`
                                     : `<span class="nckh-status-pill is-pending">⏳ Đang thực hiện</span>`)
                             }
+                            <button type="button" class="nckh-card-more-btn" data-nckh-more="${item.id}" onclick="NckhPage.openMobileItemSheet('${category}', ${item.id})" aria-label="Thao tác đề tài">⋮</button>
                         </div>
                     </div>
 
@@ -825,7 +843,7 @@ const NckhPage = {
         return `
             <div class="nckh-section-bar">
                 <h2 class="nckh-section-heading">${sectionTitle} (${items.length})</h2>
-                <button type="button" class="btn btn-primary btn-sm" onclick="NckhPage.openTopicForm('${category}')">${addBtnLabel}</button>
+                <button type="button" class="btn btn-primary btn-sm nckh-desktop-only" onclick="NckhPage.openTopicForm('${category}')">${addBtnLabel}</button>
             </div>
             <div class="nckh-topic-list">
                 ${cardsHtml}
@@ -936,13 +954,14 @@ const NckhPage = {
                             ${item.decisionNumber ? `<span class="nckh-badge nckh-badge--decision">📜 ${this._esc(item.decisionNumber)}${item.decisionDate ? ` · ${this._fmtDate(item.decisionDate)}` : ''}</span>` : ''}
                             ${subDate ? `<span class="nckh-badge nckh-badge--council">🗓️ Ngày nộp xét duyệt: ${this._fmtDate(subDate)}</span>` : ''}
                         </div>
-                        <div>
+                        <div class="nckh-topic-status-area">
                             ${isRecognizedTab
                                 ? `<span class="nckh-status-pill is-success">🏆 Công nhận</span>`
                                 : (isAlreadyRecognized
                                     ? `<span class="nckh-status-pill is-success">✅ Đã công nhận</span>`
                                     : `<span class="nckh-status-pill is-pending">⏳ Chờ công nhận</span>`)
                             }
+                            <button type="button" class="nckh-card-more-btn" data-nckh-more="${item.id}" onclick="NckhPage.openMobileItemSheet('${category}', ${item.id})" aria-label="Thao tác sáng kiến">⋮</button>
                         </div>
                     </div>
 
@@ -984,7 +1003,7 @@ const NckhPage = {
         return `
             <div class="nckh-section-bar">
                 <h2 class="nckh-section-heading">${sectionTitle} (${items.length})</h2>
-                <button type="button" class="btn btn-primary btn-sm" onclick="NckhPage.openInitiativeForm('${category}')">${addBtnLabel}</button>
+                <button type="button" class="btn btn-primary btn-sm nckh-desktop-only" onclick="NckhPage.openInitiativeForm('${category}')">${addBtnLabel}</button>
             </div>
 
             <!-- Desktop Official Table -->
@@ -1836,5 +1855,66 @@ const NckhPage = {
         } finally {
             if (container.parentNode) container.parentNode.removeChild(container);
         }
+    },
+
+    // ===== FEAT-241: MOBILE TOOLS & ITEM SHEETS =====
+    openMobileToolsSheet() {
+        Modal.open('Tiện ích & Nhập nhanh NCKH', `
+            <div class="nckh-sheet-actions">
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.exportImage()">
+                    <span>📷 Xuất ảnh báo cáo 2K PNG</span><span>PNG 2K</span>
+                </button>
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.openTopicForm('topic_approved')">
+                    <span>📋 + Đề tài xét duyệt</span><span>Mới</span>
+                </button>
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.openTopicForm('topic_accepted')">
+                    <span>✅ + Đề tài nghiệm thu</span><span>Mới</span>
+                </button>
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.openInitiativeForm('initiative_approved')">
+                    <span>💡 + SKCT xét duyệt</span><span>Mới</span>
+                </button>
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.openInitiativeForm('initiative_recognized')">
+                    <span>🏆 + SKCT công nhận</span><span>Mới</span>
+                </button>
+            </div>
+        `);
+    },
+
+    openMobileItemSheet(category, id) {
+        const item = this._getAllItems().find(x => Number(x.id) === Number(id));
+        if (!item) return;
+        const isTopic = category === 'topic_approved' || category === 'topic_accepted';
+        const linkedRec = item.linkedRecordId ? Store.getById('nckhItems', Number(item.linkedRecordId)) : null;
+        const canPromoteTopic = category === 'topic_approved'
+            && item.status !== 'accepted'
+            && !(linkedRec && linkedRec.category === 'topic_accepted');
+        const canPromoteInit = category === 'initiative_approved'
+            && item.status !== 'recognized'
+            && !(linkedRec && linkedRec.category === 'initiative_recognized');
+        const metaLine = isTopic
+            ? `👨‍⚕️ ${item.principalInvestigator || '—'} · Năm ${item.year || '—'}`
+            : `🏥 ${item.department || 'Khoa PTĐTT'} · Năm ${item.year || '—'}`;
+        Modal.open(this._esc(item.title || 'Hồ sơ NCKH'), `
+            <div class="nckh-sheet-meta">
+                <div>${this._esc(metaLine)}</div>
+                ${item.decisionNumber ? `<div class="nckh-sheet-subnote">📜 QĐ: ${this._esc(item.decisionNumber)}</div>` : ''}
+            </div>
+            <div class="nckh-sheet-actions">
+                ${canPromoteTopic ? `
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.promoteTopicToAccepted(${item.id})">
+                    <span>⚡ Chuyển nghiệm thu</span><span>Tiến trình</span>
+                </button>` : ''}
+                ${canPromoteInit ? `
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();NckhPage.promoteInitiativeToRecognized(${item.id})">
+                    <span>⚡ Công nhận sáng kiến</span><span>Tiến trình</span>
+                </button>` : ''}
+                <button type="button" class="nckh-sheet-btn" onclick="Modal.close();${isTopic ? `NckhPage.openTopicForm('${category}', ${item.id})` : `NckhPage.openInitiativeForm('${category}', ${item.id})`}">
+                    <span>✏️ Sửa hồ sơ</span><span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="nckh-sheet-btn is-danger" onclick="Modal.close();NckhPage.deleteItem(${item.id})">
+                    <span>🗑️ Xoá hồ sơ</span><span>Xoá</span>
+                </button>
+            </div>
+        `);
     }
 };

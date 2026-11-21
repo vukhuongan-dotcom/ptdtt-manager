@@ -546,6 +546,7 @@ const SurgeryApprovalPage = {
     _moreFiltersOpen: false,
     _scopeDetailOpen: false,
     _canaryCollapsedMobile: true,
+    _mobileCanaryExpanded: false,
     _simulatedStaffId: 0,
     _catalogData: null,
     _catalogLoading: null,
@@ -1306,7 +1307,7 @@ const SurgeryApprovalPage = {
         const roleSummary = this._getActorWorkRoleSummary(actor);
 
         return `
-        <div class="sap-page">
+        <div id="surgery-approval-page" class="sap-page">
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Duyệt mổ tại khoa</h1>
@@ -1321,7 +1322,16 @@ const SurgeryApprovalPage = {
                         ${this._ico('📅')} <span>Lịch mổ tuần</span>
                     </button>
                 </div>
+                <div class="sap-mobile-hdr-tools">
+                    <button type="button" class="sap-mobile-more-btn" id="sap-mobile-more-btn" onclick="SurgeryApprovalPage.openMobileToolsSheet()" aria-label="Tiện ích Duyệt mổ tại khoa" title="Tiện ích">⋮</button>
+                </div>
             </div>
+
+            ${actor.isSimulated ? `
+            <div class="sap-mobile-sim-banner" role="status">
+                <span>${this._ico('🧪')} Đang mô phỏng: <strong>${Utils.escapeHtml(actor.title ? `${actor.title} ${actor.name}` : actor.name)}</strong></span>
+                <button type="button" class="sap-btn sap-btn--ghost" onclick="SurgeryApprovalPage.setSimulatedRole('0')">Thoát mô phỏng</button>
+            </div>` : ''}
 
             ${!scopeHidden ? `
             <div class="sap-scope-compact" role="region" aria-label="Phạm vi duyệt mổ nội bộ tại khoa">
@@ -1344,7 +1354,7 @@ const SurgeryApprovalPage = {
             </div>` : ''}` : ''}
 
             ${App.isSuperAdmin() ? this._renderCanaryToolbar(cfg) : (cfg.sandboxOnlyMode !== false ? `
-            <div class="sap-canary-bar" id="sap-staff-training-banner">
+            <div class="sap-canary-bar ${actor.isSimulated || this._mobileCanaryExpanded ? 'is-mobile-open' : 'is-mobile-collapsed'}" id="sap-staff-training-banner">
                 <div class="sap-canary-header">
                     <div class="sap-canary-title">
                         ${this._ico('🧪')} <span>Chế độ Demo trên bệnh nhân giả [TEST] đến hết Chủ nhật 08/11/2026 — Dự kiến Thứ Hai 09/11/2026 áp dụng thực tế cho nhóm bệnh nhân mổ chương trình có lịch mổ (0% đụng bệnh nhân thật)</span>
@@ -1706,8 +1716,11 @@ const SurgeryApprovalPage = {
         const attendingRowOpts = simOptions.filter(r => r.tier === 'self' || r.tier === 'attending');
         const traineeAndNurseOpts = simOptions.filter(r => r.tier === 'trainee' || r.tier === 'readonly');
 
+        const actor = this.getEffectiveActor(null);
+        const mobileCls = (actor.isSimulated || this._mobileCanaryExpanded) ? 'is-mobile-open' : 'is-mobile-collapsed';
+
         return `
-        <div class="sap-canary-bar" id="sap-superadmin-toolbar">
+        <div class="sap-canary-bar ${mobileCls}" id="sap-superadmin-toolbar">
             <div class="sap-canary-header">
                 <div class="sap-canary-title">
                     ${this._ico('🛡️')} <span>Bảng Kiểm Thử Super Admin</span>
@@ -2315,6 +2328,7 @@ const SurgeryApprovalPage = {
                 </div>
             </form>` : ''}
 
+            <div class="sap-desktop-table-wrap">
             <div class="sap-log-table-wrap">
                 <table class="sap-log-table">
                     <thead>
@@ -2360,6 +2374,30 @@ const SurgeryApprovalPage = {
                         }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:20px;">Chưa có bản ghi ủy quyền nào.</td></tr>'}
                     </tbody>
                 </table>
+            </div>
+            </div>
+            <div class="sap-mobile-list-cards">
+                ${dels.length > 0 ? dels.map(d => {
+                    const nowMs = Date.now();
+                    const fMs = new Date(d.effectiveFrom).getTime();
+                    const tMs = new Date(d.effectiveTo).getTime();
+                    const isActive = !d.revokedAt && nowMs >= fMs && nowMs <= tMs;
+                    const statusText = d.revokedAt
+                        ? 'Đã thu hồi'
+                        : (isActive ? 'Đang có hiệu lực' : (nowMs < fMs ? 'Chưa tới giờ' : 'Đã hết hạn'));
+                    const statusCls = isActive ? 'is-active' : (d.revokedAt ? 'is-revoked' : '');
+                    const canRevoke = !d.revokedAt && (actor.staffId === SAP_CHIEF_ID || (d.isTestSandboxDelegation && App.isSuperAdmin()));
+                    return `
+                    <article class="sap-mobile-item-card">
+                        <div class="sap-mi-top">
+                            <strong>${Utils.escapeHtml(d.delegationId)} ${d.isTestSandboxDelegation ? '<span class="sap-tag sap-tag--sandbox">TEST</span>' : ''}</strong>
+                            <span class="sap-mi-badge ${statusCls}">${statusText}</span>
+                        </div>
+                        <div class="sap-mi-title">${d.scope === 'routine_only' ? 'Thường quy' : 'Toàn bộ ca khoa'} · ${Utils.escapeHtml(d.reason || '')}</div>
+                        <div class="sap-mi-meta">🕒 ${Utils.escapeHtml(d.effectiveFrom)} → ${Utils.escapeHtml(d.effectiveTo)}</div>
+                        ${canRevoke ? `<div class="sap-mi-actions"><button type="button" class="sap-btn sap-btn--danger" onclick="SurgeryApprovalPage.revokeDelegation('${Utils.escapeHtml(d.delegationId)}')">Thu hồi ủy quyền</button></div>` : ''}
+                    </article>`;
+                }).join('') : '<div class="sap-empty-mobile">Chưa có bản ghi ủy quyền nào.</div>'}
             </div>
         </div>`;
     },
@@ -2439,6 +2477,7 @@ const SurgeryApprovalPage = {
                 <strong>${d.chainValid ? 'Chuỗi nhật ký SHA-256 toàn vẹn 100%' : 'Cảnh báo đứt gãy chuỗi nhật ký'}:</strong>
                 Tổng số sự kiện: <strong>${d.totalEvents}</strong> · Mã kiểm định: <span class="sap-hash-mono">${Utils.escapeHtml((d.headHash || '').slice(0, 24))}…</span>
             </div>
+            <div class="sap-desktop-table-wrap">
             <div class="sap-log-table-wrap">
                 <table class="sap-log-table">
                     <thead>
@@ -2467,6 +2506,21 @@ const SurgeryApprovalPage = {
                         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;">Chưa có sự kiện nào trong nhật ký duyệt.</td></tr>'}
                     </tbody>
                 </table>
+            </div>
+            </div>
+            <div class="sap-mobile-list-cards">
+                ${entries.length > 0 ? entries.map(e => `
+                <article class="sap-mobile-item-card">
+                    <div class="sap-mi-top">
+                        <strong>#${e.eventSeq} · ${Utils.escapeHtml(SAP_WAL_ACTION_LABELS[e.action] || e.action || '')}</strong>
+                        ${e.surgeryId ? `<span class="sap-mi-badge">Hồ sơ #${e.surgeryId}</span>` : ''}
+                    </div>
+                    <div class="sap-mi-title">
+                        ${Utils.escapeHtml(e.actor?.name || '')}
+                        ${(e.actor?.isSimulated || e.actor?.simulatedBySuperAdminStaffId) ? ' <span class="sap-tag sap-tag--sandbox">Giả lập TEST</span>' : ''}
+                    </div>
+                    <div class="sap-mi-meta">🕒 ${Utils.escapeHtml((e.timestamp || '').replace('T', ' '))} · <span class="sap-hash-mono">${Utils.escapeHtml((e.entryHash || '').slice(0, 14))}…</span></div>
+                </article>`).join('') : '<div class="sap-empty-mobile">Chưa có sự kiện nào trong nhật ký duyệt.</div>'}
             </div>
         </div>`;
     },
@@ -6575,5 +6629,45 @@ const SurgeryApprovalPage = {
         const cleanMsg = String(err?.message || 'Không thể thực hiện thao tác')
             .replace(/\s*\([CCK0-9\-]+\)/g, '');
         Toast.error(cleanMsg);
+    },
+
+    // ===== FEAT-241: MOBILE TOOLS SHEET & SCOPE MODAL =====
+    openMobileToolsSheet() {
+        const actor = this.getEffectiveActor(null);
+        const isActorBcn = SAP_BCN_IDS.has(actor.staffId);
+        const isSuperAdmin = typeof App !== 'undefined' && App.isSuperAdmin && App.isSuperAdmin();
+        Modal.open('Tiện ích Duyệt mổ', `
+            <div class="sap-sheet-actions">
+                <button type="button" class="sap-sheet-btn" onclick="Modal.close();App.navigate('surgery')">
+                    <span>📅 Sang tab Lịch mổ tuần</span><span>Mở tab</span>
+                </button>
+                <button type="button" class="sap-sheet-btn" onclick="Modal.close();SurgeryApprovalPage.openMobileScopeModal()">
+                    <span>🏥 Phạm vi duyệt khoa (HD.04.KHTH)</span><span>Xem</span>
+                </button>
+                ${isActorBcn ? `
+                <button type="button" class="sap-sheet-btn ${this._kpiBarOpen ? 'is-active' : ''}" onclick="Modal.close();SurgeryApprovalPage.toggleDualKpiBar()">
+                    <span>📊 ${this._kpiBarOpen ? 'Ẩn thanh KPI BCN' : 'Hiện thanh KPI BCN'}</span><span>${this._kpiBarOpen ? 'Đang bật' : 'Tắt'}</span>
+                </button>` : ''}
+                ${isSuperAdmin ? `
+                <button type="button" class="sap-sheet-btn ${this._mobileCanaryExpanded ? 'is-active' : ''}" onclick="Modal.close();SurgeryApprovalPage.toggleMobileCanarySection()">
+                    <span>🧪 ${this._mobileCanaryExpanded ? 'Thu gọn bảng Canary / Giả lập' : 'Mở bảng Canary / Giả lập'}</span><span>SuperAdmin</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    toggleMobileCanarySection() {
+        this._mobileCanaryExpanded = !this._mobileCanaryExpanded;
+        if (this._mobileCanaryExpanded) this._canaryCollapsedMobile = false;
+        App.renderCurrentPage();
+    },
+
+    openMobileScopeModal() {
+        Modal.open('Phạm vi duyệt mổ tại khoa (HD.04.KHTH)', `
+            <div style="font-size:14px;line-height:1.55;color:var(--text-primary);display:flex;flex-direction:column;gap:10px;">
+                <p><strong>Duyệt mổ nội bộ Khoa PTĐTT (= Bước 01–04 quy trình toàn viện HD.04.KHTH, độc lập HIS)</strong> — Nhãn Đã duyệt xác nhận hoàn tất rà soát tại khoa trước khi chuyển <strong>Bước 05 Khám tiền mê GMHS 1</strong>.</p>
+                <p style="color:var(--text-secondary);">Chi tiết: kiểm tra chỉ định, xếp cột phẫu thuật viên 2026, thuốc chống huyết khối, cận lâm sàng tiền phẫu và cam kết phẫu thuật, trước khi chuyển Bước 05 toàn viện (Khám tiền mê tại Khoa GMHS 1) và Bước 06–08 (Phòng KHTH / Ban Giám đốc duyệt trên HIS, in lưu HSBA).</p>
+            </div>
+        `);
     }
 };

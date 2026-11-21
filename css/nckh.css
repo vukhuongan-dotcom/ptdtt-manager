@@ -1142,3 +1142,306 @@
         font-size: 1.65rem;
     }
 }
+
+/* ===== FEAT-241: NCKH MOBILE UX + BUG-240 WHITE TITLE ===== */
+#nckh-mobile-more-btn,
+.nckh-card-more-btn {
+    display: none;
+}
+
+.nckh-sheet-meta {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.nckh-sheet-subnote {
+    margin-top: 4px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.nckh-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nckh-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    touch-action: manipulation;
+}
+
+.nckh-sheet-btn span:last-child {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.nckh-sheet-btn.is-danger {
+    color: #DC2626;
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+@media (min-width: 769px) {
+    #nckh-mobile-more-btn,
+    .nckh-card-more-btn {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #nckh-page {
+        gap: 10px;
+    }
+
+    #nckh-page > .page-header.nckh-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        min-height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        margin-bottom: 0;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.16);
+    }
+
+    #nckh-page > .page-header.nckh-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    #nckh-page .nckh-bcn-pill,
+    #nckh-page > .page-header .page-subtitle,
+    #nckh-page .nckh-desktop-export-btn,
+    #nckh-page .nckh-topic-card .nckh-card-actions,
+    #nckh-page .nckh-init-mobile-card .nckh-card-actions {
+        display: none !important;
+    }
+
+    #nckh-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
+        color: #FFFFFF;
+        font-size: 0.98rem;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #nckh-page .nckh-header-actions {
+        width: auto !important;
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #nckh-page #nckh-primary-add-btn {
+        flex: 0 0 auto !important;
+        min-height: 44px;
+        padding: 0 10px;
+        border-radius: 10px;
+        border: none;
+        background: rgba(255, 255, 255, 0.94);
+        color: #1D2357;
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+        max-width: 155px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    #nckh-mobile-more-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.14);
+        color: #FFFFFF;
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        flex-shrink: 0;
+        touch-action: manipulation;
+    }
+
+    #nckh-page .nckh-subtabs-wrap {
+        padding: 4px;
+        border-radius: 12px;
+    }
+
+    #nckh-page .nckh-subtab {
+        min-height: 44px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+
+    #nckh-page .nckh-year-pills {
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+    }
+
+    #nckh-page .nckh-year-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    #nckh-page .nckh-year-pill {
+        min-height: 44px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    #nckh-page #nckh-search-input {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    #nckh-page .nckh-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    #nckh-page .nckh-staff-ranking-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .nckh-rank-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+    }
+
+    .nckh-rank-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--primary-a10);
+        color: var(--primary);
+        font-size: 0.78rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .nckh-rank-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .nckh-rank-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .nckh-rank-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+    }
+
+    #nckh-page .nckh-topic-status-area {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    #nckh-page .nckh-card-more-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        flex-shrink: 0;
+        touch-action: manipulation;
+    }
+
+    [data-theme="dark"] #nckh-page > .page-header.nckh-header {
+        background: linear-gradient(135deg, #0C1022 0%, #1D2357 60%, #1878B4 100%);
+    }
+
+    [data-theme="dark"] #nckh-page .nckh-topic-card,
+    [data-theme="dark"] #nckh-page .nckh-init-mobile-card,
+    [data-theme="dark"] #nckh-page .nckh-dash-panel,
+    [data-theme="dark"] .nckh-rank-card {
+        background: #141B2D;
+        border-color: rgba(148, 163, 184, 0.16);
+    }
+
+    [data-theme="dark"] #nckh-page .nckh-card-more-btn,
+    [data-theme="dark"] .nckh-sheet-btn,
+    [data-theme="dark"] .nckh-sheet-meta {
+        background: #141B2D;
+        border-color: rgba(148, 163, 184, 0.22);
+        color: #F1F5F9;
+    }
+}

@@ -11,21 +11,62 @@ const StaffPage = {
     currentFilter: 'all',
     searchQuery: '',
     activeTab: 'internal', // 'internal' | 'external' | 'departed' | 'teams'
+    _mobileSearchOpen: false,
+
+    _cleanDialPhone(raw) {
+        const clean = String(raw || '').replace(/[^\d+]/g, '');
+        return clean.replace(/\+/g, '').length >= 8 ? clean : '';
+    },
+
+    toggleMobileSearch() {
+        this._mobileSearchOpen = !this._mobileSearchOpen;
+        App.renderCurrentPage();
+        if (this._mobileSearchOpen) {
+            setTimeout(() => {
+                const input = document.getElementById('stf-mobile-search-input');
+                if (input) input.focus();
+            }, 40);
+        }
+    },
+
+    openMobileAddForTab() {
+        if (this.activeTab === 'external') {
+            this.openExternalForm();
+        } else if (this.activeTab === 'teams') {
+            this.openTeamForm();
+        } else {
+            this.openForm();
+        }
+    },
 
     render() {
+        const isAdmin = !!(Auth.getSession() && Auth.getSession().isAdmin);
+        const searchBarOpen = !!(this._mobileSearchOpen || this.searchQuery);
         return `
+        <div id="staff-page" class="stf-page">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Nhân sự</h1>
                 <p class="page-subtitle">Quản lý nhân viên khoa Phẫu thuật Đại trực tràng</p>
             </div>
             <div class="staff-toolbar">
-                ${(Auth.getSession() && Auth.getSession().isAdmin) ? `<button class="export-btn" onclick="StaffPage.exportExcel()" title="Xuất danh sách nhân sự">
+                ${isAdmin ? `<button class="export-btn" onclick="StaffPage.exportExcel()" title="Xuất danh sách nhân sự">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     Xuất Excel
                 </button>` : ''}
             </div>
+            <div class="stf-mobile-hdr-tools">
+                ${(this.activeTab === 'internal' || this.activeTab === 'external') ? `<button type="button" class="stf-mobile-icon-btn ${searchBarOpen ? 'is-active' : ''}" id="stf-mobile-search-btn" onclick="StaffPage.toggleMobileSearch()" aria-label="Tìm kiếm nhân sự" title="Tìm kiếm">🔍</button>` : ''}
+                ${(isAdmin && this.activeTab !== 'departed') ? `<button type="button" class="stf-mobile-add-btn" id="stf-mobile-add-btn" onclick="StaffPage.openMobileAddForTab()" aria-label="Thêm nhân sự" title="Thêm mới">＋</button>` : ''}
+                <button type="button" class="stf-mobile-icon-btn" id="stf-mobile-more-btn" onclick="StaffPage.openMobileToolsSheet()" aria-label="Tiện ích và phân mục nhân sự" title="Tiện ích">⋮</button>
+            </div>
         </div>
+
+        ${(this.activeTab === 'internal' || this.activeTab === 'external') ? `
+        <div class="stf-mobile-search-bar ${searchBarOpen ? 'is-open' : ''}">
+            <input type="text" id="stf-mobile-search-input" class="stf-mobile-search-input" aria-label="Tìm kiếm nhân sự" placeholder="${this.activeTab === 'external' ? 'Tìm BS ngoài khoa...' : 'Tìm họ tên, SĐT, vai trò...'}" value="${Utils.escapeHtml(this.searchQuery)}" oninput="StaffPage.search(this.value)">
+            ${this.searchQuery ? `<button type="button" class="stf-mobile-search-clear" onclick="StaffPage.clearSearch()" aria-label="Xóa tìm kiếm">✕</button>` : ''}
+        </div>` : ''}
 
         <div class="staff-subtabs">
             <button class="staff-subtab ${this.activeTab === 'internal' ? 'active' : ''}" onclick="StaffPage.switchTab('internal')">
@@ -46,6 +87,7 @@ const StaffPage = {
           : this.activeTab === 'external' ? this.renderExternal()
           : this.activeTab === 'teams'    ? this.renderTeams()
           : this.renderDeparted() }
+        </div>
         `;
     },
 
@@ -53,6 +95,7 @@ const StaffPage = {
         this.activeTab = tab;
         this.searchQuery = '';
         this.currentFilter = 'all';
+        this._mobileSearchOpen = false;
         App.renderCurrentPage();
     },
 
@@ -200,50 +243,23 @@ const StaffPage = {
         <div class="staff-mobile-cards mobile-only">
             ${staff.length ? staff.map(s => {
                 const eff = this.getEffectiveStatus(s, today);
+                const dial = this._cleanDialPhone(s.phone);
                 return `
-                <div class="staff-card-item">
-                    <div class="staff-card-top">
-                        ${Utils.renderAvatar(s, 'md')}
-                        <div class="staff-card-main-info">
-                            <div class="staff-card-name-row">
-                                <span class="staff-card-fullname">${s.name}</span>
-                                ${eff.status !== 'active' ? `<span class="staff-card-status-badge ${eff.status}">${STAFF_STATUSES[eff.status]?.abbr || ''}</span>` : ''}
-                            </div>
-                            <div class="staff-card-sub-info">
-                                ${s.title ? `<span class="staff-card-title-pill">${s.title}</span>` : ''}
-                                ${this._renderRoleBadge(s.role)}
-                            </div>
+                <div class="staff-card-item stf-dir-card" data-stf-card="${s.id}" onclick="StaffPage.openMobileStaffSheet(${s.id}, 'internal')">
+                    <div class="stf-dir-avatar">${Utils.renderAvatar(s, 'md')}</div>
+                    <div class="stf-dir-main">
+                        <div class="stf-dir-line1">
+                            <span class="stf-dir-name">${Utils.escapeHtml(s.name)}</span>
+                            ${eff.status !== 'active' ? `<span class="staff-card-status-badge ${eff.status}">${STAFF_STATUSES[eff.status]?.abbr || ''}</span>` : ''}
                         </div>
-                        <div class="staff-card-menu-actions">
-                            ${isAdmin ? `
-                            <button class="btn-icon-sm" onclick="StaffPage.openForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
-                            <button class="btn-icon-sm btn-danger-icon" onclick="StaffPage.delete(${s.id})" title="Xoá">${Utils.deleteIcon()}</button>
-                            ` : (s.id === myStaffId ? `
-                            <button class="btn-icon-sm" onclick="StaffPage.openContactForm(${s.id})" title="Sửa">${Utils.editIcon()}</button>
-                            ` : '')}
+                        <div class="stf-dir-line2">
+                            ${s.title ? `<span class="stf-dir-title">${Utils.escapeHtml(s.title)}</span>` : ''}
+                            ${this._renderRoleBadge(s.role)}
                         </div>
                     </div>
-
-                    <div class="staff-card-bottom-row">
-                        <div class="staff-card-details">
-                            ${s.dob ? `
-                            <div class="staff-card-detail-item">
-                                <span class="staff-detail-icon">🎂</span>
-                                <span class="staff-detail-val">${Utils.formatDate(s.dob)}</span>
-                            </div>` : ''}
-                        </div>
-                        <div class="staff-card-quick-actions">
-                            ${s.phone ? `
-                            <a href="tel:${s.phone}" class="staff-card-action-pill phone" title="Gọi ${s.phone}">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                                <span>${s.phone}</span>
-                            </a>` : ''}
-                            ${s.email ? `
-                            <a href="mailto:${s.email}" class="staff-card-action-pill email" title="Gửi mail ${s.email}">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                                <span>Email</span>
-                            </a>` : ''}
-                        </div>
+                    <div class="stf-dir-actions">
+                        ${dial ? `<a href="tel:${dial}" class="stf-call-btn" onclick="event.stopPropagation()" aria-label="Gọi ${Utils.escapeHtml(s.name)}" title="Gọi ${Utils.escapeHtml(s.phone)}">📞</a>` : ''}
+                        <span class="stf-dir-chevron" aria-hidden="true">›</span>
                     </div>
                 </div>`;
             }).join('') : `<div class="empty-state"><p>Không tìm thấy nhân sự</p></div>`}
@@ -321,32 +337,27 @@ const StaffPage = {
 
         <!-- Mobile Cards -->
         <div class="staff-mobile-cards mobile-only">
-            ${filtered.length ? filtered.map(d => `
-            <div class="staff-card-item">
-                <div class="staff-card-top">
-                    ${Utils.renderAvatar(d, 'md', { departed: true })}
-                    <div class="staff-card-main-info">
-                        <div class="staff-card-name-row">
-                            <span class="staff-card-fullname">${d.name}</span>
-                        </div>
-                        <div class="staff-card-sub-info">
-                            ${d.title ? `<span class="staff-card-title-pill">${d.title}</span>` : ''}
-                            ${d.position ? `<span class="badge badge-primary">${d.position}</span>` : ''}
-                        </div>
+            ${filtered.length ? filtered.map(d => {
+                const dial = this._cleanDialPhone(d.phone);
+                const subText = [d.title, d.department || d.position].filter(Boolean).join(' · ') || 'Bác sĩ ngoài khoa';
+                return `
+            <div class="staff-card-item stf-dir-card" data-stf-ext="${d.id}" onclick="StaffPage.openMobileStaffSheet(${d.id}, 'external')">
+                <div class="stf-dir-avatar">${Utils.renderAvatar(d, 'md', { departed: true })}</div>
+                <div class="stf-dir-main">
+                    <div class="stf-dir-line1">
+                        <span class="stf-dir-name">${Utils.escapeHtml(d.name)}</span>
+                        ${d.position ? `<span class="badge badge-primary">${Utils.escapeHtml(d.position)}</span>` : ''}
                     </div>
-                    ${isAdmin ? `
-                    <div class="staff-card-menu-actions">
-                        <button class="btn-icon-sm" onclick="StaffPage.openExternalForm(${d.id})" title="Sửa">${Utils.editIcon()}</button>
-                        <button class="btn-icon-sm btn-danger-icon" onclick="StaffPage.deleteExternal(${d.id})" title="Xoá">${Utils.deleteIcon()}</button>
-                    </div>` : ''}
-                </div>
-                <div class="staff-card-bottom-row">
-                    <div class="staff-card-details">
-                        ${d.department ? `<div class="staff-card-detail-item"><span>🏥 ${d.department}</span></div>` : ''}
-                        ${d.note ? `<div class="staff-card-detail-item"><span>📝 ${d.note}</span></div>` : ''}
+                    <div class="stf-dir-line2">
+                        <span class="stf-dir-subtxt">${Utils.escapeHtml(subText)}</span>
                     </div>
                 </div>
-            </div>`).join('') : `<div class="empty-state"><p>Chưa có BS ngoài khoa</p></div>`}
+                <div class="stf-dir-actions">
+                    ${dial ? `<a href="tel:${dial}" class="stf-call-btn" onclick="event.stopPropagation()" aria-label="Gọi ${Utils.escapeHtml(d.name)}" title="Gọi ${Utils.escapeHtml(d.phone)}">📞</a>` : ''}
+                    <span class="stf-dir-chevron" aria-hidden="true">›</span>
+                </div>
+            </div>`;
+            }).join('') : `<div class="empty-state"><p>Chưa có BS ngoài khoa</p></div>`}
         </div>
         `;
     },
@@ -839,31 +850,25 @@ const StaffPage = {
 
         <!-- Mobile Cards -->
         <div class="staff-mobile-cards mobile-only">
-            ${departed.length ? departed.map((s, idx) => `
-            <div class="staff-card-item departed-card">
-                <div class="staff-card-top">
-                    ${Utils.renderAvatar(s, 'md', { departed: true })}
-                    <div class="staff-card-main-info">
-                        <div class="staff-card-name-row">
-                            <span class="staff-card-fullname">${s.name}</span>
-                        </div>
-                        <div class="staff-card-sub-info">
-                            ${s.title ? `<span class="staff-card-title-pill">${s.title}</span>` : ''}
-                            <span class="badge badge-departed">${s.role}</span>
-                        </div>
+            ${departed.length ? departed.map((s, idx) => {
+                const subText = [s.title, s.role, s.departedDate ? `Rời: ${s.departedDate}` : ''].filter(Boolean).join(' · ');
+                return `
+            <div class="staff-card-item stf-dir-card departed-card" data-stf-dep="${idx}" onclick="StaffPage.openMobileStaffSheet(${idx}, 'departed')">
+                <div class="stf-dir-avatar">${Utils.renderAvatar(s, 'md', { departed: true })}</div>
+                <div class="stf-dir-main">
+                    <div class="stf-dir-line1">
+                        <span class="stf-dir-name">${Utils.escapeHtml(s.name)}</span>
+                        <span class="badge badge-departed">Rời khoa</span>
+                    </div>
+                    <div class="stf-dir-line2">
+                        <span class="stf-dir-subtxt">${Utils.escapeHtml(subText || 'Nhân sự đã rời khoa')}</span>
                     </div>
                 </div>
-                <div class="staff-card-bottom-row">
-                    <div class="staff-card-details">
-                        <div class="staff-card-detail-item"><span>📅 Rời: ${s.departedDate || '—'}</span></div>
-                    </div>
-                    ${isAdmin ? `
-                    <div class="staff-card-quick-actions">
-                        <button class="btn btn-sm btn-restore" onclick="StaffPage.restoreStaff(${idx})">♻️ Khôi phục</button>
-                        <button class="btn-icon-sm btn-danger-icon" onclick="StaffPage.deletePermanent(${idx})" title="Xóa vĩnh viễn">${Utils.deleteIcon()}</button>
-                    </div>` : ''}
+                <div class="stf-dir-actions">
+                    <span class="stf-dir-chevron" aria-hidden="true">›</span>
                 </div>
-            </div>`).join('') : `<div class="empty-state"><p>Không có nhân sự rời khoa</p></div>`}
+            </div>`;
+            }).join('') : `<div class="empty-state"><p>Không có nhân sự rời khoa</p></div>`}
         </div>
         `;
     },
@@ -983,18 +988,21 @@ const StaffPage = {
     afterRender() {
         this._composing = false; // Reset in case compositionend never fired
 
-        const el = document.getElementById('staff-search');
-        if (el) {
+        const isMobileViewport = typeof window !== 'undefined' && window.innerWidth <= 768;
+        const bindSearch = (el, shouldFocus) => {
+            if (!el) return;
             el.addEventListener('compositionstart', () => { this._composing = true; });
             el.addEventListener('compositionend', (e) => {
                 this._composing = false;
                 this.search(e.target.value);
             });
-            if (this.searchQuery) {
+            if (shouldFocus && this.searchQuery) {
                 el.focus();
                 el.setSelectionRange(el.value.length, el.value.length);
             }
-        }
+        };
+        bindSearch(document.getElementById('staff-search'), !isMobileViewport);
+        bindSearch(document.getElementById('stf-mobile-search-input'), isMobileViewport && this._mobileSearchOpen);
     },
 
     exportExcel() {
@@ -1088,6 +1096,29 @@ const StaffPage = {
             </div>
         `).join('') : `<div class="empty-state"><p>Chưa có tổ đặc trách nào</p></div>`;
 
+        const teamMobileCards = teams.length ? teams.map(t => {
+            const members = (t.members || []).map(sid => allStaff.find(x => x.id === sid)).filter(Boolean);
+            const namesLine = members.length ? members.map(m => m.name).join(', ') : 'Chưa có thành viên';
+            const leadPhone = members.map(m => this._cleanDialPhone(m.phone)).find(Boolean);
+            return `
+            <div class="staff-card-item stf-dir-card" data-stf-team="${t.id}" onclick="StaffPage.openMobileStaffSheet(${t.id}, 'team')">
+                <div class="stf-dir-team-icon">${t.icon || '🏷️'}</div>
+                <div class="stf-dir-main">
+                    <div class="stf-dir-line1">
+                        <span class="stf-dir-name">${Utils.escapeHtml(t.name)}</span>
+                        <span class="badge badge-primary">${members.length} TV</span>
+                    </div>
+                    <div class="stf-dir-line2">
+                        <span class="stf-dir-subtxt">${Utils.escapeHtml(namesLine)}</span>
+                    </div>
+                </div>
+                <div class="stf-dir-actions">
+                    ${leadPhone ? `<a href="tel:${leadPhone}" class="stf-call-btn" onclick="event.stopPropagation()" aria-label="Gọi phụ trách ${Utils.escapeHtml(t.name)}" title="Gọi thành viên đầu tổ">📞</a>` : ''}
+                    <span class="stf-dir-chevron" aria-hidden="true">›</span>
+                </div>
+            </div>`;
+        }).join('') : `<div class="empty-state"><p>Chưa có tổ đặc trách nào</p></div>`;
+
         return `
         <div class="team-page-header">
             <p class="team-page-desc">Các tổ nhân sự đặc trách theo từng mảng công tác của khoa</p>
@@ -1100,7 +1131,8 @@ const StaffPage = {
                 </button>` : ''}
             </div>
         </div>
-        <div class="team-grid" id="team-export-grid">${teamCards}</div>
+        <div class="team-grid staff-desktop-view" id="team-export-grid">${teamCards}</div>
+        <div class="staff-mobile-cards mobile-only">${teamMobileCards}</div>
         `;
     },
 
@@ -1542,6 +1574,155 @@ const StaffPage = {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
+    },
+
+    // ===== FEAT-241: MOBILE TOOLS & DIRECTORY SHEETS =====
+    openMobileToolsSheet() {
+        const isAdmin = !!(Auth.getSession() && Auth.getSession().isAdmin);
+        const internalCount = Store.getActiveStaff().length;
+        const externalCount = (Store.getAll('externalDoctors') || []).length;
+        const departedCount = (Store.getAll('departedStaff') || []).length;
+        const teamsCount = (Store.getAll('specialTeams') || []).length;
+        Modal.open('Danh bạ & Tiện ích Nhân sự', `
+            <div class="stf-sheet-actions">
+                <button type="button" class="stf-sheet-btn ${this.activeTab === 'internal' ? 'is-active' : ''}" onclick="Modal.close();StaffPage.switchTab('internal')">
+                    <span>👥 Nhân viên khoa</span><span>${internalCount}</span>
+                </button>
+                <button type="button" class="stf-sheet-btn ${this.activeTab === 'external' ? 'is-active' : ''}" onclick="Modal.close();StaffPage.switchTab('external')">
+                    <span>🩺 BS ngoài khoa</span><span>${externalCount}</span>
+                </button>
+                <button type="button" class="stf-sheet-btn ${this.activeTab === 'departed' ? 'is-active' : ''}" onclick="Modal.close();StaffPage.switchTab('departed')">
+                    <span>📤 Rời khoa</span><span>${departedCount}</span>
+                </button>
+                <button type="button" class="stf-sheet-btn ${this.activeTab === 'teams' ? 'is-active' : ''}" onclick="Modal.close();StaffPage.switchTab('teams')">
+                    <span>🏷️ Các tổ đặc trách</span><span>${teamsCount}</span>
+                </button>
+                ${this.activeTab === 'teams' ? `
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.exportTeamImage()">
+                    <span>📷 Xuất hình các tổ đặc trách</span><span>PNG</span>
+                </button>` : ''}
+                ${isAdmin ? `
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.exportExcel()">
+                    <span>📊 Xuất danh sách Excel</span><span>.xlsx</span>
+                </button>
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openForm()">
+                    <span>➕ Thêm nhân viên khoa</span><span>Mới</span>
+                </button>
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openExternalForm()">
+                    <span>➕ Thêm BS ngoài khoa</span><span>Mới</span>
+                </button>
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openTeamForm()">
+                    <span>➕ Thêm tổ đặc trách</span><span>Mới</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    openMobileStaffSheet(id, tabType) {
+        const session = Auth.getSession();
+        const isAdmin = !!(session && session.isAdmin);
+        const myStaffId = session ? session.staffId : null;
+        if (tabType === 'external') {
+            const d = (Store.getAll('externalDoctors') || []).find(x => Number(x.id) === Number(id));
+            if (!d) return;
+            const dial = this._cleanDialPhone(d.phone);
+            const meta = [d.title, d.position, d.department].filter(Boolean).join(' · ');
+            Modal.open(Utils.escapeHtml(d.name || 'BS ngoài khoa'), `
+                <div class="stf-sheet-meta">
+                    ${meta ? `<div>${Utils.escapeHtml(meta)}</div>` : ''}
+                    ${d.note ? `<div class="stf-sheet-subnote">📝 ${Utils.escapeHtml(d.note)}</div>` : ''}
+                </div>
+                <div class="stf-sheet-actions">
+                    ${dial ? `<a href="tel:${dial}" class="stf-sheet-btn"><span>📞 Gọi điện (${Utils.escapeHtml(d.phone)})</span><span>Gọi ngay</span></a>` : ''}
+                    ${isAdmin ? `
+                    <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openExternalForm(${d.id})">
+                        <span>✏️ Sửa thông tin BS ngoài khoa</span><span>Chỉnh sửa</span>
+                    </button>
+                    <button type="button" class="stf-sheet-btn is-danger" onclick="Modal.close();StaffPage.deleteExternal(${d.id})">
+                        <span>🗑️ Xoá BS ngoài khoa</span><span>Xoá</span>
+                    </button>` : ''}
+                </div>
+            `);
+            return;
+        }
+        if (tabType === 'departed') {
+            const idx = Number(id);
+            const s = (Store._data.departedStaff || [])[idx];
+            if (!s) return;
+            Modal.open(Utils.escapeHtml(s.name || 'Nhân sự đã rời khoa'), `
+                <div class="stf-sheet-meta">
+                    <div>${Utils.escapeHtml([s.title, s.role].filter(Boolean).join(' · '))}</div>
+                    <div class="stf-sheet-subnote">📅 Ngày rời khoa: ${Utils.escapeHtml(s.departedDate || '—')}</div>
+                </div>
+                <div class="stf-sheet-actions">
+                    ${isAdmin ? `
+                    <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.restoreStaff(${idx})">
+                        <span>♻️ Khôi phục vào danh sách khoa</span><span>Khôi phục</span>
+                    </button>
+                    <button type="button" class="stf-sheet-btn is-danger" onclick="Modal.close();StaffPage.deletePermanent(${idx})">
+                        <span>🗑️ Xóa vĩnh viễn</span><span>Xoá</span>
+                    </button>` : ''}
+                </div>
+            `);
+            return;
+        }
+        if (tabType === 'team') {
+            const t = (Store.getAll('specialTeams') || []).find(x => Number(x.id) === Number(id));
+            if (!t) return;
+            const allStaff = Store.getAll('staff') || [];
+            const memberRows = (t.members || []).map(sid => allStaff.find(x => x.id === sid)).filter(Boolean);
+            Modal.open(`${t.icon || '🏷️'} ${Utils.escapeHtml(t.name || 'Tổ đặc trách')}`, `
+                <div class="stf-sheet-meta">
+                    <div>${memberRows.length} thành viên${t.note ? ` · ${Utils.escapeHtml(t.note)}` : ''}</div>
+                </div>
+                <div class="stf-sheet-actions">
+                    ${memberRows.map(m => {
+                        const dial = this._cleanDialPhone(m.phone);
+                        return dial
+                            ? `<a href="tel:${dial}" class="stf-sheet-btn"><span>👤 ${Utils.escapeHtml(m.name)}</span><span>📞 Gọi</span></a>`
+                            : `<div class="stf-sheet-btn is-static"><span>👤 ${Utils.escapeHtml(m.name)}</span><span>${Utils.escapeHtml(m.title || '')}</span></div>`;
+                    }).join('')}
+                    ${isAdmin ? `
+                    <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openTeamForm(${t.id})">
+                        <span>✏️ Sửa tổ đặc trách</span><span>Chỉnh sửa</span>
+                    </button>
+                    <button type="button" class="stf-sheet-btn is-danger" onclick="Modal.close();StaffPage.deleteTeam(${t.id})">
+                        <span>🗑️ Xoá tổ đặc trách</span><span>Xoá</span>
+                    </button>` : ''}
+                </div>
+            `);
+            return;
+        }
+        const s = Store.getById('staff', Number(id));
+        if (!s) return;
+        const today = this._dateStr(new Date());
+        const eff = this.getEffectiveStatus(s, today);
+        const stInfo = STAFF_STATUSES[eff.status] || STAFF_STATUSES.active;
+        const dial = this._cleanDialPhone(s.phone);
+        const dobText = s.dob ? ` · 🎂 ${Utils.formatDate(s.dob)}` : '';
+        Modal.open(Utils.escapeHtml(s.name || 'Hồ sơ nhân sự'), `
+            <div class="stf-sheet-meta">
+                <div>${Utils.escapeHtml([s.title, s.role].filter(Boolean).join(' · '))}</div>
+                <div class="stf-sheet-subnote">${stInfo.icon} ${stInfo.label}${dobText}${eff.note ? ` · ${Utils.escapeHtml(eff.note)}` : ''}</div>
+            </div>
+            <div class="stf-sheet-actions">
+                ${dial ? `<a href="tel:${dial}" class="stf-sheet-btn"><span>📞 Gọi điện (${Utils.escapeHtml(s.phone)})</span><span>Gọi ngay</span></a>` : ''}
+                ${s.email ? `<a href="mailto:${Utils.escapeHtml(s.email)}" class="stf-sheet-btn"><span>✉️ Gửi Email (${Utils.escapeHtml(s.email)})</span><span>Email</span></a>` : ''}
+                ${isAdmin ? `
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openForm(${s.id})">
+                    <span>✏️ Sửa hồ sơ nhân sự</span><span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openStatusForm(${s.id})">
+                    <span>🩺 Trạng thái nghỉ / công tác</span><span>Cập nhật</span>
+                </button>
+                <button type="button" class="stf-sheet-btn is-danger" onclick="Modal.close();StaffPage.delete(${s.id})">
+                    <span>📤 Chuyển sang Rời khoa</span><span>Rời khoa</span>
+                </button>` : (s.id === myStaffId ? `
+                <button type="button" class="stf-sheet-btn" onclick="Modal.close();StaffPage.openContactForm(${s.id})">
+                    <span>📱 Cập nhật SĐT & Email</span><span>Sửa liên lạc</span>
+                </button>` : '')}
+            </div>
+        `);
     }
 };
 

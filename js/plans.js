@@ -19,6 +19,11 @@ const PlansPage = {
         App.renderCurrentPage();
     },
 
+    selectMonthDate(dateStr) {
+        this.selectedDate = dateStr;
+        App.renderCurrentPage();
+    },
+
     render() {
         const isAdmin = Auth.getSession()?.isAdmin;
         const allMonthPlans = Store.getPlansByMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
@@ -30,14 +35,19 @@ const PlansPage = {
         const confCount = allMonthPlans.filter(p => p.type === 'conference').length;
 
         return `
+        <div id="plans-page" class="pln-page">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Kế hoạch hoạt động</h1>
                 <p class="page-subtitle">Lịch hoạt động & công tác khoa — ${this.getHeaderLabel()}</p>
             </div>
-            ${isAdmin ? `<button class="btn btn-primary" onclick="PlansPage.openForm()" aria-label="Thêm kế hoạch mới">
+            ${isAdmin ? `<button class="btn btn-primary pln-desktop-add-btn" onclick="PlansPage.openForm()" aria-label="Thêm kế hoạch mới">
                 ${Utils.plusIcon()} Thêm kế hoạch
             </button>` : ''}
+            <div class="pln-mobile-hdr-tools">
+                ${isAdmin ? `<button type="button" class="pln-mobile-add-btn" id="pln-mobile-add-btn" onclick="PlansPage.openForm()" aria-label="Thêm kế hoạch mới">＋ Thêm</button>` : ''}
+                <button type="button" class="pln-mobile-more-btn" id="plans-mobile-more-btn" onclick="PlansPage.openMobileToolsSheet()" aria-label="Chế độ xem và tiện ích lịch" title="Chế độ xem & Tiện ích">⋮</button>
+            </div>
         </div>
 
         <!-- Controls: Navigation & View Mode Switcher -->
@@ -46,7 +56,7 @@ const PlansPage = {
                 <button class="btn-icon" onclick="PlansPage.prev()" aria-label="Xem khoảng thời gian trước">${Utils.chevronLeft()}</button>
                 <span class="calendar-month-label">${this.getNavLabel()}</span>
                 <button class="btn-icon" onclick="PlansPage.next()" aria-label="Xem khoảng thời gian sau">${Utils.chevronRight()}</button>
-                <button class="btn btn-secondary btn-sm" onclick="PlansPage.today()" aria-label="Xem kế hoạch hôm nay">Hôm nay</button>
+                <button class="btn btn-secondary btn-sm pln-today-btn" onclick="PlansPage.today()" aria-label="Xem kế hoạch hôm nay">Hôm nay</button>
             </div>
             <div class="calendar-view-modes">
                 <button class="view-mode-btn ${this.viewMode==='agenda'?'active':''}" onclick="PlansPage.setView('agenda')">📅 Lịch trình</button>
@@ -54,6 +64,11 @@ const PlansPage = {
                 <button class="view-mode-btn ${this.viewMode==='week'?'active':''}" onclick="PlansPage.setView('week')">Tuần</button>
                 <button class="view-mode-btn ${this.viewMode==='3day'?'active':''}" onclick="PlansPage.setView('3day')">3 ngày</button>
             </div>
+        </div>
+
+        <div class="pln-mobile-view-switch">
+            <button type="button" class="pln-view-tab ${this.viewMode==='agenda'?'is-active':''}" onclick="PlansPage.setView('agenda')">📅 Lịch trình</button>
+            <button type="button" class="pln-view-tab ${this.viewMode==='month'?'is-active':''}" onclick="PlansPage.setView('month')">🗓️ Lịch tháng</button>
         </div>
 
         <!-- Type Filter Pills -->
@@ -75,7 +90,8 @@ const PlansPage = {
             </button>
         </div>
 
-        ${this.viewMode === 'agenda' ? this.renderAgenda(isAdmin) : (this.viewMode === 'month' ? this.renderMonth(isAdmin) : this.renderDayColumns(isAdmin))}
+        ${this.viewMode === 'agenda' ? this.renderAgenda(isAdmin) : (this.viewMode === 'month' ? this.renderMonth(isAdmin) : `<div class="pln-columns-scroll">${this.renderDayColumns(isAdmin)}</div>`)}
+        </div>
         `;
     },
 
@@ -189,20 +205,22 @@ const PlansPage = {
                                             <span class="cal-card-type-badge cal-badge-${p.type}">
                                                 ${isSHCM ? '🔬 ' : ''}${typeLabel}
                                             </span>
+                                            ${isSHCM ? `<button type="button" class="pln-shcm-badge" onclick="event.stopPropagation();App.navigate('research')" title="Mở Sinh hoạt chuyên môn">🔄 SHCM</button>` : ''}
                                         </div>
-                                        <div class="cal-card-title">${p.title}</div>
+                                        <div class="cal-card-title">${Utils.escapeHtml(p.title)}</div>
                                         <div class="cal-card-meta-row">
-                                            ${p.location ? `<span class="cal-card-meta-item">📍 ${p.location}</span>` : ''}
-                                            ${resp ? `<span class="cal-card-meta-item">👤 ${resp.title || 'BS.'} ${resp.name}</span>` : ''}
+                                            ${p.location ? `<span class="cal-card-meta-item">📍 ${Utils.escapeHtml(p.location)}</span>` : ''}
+                                            ${resp ? `<span class="cal-card-meta-item">👤 ${Utils.escapeHtml(resp.title || 'BS.')} ${Utils.escapeHtml(resp.name)}</span>` : ''}
                                         </div>
-                                        ${p.note ? `<div class="cal-card-note">📝 ${p.note}</div>` : ''}
+                                        ${p.note ? `<div class="cal-card-note">📝 ${Utils.escapeHtml(p.note)}</div>` : ''}
                                     </div>
                                     ${isAdmin ? `
-                                    <div class="cal-agenda-card-actions" onclick="event.stopPropagation()">
+                                    <div class="cal-agenda-card-actions pln-desktop-only" onclick="event.stopPropagation()">
                                         <button class="btn-icon" onclick="PlansPage.viewOrEdit(${p.id})" title="Xem / Sửa"><span class="pencil-flip">✏️</span></button>
                                         ${!isSHCM ? `<button class="btn-icon" onclick="PlansPage.deletePlan(${p.id})" title="Xoá">🗑️</button>` : ''}
                                     </div>
                                     ` : ''}
+                                    <button type="button" class="pln-card-more-btn" data-plan-more="${p.id}" onclick="event.stopPropagation();PlansPage.openMobilePlanSheet(${p.id})" aria-label="Thao tác kế hoạch ${Utils.escapeHtml(p.title || '')}">⋮</button>
                                 </div>
                                 `;
                             }).join('')}
@@ -253,10 +271,96 @@ const PlansPage = {
             plans = plans.filter(p => p.type === this.typeFilter || (this.typeFilter === 'training' && p.source === 'shcm'));
         }
 
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+        let activeDate = (this.selectedDate && this.selectedDate.startsWith(monthPrefix)) ? this.selectedDate : null;
+        if (!activeDate) {
+            if (todayStr.startsWith(monthPrefix)) activeDate = todayStr;
+            else {
+                const firstEventDay = Array.from({ length: daysInMonth }, (_, i) => {
+                    const ds = `${monthPrefix}${String(i + 1).padStart(2, '0')}`;
+                    return plans.some(p => this._isDateInRange(ds, p)) ? ds : null;
+                }).find(Boolean);
+                activeDate = firstEventDay || `${monthPrefix}01`;
+            }
+        }
+
+        const staff = Store.getAll('staff');
+        const staffMap = new Map(staff.map(s => [s.id, s]));
+        let miniCells = '';
+        for (let i = 0; i < firstDay; i++) {
+            miniCells += '<div class="pln-mini-cal-cell is-empty"></div>';
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const ds = `${monthPrefix}${String(d).padStart(2, '0')}`;
+            const dayPlans = plans.filter(p => this._isDateInRange(ds, p));
+            const isToday = ds === todayStr;
+            const isSelected = ds === activeDate;
+            miniCells += `
+            <button type="button" class="pln-mini-cal-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${dayPlans.length ? 'has-events' : ''}" data-month-date="${ds}" onclick="PlansPage.selectMonthDate('${ds}')">
+                <span class="pln-mini-cal-num">${d}</span>
+                <span class="pln-mini-cal-dots">
+                    ${dayPlans.slice(0, 3).map(p => `<span class="cal-dot cal-dot-${p.type}"></span>`).join('')}
+                </span>
+            </button>`;
+        }
+
+        const activePlans = plans.filter(p => this._isDateInRange(activeDate, p));
+        const activeParts = activeDate.split('-');
+        const activeLabel = `${activeParts[2]}/${activeParts[1]}/${activeParts[0]}`;
+
         return `
-        <div class="calendar-grid">
-            ${['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(d => `<div class="calendar-day-header">${d}</div>`).join('')}
-            ${this.renderMonthDays(year, month, plans, isAdmin)}
+        <div class="pln-desktop-month-grid">
+            <div class="calendar-grid">
+                ${['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(d => `<div class="calendar-day-header">${d}</div>`).join('')}
+                ${this.renderMonthDays(year, month, plans, isAdmin)}
+            </div>
+        </div>
+        <div class="pln-mobile-month-wrap">
+            <div class="pln-mini-cal card">
+                <div class="pln-mini-cal-weekdays">
+                    ${['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(w => `<span>${w}</span>`).join('')}
+                </div>
+                <div class="pln-mini-cal-grid">${miniCells}</div>
+            </div>
+            <div class="pln-month-mobile-events">
+                <div class="pln-month-events-hdr">
+                    <span>📌 Ngày ${activeLabel}</span>
+                    <span>${activePlans.length} sự kiện</span>
+                </div>
+                ${activePlans.length ? activePlans.map(p => {
+                    const resp = staffMap.get(p.responsible);
+                    const isSHCM = p.source === 'shcm';
+                    const typeLabel = isSHCM ? 'Sinh hoạt chuyên môn' : Utils.planTypeLabel(p.type);
+                    return `
+                    <div class="cal-agenda-card cal-card-${p.type} ${isSHCM ? 'cal-card-shcm' : ''}" onclick="PlansPage.viewOrEdit(${p.id})">
+                        <div class="cal-agenda-card-left">
+                            <span class="cal-card-time">${p.allDay ? 'Cả ngày' : (p.time || '08:00')}</span>
+                            ${p.duration && !p.allDay ? `<span class="cal-card-duration">${Utils.escapeHtml(p.duration)}</span>` : ''}
+                        </div>
+                        <div class="cal-agenda-card-body">
+                            <div class="cal-card-top-row">
+                                <span class="cal-card-type-badge cal-badge-${p.type}">${isSHCM ? '🔬 ' : ''}${typeLabel}</span>
+                                ${isSHCM ? `<button type="button" class="pln-shcm-badge" onclick="event.stopPropagation();App.navigate('research')">🔄 SHCM</button>` : ''}
+                            </div>
+                            <div class="cal-card-title">${Utils.escapeHtml(p.title)}</div>
+                            <div class="cal-card-meta-row">
+                                ${p.location ? `<span class="cal-card-meta-item">📍 ${Utils.escapeHtml(p.location)}</span>` : ''}
+                                ${resp ? `<span class="cal-card-meta-item">👤 ${Utils.escapeHtml(resp.name)}</span>` : ''}
+                            </div>
+                        </div>
+                        <button type="button" class="pln-card-more-btn" data-plan-more="${p.id}" onclick="event.stopPropagation();PlansPage.openMobilePlanSheet(${p.id})" aria-label="Thao tác kế hoạch ${Utils.escapeHtml(p.title || '')}">⋮</button>
+                    </div>`;
+                }).join('') : `
+                    <div class="pln-month-empty">
+                        <span>Không có kế hoạch ngày ${activeLabel}</span>
+                        ${isAdmin ? `<button type="button" class="btn btn-primary btn-sm" onclick="PlansPage.openForm(null, '${activeDate}')">＋ Thêm kế hoạch</button>` : ''}
+                    </div>
+                `}
+            </div>
         </div>`;
     },
 
@@ -622,6 +726,66 @@ const PlansPage = {
         Store.remove('plans', id);
         Modal.close();
         App.renderCurrentPage();
+    },
+
+    // ===== FEAT-241: MOBILE TOOLS & PLAN SHEETS =====
+    openMobileToolsSheet() {
+        const isAdmin = !!(Auth.getSession() && Auth.getSession().isAdmin);
+        Modal.open('Chế độ xem & Tiện ích Lịch', `
+            <div class="pln-sheet-actions">
+                <button type="button" class="pln-sheet-btn ${this.viewMode === 'agenda' ? 'is-active' : ''}" onclick="Modal.close();PlansPage.setView('agenda')">
+                    <span>📅 Lịch trình (Agenda)</span><span>${this.viewMode === 'agenda' ? 'Đang chọn' : ''}</span>
+                </button>
+                <button type="button" class="pln-sheet-btn ${this.viewMode === 'month' ? 'is-active' : ''}" onclick="Modal.close();PlansPage.setView('month')">
+                    <span>🗓️ Lịch tháng (Mini Calendar)</span><span>${this.viewMode === 'month' ? 'Đang chọn' : ''}</span>
+                </button>
+                <button type="button" class="pln-sheet-btn ${this.viewMode === 'week' ? 'is-active' : ''}" onclick="Modal.close();PlansPage.setView('week')">
+                    <span>📆 Lịch theo tuần</span><span>${this.viewMode === 'week' ? 'Đang chọn' : ''}</span>
+                </button>
+                <button type="button" class="pln-sheet-btn ${this.viewMode === '3day' ? 'is-active' : ''}" onclick="Modal.close();PlansPage.setView('3day')">
+                    <span>🕒 Lịch 3 ngày tới</span><span>${this.viewMode === '3day' ? 'Đang chọn' : ''}</span>
+                </button>
+                <button type="button" class="pln-sheet-btn" onclick="Modal.close();PlansPage.today()">
+                    <span>🌟 Chuyển về Hôm nay</span><span>Hôm nay</span>
+                </button>
+                ${isAdmin ? `
+                <button type="button" class="pln-sheet-btn" onclick="Modal.close();PlansPage.openForm()">
+                    <span>➕ Thêm kế hoạch mới</span><span>Tạo mới</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    openMobilePlanSheet(id) {
+        const p = Store.getById('plans', id);
+        if (!p) return;
+        const isAdmin = !!(Auth.getSession() && Auth.getSession().isAdmin);
+        const isSHCM = p.source === 'shcm';
+        const staff = Store.getAll('staff') || [];
+        const resp = staff.find(s => s.id === p.responsible);
+        const parts = p.date ? p.date.split('-') : null;
+        const dateDisp = parts ? `${parts[2]}/${parts[1]}/${parts[0]}` : '—';
+        Modal.open(Utils.escapeHtml(p.title || 'Kế hoạch hoạt động'), `
+            <div class="pln-sheet-meta">
+                <div>📅 ${dateDisp} · ${p.allDay ? 'Cả ngày' : (p.time || '08:00')}${p.location ? ` · 📍 ${Utils.escapeHtml(p.location)}` : ''}</div>
+                ${resp ? `<div class="pln-sheet-subnote">👤 ${Utils.escapeHtml(resp.title || '')} ${Utils.escapeHtml(resp.name)}</div>` : ''}
+            </div>
+            <div class="pln-sheet-actions">
+                <button type="button" class="pln-sheet-btn" onclick="Modal.close();PlansPage.viewOrEdit(${p.id})">
+                    <span>🔍 Xem chi tiết</span><span>Chi tiết</span>
+                </button>
+                ${isSHCM ? `
+                <button type="button" class="pln-sheet-btn" onclick="Modal.close();App.navigate('research')">
+                    <span>🔄 Mở tab Sinh hoạt chuyên môn</span><span>SHCM</span>
+                </button>` : (isAdmin ? `
+                <button type="button" class="pln-sheet-btn" onclick="Modal.close();PlansPage.openForm(${p.id})">
+                    <span>✏️ Sửa kế hoạch</span><span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="pln-sheet-btn is-danger" onclick="Modal.close();PlansPage.deletePlan(${p.id})">
+                    <span>🗑️ Xoá kế hoạch</span><span>Xoá</span>
+                </button>` : '')}
+            </div>
+        `);
     },
 
     afterRender() {}

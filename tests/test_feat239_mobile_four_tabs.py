@@ -358,7 +358,7 @@ class TestFeat239MobileFourTabs(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611212030"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611212135"
 
         client = cls.sf.app.test_client()
         token = cls.sf._create_jwt("vkan", users["vkan"])

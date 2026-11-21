@@ -657,3 +657,462 @@
 
 /* Multi-day bars — cần opacity cao nhất để nhìn thấy span */
 [data-theme="dark"] .calendar-event.multi-day { opacity: 1; font-weight: 700; }
+
+/* ===== FEAT-241: KẾ HOẠCH HOẠT ĐỘNG MOBILE UX + BUG-240 WHITE TITLE ===== */
+.pln-mobile-hdr-tools,
+.pln-mobile-view-switch,
+.pln-mobile-month-wrap,
+.pln-card-more-btn,
+.pln-shcm-badge {
+    display: none;
+}
+
+.pln-sheet-meta {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.pln-sheet-subnote {
+    margin-top: 4px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.pln-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pln-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    touch-action: manipulation;
+}
+
+.pln-sheet-btn span:last-child {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.pln-sheet-btn.is-active {
+    border-color: var(--accent, #1878B4);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.pln-sheet-btn.is-danger {
+    color: #DC2626;
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+@media (min-width: 769px) {
+    .pln-mobile-hdr-tools,
+    .pln-mobile-view-switch,
+    .pln-mobile-month-wrap,
+    .pln-card-more-btn,
+    .pln-shcm-badge {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #plans-page {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #plans-page > .page-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        min-height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        margin-bottom: 0;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.16);
+    }
+
+    #plans-page > .page-header > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    #plans-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
+        color: #FFFFFF;
+        font-size: 1rem;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #plans-page > .page-header .page-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.72rem;
+        margin: 2px 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #plans-page .pln-desktop-add-btn,
+    #plans-page .calendar-view-modes,
+    #plans-page .pln-desktop-month-grid,
+    #plans-page .pln-desktop-only,
+    #plans-page .cal-agenda-card-actions {
+        display: none !important;
+    }
+
+    #plans-page .pln-mobile-hdr-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .pln-mobile-add-btn {
+        min-height: 44px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: none;
+        background: rgba(255, 255, 255, 0.94);
+        color: #1D2357;
+        font-size: 0.82rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        touch-action: manipulation;
+    }
+
+    .pln-mobile-more-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.14);
+        color: #FFFFFF;
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    #plans-page .calendar-controls {
+        margin-bottom: 0;
+    }
+
+    #plans-page .calendar-nav {
+        width: 100%;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    #plans-page .calendar-nav .btn-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        flex-shrink: 0;
+    }
+
+    #plans-page .calendar-month-label {
+        min-width: 0;
+        flex: 1 1 auto;
+        font-size: 0.94rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #plans-page .pln-today-btn {
+        min-height: 44px;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    #plans-page .pln-mobile-view-switch {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .pln-view-tab {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .pln-view-tab.is-active {
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        border-color: transparent;
+    }
+
+    #plans-page .cal-type-filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 0;
+        padding-bottom: 2px;
+    }
+
+    #plans-page .cal-type-filters::-webkit-scrollbar {
+        display: none;
+    }
+
+    #plans-page .cal-filter-pill {
+        min-height: 44px;
+        padding: 8px 14px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    #plans-page .cal-mini-day-cell {
+        min-height: 44px;
+    }
+
+    #plans-page .cal-agenda-card {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-right: 6px;
+    }
+
+    #plans-page .cal-agenda-card-left {
+        width: 68px;
+        min-width: 68px;
+        padding: 10px 6px;
+    }
+
+    #plans-page .cal-agenda-card-body {
+        padding: 10px 8px;
+    }
+
+    #plans-page .pln-shcm-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        border: 1px solid rgba(5, 150, 105, 0.35);
+        background: rgba(5, 150, 105, 0.12);
+        color: #047857;
+        font-size: 0.7rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    #plans-page .pln-card-more-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        font-weight: 800;
+        flex-shrink: 0;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #plans-page .pln-mobile-month-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .pln-mini-cal {
+        padding: 10px 8px !important;
+        border-radius: 14px;
+    }
+
+    .pln-mini-cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 2px;
+        margin-bottom: 6px;
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+
+    .pln-mini-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .pln-mini-cal-cell {
+        min-height: 44px;
+        min-width: 0;
+        padding: 4px 2px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        font-family: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .pln-mini-cal-cell.is-empty {
+        background: transparent;
+        cursor: default;
+    }
+
+    .pln-mini-cal-cell.is-today {
+        border-color: var(--accent, #1878B4);
+        background: rgba(24, 120, 180, 0.08);
+    }
+
+    .pln-mini-cal-cell.is-selected {
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+        border-color: transparent;
+    }
+
+    .pln-mini-cal-num {
+        font-size: 0.84rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .pln-mini-cal-dots {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-height: 6px;
+    }
+
+    .pln-month-mobile-events {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .pln-month-events-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .pln-month-empty {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px dashed var(--border);
+        background: var(--bg-secondary);
+        font-size: 0.82rem;
+        color: var(--text-muted);
+    }
+
+    #plans-page .pln-columns-scroll {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    [data-theme="dark"] #plans-page > .page-header {
+        background: linear-gradient(135deg, #0C1022 0%, #1D2357 60%, #1878B4 100%);
+    }
+
+    [data-theme="dark"] #plans-page .pln-mini-cal-cell {
+        background: #141B2D;
+    }
+
+    [data-theme="dark"] #plans-page .pln-mini-cal-cell.is-selected {
+        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
+        color: #FFFFFF;
+    }
+
+    [data-theme="dark"] #plans-page .pln-shcm-badge {
+        background: rgba(16, 185, 129, 0.18);
+        color: #6EE7B7;
+        border-color: rgba(110, 231, 183, 0.35);
+    }
+
+    [data-theme="dark"] #plans-page .pln-card-more-btn,
+    [data-theme="dark"] .pln-sheet-btn,
+    [data-theme="dark"] .pln-sheet-meta {
+        background: #141B2D;
+        border-color: rgba(148, 163, 184, 0.18);
+        color: #F1F5F9;
+    }
+}

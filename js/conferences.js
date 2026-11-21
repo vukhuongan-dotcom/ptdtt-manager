@@ -228,6 +228,34 @@ const CONF_SEED_DATA = [
 
 const ConferencesPage = {
     _filterYear: 'all',   // 'all' | '2026' | '2027' | ...
+    _expandedConfs: {},
+
+    _getDefaultExpandedConfId(items) {
+        if (!items || !items.length) return null;
+        const nowItem = items.find(c => this._getStatus(c) === 'now');
+        if (nowItem) return nowItem.id;
+        const upcoming = items
+            .filter(c => {
+                const st = this._getStatus(c);
+                return st === 'soon' || st === 'upcoming';
+            })
+            .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+        if (upcoming.length) return upcoming[0].id;
+        return items[0].id;
+    },
+
+    toggleConfPapersMobile(confId) {
+        const all = Store.getAll('conferences')
+            .sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+        const items = this._filterYear === 'all' ? all
+            : all.filter(c => new Date(c.startDate).getFullYear() === parseInt(this._filterYear));
+        const defaultId = this._getDefaultExpandedConfId(items);
+        const current = this._expandedConfs[confId] !== undefined
+            ? !!this._expandedConfs[confId]
+            : (confId === defaultId);
+        this._expandedConfs[confId] = !current;
+        App.renderCurrentPage();
+    },
 
     _canEdit() {
         const s = Auth.getSession();
@@ -388,12 +416,16 @@ const ConferencesPage = {
             onclick="ConferencesPage.setYear('${t.key}')">${t.label}</button>`).join('');
 
         // Cards
+        const defaultExpandedId = this._getDefaultExpandedConfId(items);
         const cardsHtml = items.map(item => {
             const status = this._getStatus(item);
             const cd     = this._countdown(item);
             const rg     = CONF_REGIONS[item.region] || CONF_REGIONS.domestic;
             const pres   = item.presentations || [];
             const presenters = this._sortedPresenters(pres);
+            const isMobileExpanded = this._expandedConfs[item.id] !== undefined
+                ? !!this._expandedConfs[item.id]
+                : (item.id === defaultExpandedId);
 
             // Group presentations by date for preview
             const byDate = {};
@@ -416,10 +448,11 @@ const ConferencesPage = {
                         <span class="cp-pres-lang ${p.language === 'en' ? 'cp-lang-en' : 'cp-lang-vi'}">${(p.language || 'vi').toUpperCase()}</span>
                         <span class="cp-pres-title">${p.title}</span>
                         <span class="cp-pres-who">— ${p.presenter}</span>
-                        ${canEdit ? `<div class="cp-pres-actions">
+                        ${canEdit ? `<div class="cp-pres-actions cp-pres-desktop-actions">
                             <button class="btn-icon-sm" onclick="ConferencesPage.openPresentationForm(${item.id}, ${actualIdx})" title="Sửa bài báo cáo" aria-label="Sửa bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span></button>
                             <button class="btn-icon-sm" onclick="ConferencesPage.deletePresentation(${item.id}, ${actualIdx})" title="Xoá bài báo cáo" aria-label="Xoá bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}">🗑️</button>
-                        </div>` : ''}
+                        </div>
+                        <button type="button" class="cp-pres-mobile-more" data-conf-pres-more="${item.id}-${actualIdx}" onclick="ConferencesPage.openMobilePresSheet(${item.id}, ${actualIdx})" aria-label="Thao tác bài báo cáo ${(p.title || '').replace(/"/g, '&quot;')}">⋮</button>` : ''}
                     </div>`;
                 }).join('');
                 return `<div class="cp-day-block">
@@ -431,7 +464,7 @@ const ConferencesPage = {
             const statusCls = status === 'past' ? 'cp-card-past' : status === 'now' ? 'cp-card-now' : status === 'soon' ? 'cp-card-soon' : '';
 
             return `
-            <div class="cp-card ${statusCls}">
+            <div class="cp-card ${statusCls}" data-conf-card="${item.id}">
                 <div class="cp-card-head">
                     <div class="cp-card-title-block">
                         <div class="cp-conf-name">${item.name}</div>
@@ -468,31 +501,45 @@ const ConferencesPage = {
                     </div>
                 </div>
 
-                <div class="cp-pres-list">${presPreview}</div>
+                <button type="button" class="cp-mobile-pres-toggle" data-conf-toggle="${item.id}" aria-expanded="${isMobileExpanded ? 'true' : 'false'}" onclick="ConferencesPage.toggleConfPapersMobile(${item.id})">
+                    <span>📄 ${pres.length > 0 ? (isMobileExpanded ? `Thu gọn ${pres.length} bài báo cáo` : `Xem ${pres.length} bài báo cáo`) : 'Chưa có bài báo cáo'}</span>
+                    <span>${isMobileExpanded ? '▴' : '▾'}</span>
+                </button>
+                <div class="cp-pres-list ${isMobileExpanded ? 'is-mobile-expanded' : 'is-mobile-collapsed'}">${presPreview}</div>
 
                 <div class="cp-card-footer">
-                    <div class="cp-footer-left">
-                        ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
-                        ${canExport && pres.length > 0 ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo" aria-label="Xuất ảnh lịch báo cáo hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">📷 Xuất ảnh</button>` : ''}
+                    <div class="cp-footer-desktop">
+                        <div class="cp-footer-left">
+                            ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener" class="cp-link">🔗 ${item.website.replace(/^https?:\/\//,'')}</a>` : ''}
+                            ${canExport && pres.length > 0 ? `<button class="btn btn-secondary btn-sm" onclick="ConferencesPage.exportImage(${item.id})" title="Xuất ảnh lịch báo cáo" aria-label="Xuất ảnh lịch báo cáo hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">📷 Xuất ảnh</button>` : ''}
+                        </div>
+                        ${canEdit ? `<div class="cp-footer-actions">
+                            <button class="btn btn-primary btn-sm" onclick="ConferencesPage.openPresentationForm(${item.id})" aria-label="Thêm bài báo cáo mới cho hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">➕ Bài báo cáo</button>
+                            <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})" aria-label="Sửa thông tin hội nghị ${(item.name || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span> Sửa</button>
+                            <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})" aria-label="Xoá hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">🗑️</button>
+                        </div>` : ''}
                     </div>
-                    ${canEdit ? `<div class="cp-footer-actions">
-                        <button class="btn btn-primary btn-sm" onclick="ConferencesPage.openPresentationForm(${item.id})" aria-label="Thêm bài báo cáo mới cho hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">➕ Bài báo cáo</button>
-                        <button class="btn btn-secondary btn-sm" onclick="ConferencesPage.openForm(${item.id})" aria-label="Sửa thông tin hội nghị ${(item.name || '').replace(/"/g, '&quot;')}"><span class="pencil-flip">✏️</span> Sửa</button>
-                        <button class="btn btn-danger btn-sm" onclick="ConferencesPage.deleteItem(${item.id})" aria-label="Xoá hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">🗑️</button>
-                    </div>` : ''}
+                    <div class="cp-footer-mobile">
+                        ${canEdit ? `<button type="button" class="btn btn-primary btn-sm cp-mobile-add-pres-btn" onclick="ConferencesPage.openPresentationForm(${item.id})" aria-label="Thêm bài báo cáo mới cho hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">➕ Bài</button>` : ''}
+                        <button type="button" class="cp-card-more-btn" data-conf-more="${item.id}" onclick="ConferencesPage.openMobileConfSheet(${item.id})" aria-label="Tiện ích hội nghị ${(item.name || '').replace(/"/g, '&quot;')}">⋮</button>
+                    </div>
                 </div>
             </div>`;
         }).join('');
 
         return `
+        <div id="conferences-page" class="conf-page">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Báo cáo khoa học</h1>
                 <p class="page-subtitle">Thống kê tham gia báo cáo tại hội nghị trong nước & quốc tế</p>
             </div>
-            ${canEdit ? `<button class="btn btn-primary" onclick="ConferencesPage.openForm()" aria-label="Thêm hội nghị mới">
+            ${canEdit ? `<button class="btn btn-primary conf-desktop-add-btn" onclick="ConferencesPage.openForm()" aria-label="Thêm hội nghị mới">
                 ${Utils.plusIcon()} Thêm hội nghị
             </button>` : ''}
+            <div class="conf-mobile-hdr-tools">
+                ${canEdit ? `<button type="button" class="conf-mobile-add-btn" id="conf-mobile-add-btn" onclick="ConferencesPage.openForm()" aria-label="Thêm hội nghị mới">＋ Hội nghị</button>` : ''}
+            </div>
         </div>
         
         <!-- Summary stats -->
@@ -525,7 +572,8 @@ const ConferencesPage = {
                 <div class="conf-empty-icon">📋</div>
                 <div class="conf-empty-text">Chưa có hội nghị nào trong năm ${this._filterYear}</div>
                </div>`
-        }`;
+        }
+        </div>`;
     },
 
     setYear(yr) {
@@ -940,6 +988,67 @@ const ConferencesPage = {
             Toast.error('Không thể xuất ảnh. Vui lòng thử lại.');
             document.body.removeChild(container);
         });
+    },
+
+    // ===== FEAT-241: MOBILE CONFERENCE & PRESENTATION SHEETS =====
+    openMobileConfSheet(confId) {
+        const item = Store.getById('conferences', confId);
+        if (!item) return;
+        const canEdit = this._canEdit();
+        const canExport = this._canExport();
+        const pres = item.presentations || [];
+        Modal.open(Utils.escapeHtml(item.name || 'Hội nghị khoa học'), `
+            <div class="conf-sheet-meta">
+                <div>📅 ${Utils.escapeHtml(item.dates || '—')} · 📍 ${Utils.escapeHtml(item.location || '—')}</div>
+                <div class="conf-sheet-subnote">📄 ${pres.length} bài báo cáo</div>
+            </div>
+            <div class="conf-sheet-actions">
+                <button type="button" class="conf-sheet-btn" onclick="Modal.close();ConferencesPage.openPresenterModal(${item.id})">
+                    <span>🎤 Danh sách báo cáo viên</span><span>Xem</span>
+                </button>
+                ${item.website ? `
+                <a href="${Utils.escapeHtml(item.website)}" target="_blank" rel="noopener" class="conf-sheet-btn">
+                    <span>🔗 Trang web hội nghị</span><span>Mở link</span>
+                </a>` : ''}
+                ${canExport && pres.length > 0 ? `
+                <button type="button" class="conf-sheet-btn" onclick="Modal.close();ConferencesPage.exportImage(${item.id})">
+                    <span>📷 Xuất ảnh lịch báo cáo</span><span>PNG 2K</span>
+                </button>` : ''}
+                ${canEdit ? `
+                <button type="button" class="conf-sheet-btn" onclick="Modal.close();ConferencesPage.openPresentationForm(${item.id})">
+                    <span>➕ Thêm bài báo cáo</span><span>Mới</span>
+                </button>
+                <button type="button" class="conf-sheet-btn" onclick="Modal.close();ConferencesPage.openForm(${item.id})">
+                    <span>✏️ Sửa thông tin hội nghị</span><span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="conf-sheet-btn is-danger" onclick="Modal.close();ConferencesPage.deleteItem(${item.id})">
+                    <span>🗑️ Xoá hội nghị</span><span>Xoá</span>
+                </button>` : ''}
+            </div>
+        `);
+    },
+
+    openMobilePresSheet(confId, presIndex) {
+        const item = Store.getById('conferences', confId);
+        if (!item) return;
+        const p = (item.presentations || [])[presIndex];
+        if (!p) return;
+        const canEdit = this._canEdit();
+        Modal.open(Utils.escapeHtml(p.title || 'Bài báo cáo'), `
+            <div class="conf-sheet-meta">
+                <div>🎤 ${Utils.escapeHtml(p.presenter || '—')}</div>
+                <div class="conf-sheet-subnote">${Utils.escapeHtml(p.time || '—')} · ${(p.language || 'vi').toUpperCase()} · ${Utils.escapeHtml(item.name || '')}</div>
+            </div>
+            <div class="conf-sheet-actions">
+                ${canEdit ? `
+                <button type="button" class="conf-sheet-btn" onclick="Modal.close();ConferencesPage.openPresentationForm(${confId}, ${presIndex})">
+                    <span>✏️ Sửa bài báo cáo</span><span>Chỉnh sửa</span>
+                </button>
+                <button type="button" class="conf-sheet-btn is-danger" onclick="Modal.close();ConferencesPage.deletePresentation(${confId}, ${presIndex})">
+                    <span>🗑️ Xoá bài báo cáo</span><span>Xoá</span>
+                </button>` : ''}
+            </div>
+        `);
     }
 };
 
