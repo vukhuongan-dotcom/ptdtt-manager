@@ -1276,6 +1276,215 @@ class TestFeat231RobotSchedule(unittest.TestCase):
             srv.shutdown()
             srv.server_close()
 
+    def test_tc_r17_calendar_picker_no_typing_and_max_3_cases_per_day(self):
+        # 1) API Contract: Ca 1..Ca 3 only, max 3 cases/day capacity, calendar-only expectedTimeframe
+        _, _, client = self._new_env(sandbox_only=False)
+        bs = client.get("/api/robot/bootstrap", headers=self._headers("vcnguyen")).get_json()
+        self.assertEqual(bs["validSlots"], ["Ca 1", "Ca 2", "Ca 3"])
+
+        cap_date = _iso_offset(5)
+        exp_date = _iso_offset(9)
+        exp_date_vi = f"{exp_date[8:10]}/{exp_date[5:7]}/{exp_date[0:4]}"
+
+        # Reject invalid slots Ca 4..Ca 6 on direct creation
+        for bad_slot in ("Ca 4", "Ca 5", "Ca 6"):
+            r_bad_slot = client.post(
+                "/api/robot/cases",
+                headers=self._headers("vcnguyen"),
+                json={
+                    "action": "create_case",
+                    "patientName": f"BN {bad_slot}",
+                    "phone": CANARY_PHONE,
+                    "mainSurgeonId": 6,
+                    "surgeryDate": cap_date,
+                    "caseSlot": bad_slot,
+                },
+            )
+            self.assertEqual(r_bad_slot.status_code, 422, r_bad_slot.get_data(as_text=True))
+            self.assertEqual(r_bad_slot.get_json()["code"], "INVALID_CASE_SLOT")
+
+        # Reject free-text / invalid calendar expectedTimeframe
+        for bad_tf in ("Tuần sau", "Cuối tháng 12", "2026-02-30"):
+            r_bad_tf = client.post(
+                "/api/robot/cases",
+                headers=self._headers("vnatuan"),
+                json={
+                    "action": "create_consult",
+                    "patientName": "BN Text Timeframe",
+                    "phone": CANARY_PHONE,
+                    "mainSurgeonId": 6,
+                    "expectedTimeframe": bad_tf,
+                },
+            )
+            self.assertEqual(r_bad_tf.status_code, 422, r_bad_tf.get_data(as_text=True))
+            self.assertEqual(r_bad_tf.get_json()["code"], "INVALID_EXPECTED_DATE")
+
+        # Fill all 3 daily capacity slots (Ca 1, Ca 2, Ca 3)
+        for idx, slot in enumerate(("Ca 1", "Ca 2", "Ca 3"), start=1):
+            r_ok = client.post(
+                "/api/robot/cases",
+                headers=self._headers("vcnguyen"),
+                json={
+                    "action": "create_case",
+                    "patientName": f"BN Công Suất {idx}",
+                    "phone": CANARY_PHONE,
+                    "mainSurgeonId": 6,
+                    "surgeryDate": cap_date,
+                    "caseSlot": slot,
+                },
+            )
+            self.assertEqual(r_ok.status_code, 201, r_ok.get_data(as_text=True))
+
+        # 4th case on same date MUST be hard-blocked with 409 ROBOT_DAILY_CAPACITY_EXCEEDED (canOverrideConflict=False)
+        r_cap = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={
+                "action": "create_case",
+                "patientName": "BN Ca Thứ 4",
+                "phone": CANARY_PHONE,
+                "mainSurgeonId": 6,
+                "surgeryDate": cap_date,
+                "caseSlot": "Ca 1",
+            },
+        )
+        self.assertEqual(r_cap.status_code, 409)
+        cap_json = r_cap.get_json()
+        self.assertEqual(cap_json["code"], "ROBOT_DAILY_CAPACITY_EXCEEDED")
+        self.assertFalse(cap_json["canOverrideConflict"])
+
+        # Even explicit confirmConflict=True MUST NOT override 3 cases/day capacity
+        r_cap_override = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={
+                "action": "create_case",
+                "patientName": "BN Ca Thứ 4 Ép Override",
+                "phone": CANARY_PHONE,
+                "mainSurgeonId": 6,
+                "surgeryDate": cap_date,
+                "caseSlot": "Ca 1",
+                "confirmConflict": True,
+                "conflictOverrideReason": "Cố gắng mổ tăng cường ca thứ 4",
+                "expectedConflictFingerprint": cap_json["conflictFingerprint"],
+            },
+        )
+        self.assertEqual(r_cap_override.status_code, 409)
+        self.assertEqual(r_cap_override.get_json()["code"], "ROBOT_DAILY_CAPACITY_EXCEEDED")
+        self.assertFalse(r_cap_override.get_json()["canOverrideConflict"])
+
+        # 2) Playwright Desktop UI check: calendar-only expectedTimeframe + no-typing + Step 1 prefill + strictly Ca 1..3
+        port = _find_free_port()
+        srv = make_server("127.0.0.1", port, self.sf.app, threaded=True)
+        srv_thread = threading.Thread(target=srv.serve_forever, daemon=True)
+        srv_thread.start()
+        base_url = f"http://127.0.0.1:{port}"
+        try:
+            u = self._users["vcnguyen"]
+            token = self.sf._create_jwt("vcnguyen", u)
+            session_obj = {
+                "staffId": u["staffId"],
+                "username": "vcnguyen",
+                "name": u["name"],
+                "role": u["role"],
+                "title": u["title"],
+                "isAdmin": u["isAdmin"],
+                "isSuperAdmin": u["isSuperAdmin"],
+                "isRobotCoordinator": True,
+                "mustChangePassword": False,
+            }
+            ctx = self.browsers["chromium"].new_context(
+                viewport={"width": 1440, "height": 900},
+                service_workers="block",
+            )
+            ctx.route("**/api/emr*", lambda route: route.fulfill(status=200, content_type="application/json", body='{"patients":[]}'))
+            ctx.add_init_script(
+                f"""
+                localStorage.setItem('ptdtt_cache_ver', '2609281105');
+                localStorage.setItem('ptdtt_sw_build', {json.dumps(self.sw_build_ver)});
+                localStorage.setItem('ptdtt_jwt', {json.dumps(token)});
+                sessionStorage.setItem('ptdtt_jwt', {json.dumps(token)});
+                localStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
+                sessionStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
+                localStorage.setItem('ptdtt_onboarding_done', 'true');
+                """
+            )
+            page = ctx.new_page()
+            try:
+                page.goto(base_url + "/", wait_until="load")
+                page.wait_for_function(
+                    "() => Boolean(typeof Store !== 'undefined' && Store._hasLoadedServerOnce === true && document.getElementById('nav-robot-schedule'))",
+                    timeout=10000,
+                )
+                page.click("#nav-robot-schedule")
+                page.wait_for_selector("#robot-schedule-page .rbt-header", timeout=8000)
+
+                # Consult modal: expectedTimeframe MUST be date picker & reject typing
+                page.click('[data-rbt-action="open_create_consult"]')
+                page.wait_for_selector('#rbt-case-form input[name="expectedTimeframe"]', timeout=5000)
+                exp_input = page.locator('#rbt-case-form input[name="expectedTimeframe"]')
+                self.assertEqual(exp_input.get_attribute("type"), "date")
+                self.assertIn("rbt-date-picker-only", exp_input.get_attribute("class") or "")
+
+                exp_input.click()
+                page.keyboard.type("tuan sau 2026")
+                self.assertEqual(exp_input.input_value(), "")
+
+                # Set via calendar picker & test clear button
+                exp_input.fill(exp_date)
+                self.assertEqual(exp_input.input_value(), exp_date)
+                page.click('[data-rbt-clear-date="expectedTimeframe"]')
+                self.assertEqual(exp_input.input_value(), "")
+
+                # Submit consult case with calendar expectedTimeframe + dong_y
+                exp_input.fill(exp_date)
+                page.fill('#rbt-case-form input[name="patientName"]', "BN Chọn Lịch R17")
+                page.fill('#rbt-case-form input[name="phone"]', CANARY_PHONE)
+                page.select_option('#rbt-case-form select[name="mainSurgeonId"]', "6")
+                page.select_option('#rbt-case-form select[name="consultResult"]', "dong_y")
+                page.click("#rbt-form-submit-btn")
+                page.wait_for_selector("#rbt-case-form", state="hidden", timeout=6000)
+
+                # Verify Consult tab renders formatted dd/mm/yyyy date
+                page.click('.rbt-subtab[data-rbt-code="consult"]')
+                page.wait_for_selector('[data-rbt-action="open_schedule_step1"]', timeout=5000)
+                consult_html = page.inner_html("#robot-schedule-page")
+                self.assertIn(exp_date_vi, consult_html)
+
+                # Open Step 1 scheduling modal: surgeryDate pre-filled with expectedTimeframe, no typing, slots strictly Ca 1..3
+                page.locator('[data-rbt-action="open_schedule_step1"]').first.click()
+                page.wait_for_selector('#rbt-case-form select[name="caseSlot"]', timeout=5000)
+                sched_date_input = page.locator('#rbt-case-form input[name="surgeryDate"]')
+                self.assertIn("rbt-date-picker-only", sched_date_input.get_attribute("class") or "")
+                self.assertEqual(sched_date_input.input_value(), exp_date)
+
+                sched_date_input.click()
+                page.keyboard.type("12345678")
+                self.assertEqual(sched_date_input.input_value(), exp_date)
+
+                slot_values = page.eval_on_selector_all(
+                    '#rbt-case-form select[name="caseSlot"] option',
+                    "els => els.map(o => o.value)",
+                )
+                self.assertEqual(slot_values, ["", "Ca 1", "Ca 2", "Ca 3"])
+                page.evaluate("() => Modal.close(true)")
+
+                # Verify A5 Print date input is also picker-only (no typing)
+                page.click('[data-rbt-action="open_print_pctxh"]')
+                page.wait_for_selector("#rbt-pctxh-date", timeout=5000)
+                pctxh_date = page.locator("#rbt-pctxh-date")
+                self.assertIn("rbt-date-picker-only", pctxh_date.get_attribute("class") or "")
+                before_pctxh = pctxh_date.input_value()
+                pctxh_date.click()
+                page.keyboard.type("99999999")
+                self.assertEqual(pctxh_date.input_value(), before_pctxh)
+                page.evaluate("() => Modal.close(true)")
+            finally:
+                ctx.close()
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
 
 if __name__ == "__main__":
     unittest.main()

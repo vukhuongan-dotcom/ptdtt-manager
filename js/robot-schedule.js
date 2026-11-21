@@ -550,7 +550,7 @@
                 const dayCases = visibleCases.filter(c => c.surgeryDate === iso);
                 const ca1 = dayCases.filter(c => c.caseSlot === 'Ca 1');
                 const ca2 = dayCases.filter(c => c.caseSlot === 'Ca 2');
-                const otherSlots = dayCases.filter(c => c.caseSlot !== 'Ca 1' && c.caseSlot !== 'Ca 2');
+                const ca3 = dayCases.filter(c => c.caseSlot !== 'Ca 1' && c.caseSlot !== 'Ca 2');
                 const label = `${dayNames[dt.getDay()]} · ${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`;
                 const renderGroup = (title, list) => list.length ? `
                     <div class="rbt-slot-section">
@@ -569,7 +569,7 @@
                             ${dayCases.length ? `
                                 ${renderGroup('Ca 1 (08:00–11:30)', ca1)}
                                 ${renderGroup('Ca 2 (13:00–16:00)', ca2)}
-                                ${renderGroup('Ca bổ sung (Ca 3–6)', otherSlots)}
+                                ${renderGroup('Ca 3 (Dự phòng / Trong ngày)', ca3)}
                             ` : `<div class="rbt-empty">Chưa có ca Robot</div>`}
                         </div>
                     </section>
@@ -611,7 +611,7 @@
                             <div>${esc(rc.diagnosis || '—')}</div>
                             <div class="text-secondary">${esc(rc.robotProcedure || '—')}</div>
                         </td>
-                        <td>${esc(rc.mainSurgeonName || '—')}${rc.expectedTimeframe ? `<div class="text-secondary">Dự kiến: ${esc(rc.expectedTimeframe)}</div>` : ''}</td>
+                        <td>${esc(rc.mainSurgeonName || '—')}${rc.expectedTimeframe ? `<div class="text-secondary">Dự kiến: ${esc(_fmtViDate(rc.expectedTimeframe))}</div>` : ''}</td>
                         <td><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>${rc.consultNote ? `<div class="text-secondary">${esc(rc.consultNote)}</div>` : ''}</td>
                         <td>
                             <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
@@ -991,27 +991,70 @@
                 el.addEventListener('input', markDirty);
                 el.addEventListener('change', markDirty);
             });
+            this._bindDatePickerNoTyping(body);
+        },
+
+        _bindDatePickerNoTyping(container) {
+            if (!container) return;
+            container.querySelectorAll('input[type="date"].rbt-date-picker-only').forEach(el => {
+                if (el.dataset.rbtPickerBound === '1') return;
+                el.dataset.rbtPickerBound = '1';
+                const openNativePicker = () => {
+                    try {
+                        if (typeof el.showPicker === 'function') el.showPicker();
+                    } catch (_) { /* Browser fallback */ }
+                };
+                el.addEventListener('click', openNativePicker);
+                el.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Tab' || ev.key === 'Escape') return;
+                    ev.preventDefault();
+                    if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown') {
+                        openNativePicker();
+                    }
+                });
+                el.addEventListener('beforeinput', (ev) => {
+                    if (!ev.inputType || ev.inputType === 'insertText' || ev.inputType === 'insertCompositionText') {
+                        ev.preventDefault();
+                    }
+                });
+                el.addEventListener('paste', (ev) => ev.preventDefault());
+                el.addEventListener('drop', (ev) => ev.preventDefault());
+            });
+            container.querySelectorAll('[data-rbt-clear-date]').forEach(btn => {
+                if (btn.dataset.rbtClearBound === '1') return;
+                btn.dataset.rbtClearBound = '1';
+                btn.addEventListener('click', () => {
+                    const targetName = btn.getAttribute('data-rbt-clear-date');
+                    const input = container.querySelector(`input[name="${CSS.escape(targetName || '')}"]`);
+                    if (!input) return;
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
         },
 
         _renderConflictBoxHtml() {
             const st = this._conflictState;
             if (!st || !Array.isArray(st.conflicts) || !st.conflicts.length) return '';
             const perms = (this._bootstrap && this._bootstrap.permissions) || {};
+            const isCapExceeded = st.canOverrideConflict === false || st.conflicts.some(c => c.conflictType === 'ROBOT_DAILY_CAPACITY_EXCEEDED');
+            const allowOverride = Boolean(perms.canOverrideConflict && st.canOverrideConflict !== false && !isCapExceeded);
             const items = st.conflicts.map(c => {
                 const refCode = c.robotCaseCode ? `${c.robotCaseCode}` : `Lịch tuần #${c.surgeryId}`;
                 return `<li><strong>${esc(refCode)}</strong> — ${esc(c.patientName || '')} (${esc(_fmtViDate(c.surgeryDate))}${c.caseSlot ? ` · ${esc(c.caseSlot)}` : ''})</li>`;
             }).join('');
             return `
                 <div class="rbt-conflict-box" id="rbt-modal-conflict-box">
-                    <div><strong>⚠️ Phát hiện trùng slot Robot / Phẫu thuật viên chính:</strong></div>
+                    <div><strong>${isCapExceeded ? '⛔ Hệ thống Robot đã đạt công suất tối đa 3 ca/ngày (Ca 1–Ca 3):' : '⚠️ Phát hiện trùng slot Robot / Phẫu thuật viên chính:'}</strong></div>
                     <ul class="rbt-conflict-list">${items}</ul>
-                    ${perms.canOverrideConflict ? `
+                    ${allowOverride ? `
                         <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;">
                             <input type="checkbox" id="rbt-confirm-conflict-cb">
                             <span><strong>Xác nhận cố ý xếp trùng lịch (Ban Chủ nhiệm / Điều phối viên)</strong></span>
                         </label>
                         <textarea class="form-textarea" id="rbt-conflict-reason" rows="2" placeholder="Nhập lý do xếp trùng lịch tối thiểu 5 ký tự..."></textarea>
-                    ` : `<div class="text-secondary">Bạn không có quyền ghi đè slot trùng — vui lòng liên hệ Điều phối viên Robot hoặc Ban Chủ nhiệm.</div>`}
+                    ` : `<div class="text-secondary">${isCapExceeded ? 'Công suất của 1 hệ thống Robot tối đa 3 ca/ngày — không thể xếp đè, vui lòng chọn ngày khác.' : 'Bạn không có quyền ghi đè slot trùng — vui lòng liên hệ Điều phối viên Robot hoặc Ban Chủ nhiệm.'}</div>`}
                 </div>
             `;
         },
@@ -1021,7 +1064,7 @@
             const perms = bs.permissions || {};
             const cfg = bs.robotConfig || {};
             const surgeons = bs.surgeons || [];
-            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4', 'Ca 5', 'Ca 6'];
+            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3'];
             const rooms = cfg.robotRooms || ['PM Robot'];
             const rc = code ? this._findCase(code) : null;
             if (code && !rc) {
@@ -1032,6 +1075,12 @@
             const showClinical = ['create_consult', 'create_case', 'edit_info'].includes(mode);
             const showSchedule = ['create_case', 'schedule_step1', 'edit_schedule'].includes(mode);
             const showSurgeonInSchedule = ['schedule_step1', 'edit_schedule'].includes(mode);
+            const initExpDate = /^\d{4}-\d{2}-\d{2}$/.test(String(rc?.expectedTimeframe || '').trim()) ? String(rc.expectedTimeframe).trim() : '';
+            const expMin = (bs.todayVn && (!initExpDate || initExpDate >= bs.todayVn)) ? bs.todayVn : '';
+            const prefillSchedDate = rc?.surgeryDate
+                || ((mode === 'schedule_step1' && initExpDate && (!bs.todayVn || initExpDate >= bs.todayVn)) ? initExpDate : '')
+                || bs.todayVn
+                || '';
             const titleMap = {
                 create_consult: '🩺 Tạo ca tư vấn phẫu thuật Robot',
                 create_case: '🤖 Tạo trực tiếp ca lịch mổ Robot',
@@ -1106,9 +1155,14 @@
                                     <option value="tu_choi" ${rc?.consultResult === 'tu_choi' ? 'selected' : ''}>Từ chối mổ Robot</option>
                                 </select>
                             </div>
+                        ` : ''}
+                        ${mode === 'create_consult' || mode === 'edit_info' ? `
                             <div class="form-group">
-                                <label class="form-label">Thời gian dự kiến</label>
-                                <input class="form-input" name="expectedTimeframe" value="${esc(rc?.expectedTimeframe || '')}" placeholder="VD: Tuần sau / Cuối tháng">
+                                <label class="form-label">Thời gian dự kiến (chọn lịch)</label>
+                                <div class="rbt-date-wrap">
+                                    <input class="form-input rbt-date-picker-only" type="date" name="expectedTimeframe" value="${esc(initExpDate)}" ${expMin ? `min="${esc(expMin)}"` : ''}>
+                                    <button type="button" class="rbt-date-clear-btn" data-rbt-clear-date="expectedTimeframe" title="Xóa ngày dự kiến" aria-label="Xóa ngày dự kiến">✕</button>
+                                </div>
                             </div>
                         ` : ''}
                         ${showSchedule ? `
@@ -1120,7 +1174,7 @@
                             ` : ''}
                             <div class="form-group">
                                 <label class="form-label">Ngày mổ dự kiến ${mode === 'schedule_step1' || mode === 'edit_schedule' ? '*' : ''}</label>
-                                <input class="form-input" type="date" name="surgeryDate" value="${esc(rc?.surgeryDate || bs.todayVn || '')}" ${mode === 'schedule_step1' || mode === 'edit_schedule' ? 'required' : ''}>
+                                <input class="form-input rbt-date-picker-only" type="date" name="surgeryDate" value="${esc(prefillSchedDate)}" ${mode === 'schedule_step1' || mode === 'edit_schedule' ? 'required' : ''}>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Ca mổ ${mode === 'schedule_step1' || mode === 'edit_schedule' ? '*' : ''}</label>
@@ -1203,6 +1257,7 @@
                     payload.diagnosis = str('diagnosis');
                     payload.robotProcedure = str('robotProcedure');
                     payload.mainSurgeonId = Number(str('mainSurgeonId')) || null;
+                    payload.expectedTimeframe = str('expectedTimeframe');
                     payload.note = str('note');
                 } else {
                     payload.mainSurgeonId = Number(str('mainSurgeonId')) || rc.mainSurgeonId;
@@ -1233,7 +1288,7 @@
                 Toast.success('Đã lưu hồ sơ Điều phối Robot thành công.');
                 await this._refreshBoth(true);
             } catch (err) {
-                if (err.status === 409 && ['SCHEDULE_SLOT_CONFLICT', 'CONFLICT_FINGERPRINT_MISMATCH'].includes(err.code)) {
+                if (err.status === 409 && ['SCHEDULE_SLOT_CONFLICT', 'CONFLICT_FINGERPRINT_MISMATCH', 'ROBOT_DAILY_CAPACITY_EXCEEDED'].includes(err.code)) {
                     this._conflictState = err.data || {};
                     const slotEl = document.getElementById('rbt-conflict-slot');
                     if (slotEl) slotEl.innerHTML = this._renderConflictBoxHtml();
@@ -1252,6 +1307,9 @@
         openConsultResultModal(code) {
             const rc = this._findCase(code);
             if (!rc) return;
+            const bs = this._bootstrap || {};
+            const initExpDate = /^\d{4}-\d{2}-\d{2}$/.test(String(rc.expectedTimeframe || '').trim()) ? String(rc.expectedTimeframe).trim() : '';
+            const expMin = (bs.todayVn && (!initExpDate || initExpDate >= bs.todayVn)) ? bs.todayVn : '';
             const html = `
                 <form id="rbt-consult-form" data-rbt-modal="1">
                     <div class="form-group">
@@ -1261,6 +1319,13 @@
                             <option value="can_nhac" ${rc.consultResult === 'can_nhac' ? 'selected' : ''}>Đang cân nhắc</option>
                             <option value="tu_choi" ${rc.consultResult === 'tu_choi' ? 'selected' : ''}>Từ chối mổ Robot</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Thời gian dự kiến (chọn lịch)</label>
+                        <div class="rbt-date-wrap">
+                            <input class="form-input rbt-date-picker-only" type="date" name="expectedTimeframe" value="${esc(initExpDate)}" ${expMin ? `min="${esc(expMin)}"` : ''}>
+                            <button type="button" class="rbt-date-clear-btn" data-rbt-clear-date="expectedTimeframe" title="Xóa ngày dự kiến" aria-label="Xóa ngày dự kiến">✕</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Ghi chú tư vấn</label>
@@ -1280,6 +1345,7 @@
                     action: 'consult_result',
                     expectedRevision: Number(rc.caseRevision || 1),
                     consultResult: String(fd.get('consultResult') || ''),
+                    expectedTimeframe: String(fd.get('expectedTimeframe') || '').trim(),
                     consultNote: String(fd.get('consultNote') || '').trim()
                 });
             });
@@ -1352,7 +1418,7 @@
             const rc = this._findCase(code);
             if (!rc) return;
             const bs = this._bootstrap || {};
-            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4', 'Ca 5', 'Ca 6'];
+            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3'];
             const rooms = (bs.robotConfig && bs.robotConfig.robotRooms) || ['PM Robot'];
             const isReadmit = actionName === 'readmit';
             const html = `
@@ -1361,7 +1427,7 @@
                     <div class="rbt-form-grid">
                         <div class="form-group">
                             <label class="form-label">Ngày mổ mới *</label>
-                            <input class="form-input" type="date" name="surgeryDate" value="${esc(bs.todayVn || '')}" required>
+                            <input class="form-input rbt-date-picker-only" type="date" name="surgeryDate" value="${esc(bs.todayVn || '')}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Ca mổ *</label>
@@ -1423,7 +1489,7 @@
                 Toast.info('Không còn ca Robot chưa liên kết trên Lịch mổ tuần.');
                 return;
             }
-            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4', 'Ca 5', 'Ca 6'];
+            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3'];
             const html = `
                 <form id="rbt-link-form" data-rbt-modal="1">
                     <div class="form-group">
@@ -1495,7 +1561,7 @@
                 Toast.success('Đã cập nhật trạng thái Điều phối Robot.');
                 await this._refreshBoth(syncWeekly);
             } catch (err) {
-                if (err.status === 409 && ['SCHEDULE_SLOT_CONFLICT', 'CONFLICT_FINGERPRINT_MISMATCH'].includes(err.code)) {
+                if (err.status === 409 && ['SCHEDULE_SLOT_CONFLICT', 'CONFLICT_FINGERPRINT_MISMATCH', 'ROBOT_DAILY_CAPACITY_EXCEEDED'].includes(err.code)) {
                     this._conflictState = err.data || {};
                     const slotEl = document.getElementById('rbt-conflict-slot');
                     if (slotEl) slotEl.innerHTML = this._renderConflictBoxHtml();
@@ -1661,7 +1727,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Ngày (khi chọn Theo ngày)</label>
-                            <input class="form-input" type="date" id="rbt-pctxh-date" data-rbt-no-dirty="1" value="${esc(this._printState.date)}">
+                            <input class="form-input rbt-date-picker-only" type="date" id="rbt-pctxh-date" data-rbt-no-dirty="1" value="${esc(this._printState.date)}">
                         </div>
                     </div>
                     <div id="rbt-pctxh-preview-box">${this._buildPctxhSheetHtml()}</div>

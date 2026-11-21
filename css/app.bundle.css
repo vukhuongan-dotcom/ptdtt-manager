@@ -10992,6 +10992,60 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         grid-template-columns: 1fr;
     }
 }
+
+/* Date Picker Only (No Manual Typing) */
+.rbt-date-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rbt-date-wrap .form-input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rbt-date-picker-only {
+    cursor: pointer;
+    caret-color: transparent;
+}
+
+.rbt-date-clear-btn {
+    flex: 0 0 auto;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid #CBD5E1;
+    background: #F8FAFC;
+    color: #475569;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.rbt-date-clear-btn:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+}
+
+[data-theme="dark"] .rbt-date-clear-btn {
+    background: #1E293B;
+    border-color: #334155;
+    color: #CBD5E1;
+}
+
+[data-theme="dark"] .rbt-date-clear-btn:hover {
+    background: #334155;
+    color: #F8FAFC;
+}
+
+@media (max-width: 768px) {
+    .rbt-date-clear-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;

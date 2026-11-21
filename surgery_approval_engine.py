@@ -431,7 +431,7 @@ ROBOT_SLOT_HOLDING_STATUSES = {
     "xuat_vien_cho",
 }
 
-ROBOT_VALID_SLOTS = ("Ca 1", "Ca 2", "Ca 3", "Ca 4", "Ca 5", "Ca 6")
+ROBOT_VALID_SLOTS = ("Ca 1", "Ca 2", "Ca 3")
 
 ROBOT_POSTPONE_REASONS = {
     "chua_ngung_khang_dong": "Chưa ngưng đủ ngày thuốc kháng đông",
@@ -625,6 +625,7 @@ def check_robot_slot_conflicts_in_lock(
     shared_robot = bool(cfg.get("sharedSingleRobotSystem", True))
     blocking = []
     warnings = []
+    same_day_system_cases = []
 
     for other in (db.get("robotCases") or []):
         if not isinstance(other, dict):
@@ -641,10 +642,12 @@ def check_robot_slot_conflicts_in_lock(
         other_slot = str(other.get("caseSlot") or "").strip()
         other_room = str(other.get("operatingRoom") or "").strip()
         other_surgeon = other.get("mainSurgeonId")
+        same_room_or_machine = (s_room and other_room and s_room == other_room) or shared_robot
+        if same_room_or_machine and other_slot:
+            same_day_system_cases.append(other_code or "ROBOT")
         if not other_slot or other_slot != s_slot:
             continue
 
-        same_room_or_machine = (s_room and other_room and s_room == other_room) or shared_robot
         if same_room_or_machine:
             blocking.append({
                 "source": "robotCases",
@@ -671,6 +674,17 @@ def check_robot_slot_conflicts_in_lock(
                 "mainSurgeonId": other_surgeon,
                 "phone": other.get("phone"),
             })
+
+    if len(same_day_system_cases) >= 3:
+        blocking.append({
+            "source": "robotCases",
+            "conflictType": "ROBOT_DAILY_CAPACITY_EXCEEDED",
+            "robotCaseCode": ", ".join(same_day_system_cases[:3]),
+            "patientName": f"Đã đủ {len(same_day_system_cases)}/3 ca Robot trong ngày",
+            "surgeryDate": s_date,
+            "operatingRoom": s_room or "PM Robot",
+            "caseSlot": s_slot,
+        })
 
     for surg in (db.get("surgeries") or []):
         if not isinstance(surg, dict):

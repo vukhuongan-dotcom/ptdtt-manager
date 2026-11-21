@@ -265,6 +265,19 @@ def _validate_assist_surgeon(db: dict, raw_sid):
     return sid
 
 
+def _validate_expected_timeframe(raw_val) -> str:
+    val = str(raw_val or "").strip()
+    if not val:
+        return ""
+    if not is_valid_iso_date(val):
+        raise ApprovalEngineError(
+            422,
+            "INVALID_EXPECTED_DATE",
+            "Thời gian dự kiến phải chọn ngày hợp lệ trên lịch, không nhập chữ tự do.",
+        )
+    return val
+
+
 def _validate_schedule_fields(
     body: dict,
     db: dict,
@@ -285,7 +298,7 @@ def _validate_schedule_fields(
     raw_dur = body["durationMinutes"] if "durationMinutes" in body else (existing_case or {}).get("durationMinutes") or cfg.get("defaultDurationMinutes") or 180
 
     if require_date_slot and (not s_date or not s_slot):
-        raise ApprovalEngineError(422, "SCHEDULE_DATE_SLOT_REQUIRED", "Vui lòng chọn đầy đủ Ngày mổ dự kiến và Ca mổ (Ca 1–Ca 6).")
+        raise ApprovalEngineError(422, "SCHEDULE_DATE_SLOT_REQUIRED", "Vui lòng chọn đầy đủ Ngày mổ dự kiến và Ca mổ (Ca 1–Ca 3, tối đa 3 ca/ngày).")
     if s_date:
         if not is_valid_iso_date(s_date):
             raise ApprovalEngineError(422, "INVALID_SURGERY_DATE", "Ngày mổ phải theo định dạng YYYY-MM-DD.")
@@ -334,6 +347,19 @@ def _check_conflict_or_override(
     )
     if not blocking:
         return None
+
+    if any(c.get("conflictType") == "ROBOT_DAILY_CAPACITY_EXCEEDED" for c in blocking):
+        raise ApprovalEngineError(
+            409,
+            "ROBOT_DAILY_CAPACITY_EXCEEDED",
+            "Hệ thống Robot đã đạt công suất tối đa 3 ca/ngày. Vui lòng chọn ngày khác.",
+            {
+                "conflicts": _mask_conflict_list(blocking, perms),
+                "warnings": warnings,
+                "conflictFingerprint": fp,
+                "canOverrideConflict": False,
+            },
+        )
 
     if body.get("confirmConflict") is True:
         if not perms.get("canOverrideConflict"):
@@ -1175,7 +1201,7 @@ def register_robot_schedule_routes(app, sf_mod):
                 "mainSurgeonId": surgeon_id,
                 "mainSurgeonName": surgeon_name,
                 "assistSurgeon1": assist1,
-                "expectedTimeframe": str(body.get("expectedTimeframe") or "").strip(),
+                "expectedTimeframe": _validate_expected_timeframe(body.get("expectedTimeframe")),
                 "consultResult": str(body.get("consultResult") or "cho").strip() or "cho",
                 "consultNote": str(body.get("consultNote") or "").strip(),
                 "surgeryDate": "",
@@ -1302,7 +1328,7 @@ def register_robot_schedule_routes(app, sf_mod):
             phone = normalize_phone_vn(body.get("phone"), required=False)
             slot = str(body.get("caseSlot") or ("Ca 1" if surg.get("isFirstCase") else "Ca 2")).strip()
             if slot not in ROBOT_VALID_SLOTS:
-                raise ApprovalEngineError(422, "INVALID_CASE_SLOT", "Ca mổ không hợp lệ (Ca 1–Ca 6).")
+                raise ApprovalEngineError(422, "INVALID_CASE_SLOT", "Ca mổ không hợp lệ (Ca 1–Ca 3, tối đa 3 ca/ngày).")
             room = str(body.get("operatingRoom") or get_robot_config(db).get("defaultOperatingRoom") or "PM Robot").strip()
 
             is_sbx = bool(surg.get("isTestSandboxCase") is True)
@@ -1439,7 +1465,7 @@ def register_robot_schedule_routes(app, sf_mod):
                 if "consultNote" in body:
                     rcase["consultNote"] = str(body.get("consultNote") or "").strip()
                 if "expectedTimeframe" in body:
-                    rcase["expectedTimeframe"] = str(body.get("expectedTimeframe") or "").strip()
+                    rcase["expectedTimeframe"] = _validate_expected_timeframe(body.get("expectedTimeframe"))
                 # Security invariant: dong_y always routes to cho_xep_lich (Step 1 queue), never Step 2
                 rcase["status"] = {"dong_y": "cho_xep_lich", "can_nhac": "can_nhac", "tu_choi": "tu_choi"}[cr]
                 wal_action = "robot_consult_updated"
@@ -1593,7 +1619,7 @@ def register_robot_schedule_routes(app, sf_mod):
                 if "note" in body:
                     rcase["note"] = str(body.get("note") or "").strip()
                 if "expectedTimeframe" in body:
-                    rcase["expectedTimeframe"] = str(body.get("expectedTimeframe") or "").strip()
+                    rcase["expectedTimeframe"] = _validate_expected_timeframe(body.get("expectedTimeframe"))
                 if "consultNote" in body:
                     rcase["consultNote"] = str(body.get("consultNote") or "").strip()
 
