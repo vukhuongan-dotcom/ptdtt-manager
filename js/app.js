@@ -17,6 +17,7 @@ const App = {
         patients: PatientsPage,
         schedule: SchedulePage,
         surgery: SurgeryPage,
+        'robot-schedule': RobotSchedulePage,
         'surgery-approval': SurgeryApprovalPage,
         'surgery-stats': SurgeryStatsPage,
         research: ResearchPage,
@@ -100,6 +101,9 @@ const App = {
         if (typeof EMR !== 'undefined') {
             EMR.stopAutoRefresh();
             EMR.clearRuntimeCache();
+        }
+        if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage.purgeMemoryState === 'function') {
+            RobotSchedulePage.purgeMemoryState();
         }
         document.getElementById('app').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
@@ -216,7 +220,7 @@ const App = {
 
         content.addEventListener('touchstart', (e) => {
             if (e.touches.length !== 1) return;
-            ignoreSwipe = !!(e.target && e.target.closest && e.target.closest('.surgery-scroll-zone, .schedule-table-wrap, .staff-filters-scroll, .table-responsive, .nckh-subtabs-wrap, .nckh-table-card, .nckh-staff-table-wrap'));
+            ignoreSwipe = !!(e.target && e.target.closest && e.target.closest('.surgery-scroll-zone, .schedule-table-wrap, .staff-filters-scroll, .table-responsive, .nckh-subtabs-wrap, .nckh-table-card, .nckh-staff-table-wrap, .rbt-table-wrap, .rbt-subtabs-wrap'));
             if (ignoreSwipe) return;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;

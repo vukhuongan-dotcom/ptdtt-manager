@@ -93,6 +93,9 @@ const Auth = {
         // Shared localStorage token changed across tabs
         this._bumpAuthEpoch('cross_tab_storage_change');
         const nextSession = this.getSession();
+        if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage.purgeMemoryState === 'function') {
+            RobotSchedulePage.purgeMemoryState();
+        }
         if (!nextSession) {
             if (typeof Store !== 'undefined' && Store.resetForLogout) Store.resetForLogout();
             if (typeof App !== 'undefined' && App.showLogin) App.showLogin();
@@ -201,6 +204,7 @@ const Auth = {
                 title: result.user.title || '',
                 isAdmin: result.user.isAdmin,
                 isSuperAdmin: result.user.isSuperAdmin || false,
+                isRobotCoordinator: Boolean(result.user.isRobotCoordinator),
                 mustChangePassword: Boolean(result.user.mustChangePassword || result.mustChangePassword),
                 sessionEpoch: Number(result.user.sessionEpoch || 1),
                 color: result.user.color || '#1878B4',
@@ -243,6 +247,7 @@ const Auth = {
                 title: user.title || '',
                 isAdmin: user.isAdmin,
                 isSuperAdmin: user.isSuperAdmin || false,
+                isRobotCoordinator: Boolean(user.isRobotCoordinator),
                 mustChangePassword: Boolean(user.mustChangePassword),
                 sessionEpoch: Number(user.sessionEpoch || 1),
                 color: user.color || '#1878B4',
@@ -310,6 +315,9 @@ const Auth = {
         if (typeof Store !== 'undefined' && typeof Store.resetForLogout === 'function') {
             Store.resetForLogout();
         }
+        if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage.purgeMemoryState === 'function') {
+            RobotSchedulePage.purgeMemoryState();
+        }
         this._removeToken();
         sessionStorage.removeItem(this.SESSION_KEY);
         if (wasRemembered || !opts.preserveSharedSession) {
@@ -357,11 +365,20 @@ const Auth = {
             title: (matched && matched.title !== undefined) ? matched.title : (payload.title || ''),
             isAdmin: Boolean(payload.isAdmin),
             isSuperAdmin: Boolean(payload.isSuperAdmin),
+            isRobotCoordinator: Boolean(matched && matched.isRobotCoordinator),
             mustChangePassword: Boolean(payload.mustChangePassword || (matched && matched.mustChangePassword)),
             sessionEpoch: Number(payload.sessionEpoch || (matched && matched.sessionEpoch) || 1),
             color: (matched && matched.color) || payload.color || '#1878B4',
             loginTime: (matched && matched.loginTime) || null
         };
+    },
+
+    // Check if current session has BCN or Robot Coordinator flag
+    isRobotCoordinator() {
+        const s = this.getSession();
+        if (!s) return false;
+        const uname = String(s.username || '').toLowerCase();
+        return Boolean(s.isSuperAdmin || s.isRobotCoordinator || uname === 'vkan' || uname === 'nphuu');
     },
 
     // Check if logged in

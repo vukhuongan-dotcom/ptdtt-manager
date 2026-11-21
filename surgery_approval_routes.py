@@ -53,6 +53,7 @@ from surgery_approval_engine import (
     get_attribution_journal_path,
     get_journal_path,
     get_pod_room_info,
+    get_robot_config,
     is_attending_user,
     is_bcn_user,
     is_in_phase1_approval_scope,
@@ -76,6 +77,7 @@ from surgery_approval_engine import (
     resolve_live_user_fail_closed,
     resolve_submit_authorization,
     run_surgery_approval_migration,
+    serialize_robot_case_for_user,
     sha256_hex,
     stamp_badge_fields,
     strip_approval_metadata_from_real_surgeries,
@@ -137,31 +139,73 @@ def _purge_expired_trash_in_place(db: dict, days: int = 7) -> int:
     if not isinstance(trash, list) or not trash:
         return 0
     now_utc = datetime.now(timezone.utc)
+    robot_days = int(get_robot_config(db).get("trashAutoArchiveDays") or 14)
     kept = []
     purged = 0
+    archived_robot = 0
+    robot_cases = db.get("robotCases") or []
+    robot_by_code = {
+        str(rc.get("robotCaseCode") or rc.get("soNV") or "").strip(): rc
+        for rc in robot_cases
+        if isinstance(rc, dict) and str(rc.get("robotCaseCode") or rc.get("soNV") or "").strip()
+    }
+    arch_list = db.setdefault("surgeriesArchivedInactive", [])
+    arch_ids = {a.get("id") for a in arch_list if isinstance(a, dict) and is_pos_int(a.get("id"))}
+
     for item in trash:
         if not isinstance(item, dict):
             continue
+        rc_code = str(item.get("robotCaseId") or "").strip()
         del_at = item.get("deletedAt")
-        expired = False
+        age_seconds = None
         if isinstance(del_at, str) and del_at.strip():
             try:
                 dt = datetime.fromisoformat(del_at.strip().replace("Z", "+00:00"))
                 if dt.tzinfo is None:
                     dt = dt.replace(tzinfo=timezone.utc)
-                if (now_utc - dt).total_seconds() > days * 86400:
-                    expired = True
+                age_seconds = (now_utc - dt).total_seconds()
             except ValueError:
-                pass
-        if expired:
+                age_seconds = None
+
+        if rc_code:
+            if age_seconds is not None and age_seconds > robot_days * 86400:
+                arch_item = copy.deepcopy(item)
+                arch_item["archivedInactiveAt"] = now_vn_iso()
+                sid = arch_item.get("id")
+                if sid in arch_ids:
+                    for idx_a, old_a in enumerate(arch_list):
+                        if isinstance(old_a, dict) and old_a.get("id") == sid:
+                            arch_list[idx_a] = arch_item
+                            break
+                else:
+                    arch_list.append(arch_item)
+                    if is_pos_int(sid):
+                        arch_ids.add(sid)
+                rc = robot_by_code.get(rc_code)
+                if isinstance(rc, dict):
+                    if rc.get("status") == "da_xoa":
+                        rc["status"] = "archived_deleted"
+                        rc["archivedAt"] = now_vn_iso()
+                    if rc.get("canonicalSurgeryId") == sid:
+                        rc["linkState"] = "inactive_archived"
+                    rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
+                archived_robot += 1
+            else:
+                kept.append(item)
+            continue
+
+        if age_seconds is not None and age_seconds > days * 86400:
             purged += 1
         else:
             kept.append(item)
-    if purged > 0:
+
+    if purged > 0 or archived_robot > 0:
         db["surgeriesTrash"] = kept
         revs = db.setdefault("_revisions", {})
         revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
-    return purged
+        if archived_robot > 0:
+            revs["robotCases"] = int(revs.get("robotCases", 1)) + 1
+    return purged + archived_robot
 
 
 def register_surgery_approval_routes(app, sf_mod):
@@ -218,6 +262,8 @@ def register_surgery_approval_routes(app, sf_mod):
         enforce_canary_gate: bool = True,
         require_build_header: bool = True,
         allow_sandbox_delegation_sim: bool = False,
+        body_override: dict = None,
+        response_post_serializer=None,
         handler_fn,
     ):
         """
@@ -228,9 +274,12 @@ def register_surgery_approval_routes(app, sf_mod):
           Step S2: Append & fsync hash-chained attribution entries to surgery_attribution.jsonl.
           Step S3: Apply contributor summary + write & fsync db.json.tmp -> os.replace(tmp, db.json).
         """
-        body = request.get_json(force=True, silent=True)
-        if body is None:
-            body = {}
+        if body_override is not None:
+            body = copy.deepcopy(body_override)
+        else:
+            body = request.get_json(force=True, silent=True)
+            if body is None:
+                body = {}
         if not isinstance(body, dict):
             return jsonify({"error": "JSON body phải là object.", "code": "INVALID_PAYLOAD", "errorCode": "INVALID_PAYLOAD"}), 400
 
@@ -239,6 +288,8 @@ def register_surgery_approval_routes(app, sf_mod):
             _atomic_write_json(sf_mod.DATA_FILE, {})
 
         lock_fd = open(sf_mod._DB_LOCK_FILE, "a+")
+        db = None
+        real_user = None
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_EX)
             with open(sf_mod.DATA_FILE, "r", encoding="utf-8") as rf:
@@ -330,6 +381,8 @@ def register_surgery_approval_routes(app, sf_mod):
                 body,
             )
             if cached_resp is not None:
+                if callable(response_post_serializer):
+                    cached_resp = response_post_serializer(copy.deepcopy(cached_resp), real_user, db)
                 return jsonify(cached_resp), cached_status
 
             fingerprint = sha256_hex(canonical_json(body)) if scope_key else None
@@ -345,7 +398,8 @@ def register_surgery_approval_routes(app, sf_mod):
                 if isinstance(resp_payload, dict) and isinstance(db.get("_revisions"), dict):
                     resp_payload.setdefault("revisions", copy.deepcopy(db["_revisions"]))
                 resp_payload["version"] = sf_mod._get_file_version()
-                return jsonify(resp_payload), http_status
+                out_skip = response_post_serializer(copy.deepcopy(resp_payload), real_user, db) if callable(response_post_serializer) else resp_payload
+                return jsonify(out_skip), http_status
 
             idem_rec = build_idempotency_record(scope_key, fingerprint, http_status, resp_payload)
             if idem_rec:
@@ -397,13 +451,19 @@ def register_surgery_approval_routes(app, sf_mod):
             db["_lastModified"] = datetime.now().isoformat()
             _atomic_write_json(sf_mod.DATA_FILE, db)
             resp_payload["version"] = sf_mod._get_file_version()
-            return jsonify(resp_payload), http_status
+            out_resp = response_post_serializer(copy.deepcopy(resp_payload), real_user, db) if callable(response_post_serializer) else resp_payload
+            return jsonify(out_resp), http_status
 
         except ApprovalEngineError as e:
-            return jsonify(e.to_dict()), e.status_code
+            err_payload = e.to_dict()
+            if callable(response_post_serializer) and isinstance(db, dict) and isinstance(real_user, dict):
+                err_payload = response_post_serializer(err_payload, real_user, db)
+            return jsonify(err_payload), e.status_code
         finally:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             lock_fd.close()
+
+    app.extensions["ptdtt_run_domain_wal_tx"] = _run_wal_tx
 
     # ───────────────────────── Catalog & Config Endpoints ─────────────────────────
 
@@ -1835,7 +1895,7 @@ def register_surgery_approval_routes(app, sf_mod):
 
             sandbox_ids = {
                 s.get("id")
-                for s in ((db.get("surgeries") or []) + (db.get("surgeriesTrash") or []))
+                for s in ((db.get("surgeries") or []) + (db.get("surgeriesTrash") or []) + (db.get("surgeriesArchivedInactive") or []))
                 if isinstance(s, dict) and s.get("isTestSandboxCase") is True
             }
             allow_sbx = can_user_access_sandbox(real_user, db)
@@ -1855,6 +1915,11 @@ def register_surgery_approval_routes(app, sf_mod):
                 if (patch.get("surgeryRecord") or {}).get("isTestSandboxCase") is True:
                     return False
                 if (patch.get("delegationRecord") or {}).get("isTestSandboxDelegation") is True:
+                    return False
+                if patch.get("patchKind") == "robot_tx" and any(
+                    isinstance(rc, dict) and rc.get("isTestSandboxCase") is True
+                    for rc in (patch.get("robotCaseRecords") or [])
+                ):
                     return False
                 return True
 
@@ -1901,7 +1966,13 @@ def register_surgery_approval_routes(app, sf_mod):
                     "entryHash": e.get("entryHash"),
                 }
                 if include_snapshot:
-                    item["committedStatePatch"] = e.get("committedStatePatch")
+                    snap_patch = copy.deepcopy(e.get("committedStatePatch"))
+                    if isinstance(snap_patch, dict) and snap_patch.get("patchKind") == "robot_tx":
+                        snap_patch["robotCaseRecords"] = [
+                            serialize_robot_case_for_user(rc, real_user, db)
+                            for rc in (snap_patch.get("robotCaseRecords") or [])
+                        ]
+                    item["committedStatePatch"] = snap_patch
                 sanitized.append(item)
 
             return jsonify({
@@ -2021,6 +2092,13 @@ def register_surgery_approval_routes(app, sf_mod):
             rec = copy.deepcopy(surgeries[idx])
             if rec.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
                 raise ApprovalEngineError(404, "SURGERY_NOT_FOUND", f"Không tìm thấy ca mổ #{sid}.")
+            if rec.get("robotCaseId"):
+                raise ApprovalEngineError(
+                    409,
+                    "ROBOT_CASE_USE_COORDINATOR_FLOW",
+                    f"Ca mổ #{sid} đang liên kết hồ sơ Điều phối Robot ({rec.get('robotCaseId')}). Vui lòng chọn Hoãn mổ / Xuất viện chờ / Xóa trong Tab Điều phối Robot.",
+                    {"robotCaseCode": rec.get("robotCaseId")},
+                )
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa.")
 
@@ -2118,6 +2196,13 @@ def register_surgery_approval_routes(app, sf_mod):
             rec = copy.deepcopy(trash[t_idx])
             if rec.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
+            if rec.get("robotCaseId"):
+                raise ApprovalEngineError(
+                    409,
+                    "ROBOT_CASE_USE_COORDINATOR_FLOW",
+                    f"Ca mổ #{sid} thuộc hồ sơ Điều phối Robot ({rec.get('robotCaseId')}). Vui lòng trả lịch / nhập viện lại / khôi phục tại Tab Điều phối Robot.",
+                    {"robotCaseCode": rec.get("robotCaseId")},
+                )
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền khôi phục.")
 
@@ -2238,6 +2323,13 @@ def register_surgery_approval_routes(app, sf_mod):
             rec = trash[t_idx]
             if rec.get("isTestSandboxCase") is True and not can_user_access_sandbox(real_user, db):
                 raise ApprovalEngineError(404, "TRASH_RECORD_NOT_FOUND", f"Không tìm thấy ca mổ #{sid} trong Thùng rác.")
+            if rec.get("robotCaseId"):
+                raise ApprovalEngineError(
+                    409,
+                    "ROBOT_CASE_PROTECTED_ZERO_RM",
+                    f"Hồ sơ ca mổ Robot #{sid} ({rec.get('robotCaseId')}) được bảo vệ theo chính sách lưu trữ bất biến Zero-RM — không cho xóa trực tiếp từ Thùng rác tuần.",
+                    {"robotCaseCode": rec.get("robotCaseId")},
+                )
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
                 raise ApprovalEngineError(403, "WEEK_LOCKED", "Ca mổ thuộc tuần đã khóa (> 7 ngày). Chỉ Super Admin mới có quyền xóa vĩnh viễn.")
 

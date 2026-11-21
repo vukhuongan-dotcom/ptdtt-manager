@@ -1,9 +1,9 @@
 // ===== SERVICE WORKER — PTDTT Manager PWA =====
-const CACHE_NAME = 'ptdtt-v2611160654';
+const CACHE_NAME = 'ptdtt-v2611211215';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/css/app.bundle.css',  // P2.1: 25 CSS files bundled → 1 request
+    '/css/app.bundle.css',  // P2.1: 26 CSS files bundled → 1 request
     '/js/data.js',
     '/js/store.js',
     '/js/auth.js',
@@ -17,6 +17,7 @@ const STATIC_ASSETS = [
     '/js/patients.js',
     '/js/schedule.js',
     '/js/surgery.js',
+    '/js/robot-schedule.js',
     '/js/surgery-approval.js',
     '/js/emr.js',
     '/js/surgery-metrics.js',

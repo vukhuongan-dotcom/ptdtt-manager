@@ -43,6 +43,7 @@ PRODUCTION_CODE_PATHS = {
     "server_flask.py",
     "surgery_approval_engine.py",
     "surgery_approval_routes.py",
+    "robot_schedule_routes.py",
 }
 PRODUCTION_CODE_PREFIXES = ("js/", "css/")
 

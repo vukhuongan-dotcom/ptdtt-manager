@@ -10254,6 +10254,744 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         transition: none !important;
     }
 }
+/* =====================================================================
+   ROBOTIC SURGERY COORDINATION MODULE (FEAT-231)
+   Khoa Phẫu thuật Đại trực tràng — Bệnh viện Bình Dân
+   Brand Identity v1: #1D2357 Navy / #1878B4 Ocean / #54A83C Leaf / #333C83 Indigo
+   Strict zero-teal policy · Light & Dark (#0C1022) · Zero horizontal overflow
+   ===================================================================== */
+
+.rbt-page {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.rbt-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1D2357 0%, #263174 58%, #1878B4 100%);
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(29, 35, 87, 0.18);
+}
+
+.rbt-header__title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.rbt-header__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rbt-header__sub {
+    margin: 0;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.4;
+}
+
+.rbt-role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.16);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.rbt-header__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rbt-btn-light {
+    background: #FFFFFF;
+    color: #1D2357;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+}
+
+.rbt-btn-light:hover {
+    background: #EFF4FF;
+    color: #1D2357;
+}
+
+.rbt-btn-outline-light {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.36);
+    font-weight: 600;
+}
+
+.rbt-btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+}
+
+/* KPI Strip */
+.rbt-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    gap: 12px;
+}
+
+.rbt-kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 4px solid #1878B4;
+    min-width: 0;
+}
+
+.rbt-kpi-card--navy { border-left-color: #1D2357; }
+.rbt-kpi-card--green { border-left-color: #54A83C; }
+.rbt-kpi-card--amber { border-left-color: #D97706; }
+.rbt-kpi-card--indigo { border-left-color: #333C83; }
+
+.rbt-kpi-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.rbt-kpi-value {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.15;
+}
+
+.rbt-kpi-meta {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+/* Subtabs */
+.rbt-subtabs-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    max-width: 100%;
+}
+
+.rbt-subtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    min-height: 40px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.87rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.rbt-subtab:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.rbt-subtab.is-active {
+    background: #1D2357;
+    color: #FFFFFF;
+    border-color: #1D2357;
+}
+
+.rbt-subtab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    background: rgba(24, 120, 180, 0.16);
+    color: #1878B4;
+}
+
+.rbt-subtab.is-active .rbt-subtab-badge {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+}
+
+/* Week navigation & filter toolbar */
+.rbt-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+}
+
+.rbt-toolbar__group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rbt-week-label {
+    font-weight: 700;
+    font-size: 0.96rem;
+    color: var(--text-primary);
+    padding: 0 6px;
+}
+
+.rbt-week-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.rbt-day-col {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.rbt-day-col.is-today {
+    border-color: #1878B4;
+    box-shadow: 0 0 0 1px rgba(24, 120, 180, 0.28);
+}
+
+.rbt-day-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-default);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.rbt-day-col.is-today .rbt-day-head {
+    background: rgba(24, 120, 180, 0.14);
+    color: #1D2357;
+}
+
+.rbt-day-body {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.rbt-slot-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rbt-slot-heading {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    padding: 2px 4px;
+    border-bottom: 1px dashed var(--border-subtle);
+}
+
+/* Case Card */
+.rbt-case-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-left: 4px solid #333C83;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.rbt-case-card--cho_duyet_tien_phau { border-left-color: #D97706; }
+.rbt-case-card--cho_duyet_luu_vien { border-left-color: #1878B4; }
+.rbt-case-card--cho_mo { border-left-color: #54A83C; }
+.rbt-case-card--da_mo { border-left-color: #1D2357; }
+.rbt-case-card--hoan_mo { border-left-color: #DC2626; }
+.rbt-case-card--xuat_vien_cho { border-left-color: #7C3AED; }
+
+.rbt-case-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.rbt-case-code {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #1878B4;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.rbt-case-name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.rbt-case-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.38;
+}
+
+.rbt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.35;
+    max-width: 100%;
+    white-space: normal;
+}
+
+.rbt-badge--navy { background: rgba(29, 35, 87, 0.12); color: #1D2357; }
+.rbt-badge--ocean { background: rgba(24, 120, 180, 0.14); color: #006095; }
+.rbt-badge--green { background: rgba(84, 168, 60, 0.16); color: #2E6B1E; }
+.rbt-badge--amber { background: rgba(217, 119, 6, 0.16); color: #92400E; }
+.rbt-badge--red { background: rgba(220, 38, 38, 0.14); color: #991B1B; }
+.rbt-badge--indigo { background: rgba(51, 60, 131, 0.14); color: #333C83; }
+.rbt-badge--sandbox { background: rgba(245, 158, 11, 0.18); color: #92400E; border: 1px dashed #D97706; }
+
+.rbt-dirty-banner {
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(217, 119, 6, 0.12);
+    border: 1px solid rgba(217, 119, 6, 0.45);
+    color: #92400E;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.rbt-card-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.rbt-btn-xs {
+    padding: 5px 9px;
+    font-size: 0.77rem;
+    min-height: 32px;
+    border-radius: 7px;
+}
+
+/* Data Tables for Consult, Postpone, Completed, Trash, Config */
+.rbt-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.rbt-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.rbt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.rbt-table th,
+.rbt-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border-default);
+    text-align: left;
+    vertical-align: top;
+}
+
+.rbt-table th {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Conflict Box inside Modal */
+.rbt-conflict-box {
+    margin: 10px 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #DC2626;
+    background: rgba(220, 38, 38, 0.08);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.rbt-conflict-list {
+    margin: 8px 0 10px 18px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rbt-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.rbt-form-grid--full {
+    grid-column: 1 / -1;
+}
+
+.rbt-empty {
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    border: 1px dashed var(--border-default);
+    border-radius: 10px;
+}
+
+/* Weekly Surgery integration badge */
+.rbt-weekly-link-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(29, 35, 87, 0.12);
+    color: #1D2357;
+    border: 1px solid rgba(29, 35, 87, 0.25);
+    cursor: pointer;
+    margin-top: 2px;
+}
+
+.rbt-weekly-link-badge:hover {
+    background: #1D2357;
+    color: #FFFFFF;
+}
+
+/* =====================================================================
+   DARK MODE (#0C1022 / #141A30) — High-Contrast Clinical Surfaces
+   ===================================================================== */
+[data-theme="dark"] .rbt-header {
+    background: linear-gradient(135deg, #0C1022 0%, #1D2357 62%, #134E7A 100%);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+[data-theme="dark"] .rbt-day-col.is-today .rbt-day-head {
+    background: rgba(24, 120, 180, 0.24);
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .rbt-case-code {
+    color: #60A5FA;
+}
+
+[data-theme="dark"] .rbt-badge--navy { background: rgba(99, 102, 241, 0.22); color: #E0E7FF; }
+[data-theme="dark"] .rbt-badge--ocean { background: rgba(56, 189, 248, 0.18); color: #BAE6FD; }
+[data-theme="dark"] .rbt-badge--green { background: rgba(84, 168, 60, 0.24); color: #BBF7D0; }
+[data-theme="dark"] .rbt-badge--amber { background: rgba(245, 158, 11, 0.22); color: #FDE68A; }
+[data-theme="dark"] .rbt-badge--red { background: rgba(239, 68, 68, 0.22); color: #FECACA; }
+[data-theme="dark"] .rbt-badge--indigo { background: rgba(129, 140, 248, 0.22); color: #E0E7FF; }
+[data-theme="dark"] .rbt-badge--sandbox { color: #FDE68A; }
+[data-theme="dark"] .rbt-dirty-banner { color: #FDE68A; background: rgba(245, 158, 11, 0.16); }
+[data-theme="dark"] .rbt-weekly-link-badge {
+    background: rgba(59, 130, 246, 0.22);
+    color: #DBEAFE;
+    border-color: rgba(147, 197, 253, 0.35);
+}
+
+/* =====================================================================
+   A5 PORTRAIT P.CTXH SHEET PREVIEW & PRINT ISOLATION
+   ===================================================================== */
+#robot-pctxh-print-root {
+    display: none;
+}
+
+.rbt-a5-sheet {
+    background: #FFFFFF;
+    color: #111827;
+    border: 1.5px solid #1D2357;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: "Noto Sans", system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.rbt-a5-sheet__top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #1878B4;
+    margin-bottom: 10px;
+}
+
+.rbt-a5-sheet__logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.rbt-a5-sheet__org {
+    flex: 1;
+    min-width: 0;
+}
+
+.rbt-a5-sheet__hosp {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1D2357;
+    text-transform: uppercase;
+}
+
+.rbt-a5-sheet__dept {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1878B4;
+    text-transform: uppercase;
+}
+
+.rbt-a5-sheet__title {
+    text-align: center;
+    margin: 6px 0 4px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #1D2357;
+    text-transform: uppercase;
+}
+
+.rbt-a5-sheet__subtitle {
+    text-align: center;
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333C83;
+}
+
+.rbt-a5-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-bottom: 12px;
+}
+
+.rbt-a5-table th,
+.rbt-a5-table td {
+    border: 1px solid #1D2357;
+    padding: 5px 6px;
+    vertical-align: top;
+    text-align: left;
+    color: #111827;
+}
+
+.rbt-a5-table th {
+    background: #1D2357;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.rbt-a5-sheet__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 11px;
+}
+
+/* Grayscale / B&W Toner-Saving Print Mode */
+.rbt-a5-sheet--bw {
+    border-color: #000000 !important;
+    color: #000000 !important;
+}
+
+.rbt-a5-sheet--bw .rbt-a5-sheet__top {
+    border-bottom-color: #000000 !important;
+}
+
+.rbt-a5-sheet--bw .rbt-a5-sheet__logo {
+    filter: grayscale(100%) contrast(130%);
+}
+
+.rbt-a5-sheet--bw .rbt-a5-sheet__hosp,
+.rbt-a5-sheet--bw .rbt-a5-sheet__dept,
+.rbt-a5-sheet--bw .rbt-a5-sheet__title,
+.rbt-a5-sheet--bw .rbt-a5-sheet__subtitle {
+    color: #000000 !important;
+}
+
+.rbt-a5-sheet--bw .rbt-a5-table th,
+.rbt-a5-sheet--bw .rbt-a5-table td {
+    border-color: #000000 !important;
+    color: #000000 !important;
+}
+
+.rbt-a5-sheet--bw .rbt-a5-table th {
+    background: #E5E7EB !important;
+    color: #000000 !important;
+}
+
+@page robotPctxhA5 {
+    size: A5 portrait;
+    margin: 10mm;
+}
+
+@media print {
+    body.printing-robot-pctxh {
+        page: robotPctxhA5;
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body.printing-robot-pctxh #app,
+    body.printing-robot-pctxh #modal-overlay,
+    body.printing-robot-pctxh #toast-container,
+    body.printing-robot-pctxh #network-status-banner,
+    body.printing-robot-pctxh #offline-banner {
+        display: none !important;
+    }
+
+    body.printing-robot-pctxh #robot-pctxh-print-root {
+        display: block !important;
+        width: 100% !important;
+        background: #FFFFFF !important;
+        padding: 0 !important;
+    }
+
+    body.printing-robot-pctxh .rbt-a5-sheet {
+        border-radius: 0 !important;
+        page-break-inside: avoid;
+    }
+}
+
+/* =====================================================================
+   MOBILE RESPONSIVE (<= 768px & <= 350px) — Zero Horizontal Overflow
+   ===================================================================== */
+@media (max-width: 1200px) {
+    .rbt-week-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .rbt-header {
+        padding: 14px;
+    }
+
+    .rbt-header__actions {
+        width: 100%;
+    }
+
+    .rbt-header__actions .btn {
+        min-height: 44px;
+        flex: 1 1 auto;
+    }
+
+    .rbt-subtab {
+        min-height: 44px;
+        padding: 8px 12px;
+    }
+
+    .rbt-week-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rbt-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rbt-btn-xs {
+        min-height: 44px;
+        padding: 8px 12px;
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 350px) {
+    .rbt-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;

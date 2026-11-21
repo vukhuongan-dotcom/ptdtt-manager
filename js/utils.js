@@ -508,6 +508,7 @@ const FormAutoSave = {
 
     // Start auto-saving a form. formKey identifies the form (e.g. 'surgery-edit-123')
     start(formKey) {
+        if (String(formKey || '').toLowerCase().startsWith('robot')) return;
         this.stop(formKey); // clear any existing timer
         this._restore(formKey);
         this._timers[formKey] = setInterval(() => this._save(formKey), 30000);
@@ -536,6 +537,7 @@ const FormAutoSave = {
     },
 
     _save(formKey) {
+        if (String(formKey || '').toLowerCase().startsWith('robot')) return;
         const form = document.querySelector(`form[data-autosave-key="${formKey}"]`);
         if (!form) return;
         const data = {};
@@ -918,7 +920,12 @@ const Modal = {
         }, 50);
     },
 
-    close() {
+    close(force = false) {
+        if (!force && typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage.canCloseModal === 'function') {
+            try {
+                if (!RobotSchedulePage.canCloseModal(false)) return;
+            } catch (_) {}
+        }
         this._teardownViewportSync({ keepScrollLock: false });
         const modalEl = document.getElementById('modal');
         if (modalEl) modalEl.classList.remove('sap-modal-xl', 'sap-drawer-right');
@@ -929,6 +936,9 @@ const Modal = {
         }
         if (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage._onModalClosed === 'function') {
             try { SurgeryApprovalPage._onModalClosed(); } catch (_) {}
+        }
+        if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage._onModalClosed === 'function') {
+            try { RobotSchedulePage._onModalClosed(); } catch (_) {}
         }
         // Remove any open duplicate confirmation sub-dialog
         const dupDialog = document.getElementById('surgery-duplicate-dialog');

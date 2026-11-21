@@ -31,6 +31,7 @@ cat \
   css/schedule.css \
   css/surgery.css \
   css/surgery-approval.css \
+  css/robot-schedule.css \
   css/surgery-stats.css \
   css/rooms.css \
   css/research.css \

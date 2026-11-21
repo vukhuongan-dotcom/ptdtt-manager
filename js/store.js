@@ -4,7 +4,7 @@ const PENDING_KEY = 'ptdtt_pending_v1';
 const PENDING_ISOLATED_PREFIX = 'ptdtt_pending_v1:';
 const REJECTED_DRAFTS_PREFIX = 'ptdtt_rejected_drafts_v1:';
 const DATA_VERSION = 11; // Increment this when SAMPLE data changes (v11: fix staff ID calculation & resolve Châu/Sang ID collision)
-const CLIENT_BUILD = 2611160654;
+const CLIENT_BUILD = 2611211215;
 
 const COLLECTION_SYNC_ORDER = [
     'staff', 'departedStaff', 'externalDoctors', 'specialTeams', 'staffStatuses',
@@ -1106,7 +1106,8 @@ const Store = {
             if (!item || typeof item !== 'object') continue;
             const deletedAt = new Date(item.deletedAt);
             const diffDays = (now - deletedAt) / (1000 * 60 * 60 * 24);
-            if (!Number.isFinite(diffDays) || diffDays <= maxDays) {
+            const limitDays = item.robotCaseId ? Math.max(maxDays, 14) : maxDays;
+            if (!Number.isFinite(diffDays) || diffDays <= limitDays) {
                 valid.push(item);
             }
         }

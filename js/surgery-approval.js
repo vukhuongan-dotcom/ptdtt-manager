@@ -513,7 +513,26 @@ const SAP_WAL_ACTION_LABELS = {
     tier_a_draft_edit_invalidated_approval: 'Sửa hồ sơ trọng yếu sau duyệt — chuyển Chờ duyệt lại',
     tier_a_draft_edit_requires_resubmit: 'Sửa hồ sơ trọng yếu sau trình — cần trình lại',
     schedule_switch_to_nsth: 'Chuyển sang thẩm quyền Khoa NSTH',
-    schedule_switch_from_nsth_to_surgical: 'Chuyển từ NSTH sang luồng duyệt Khoa PTĐTT'
+    schedule_switch_from_nsth_to_surgical: 'Chuyển từ NSTH sang luồng duyệt Khoa PTĐTT',
+    robot_case_created: 'Tạo hồ sơ Điều phối Robot mới',
+    robot_consult_updated: 'Cập nhật kết quả tư vấn phẫu thuật Robot',
+    robot_step1_scheduled: 'Điều phối B1: Xếp lịch phẫu thuật Robot',
+    robot_step2_preop: 'Điều phối B2: Xác nhận hoàn tất tiền phẫu Robot',
+    robot_step3_inpatient: 'Điều phối B3: Xác nhận nhập viện & đồng bộ Lịch mổ tuần',
+    robot_case_info_updated: 'Cập nhật thông tin hồ sơ Điều phối Robot',
+    robot_schedule_updated: 'Điều chỉnh ngày/ca/PTV lịch mổ Robot',
+    robot_note_updated: 'Cập nhật ghi chú nhanh Điều phối Robot',
+    robot_discharged_wait: 'Chuyển bệnh nhân Robot sang Xuất viện chờ',
+    robot_readmitted: 'Tiếp nhận nhập viện lại & xếp lịch Robot mới',
+    robot_postponed: 'Hoãn ca phẫu thuật Robot & giải phóng slot',
+    robot_restored_to_schedule: 'Xếp lịch lại cho ca Robot hoãn / xuất viện chờ',
+    robot_soft_deleted: 'Đưa hồ sơ Robot vào Thùng rác (tạm ẩn khỏi lịch)',
+    robot_restored_trash: 'Khôi phục hồ sơ Robot từ Thùng rác',
+    robot_archived_deleted: 'Lưu trữ ẩn hồ sơ Robot từ Thùng rác (Zero-RM)',
+    robot_linked_existing_surgery: 'Liên kết ca Robot sẵn có từ Lịch mổ tuần',
+    robot_auto_rollover: 'Hệ thống tự động chuyển ca B3 quá ngày sang Đã mổ & lưu trữ thùng rác >14 ngày',
+    robot_config_updated: 'Cập nhật cấu hình Điều phối viên Robot & mẫu A5 P.CTXH',
+    robot_synced_from_weekly_schedule: 'Đồng bộ hai chiều chỉnh sửa ca Robot từ Lịch mổ tuần'
 };
 
 const SurgeryApprovalPage = {

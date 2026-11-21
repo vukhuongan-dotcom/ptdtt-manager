@@ -532,6 +532,7 @@ const SurgeryPage = {
                                     <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
+                                ${s.robotCaseId ? `<div><button type="button" class="rbt-weekly-link-badge" onclick="event.stopPropagation();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')" title="Mở hồ sơ Điều phối Robot liên kết">🤖 Điều phối Robot (${Utils.escapeHtml(s.robotCaseId)})</button></div>` : ''}
                                 ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-meta-row">
@@ -716,6 +717,10 @@ const SurgeryPage = {
                     <div class="surgery-detail-label">Đường mổ</div>
                     <div class="surgery-detail-value">${({ mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' })[s.approachType] || '—'}</div>
                 </div>
+                ${s.robotCaseId ? `<div class="surgery-detail-row">
+                    <div class="surgery-detail-label">Điều phối Robot</div>
+                    <div class="surgery-detail-value"><button type="button" class="rbt-weekly-link-badge" onclick="Modal.close();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')">🤖 ${Utils.escapeHtml(s.robotCaseId)}${s.robotSyncMeta?.caseSlot ? ` · ${Utils.escapeHtml(s.robotSyncMeta.caseSlot)}` : ''}</button></div>
+                </div>` : ''}
                 ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isCaseApprovalEnabled(s)) ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Duyệt mổ tại khoa</div>
                     <div class="surgery-detail-value">${SurgeryApprovalPage.renderBadge(s) || 'Miễn trừ dữ liệu lịch sử'}</div>
@@ -734,6 +739,9 @@ const SurgeryPage = {
                 </div>` : ''}
             </div>
             <div class="modal-footer">
+                ${s.robotCaseId ? `
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')">🤖 Điều phối Robot</button>
+                ` : ''}
                 ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isCaseApprovalEnabled(s) && s.approachType !== 'nsth') ? `
                     <button type="button" class="btn btn-secondary" onclick="Modal.close();SurgeryApprovalPage.openCaseModal(${s.id})">📋 Hồ sơ duyệt mổ</button>
                 ` : ''}
@@ -799,6 +807,7 @@ const SurgeryPage = {
         Modal.open(modalTitle, `
             <form onsubmit="SurgeryPage.save(event, ${id || 0})" data-autosave-key="${formKey}">
                 ${sandboxBannerHtml}
+                ${s?.robotCaseId ? `<div class="rbt-dirty-banner" style="margin-bottom:12px;">🤖 Ca đang liên thông Điều phối Robot (<strong>${Utils.escapeHtml(s.robotCaseId)}</strong>) — Đường mổ cố định Robot. Mọi thay đổi được đồng bộ 2 chiều.</div>` : ''}
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Họ tên bệnh nhân</label>
@@ -818,7 +827,7 @@ const SurgeryPage = {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại phẫu thuật</label>
-                        <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)">
+                        <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)" ${s?.robotCaseId ? 'disabled' : ''}>
                             ${Object.entries(SURGERY_TYPES).map(([key, t]) =>
             `<option value="${key}" ${(s?.surgeryType || 'chuongtrinh') === key ? 'selected' : ''}>${t.label}</option>`
         ).join('')}
@@ -828,12 +837,12 @@ const SurgeryPage = {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Đường mổ <span class="form-required">*</span></label>
-                        <select class="form-select" name="approachType" id="surgery-approach" required ${(s?.surgeryType || 'chuongtrinh') === 'robot' ? 'disabled' : ''}>
+                        <select class="form-select" name="approachType" id="surgery-approach" required ${(s?.robotCaseId || (s?.surgeryType || 'chuongtrinh') === 'robot') ? 'disabled' : ''}>
                             <option value="">— Chọn —</option>
                             <option value="mo" ${s?.approachType === 'mo' ? 'selected' : ''}>Mổ mở</option>
                             <option value="noisoi" ${s?.approachType === 'noisoi' ? 'selected' : ''}>Nội soi</option>
                             <option value="nsth" ${s?.approachType === 'nsth' ? 'selected' : ''}>Nội soi tiêu hoá</option>
-                            <option value="robot" ${s?.approachType === 'robot' || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
+                            <option value="robot" ${s?.approachType === 'robot' || s?.robotCaseId || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
                         </select>
                     </div>
                 </div>
@@ -1605,9 +1614,13 @@ const SurgeryPage = {
                 return;
             }
 
-            // approachType: if surgeryType is robot, force 'robot' (select may be disabled)
-            const surgeryType = f.get('surgeryType');
-            const approachType = surgeryType === 'robot' ? 'robot' : f.get('approachType');
+            const all = this.getAllSurgeries();
+            const existingRec = id ? all.find(x => String(x.id) === String(id)) : null;
+
+            // approachType: if surgeryType is robot or linked to Robot coordination, keep 'robot'
+            const isLinkedRobot = Boolean(existingRec && existingRec.robotCaseId);
+            const surgeryType = isLinkedRobot ? 'robot' : f.get('surgeryType');
+            const approachType = (isLinkedRobot || surgeryType === 'robot') ? 'robot' : f.get('approachType');
             if (!approachType) {
                 Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
                 restoreBtn();
@@ -1624,9 +1637,6 @@ const SurgeryPage = {
 
             const rawDuration = f.get('duration');
             const durationVal = rawDuration ? (parseInt(rawDuration, 10) || null) : null;
-
-            const all = this.getAllSurgeries();
-            const existingRec = id ? all.find(x => String(x.id) === String(id)) : null;
             const isSandboxCase = existingRec
                 ? Boolean(existingRec.isTestSandboxCase)
                 : Boolean(f.get('isTestSandboxCase') && this.canUseSandboxSchedule());
@@ -1696,6 +1706,15 @@ const SurgeryPage = {
             }
             const syncPromise = this.saveSurgeries(all);
             Promise.resolve(syncPromise).then(syncRes => {
+                if (typeof RobotSchedulePage !== 'undefined' && isLinkedRobot) {
+                    RobotSchedulePage._bootstrap = null;
+                }
+                const robotErr = syncRes?.errors?.find(x =>
+                    ['ROBOT_APPROACH_LOCKED', 'ROBOT_SCHEDULE_COORDINATOR_REQUIRED', 'CASE_REVISION_MISMATCH', 'SCHEDULE_SLOT_CONFLICT'].includes(x?.error?.errorCode || x?.error?.code)
+                );
+                if (robotErr) {
+                    Toast.error(robotErr.error?.message || robotErr.message || 'Lỗi đồng bộ Điều phối Robot.');
+                }
                 const dupErrEntry = syncRes?.errors?.find(x =>
                     x?.error?.status === 409 && [
                         'POTENTIAL_DUPLICATE_CONFIRM_REQUIRED',
@@ -1821,6 +1840,14 @@ const SurgeryPage = {
         const all = this.getAllSurgeries();
         const s = all.find(x => String(x.id) === String(id));
         if (!s) return;
+        if (s.robotCaseId) {
+            if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay.active')) Modal.close();
+            Toast.info(`Ca mổ liên kết Điều phối Robot (${s.robotCaseId}) — vui lòng thực hiện Hoãn mổ / Xuất viện chờ / Xóa tại Tab Điều phối Robot.`);
+            if (typeof RobotSchedulePage !== 'undefined') {
+                RobotSchedulePage.openFromWeeklySchedule(s.robotCaseId);
+            }
+            return;
+        }
         const targetWeekKey = s.date ? s.date.substring(0, 10) : this.getWeekKey();
         if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
 
@@ -1935,9 +1962,17 @@ const SurgeryPage = {
     },
 
     async restoreSurgery(id) {
-        const trash = Store.cleanSurgeriesTrash(7);
+        const trash = Store.cleanSurgeriesTrash(14);
         const item = trash.find(x => String(x.id) === String(id));
         if (!item) return;
+        if (item.robotCaseId) {
+            if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay.active')) Modal.close();
+            Toast.info(`Ca mổ Robot (${item.robotCaseId}) cần xếp lịch lại qua Tab Điều phối Robot.`);
+            if (typeof RobotSchedulePage !== 'undefined') {
+                RobotSchedulePage.openFromWeeklySchedule(item.robotCaseId);
+            }
+            return;
+        }
 
         try {
             const res = await this._callAtomicTrashEndpoint(`/api/surgeries/${encodeURIComponent(id)}/restore`, 'POST');
@@ -1961,9 +1996,17 @@ const SurgeryPage = {
     },
 
     async permanentlyDeleteSurgery(id) {
-        const trash = Store.cleanSurgeriesTrash(7);
+        const trash = Store.cleanSurgeriesTrash(14);
         const item = trash.find(x => String(x.id) === String(id));
         if (!item) return;
+        if (item.robotCaseId) {
+            Toast.warning(`Ca mổ Robot (${item.robotCaseId}) được bảo vệ theo quy tắc Zero-RM — vui lòng xử lý tại Tab Điều phối Robot.`);
+            if (typeof Modal !== 'undefined' && document.querySelector('.modal-overlay.active')) Modal.close();
+            if (typeof RobotSchedulePage !== 'undefined') {
+                RobotSchedulePage.openFromWeeklySchedule(item.robotCaseId);
+            }
+            return;
+        }
 
         const confirmed = await Confirm.show({
             title: 'Xóa vĩnh viễn ca mổ',

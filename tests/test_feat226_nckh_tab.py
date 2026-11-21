@@ -24,6 +24,7 @@ import importlib
 import json
 import os
 import pathlib
+import re
 import socket
 import tempfile
 import threading
@@ -220,11 +221,13 @@ class TestFeat226NckhTab(unittest.TestCase):
                 body='{"patients":[]}',
             ),
         )
+        sw_build_match = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
+        sw_build_ver = sw_build_match.group(1) if sw_build_match else "2611211215"
         session_json = json.dumps(session_obj, ensure_ascii=False)
         context.add_init_script(
             f"""
             localStorage.setItem('ptdtt_cache_ver', '2609281105');
-            localStorage.setItem('ptdtt_sw_build', '2611160654');
+            localStorage.setItem('ptdtt_sw_build', {json.dumps(sw_build_ver)});
             localStorage.setItem('ptdtt_jwt', {json.dumps(token)});
             sessionStorage.setItem('ptdtt_jwt', {json.dumps(token)});
             localStorage.setItem('ptdtt_session', {json.dumps(session_json)});

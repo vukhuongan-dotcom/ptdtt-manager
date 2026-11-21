@@ -99,8 +99,11 @@ from surgery_approval_engine import (
     protect_and_reconcile_surgeries_put,
     reconcile_journal_and_db,
     resolve_live_user_fail_closed,
+    resolve_robot_permissions,
+    serialize_robot_case_for_user,
 )
 from surgery_approval_routes import ensure_approval_bootstrapped, register_surgery_approval_routes
+from robot_schedule_routes import ensure_robot_bootstrapped, register_robot_schedule_routes
 
 # Cross-process file lock (works across Gunicorn workers)
 import fcntl
@@ -705,6 +708,12 @@ def _derive_safe_next_id(collection, effective_items, data):
     if collection == 'staff':
         max_dep = max([int(r['id']) for r in data.get('departedStaff', []) if isinstance(r, dict) and _is_pos_int(r.get('id'))], default=0)
         max_id = max(max_id, max_dep)
+    elif collection == 'surgeries':
+        for extra_col in ('surgeriesTrash', 'surgeriesArchivedInactive'):
+            max_extra = max([int(r['id']) for r in (data.get(extra_col) or []) if isinstance(r, dict) and _is_pos_int(r.get('id'))], default=0)
+            max_id = max(max_id, max_extra)
+        max_rc = max([int(r['canonicalSurgeryId']) for r in (data.get('robotCases') or []) if isinstance(r, dict) and _is_pos_int(r.get('canonicalSurgeryId'))], default=0)
+        max_id = max(max_id, max_rc)
     raw_old = data.get('nextIds', {}).get(collection, 1)
     old_next = int(raw_old) if isinstance(raw_old, int) and not isinstance(raw_old, bool) and raw_old > 0 else 1
     return max(old_next, max_id + 1)
@@ -759,6 +768,33 @@ def _atomic_merge_collection(collection, server_items, base_items, new_items, da
                 }
             )
         server_r = server_map[pk]
+        if collection == 'surgeries' and server_r.get('robotCaseId'):
+            base_sync_rev = (base_r.get('robotSyncMeta') or {}).get('robotCaseRevision') if isinstance(base_r.get('robotSyncMeta'), dict) else None
+            srv_sync_rev = (server_r.get('robotSyncMeta') or {}).get('robotCaseRevision') if isinstance(server_r.get('robotSyncMeta'), dict) else None
+            new_sync_rev = (new_r.get('robotSyncMeta') or {}).get('robotCaseRevision') if isinstance(new_r.get('robotSyncMeta'), dict) else None
+            if (
+                base_r.get('caseRevision') != server_r.get('caseRevision')
+                or new_r.get('caseRevision') != server_r.get('caseRevision')
+                or base_sync_rev != srv_sync_rev
+                or new_sync_rev != srv_sync_rev
+            ):
+                rc_code = str(server_r.get('robotCaseId') or '').strip()
+                rc_live = next(
+                    (r for r in (data.get('robotCases') or []) if isinstance(r, dict) and str(r.get('robotCaseCode') or r.get('soNV') or '').strip() == rc_code),
+                    None,
+                )
+                live_ctx = getattr(request, '_live_user', None) or (getattr(request, '_user', {}) or {})
+                raise ApprovalEngineError(
+                    409,
+                    'CASE_REVISION_MISMATCH',
+                    'Hồ sơ Điều phối Robot vừa thay đổi trên máy chủ. Vui lòng tải lại trước khi lưu.',
+                    {
+                        'robotCaseCode': rc_code,
+                        'currentCaseRevision': srv_sync_rev or server_r.get('caseRevision'),
+                        'expectedCaseRevision': new_sync_rev if new_sync_rev is not None else new_r.get('caseRevision'),
+                        **({'serverCase': serialize_robot_case_for_user(rc_live, live_ctx, data)} if rc_live else {}),
+                    },
+                )
         server_ckeys = _changed_field_keys(base_r, server_r)
         overlap = client_ckeys & server_ckeys
         for k in overlap:
@@ -1180,6 +1216,7 @@ _STRIP_DB_FIELDS = {
     '_approvalIdempotency', 'surgeryApprovalLogs',
     '_lastApprovalJournalSeq', '_lastApprovalJournalHash',
     '_lastAttributionJournalSeq', '_lastAttributionJournalHash',
+    'robotCases', 'robotConfig', 'surgeriesArchivedInactive',
 }
 
 @app.route('/api/data', methods=['GET'])
@@ -1444,6 +1481,7 @@ def put_collection(collection):
                 _save_auth,
             )
             user_obj = live_user
+            request._live_user = live_user
             username = live_user.get('sub', username)
             if collection == 'nckhItems' and not _is_admin(live_user):
                 raise CollectionAuthError(403, 'Chỉ Ban Chủ nhiệm Khoa mới có quyền cập nhật dữ liệu Nghiên cứu khoa học.')
@@ -2001,6 +2039,7 @@ def auth_login():
 
     token = _create_jwt(username, user)
     audit_log(username, 'auth.login.success', {'mustChangePassword': must_change, 'sessionEpoch': session_epoch})
+    robot_perms = resolve_robot_permissions({'username': username, **user}, load_data())
 
     return jsonify({
         'token': token,
@@ -2014,6 +2053,7 @@ def auth_login():
             'staffId': user['staffId'],
             'isAdmin': user['isAdmin'],
             'isSuperAdmin': user.get('isSuperAdmin', False),
+            'isRobotCoordinator': bool(robot_perms.get('canManageRobot')),
             'color': user.get('color', '#6366f1'),
             'mustChangePassword': must_change,
             'sessionEpoch': session_epoch,
@@ -2039,6 +2079,7 @@ def auth_me():
     if not payload:
         return jsonify({'error': 'Token expired, invalid, or account disabled'}), 401
 
+    robot_perms = resolve_robot_permissions(payload, load_data())
     return jsonify({
         'username': payload['sub'],
         'name': payload.get('name', ''),
@@ -2046,6 +2087,7 @@ def auth_me():
         'role': payload.get('role', ''),
         'isAdmin': payload.get('isAdmin', False),
         'isSuperAdmin': payload.get('isSuperAdmin', False),
+        'isRobotCoordinator': bool(robot_perms.get('canManageRobot')),
         'staffId': payload.get('staffId', 0),
         'color': payload.get('color', '#6366f1'),
         'sessionEpoch': payload.get('sessionEpoch', 1),
@@ -2835,6 +2877,7 @@ def _ensure_nckh_bootstrapped():
 # ────────────────────────────── Init ──────────────────────────────
 import sys as _sys
 register_surgery_approval_routes(app, _sys.modules[__name__])
+register_robot_schedule_routes(app, _sys.modules[__name__])
 
 _ensure_data_dir()
 _ensure_log_dir()
@@ -2844,6 +2887,7 @@ _ensure_nckh_bootstrapped()
 _init_auth_from_db()
 _purge_legacy_db_auth_fields()
 ensure_approval_bootstrapped(_sys.modules[__name__])
+ensure_robot_bootstrapped(_sys.modules[__name__])
 
 # ── Start EMR background thread (works under both Gunicorn and direct run) ──
 _emr_bg_started = False

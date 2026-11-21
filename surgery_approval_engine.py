@@ -29,9 +29,12 @@ ATTRIBUTION_UUID_NS = uuid.UUID("a3f0c8d2-957b-4f1a-b91a-1d2357b40211")
 PROTECTED_APPROVAL_COLLECTIONS = {
     "surgeries",
     "surgeriesTrash",
+    "surgeriesArchivedInactive",
     "_approvalIdempotency",
     "approvalDelegations",
     "surgeryApprovalConfig",
+    "robotCases",
+    "robotConfig",
 }
 
 SERVER_OWNED_SURGERY_FIELDS = {
@@ -51,6 +54,8 @@ SERVER_OWNED_SURGERY_FIELDS = {
     "priorEpisodeId",
     "duplicateOverride",
     "_bulkUndoSnapshot",
+    "robotCaseId",
+    "robotSyncMeta",
 }
 
 APPROVAL_METADATA_FIELDS_TO_STRIP = (
@@ -403,6 +408,390 @@ def can_user_access_sandbox(user: dict, db: dict) -> bool:
         return True
     cfg = get_approval_config(db)
     return cfg.get("rolloutAccessMode") == "all_staff" and cfg.get("sandboxOnlyMode") is True
+
+
+# ───────────────────────── Robot Surgery Coordination Helpers (FEAT-231) ─────────────────────────
+
+DEFAULT_ROBOT_CONFIG = {
+    "goLiveDate": "2026-11-21",
+    "coordinators": ["vcnguyen"],
+    "defaultSchedulerName": "Quang",
+    "robotRooms": ["PM Robot"],
+    "defaultOperatingRoom": "PM Robot",
+    "sharedSingleRobotSystem": True,
+    "defaultDurationMinutes": 180,
+    "trashAutoArchiveDays": 14,
+    "postponeLookbackDays": 7,
+}
+
+ROBOT_SLOT_HOLDING_STATUSES = {
+    "cho_duyet_tien_phau",
+    "cho_duyet_luu_vien",
+    "cho_mo",
+    "xuat_vien_cho",
+}
+
+ROBOT_VALID_SLOTS = ("Ca 1", "Ca 2", "Ca 3", "Ca 4", "Ca 5", "Ca 6")
+
+ROBOT_POSTPONE_REASONS = {
+    "chua_ngung_khang_dong": "Chưa ngưng đủ ngày thuốc kháng đông",
+    "benh_nen_chua_on_dinh": "Bệnh lý nền nội khoa chưa ổn định",
+    "cho_cls_hoi_chan": "Chờ bổ sung kết quả cận lâm sàng / hội chẩn",
+    "thieu_vat_tu_robot": "Thiếu vật tư / dụng cụ phẫu thuật Robot",
+    "ket_phong_mo_cap_cuu": "Kẹt phòng mổ / trùng lịch ưu tiên cấp cứu",
+    "benh_nhan_xin_hoan": "Bệnh nhân xin hoãn / chưa thu xếp chi phí",
+    "ly_do_khac": "Lý do khác",
+}
+
+_HHMM_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+def get_robot_config(db: dict) -> dict:
+    cfg = copy.deepcopy(DEFAULT_ROBOT_CONFIG)
+    stored = (db or {}).get("robotConfig")
+    if isinstance(stored, dict):
+        for k, v in stored.items():
+            if k in cfg:
+                cfg[k] = copy.deepcopy(v)
+    coords = cfg.get("coordinators")
+    if not isinstance(coords, list):
+        coords = ["vcnguyen"]
+    norm_coords = []
+    seen = set()
+    for c in coords:
+        cu = str(c or "").strip().lower()
+        if cu and cu not in seen:
+            seen.add(cu)
+            norm_coords.append(cu)
+    cfg["coordinators"] = norm_coords
+    rooms = cfg.get("robotRooms")
+    if not isinstance(rooms, list) or not rooms:
+        cfg["robotRooms"] = ["PM Robot"]
+    else:
+        cfg["robotRooms"] = [str(r).strip() for r in rooms if str(r).strip()] or ["PM Robot"]
+    cfg["sharedSingleRobotSystem"] = bool(cfg.get("sharedSingleRobotSystem", True))
+    cfg["defaultDurationMinutes"] = int(cfg.get("defaultDurationMinutes") or 180)
+    cfg["trashAutoArchiveDays"] = int(cfg.get("trashAutoArchiveDays") or 14)
+    cfg["postponeLookbackDays"] = int(cfg.get("postponeLookbackDays") or 7)
+    return cfg
+
+
+def normalize_phone_vn(raw_phone, *, required: bool = False) -> str:
+    txt = str(raw_phone or "").strip()
+    if txt.startswith("'"):
+        txt = txt[1:].strip()
+    if not txt:
+        if required:
+            raise ApprovalEngineError(422, "PHONE_REQUIRED", "Vui lòng nhập số điện thoại liên hệ hợp lệ.")
+        return ""
+    digits = re.sub(r"\D", "", txt)
+    if len(digits) == 9:
+        digits = "0" + digits
+    elif len(digits) == 11 and digits.startswith("84"):
+        digits = "0" + digits[2:]
+    elif len(digits) == 12 and digits.startswith("084"):
+        digits = "0" + digits[3:]
+    if not re.fullmatch(r"0\d{9}", digits):
+        raise ApprovalEngineError(422, "INVALID_PHONE", "Số điện thoại Việt Nam phải gồm 10 chữ số bắt đầu bằng số 0.")
+    return digits
+
+
+def mask_phone_vn(phone_str: str) -> str:
+    txt = str(phone_str or "").strip()
+    if not txt:
+        return ""
+    if re.fullmatch(r"\d{3}\*{4}\d{3}", txt) or txt == "****":
+        return txt
+    digits = re.sub(r"\D", "", txt)
+    if len(digits) >= 7:
+        return f"{digits[:3]}****{digits[-3:]}"
+    return "****"
+
+
+def resolve_robot_permissions(real_user: dict, db: dict) -> dict:
+    username = str((real_user or {}).get("username") or (real_user or {}).get("sub") or "").strip().lower()
+    cfg = get_robot_config(db)
+    coords = {str(x).strip().lower() for x in (cfg.get("coordinators") or []) if str(x).strip()}
+    is_sa = bool((real_user or {}).get("isSuperAdmin"))
+    is_bcn = is_sa or (username in {"nphuu", "vkan"})
+    is_coord = username in coords
+    can_manage = bool(username) and (is_bcn or is_coord)
+
+    role_str = str((real_user or {}).get("role") or "")
+    role_lc = role_str.lower()
+    staff_id = (real_user or {}).get("staffId")
+    is_head_nurse = bool((real_user or {}).get("isAdmin")) and not is_bcn
+    is_trainee = (
+        ("học viên" in role_lc)
+        or ("nội trú" in role_lc)
+        or (is_pos_int(staff_id) and int(staff_id) in TRAINEE_STAFF_IDS)
+    )
+    is_attending = (
+        (not is_trainee)
+        and (
+            ("bác sĩ chính" in role_lc)
+            or ("trưởng khoa" in role_lc)
+            or ("phó trưởng khoa" in role_lc)
+        )
+    )
+    can_create = can_manage or is_head_nurse or is_attending or is_trainee
+    can_postpone = can_manage or is_head_nurse or is_attending
+    return {
+        "username": username,
+        "staffId": int(staff_id) if is_pos_int(staff_id) else 0,
+        "isSuperAdmin": is_sa,
+        "isBcn": is_bcn,
+        "isCoordinator": is_coord,
+        "canView": True,
+        "canViewFullPhone": can_create,
+        "canCreate": can_create,
+        "canEditInfo": can_create,
+        "canEditSchedule": can_manage,
+        "canApproveSteps": can_manage,
+        "canInlineNote": can_manage,
+        "canOverrideConflict": can_manage,
+        "canPostponeOrDischarge": can_postpone,
+        "canManageRobot": can_manage,
+        "isHeadNurse": is_head_nurse,
+        "isAttending": is_attending,
+        "isTrainee": is_trainee,
+    }
+
+
+def serialize_robot_case_for_user(case_rec: dict, real_user: dict, db: dict) -> dict:
+    if not isinstance(case_rec, dict):
+        return {}
+    perms = resolve_robot_permissions(real_user, db)
+    out = copy.deepcopy(case_rec)
+    code = str(out.get("robotCaseCode") or out.get("soNV") or "").strip()
+    out["robotCaseCode"] = code
+    out["soNV"] = code
+    raw_phone = str(out.get("phone") or "")
+    if perms["canViewFullPhone"]:
+        out["phone"] = raw_phone
+        out["phoneMasked"] = False
+    else:
+        out["phone"] = mask_phone_vn(raw_phone)
+        out["phoneMasked"] = bool(raw_phone)
+    return out
+
+
+def allocate_next_surgery_id(db: dict) -> int:
+    max_id = 0
+    for col in ("surgeries", "surgeriesTrash", "surgeriesArchivedInactive"):
+        for item in (db.get(col) or []):
+            if isinstance(item, dict) and is_pos_int(item.get("id")):
+                max_id = max(max_id, int(item["id"]))
+    raw_next = ((db.get("nextIds") or {}).get("surgeries")) or 1
+    cur_next = int(raw_next) if is_pos_int(raw_next) else 1
+    allocated = max(cur_next, max_id + 1)
+    db.setdefault("nextIds", {})["surgeries"] = allocated + 1
+    return allocated
+
+
+def _parse_hhmm_minutes(val):
+    if not isinstance(val, str):
+        return None
+    m = _HHMM_RE.fullmatch(val.strip())
+    if not m:
+        return None
+    return int(m.group(1)) * 60 + int(m.group(2))
+
+
+def check_robot_slot_conflicts_in_lock(
+    db: dict,
+    *,
+    candidate: dict,
+    exclude_robot_code: str = None,
+    exclude_surgery_id: int = None,
+) -> tuple:
+    """
+    Inside _DB_LOCK_FILE, evaluates hard blocking conflicts and informational warnings across:
+      1) Active slot-holding robotCases (cho_duyet_tien_phau, cho_duyet_luu_vien, cho_mo, xuat_vien_cho w/ slot)
+      2) Unlinked active surgeries[] (robotApproach collision, same-day Ca 1 / surgeryTime overlap for mainSurgeon)
+    Returns (blocking_conflicts, info_warnings, deterministic_conflict_fingerprint).
+    """
+    s_date = str(candidate.get("surgeryDate") or "").strip()
+    s_slot = str(candidate.get("caseSlot") or "").strip()
+    s_room = str(candidate.get("operatingRoom") or "").strip()
+    s_surgeon = candidate.get("mainSurgeonId")
+    is_sbx = bool(candidate.get("isTestSandboxCase") is True)
+    cand_start = _parse_hhmm_minutes(candidate.get("surgeryTime"))
+    cand_dur = int(candidate.get("durationMinutes") or 180)
+    if not is_valid_iso_date(s_date) or not s_slot:
+        return [], [], sha256_hex("[]")
+
+    cfg = get_robot_config(db)
+    shared_robot = bool(cfg.get("sharedSingleRobotSystem", True))
+    blocking = []
+    warnings = []
+
+    for other in (db.get("robotCases") or []):
+        if not isinstance(other, dict):
+            continue
+        other_code = str(other.get("robotCaseCode") or other.get("soNV") or "").strip()
+        if exclude_robot_code and other_code == exclude_robot_code:
+            continue
+        if bool(other.get("isTestSandboxCase") is True) != is_sbx:
+            continue
+        if other.get("status") not in ROBOT_SLOT_HOLDING_STATUSES:
+            continue
+        if str(other.get("surgeryDate") or "").strip() != s_date:
+            continue
+        other_slot = str(other.get("caseSlot") or "").strip()
+        other_room = str(other.get("operatingRoom") or "").strip()
+        other_surgeon = other.get("mainSurgeonId")
+        if not other_slot or other_slot != s_slot:
+            continue
+
+        same_room_or_machine = (s_room and other_room and s_room == other_room) or shared_robot
+        if same_room_or_machine:
+            blocking.append({
+                "source": "robotCases",
+                "conflictType": "ROBOT_ROOM_OR_SYSTEM_SLOT_CONFLICT",
+                "robotCaseCode": other_code,
+                "patientName": other.get("patientName"),
+                "status": other.get("status"),
+                "surgeryDate": s_date,
+                "operatingRoom": other_room or s_room,
+                "caseSlot": other_slot,
+                "mainSurgeonId": other_surgeon,
+                "phone": other.get("phone"),
+            })
+        elif is_pos_int(s_surgeon) and other_surgeon == s_surgeon:
+            blocking.append({
+                "source": "robotCases",
+                "conflictType": "ROBOT_SURGEON_SLOT_CONFLICT",
+                "robotCaseCode": other_code,
+                "patientName": other.get("patientName"),
+                "status": other.get("status"),
+                "surgeryDate": s_date,
+                "operatingRoom": other_room,
+                "caseSlot": other_slot,
+                "mainSurgeonId": other_surgeon,
+                "phone": other.get("phone"),
+            })
+
+    for surg in (db.get("surgeries") or []):
+        if not isinstance(surg, dict):
+            continue
+        sid = surg.get("id")
+        if exclude_surgery_id is not None and sid == exclude_surgery_id:
+            continue
+        if surg.get("robotCaseId"):
+            continue
+        if bool(surg.get("isTestSandboxCase") is True) != is_sbx:
+            continue
+        if str(surg.get("date") or "").strip() != s_date:
+            continue
+
+        is_unlinked_robot = (surg.get("approachType") == "robot" or surg.get("surgeryType") == "robot")
+        if is_unlinked_robot:
+            blocking.append({
+                "source": "surgeries",
+                "conflictType": "UNLINKED_ROBOT_SURGERY_ON_DATE",
+                "surgeryId": sid,
+                "patientName": surg.get("patientName"),
+                "surgeryDate": s_date,
+                "mainSurgeonId": surg.get("mainSurgeon"),
+                "isFirstCase": bool(surg.get("isFirstCase")),
+                "surgeryTime": surg.get("surgeryTime"),
+            })
+            continue
+
+        if is_pos_int(s_surgeon) and surg.get("mainSurgeon") == s_surgeon:
+            if s_slot == "Ca 1" and surg.get("isFirstCase") is True:
+                blocking.append({
+                    "source": "surgeries",
+                    "conflictType": "FIRST_CASE_SURGEON_CONFLICT",
+                    "surgeryId": sid,
+                    "patientName": surg.get("patientName"),
+                    "surgeryDate": s_date,
+                    "mainSurgeonId": s_surgeon,
+                    "caseSlot": s_slot,
+                })
+                continue
+            other_start = _parse_hhmm_minutes(surg.get("surgeryTime"))
+            other_dur = int(surg.get("duration") or 120)
+            if cand_start is not None and other_start is not None:
+                if cand_start < (other_start + other_dur) and other_start < (cand_start + cand_dur):
+                    blocking.append({
+                        "source": "surgeries",
+                        "conflictType": "TIME_OVERLAP_SURGEON_CONFLICT",
+                        "surgeryId": sid,
+                        "patientName": surg.get("patientName"),
+                        "surgeryDate": s_date,
+                        "mainSurgeonId": s_surgeon,
+                        "surgeryTime": surg.get("surgeryTime"),
+                    })
+                    continue
+            warnings.append({
+                "source": "surgeries",
+                "conflictType": "SAME_DAY_SURGEON_NON_ROBOT_LOAD",
+                "surgeryId": sid,
+                "patientName": surg.get("patientName"),
+                "surgeryDate": s_date,
+                "mainSurgeonId": s_surgeon,
+                "approachType": surg.get("approachType"),
+            })
+
+    fp_keys = sorted(
+        f"{c.get('source')}:{c.get('conflictType')}:{c.get('robotCaseCode') or c.get('surgeryId')}:{c.get('caseSlot') or ''}"
+        for c in blocking
+    )
+    return blocking, warnings, sha256_hex(canonical_json(fp_keys))
+
+
+def resolve_staff_name_by_id(db: dict, staff_id) -> str:
+    if not is_pos_int(staff_id):
+        return ""
+    for st in (db.get("staff") or []) + (db.get("departedStaff") or []) + (db.get("externalDoctors") or []):
+        if isinstance(st, dict) and st.get("id") == int(staff_id):
+            return str(st.get("name") or "")
+    return ""
+
+
+def build_robot_surgery_payload(rcase: dict, existing_surgery: dict = None) -> dict:
+    """Strict allowlist mapping Robot -> surgeries[]. NEVER copies phone, wardRoom, or robotNotes."""
+    base = copy.deepcopy(existing_surgery) if isinstance(existing_surgery, dict) else {}
+    slot = str(rcase.get("caseSlot") or "")
+    base["patientName"] = str(rcase.get("patientName") or "").strip()
+    if is_pos_int(rcase.get("birthYear")):
+        base["birthYear"] = int(rcase["birthYear"])
+    elif rcase.get("birthYear") in ("", None):
+        base["birthYear"] = ""
+    adm = str(rcase.get("admissionId") or "").strip()
+    if adm:
+        base["admissionId"] = adm
+    elif not existing_surgery:
+        base["admissionId"] = ""
+    base["diagnosis"] = str(rcase.get("diagnosis") or "").strip()
+    base["method"] = str(rcase.get("robotProcedure") or "").strip()
+    base["surgeryType"] = "robot"
+    base["approachType"] = "robot"
+    base["date"] = str(rcase.get("surgeryDate") or "").strip()
+    base["mainSurgeon"] = rcase.get("mainSurgeonId")
+    base["assistSurgeon1"] = rcase.get("assistSurgeon1") if is_pos_int(rcase.get("assistSurgeon1")) else None
+    base["duration"] = int(rcase.get("durationMinutes") or 180)
+    if rcase.get("surgeryTime"):
+        base["surgeryTime"] = rcase.get("surgeryTime")
+    elif not existing_surgery:
+        base.pop("surgeryTime", None)
+    base["isFirstCase"] = (slot == "Ca 1")
+    if rcase.get("isTestSandboxCase") is True:
+        base["isTestSandboxCase"] = True
+        if base["patientName"] and "[test]" not in base["patientName"].lower():
+            base["patientName"] = f"[TEST] {base['patientName']}"
+    else:
+        base.pop("isTestSandboxCase", None)
+    base["robotCaseId"] = str(rcase.get("robotCaseCode") or rcase.get("soNV") or "").strip()
+    base["robotSyncMeta"] = {
+        "operatingRoom": str(rcase.get("operatingRoom") or "PM Robot"),
+        "caseSlot": slot,
+        "robotCaseRevision": int(rcase.get("caseRevision", 1) or 1),
+        "syncedAt": now_vn_iso(),
+    }
+    return base
 
 
 def strip_approval_metadata_from_real_surgeries(db: dict) -> int:
@@ -1539,6 +1928,87 @@ def reconcile_dual_journals_and_db(db: dict, data_dir: str) -> dict:
                 dels.append(d_rec)
         elif kind == "config_update" and isinstance(patch.get("configRecord"), dict):
             db["surgeryApprovalConfig"] = copy.deepcopy(patch["configRecord"])
+        elif kind == "robot_tx":
+            if isinstance(patch.get("robotConfigRecord"), dict):
+                db["robotConfig"] = copy.deepcopy(patch["robotConfigRecord"])
+            rc_list = db.setdefault("robotCases", [])
+            for raw_rc in (patch.get("robotCaseRecords") or []):
+                if not isinstance(raw_rc, dict):
+                    continue
+                rc_copy = copy.deepcopy(raw_rc)
+                rc_copy["lastJournalSeq"] = seq
+                rc_code = str(rc_copy.get("robotCaseCode") or rc_copy.get("soNV") or "").strip()
+                if not rc_code:
+                    continue
+                r_idx = next(
+                    (i for i, x in enumerate(rc_list) if isinstance(x, dict) and str(x.get("robotCaseCode") or x.get("soNV") or "").strip() == rc_code),
+                    -1,
+                )
+                if r_idx >= 0:
+                    rc_list[r_idx] = rc_copy
+                else:
+                    rc_list.append(rc_copy)
+            arch_list = db.setdefault("surgeriesArchivedInactive", [])
+            for s_op in (patch.get("linkedSurgeryOps") or []):
+                if not isinstance(s_op, dict):
+                    continue
+                op_kind = s_op.get("op")
+                s_rec = copy.deepcopy(s_op.get("record")) if isinstance(s_op.get("record"), dict) else None
+                if not s_rec:
+                    continue
+                s_id = s_rec.get("id")
+                sbx_block_real = bool(get_approval_config(db).get("sandboxOnlyMode") is True and s_rec.get("isTestSandboxCase") is not True)
+                if not sbx_block_real:
+                    s_rec["lastJournalSeq"] = seq
+                    if last_attr_seq_for_entry is not None:
+                        s_rec["lastAttributionSeq"] = max(int(s_rec.get("lastAttributionSeq", 0) or 0), last_attr_seq_for_entry)
+                for raw_attr in embedded_batch:
+                    if not sbx_block_real and raw_attr.get("surgeryId") in (None, s_id):
+                        a_obj = raw_attr.get("actor") or entry.get("actor") or {}
+                        record_contributor_on_surgery(
+                            s_rec,
+                            a_obj,
+                            role_in_case=raw_attr.get("actorRoleInCase", "attending"),
+                            action_type=raw_attr.get("actionType", entry.get("action", "edit")),
+                            timestamp_iso=raw_attr.get("timestamp", entry.get("timestamp", now_vn_iso())),
+                            source_key=f"{tx_id}:{int(raw_attr.get('attrSubIndex', 0))}",
+                        )
+                if op_kind == "upsert_active":
+                    s_idx = next((i for i, x in enumerate(surgeries) if isinstance(x, dict) and x.get("id") == s_id), -1)
+                    if s_idx >= 0:
+                        surgeries[s_idx] = s_rec
+                    else:
+                        surgeries.append(s_rec)
+                    db["surgeriesTrash"] = [t for t in trash if not (isinstance(t, dict) and t.get("id") == s_id)]
+                    trash = db["surgeriesTrash"]
+                    db["surgeriesArchivedInactive"] = [a for a in arch_list if not (isinstance(a, dict) and a.get("id") == s_id)]
+                    arch_list = db["surgeriesArchivedInactive"]
+                    if is_pos_int(s_id):
+                        next_ids = db.setdefault("nextIds", {})
+                        next_ids["surgeries"] = max(int(next_ids.get("surgeries", 1) or 1), int(s_id) + 1)
+                elif op_kind == "move_to_trash":
+                    db["surgeries"] = [x for x in surgeries if not (isinstance(x, dict) and x.get("id") == s_id)]
+                    surgeries = db["surgeries"]
+                    db["surgeriesArchivedInactive"] = [a for a in arch_list if not (isinstance(a, dict) and a.get("id") == s_id)]
+                    arch_list = db["surgeriesArchivedInactive"]
+                    t_idx = next((i for i, t in enumerate(trash) if isinstance(t, dict) and t.get("id") == s_id), -1)
+                    if t_idx >= 0:
+                        trash[t_idx] = s_rec
+                    else:
+                        trash.append(s_rec)
+                elif op_kind == "archive_inactive":
+                    db["surgeries"] = [x for x in surgeries if not (isinstance(x, dict) and x.get("id") == s_id)]
+                    surgeries = db["surgeries"]
+                    db["surgeriesTrash"] = [t for t in trash if not (isinstance(t, dict) and t.get("id") == s_id)]
+                    trash = db["surgeriesTrash"]
+                    a_idx = next((i for i, a in enumerate(arch_list) if isinstance(a, dict) and a.get("id") == s_id), -1)
+                    if a_idx >= 0:
+                        arch_list[a_idx] = s_rec
+                    else:
+                        arch_list.append(s_rec)
+            revs_rt = db.setdefault("_revisions", {})
+            revs_rt["robotCases"] = int(revs_rt.get("robotCases", 1)) + 1
+            revs_rt["surgeriesTrash"] = int(revs_rt.get("surgeriesTrash", 1)) + 1
 
         for n in entry.get("committedNotifications") or []:
             if isinstance(n, dict) and n.get("sourceEventId") not in existing_event_ids:
@@ -3294,6 +3764,320 @@ def normalize_surgery_aliases(new_rec: dict, old_rec: dict = None) -> dict:
     return r
 
 
+def apply_tier_a_and_schedule_invalidation(
+    merged: dict,
+    old_r: dict,
+    catalog: dict,
+    db: dict,
+    cfg: dict = None,
+) -> tuple:
+    """
+    Reusable Tier-A / proxy assistSurgeon1 invalidation & DM 309 / CK-08 suggestion refresh
+    shared by PUT /api/data/surgeries and Robot 2-way sync (FEAT-231).
+    Returns (changed_any, rev_before, rev_after, transition_action, changed_fields, old_status).
+    """
+    cfg = cfg if isinstance(cfg, dict) else get_approval_config(db)
+    rollout_date = cfg.get("rolloutEffectiveSurgeryDate", "2026-11-09")
+
+    if not is_strict_int(merged.get("caseRevision")) or merged.get("caseRevision", 0) < 1:
+        merged["caseRevision"] = 1
+    merged["schemaVersion"] = SCHEMA_VERSION
+    merged["ruleVersion"] = RULE_VERSION
+    merged.setdefault("preparationContributors", [])
+    merged.setdefault("lastAttributionSeq", int((old_r or {}).get("lastAttributionSeq", 0) or 0))
+
+    changed_tier_a = []
+    for tf in TIER_A_SCHEDULE_FIELDS:
+        if ((old_r or {}).get(tf) or None) != (merged.get(tf) or None):
+            changed_tier_a.append(tf)
+
+    assist1_changed = ((old_r or {}).get("assistSurgeon1") or None) != (merged.get("assistSurgeon1") or None)
+    approval_cur = merged.get("approval") or {}
+    proxy_assist1_active = (
+        assist1_changed
+        and approval_cur.get("status") in ("submitted", "preapproved")
+        and ((approval_cur.get("submittedSnapshot") or {}).get("proxySubmitterSource")) == "assist_surgeon_1"
+    )
+
+    if not (changed_tier_a or proxy_assist1_active):
+        stamp_badge_fields(merged)
+        rev_cur = int(merged.get("caseRevision", 1) or 1)
+        return False, rev_cur, rev_cur, None, [], approval_cur.get("status")
+
+    rev_before = int(merged.get("caseRevision", 1))
+    rev_after = rev_before + 1
+    merged["caseRevision"] = rev_after
+
+    approval = merged.setdefault("approval", {"status": "draft_unsubmitted", "activeHold": None})
+    old_status = approval.get("status", "draft_unsubmitted")
+    old_approach = (old_r or {}).get("approachType")
+    new_approach = merged.get("approachType")
+    new_date = merged.get("date", "")
+    in_scope_now, scope_reason_now = is_in_phase1_approval_scope(merged, cfg)
+
+    transition_action = None
+
+    if new_approach == "nsth" and old_approach != "nsth":
+        if approval.get("approvedSnapshot"):
+            approval["lastApprovedSnapshot"] = copy.deepcopy(approval["approvedSnapshot"])
+        approval["approvedSnapshot"] = None
+        approval["activeHold"] = None
+        approval["status"] = "nsth_external_authority"
+        transition_action = "schedule_switch_to_nsth"
+    elif not in_scope_now and new_approach != "nsth":
+        if approval.get("approvedSnapshot"):
+            approval["lastApprovedSnapshot"] = copy.deepcopy(approval["approvedSnapshot"])
+        approval["approvedSnapshot"] = None
+        approval["activeHold"] = None
+        approval["status"] = "legacy_exempt" if scope_reason_now == "before_rollout" else "not_in_scope"
+        approval["slaStatus"] = "not_applicable"
+        transition_action = "schedule_switch_to_not_in_scope"
+    elif old_approach == "nsth" and new_approach in ("mo", "noisoi", "robot") and in_scope_now:
+        init_parts = build_initial_unverified_structures(merged, catalog, db)
+        for k_init, v_init in init_parts.items():
+            if merged.get(k_init) is None:
+                merged[k_init] = v_init
+        approval["approvedSnapshot"] = None
+        approval["activeHold"] = None
+        approval["status"] = "draft_unsubmitted"
+        transition_action = "schedule_switch_from_nsth_to_surgical"
+    elif old_status == "not_in_scope" and in_scope_now:
+        init_parts = build_initial_unverified_structures(merged, catalog, db)
+        for k_init, v_init in init_parts.items():
+            if merged.get(k_init) is None:
+                merged[k_init] = v_init
+        approval["approvedSnapshot"] = None
+        approval["activeHold"] = None
+        approval["status"] = "draft_unsubmitted"
+        approval["slaStatus"] = "pending"
+        transition_action = "schedule_switch_from_not_in_scope_to_elective"
+    elif old_status in ("legacy_exempt", "legacy_unverified_manual_review") and is_valid_iso_date(new_date) and new_date >= rollout_date and in_scope_now:
+        init_parts = build_initial_unverified_structures(merged, catalog, db)
+        merged.update(init_parts)
+        approval["approvedSnapshot"] = None
+        approval["activeHold"] = None
+        approval["status"] = "draft_unsubmitted"
+        transition_action = "legacy_rescheduled_into_active_gate_m6"
+    elif proxy_assist1_active and not changed_tier_a:
+        approval["status"] = "resubmit_required"
+        approval["invalidationReason"] = "Đổi BS phụ mổ 1 sau khi đã trình duyệt thay — cần trình duyệt lại"
+        transition_action = "assist_surgeon_1_changed_after_proxy_submit"
+    elif old_status in ("approved", "approved_with_exception", "post_approval_hold"):
+        if approval.get("approvedSnapshot"):
+            approval["lastApprovedSnapshot"] = copy.deepcopy(approval["approvedSnapshot"])
+        approval["approvedSnapshot"] = None
+        approval["activeHold"] = None
+        approval["status"] = "reapproval_required"
+        approval["invalidationReason"] = f"Thay đổi trường trọng yếu trên lịch mổ: {', '.join(changed_tier_a)}"
+        transition_action = "tier_a_schedule_edit_invalidated_approval"
+    elif old_status in ("submitted", "preapproved", "emergency_exception_pending_ack"):
+        approval["status"] = "resubmit_required"
+        approval["invalidationReason"] = f"Thay đổi trường trọng yếu khi đang trình duyệt: {', '.join(changed_tier_a or ['assistSurgeon1'])}"
+        transition_action = "tier_a_schedule_edit_requires_resubmit"
+
+    # Refresh suggestions, invalidate custom verifiedClass & CK-08 on method/approach/surgeon change (SYN-TC-13 & Mục 4.C)
+    if merged.get("approachType") in ("mo", "noisoi", "robot") and isinstance(merged.get("clinicalClassification"), dict):
+        cc = merged["clinicalClassification"]
+        cc["approachType"] = merged.get("approachType")
+        sug_code, sug_class, _ = suggest_procedure_from_method(catalog, merged.get("method", ""), merged.get("approachType"))
+        pc = cc.setdefault("procedureClass", {})
+        pc["suggestedCatalogCode"] = sug_code
+        pc["suggestedClass"] = sug_class
+        if any(f in changed_tier_a for f in ("method", "approachType", "mainSurgeon")):
+            if "method" in changed_tier_a or "approachType" in changed_tier_a:
+                pc["confirmedCatalogEntryId"] = None
+                pc["confirmedClass"] = None
+                pc["confirmedByStaffId"] = None
+            if pc.get("verifiedClass") is not None or pc.get("isCustomProcedure"):
+                pc["verifiedClass"] = None
+                pc["verifiedBasisCode"] = None
+                pc["verifiedBasisNote"] = None
+                pc["verifiedByStaffId"] = None
+                pc["verifiedAt"] = None
+                if pc.get("isCustomProcedure") and pc.get("proposedClass"):
+                    pc["confirmedClass"] = pc.get("proposedClass")
+            ck08 = (merged.get("preopChecklist") or {}).get("CK-08")
+            if isinstance(ck08, dict) and ck08.get("verifiedByStaffId") is not None:
+                ck08["verifiedByStaffId"] = None
+                ck08["state"] = "unverified"
+                ck08["needsReverify"] = True
+                ck08["uiBannerText"] = STALE_VERIFICATION_LABEL_VI
+        col_meta = evaluate_column_compliance(
+            catalog,
+            db,
+            main_surgeon_id=merged.get("mainSurgeon"),
+            approach_type=merged.get("approachType"),
+            surgery_date=merged.get("date", ""),
+            confirmed_class=pc.get("confirmedClass"),
+            confirmed_catalog_id=pc.get("confirmedCatalogEntryId"),
+            is_custom_procedure=bool(pc.get("isCustomProcedure")),
+            proposed_class=pc.get("proposedClass"),
+            verified_class=pc.get("verifiedClass"),
+        )
+        old_decl = (cc.get("columnCompliance") or {}).get("declaredMode")
+        cc["columnCompliance"] = {
+            **col_meta,
+            "declaredMode": None if any(f in changed_tier_a for f in ("mainSurgeon", "method", "approachType")) else old_decl,
+        }
+
+    stamp_badge_fields(merged)
+    changed_list = changed_tier_a or (["assistSurgeon1"] if proxy_assist1_active else [])
+    if transition_action or old_status != approval.get("status"):
+        return True, rev_before, rev_after, (transition_action or "tier_a_schedule_edit"), changed_list, old_status
+    return True, rev_before, rev_after, None, changed_list, old_status
+
+
+def _reconcile_linked_robot_surgery_edit(
+    *,
+    user: dict,
+    raw_new: dict,
+    merged: dict,
+    old_r: dict,
+    db: dict,
+):
+    """
+    2-way guard & back-sync when a Robot-linked surgery is updated via PUT /api/data/surgeries.
+    Enforces approachType=='robot' lock, Stale Bulk PUT revision check (caseRevision & robotCaseRevision),
+    canEditSchedule for date/mainSurgeon edits, lock-scoped conflict verification, and dual-revision bump.
+    """
+    robot_code = str(old_r.get("robotCaseId") or "").strip()
+    if not robot_code:
+        return None
+
+    if merged.get("approachType") != "robot" or merged.get("surgeryType") != "robot":
+        raise ApprovalEngineError(
+            409,
+            "ROBOT_APPROACH_LOCKED",
+            f"Ca mổ #{merged.get('id')} đang liên kết Điều phối Robot ({robot_code}) — không thể đổi khác đường mổ Robot.",
+        )
+
+    synced_pairs = (
+        ("patientName", "patientName"),
+        ("birthYear", "birthYear"),
+        ("admissionId", "admissionId"),
+        ("diagnosis", "diagnosis"),
+        ("method", "robotProcedure"),
+        ("date", "surgeryDate"),
+        ("mainSurgeon", "mainSurgeonId"),
+        ("assistSurgeon1", "assistSurgeon1"),
+        ("duration", "durationMinutes"),
+        ("surgeryTime", "surgeryTime"),
+    )
+    changed_keys = [sk for sk, _ in synced_pairs if (old_r.get(sk) or None) != (merged.get(sk) or None)]
+    if not changed_keys:
+        return None
+
+    rcase = next(
+        (
+            r for r in (db.get("robotCases") or [])
+            if isinstance(r, dict) and str(r.get("robotCaseCode") or r.get("soNV") or "").strip() == robot_code
+        ),
+        None,
+    )
+    if rcase is None:
+        return None
+
+    old_rev = old_r.get("caseRevision")
+    if is_strict_int(old_rev):
+        cli_rev = raw_new.get("caseRevision") if isinstance(raw_new, dict) else None
+        if not is_strict_int(cli_rev) or int(cli_rev) != int(old_rev):
+            raise ApprovalEngineError(
+                409,
+                "CASE_REVISION_MISMATCH",
+                "Ca mổ Robot vừa được cập nhật ở phiên/tab khác. Vui lòng tải lại dữ liệu mới nhất.",
+                {
+                    "currentCaseRevision": int(old_rev),
+                    "expectedCaseRevision": cli_rev,
+                    "robotCaseCode": robot_code,
+                    "serverCase": serialize_robot_case_for_user(rcase, user, db),
+                },
+            )
+
+    old_meta = old_r.get("robotSyncMeta")
+    if isinstance(old_meta, dict) and is_strict_int(old_meta.get("robotCaseRevision")):
+        cli_meta = raw_new.get("robotSyncMeta") if isinstance(raw_new, dict) else None
+        cli_rc_rev = cli_meta.get("robotCaseRevision") if isinstance(cli_meta, dict) else None
+        cur_rc_rev = int(rcase.get("caseRevision", 1) or 1)
+        if not is_strict_int(cli_rc_rev) or int(cli_rc_rev) != cur_rc_rev:
+            raise ApprovalEngineError(
+                409,
+                "CASE_REVISION_MISMATCH",
+                "Hồ sơ Điều phối Robot vừa thay đổi trên máy chủ. Vui lòng tải lại trước khi lưu.",
+                {
+                    "currentCaseRevision": cur_rc_rev,
+                    "expectedCaseRevision": cli_rc_rev,
+                    "robotCaseCode": robot_code,
+                    "serverCase": serialize_robot_case_for_user(rcase, user, db),
+                },
+            )
+
+    perms = resolve_robot_permissions(user, db)
+    if any(k in changed_keys for k in ("date", "mainSurgeon")) and not perms["canEditSchedule"]:
+        raise ApprovalEngineError(
+            403,
+            "ROBOT_SCHEDULE_COORDINATOR_REQUIRED",
+            "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền đổi Ngày mổ / PTV chính của ca Robot.",
+            {"robotCaseCode": robot_code},
+        )
+
+    if any(k in changed_keys for k in ("date", "mainSurgeon", "surgeryTime")):
+        cand_slot = {
+            "surgeryDate": merged.get("date"),
+            "operatingRoom": rcase.get("operatingRoom") or "PM Robot",
+            "caseSlot": rcase.get("caseSlot") or ("Ca 1" if merged.get("isFirstCase") else "Ca 2"),
+            "mainSurgeonId": merged.get("mainSurgeon"),
+            "durationMinutes": merged.get("duration") or rcase.get("durationMinutes") or 180,
+            "surgeryTime": merged.get("surgeryTime"),
+            "isTestSandboxCase": bool(rcase.get("isTestSandboxCase") is True),
+        }
+        blocking, _, fp = check_robot_slot_conflicts_in_lock(
+            db,
+            candidate=cand_slot,
+            exclude_robot_code=robot_code,
+            exclude_surgery_id=merged.get("id"),
+        )
+        if blocking:
+            masked_conflicts = [
+                {
+                    **c,
+                    **({"phone": mask_phone_vn(c["phone"])} if ("phone" in c and not perms["canViewFullPhone"]) else {}),
+                }
+                for c in blocking
+            ]
+            raise ApprovalEngineError(
+                409,
+                "SCHEDULE_SLOT_CONFLICT",
+                "Ngày mổ hoặc PTV mới bị trùng slot Điều phối Robot. Vui lòng thao tác tại Tab Điều phối Robot.",
+                {
+                    "robotCaseCode": robot_code,
+                    "conflicts": masked_conflicts,
+                    "conflictFingerprint": fp,
+                },
+            )
+
+    for sk, rk in synced_pairs:
+        if sk in changed_keys:
+            rcase[rk] = str(merged.get(sk) or "").strip() if rk == "admissionId" else copy.deepcopy(merged.get(sk))
+    if "mainSurgeon" in changed_keys:
+        rcase["mainSurgeonName"] = resolve_staff_name_by_id(db, merged.get("mainSurgeon"))
+    if any(k in changed_keys for k in ("diagnosis", "method")) and rcase.get("preopApprovedAt"):
+        rcase["postB2ClinicalDirty"] = True
+    rcase["caseRevision"] = int(rcase.get("caseRevision", 1) or 1) + 1
+    rcase["updatedAt"] = now_vn_iso()
+    rcase["updatedBy"] = user.get("username") or user.get("sub") or "unknown"
+
+    merged["robotSyncMeta"] = {
+        **(old_r.get("robotSyncMeta") or {}),
+        "operatingRoom": rcase.get("operatingRoom") or "PM Robot",
+        "caseSlot": rcase.get("caseSlot") or "",
+        "robotCaseRevision": rcase["caseRevision"],
+        "syncedAt": now_vn_iso(),
+    }
+    revs = db.setdefault("_revisions", {})
+    revs["robotCases"] = int(revs.get("robotCases", 1)) + 1
+    return copy.deepcopy(rcase)
+
+
 def protect_and_reconcile_surgeries_put(
     *,
     user: dict,
@@ -3340,6 +4124,7 @@ def protect_and_reconcile_surgeries_put(
 
     out_items = []
     pending_wal_events = []
+    pending_robot_wal_events = []
     # Pool of active surgeries for duplicate detection (already-processed `out_items` + remaining `old_items`)
     processed_ids = set()
 
@@ -3417,163 +4202,54 @@ def protect_and_reconcile_surgeries_put(
             old_rec=old_r,
         )
 
+        synced_rcase = _reconcile_linked_robot_surgery_edit(
+            user=user,
+            raw_new=raw_new,
+            merged=merged,
+            old_r=old_r,
+            db=db,
+        )
+
         if cfg.get("sandboxOnlyMode") is True and merged.get("isTestSandboxCase") is not True and old_r.get("isTestSandboxCase") is not True:
             for k in APPROVAL_METADATA_FIELDS_TO_STRIP:
                 merged.pop(k, None)
             out_items.append(merged)
             processed_ids.add(sid)
+            if synced_rcase is not None:
+                pending_robot_wal_events.append((merged, 1, 1, "robot_synced_from_weekly_schedule", [], None, synced_rcase))
             continue
 
-        if not is_strict_int(merged.get("caseRevision")) or merged.get("caseRevision", 0) < 1:
-            merged["caseRevision"] = 1
-        merged["schemaVersion"] = SCHEMA_VERSION
-        merged["ruleVersion"] = RULE_VERSION
-        merged.setdefault("preparationContributors", [])
-        merged.setdefault("lastAttributionSeq", int(old_r.get("lastAttributionSeq", 0) or 0))
-
-        changed_tier_a = []
-        for tf in TIER_A_SCHEDULE_FIELDS:
-            if (old_r.get(tf) or None) != (merged.get(tf) or None):
-                changed_tier_a.append(tf)
-
-        assist1_changed = (old_r.get("assistSurgeon1") or None) != (merged.get("assistSurgeon1") or None)
-        approval_cur = merged.get("approval") or {}
-        proxy_assist1_active = (
-            assist1_changed
-            and approval_cur.get("status") in ("submitted", "preapproved")
-            and ((approval_cur.get("submittedSnapshot") or {}).get("proxySubmitterSource")) == "assist_surgeon_1"
+        changed_any, rev_before, rev_after, transition_action, changed_fields, old_status = apply_tier_a_and_schedule_invalidation(
+            merged,
+            old_r,
+            catalog,
+            db,
+            cfg,
         )
 
-        if changed_tier_a or proxy_assist1_active:
-            rev_before = int(merged.get("caseRevision", 1))
-            rev_after = rev_before + 1
-            merged["caseRevision"] = rev_after
-
-            approval = merged.setdefault("approval", {"status": "draft_unsubmitted", "activeHold": None})
-            old_status = approval.get("status", "draft_unsubmitted")
-            old_approach = old_r.get("approachType")
-            new_approach = merged.get("approachType")
-            new_date = merged.get("date", "")
-            in_scope_now, scope_reason_now = is_in_phase1_approval_scope(merged, cfg)
-
-            transition_action = None
-
-            if new_approach == "nsth" and old_approach != "nsth":
-                if approval.get("approvedSnapshot"):
-                    approval["lastApprovedSnapshot"] = copy.deepcopy(approval["approvedSnapshot"])
-                approval["approvedSnapshot"] = None
-                approval["activeHold"] = None
-                approval["status"] = "nsth_external_authority"
-                transition_action = "schedule_switch_to_nsth"
-            elif not in_scope_now and new_approach != "nsth":
-                if approval.get("approvedSnapshot"):
-                    approval["lastApprovedSnapshot"] = copy.deepcopy(approval["approvedSnapshot"])
-                approval["approvedSnapshot"] = None
-                approval["activeHold"] = None
-                approval["status"] = "legacy_exempt" if scope_reason_now == "before_rollout" else "not_in_scope"
-                approval["slaStatus"] = "not_applicable"
-                transition_action = "schedule_switch_to_not_in_scope"
-            elif old_approach == "nsth" and new_approach in ("mo", "noisoi", "robot") and in_scope_now:
-                init_parts = build_initial_unverified_structures(merged, catalog, db)
-                for k_init, v_init in init_parts.items():
-                    if merged.get(k_init) is None:
-                        merged[k_init] = v_init
-                approval["approvedSnapshot"] = None
-                approval["activeHold"] = None
-                approval["status"] = "draft_unsubmitted"
-                transition_action = "schedule_switch_from_nsth_to_surgical"
-            elif old_status == "not_in_scope" and in_scope_now:
-                init_parts = build_initial_unverified_structures(merged, catalog, db)
-                for k_init, v_init in init_parts.items():
-                    if merged.get(k_init) is None:
-                        merged[k_init] = v_init
-                approval["approvedSnapshot"] = None
-                approval["activeHold"] = None
-                approval["status"] = "draft_unsubmitted"
-                approval["slaStatus"] = "pending"
-                transition_action = "schedule_switch_from_not_in_scope_to_elective"
-            elif old_status in ("legacy_exempt", "legacy_unverified_manual_review") and is_valid_iso_date(new_date) and new_date >= rollout_date and in_scope_now:
-                init_parts = build_initial_unverified_structures(merged, catalog, db)
-                merged.update(init_parts)
-                approval["approvedSnapshot"] = None
-                approval["activeHold"] = None
-                approval["status"] = "draft_unsubmitted"
-                transition_action = "legacy_rescheduled_into_active_gate_m6"
-            elif proxy_assist1_active and not changed_tier_a:
-                approval["status"] = "resubmit_required"
-                approval["invalidationReason"] = "Đổi BS phụ mổ 1 sau khi đã trình duyệt thay — cần trình duyệt lại"
-                transition_action = "assist_surgeon_1_changed_after_proxy_submit"
-            elif old_status in ("approved", "approved_with_exception", "post_approval_hold"):
-                if approval.get("approvedSnapshot"):
-                    approval["lastApprovedSnapshot"] = copy.deepcopy(approval["approvedSnapshot"])
-                approval["approvedSnapshot"] = None
-                approval["activeHold"] = None
-                approval["status"] = "reapproval_required"
-                approval["invalidationReason"] = f"Thay đổi trường trọng yếu trên lịch mổ: {', '.join(changed_tier_a)}"
-                transition_action = "tier_a_schedule_edit_invalidated_approval"
-            elif old_status in ("submitted", "preapproved", "emergency_exception_pending_ack"):
-                approval["status"] = "resubmit_required"
-                approval["invalidationReason"] = f"Thay đổi trường trọng yếu khi đang trình duyệt: {', '.join(changed_tier_a or ['assistSurgeon1'])}"
-                transition_action = "tier_a_schedule_edit_requires_resubmit"
-
-            # Refresh suggestions, invalidate custom verifiedClass & CK-08 on method/approach/surgeon change (SYN-TC-13 & Mục 4.C)
-            if merged.get("approachType") in ("mo", "noisoi", "robot") and isinstance(merged.get("clinicalClassification"), dict):
-                cc = merged["clinicalClassification"]
-                cc["approachType"] = merged.get("approachType")
-                sug_code, sug_class, _ = suggest_procedure_from_method(catalog, merged.get("method", ""), merged.get("approachType"))
-                pc = cc.setdefault("procedureClass", {})
-                pc["suggestedCatalogCode"] = sug_code
-                pc["suggestedClass"] = sug_class
-                if any(f in changed_tier_a for f in ("method", "approachType", "mainSurgeon")):
-                    if "method" in changed_tier_a or "approachType" in changed_tier_a:
-                        pc["confirmedCatalogEntryId"] = None
-                        pc["confirmedClass"] = None
-                        pc["confirmedByStaffId"] = None
-                    if pc.get("verifiedClass") is not None or pc.get("isCustomProcedure"):
-                        pc["verifiedClass"] = None
-                        pc["verifiedBasisCode"] = None
-                        pc["verifiedBasisNote"] = None
-                        pc["verifiedByStaffId"] = None
-                        pc["verifiedAt"] = None
-                        if pc.get("isCustomProcedure") and pc.get("proposedClass"):
-                            pc["confirmedClass"] = pc.get("proposedClass")
-                    ck08 = (merged.get("preopChecklist") or {}).get("CK-08")
-                    if isinstance(ck08, dict) and ck08.get("verifiedByStaffId") is not None:
-                        ck08["verifiedByStaffId"] = None
-                        ck08["state"] = "unverified"
-                        ck08["needsReverify"] = True
-                        ck08["uiBannerText"] = STALE_VERIFICATION_LABEL_VI
-                col_meta = evaluate_column_compliance(
-                    catalog,
-                    db,
-                    main_surgeon_id=merged.get("mainSurgeon"),
-                    approach_type=merged.get("approachType"),
-                    surgery_date=merged.get("date", ""),
-                    confirmed_class=pc.get("confirmedClass"),
-                    confirmed_catalog_id=pc.get("confirmedCatalogEntryId"),
-                    is_custom_procedure=bool(pc.get("isCustomProcedure")),
-                    proposed_class=pc.get("proposedClass"),
-                    verified_class=pc.get("verifiedClass"),
-                )
-                old_decl = (cc.get("columnCompliance") or {}).get("declaredMode")
-                cc["columnCompliance"] = {
-                    **col_meta,
-                    "declaredMode": None if any(f in changed_tier_a for f in ("mainSurgeon", "method", "approachType")) else old_decl,
-                }
-
-            stamp_badge_fields(merged)
-
-            if transition_action or old_status != approval.get("status"):
-                pending_wal_events.append((
-                    merged,
-                    rev_before,
-                    rev_after,
-                    transition_action or "tier_a_schedule_edit",
-                    changed_tier_a or (["assistSurgeon1"] if proxy_assist1_active else []),
-                    old_status,
-                ))
-        else:
-            stamp_badge_fields(merged)
+        if synced_rcase is not None:
+            if not changed_any:
+                rev_before = int(merged.get("caseRevision", 1) or 1)
+                rev_after = rev_before + 1
+                merged["caseRevision"] = rev_after
+            pending_robot_wal_events.append((
+                merged,
+                rev_before,
+                rev_after,
+                transition_action or "robot_synced_from_weekly_schedule",
+                changed_fields,
+                old_status,
+                synced_rcase,
+            ))
+        elif transition_action is not None:
+            pending_wal_events.append((
+                merged,
+                rev_before,
+                rev_after,
+                transition_action,
+                changed_fields,
+                old_status,
+            ))
 
         out_items.append(merged)
         processed_ids.add(sid)
@@ -3601,6 +4277,38 @@ def protect_and_reconcile_surgeries_put(
             },
         )
         rec_ref["lastJournalSeq"] = entry["eventSeq"]
+
+    for rec_ref, rev_b, rev_a, act_name, changed_fields, prev_st, rcase_snap in pending_robot_wal_events:
+        entry, attr_written = append_dual_wal_transaction(
+            data_dir,
+            db,
+            action=act_name,
+            actor=user,
+            surgery_id=rec_ref.get("id"),
+            case_rev_before=rev_b,
+            case_rev_after=rev_a,
+            summary={
+                "robotCaseCode": rcase_snap.get("robotCaseCode"),
+                "changedTierAFields": changed_fields,
+                "statusBefore": prev_st,
+                "statusAfter": (rec_ref.get("approval") or {}).get("status"),
+                "isTestSandboxCase": bool(rec_ref.get("isTestSandboxCase") is True),
+            },
+            committed_state_patch={
+                "patchKind": "robot_tx",
+                "robotCaseRecords": [copy.deepcopy(rcase_snap)],
+                "linkedSurgeryOps": [{"op": "upsert_active", "record": copy.deepcopy(rec_ref)}],
+            },
+            attribution_specs=[],
+        )
+        if not (cfg.get("sandboxOnlyMode") is True and rec_ref.get("isTestSandboxCase") is not True):
+            rec_ref["lastJournalSeq"] = entry["eventSeq"]
+            if attr_written:
+                rec_ref["lastAttributionSeq"] = attr_written[-1]["attributionSeq"]
+        for rc_live in (db.get("robotCases") or []):
+            if isinstance(rc_live, dict) and str(rc_live.get("robotCaseCode") or rc_live.get("soNV") or "").strip() == str(rcase_snap.get("robotCaseCode") or "").strip():
+                rc_live["lastJournalSeq"] = entry["eventSeq"]
+                break
 
     return out_items
 
@@ -3963,8 +4671,9 @@ def filter_db_payload_for_user(raw_data: dict, user: dict, strip_fields: set) ->
     allow_sbx = can_user_access_sandbox(user, raw_data)
 
     out = {}
+    server_only_keys = set(strip_fields or ()) | {"robotCases", "robotConfig", "surgeriesArchivedInactive"}
     for k, v in raw_data.items():
-        if k in strip_fields:
+        if k in server_only_keys:
             continue
         if k == "notifications" and isinstance(v, list):
             out[k] = [
