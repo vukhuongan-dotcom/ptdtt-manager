@@ -1210,7 +1210,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                             const mbOv = (modalOpen && mb) ? (mb.scrollWidth - mb.clientWidth) : 0;
                             let maxRight = 0;
                             if (rbt && !modalOpen) {
-                                for (const el of rbt.querySelectorAll('.rbt-header, .rbt-kpi-grid, .rbt-subtabs-wrap, .rbt-week-grid, .rbt-case-card, #rbt-neg-probe')) {
+                                for (const el of rbt.querySelectorAll('.rbt-header, .rbt-kpi-grid, .rbt-subtabs-wrap, .rbt-week-grid, .rbt-day-strip, .rbt-mcard-list, .rbt-mcard, .rbt-case-card, #rbt-neg-probe')) {
                                     const r = el.getBoundingClientRect();
                                     if (r.width > 0) maxRight = Math.max(maxRight, Math.round(r.right - vw));
                                 }
@@ -1251,8 +1251,10 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 mpage.evaluate("() => document.getElementById('rbt-neg-probe')?.remove()")
                 self.assertLessEqual(_measure_mobile_overflow()["worst"], 0)
 
-                # Open create consult modal, simulate .kb-open, test zero overflow + Negative Overflow Probe inside modal
-                mpage.click('[data-rbt-action="open_create_consult"]')
+                # Open create consult modal via Mobile FAB flow, simulate .kb-open, test zero overflow + Negative Overflow Probe inside modal
+                mpage.click('#rbt-mobile-fab')
+                mpage.wait_for_selector('#rbt-fab-sheet', timeout=5000)
+                mpage.click('#rbt-fab-sheet [data-rbt-action="open_create_consult"]')
                 mpage.wait_for_selector("#rbt-case-form", timeout=5000)
                 mpage.evaluate("() => document.getElementById('modal-overlay').classList.add('kb-open')")
                 kb_ov = _measure_mobile_overflow()
@@ -1514,6 +1516,325 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 page.evaluate("() => Modal.close(true)")
             finally:
                 ctx.close()
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def test_tc_r18_mobile_redesign_android_and_iphone_ergonomics(self):
+        today_iso = _iso_offset(0)
+        tomorrow_iso = _iso_offset(1)
+        hist_25 = [
+            {
+                "id": 9200 + idx,
+                "patientName": f"BN Lịch Sử Robot {idx:02d}",
+                "birthYear": 1960 + (idx % 20),
+                "admissionId": f"26092{idx:03d}",
+                "diagnosis": "Ung thư trực tràng trung bình cT3N0M0",
+                "method": "Phẫu thuật Robot cắt trước thấp kèm nối máy EEA",
+                "surgeryType": "robot",
+                "approachType": "robot",
+                "date": _iso_offset(-2 - (idx % 5)),
+                "mainSurgeon": 6,
+            }
+            for idx in range(1, 26)
+        ]
+        _, _, client = self._new_env(sandbox_only=False, preseed_surgeries=hist_25)
+
+        # Seed 2 active cases today (B2 preop holding Ca 1, B3 inpatient holding Ca 2)
+        c1 = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={"action": "create_consult", "patientName": "BN Mobile Tuần Ca 1", "phone": CANARY_PHONE, "mainSurgeonId": 6, "consultResult": "dong_y"},
+        ).get_json()["case"]
+        client.patch(
+            f"/api/robot/cases/{c1['robotCaseCode']}",
+            headers=self._headers("vcnguyen"),
+            json={"action": "schedule_step1", "expectedRevision": c1["caseRevision"], "surgeryDate": today_iso, "caseSlot": "Ca 1"},
+        )
+
+        c2 = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={"action": "create_consult", "patientName": "BN Mobile Tuần Ca 2", "phone": CANARY_PHONE, "mainSurgeonId": 6, "consultResult": "dong_y"},
+        ).get_json()["case"]
+        c2 = client.patch(
+            f"/api/robot/cases/{c2['robotCaseCode']}",
+            headers=self._headers("vcnguyen"),
+            json={"action": "schedule_step1", "expectedRevision": c2["caseRevision"], "surgeryDate": today_iso, "caseSlot": "Ca 2"},
+        ).get_json()["case"]
+        client.patch(
+            f"/api/robot/cases/{c2['robotCaseCode']}",
+            headers=self._headers("vkan"),
+            json={"action": "preop_step2", "expectedRevision": c2["caseRevision"]},
+        )
+
+        # Seed 1 consult (cho_xep_lich), 1 postponed (hoan_mo), 1 trashed (da_xoa)
+        client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={"action": "create_consult", "patientName": "BN Mobile Chờ Lịch", "phone": CANARY_PHONE, "mainSurgeonId": 6, "consultResult": "dong_y", "expectedTimeframe": _iso_offset(4)},
+        )
+        c_post = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={"action": "create_case", "patientName": "BN Mobile Hoãn Mổ", "phone": CANARY_PHONE, "mainSurgeonId": 6, "surgeryDate": _iso_offset(3), "caseSlot": "Ca 1"},
+        ).get_json()["case"]
+        r_post_patch = client.patch(
+            f"/api/robot/cases/{c_post['robotCaseCode']}",
+            headers=self._headers("vcnguyen"),
+            json={"action": "postpone", "expectedRevision": c_post["caseRevision"], "postponeReasonCode": "benh_nen_chua_on_dinh", "postponeReasonNote": "Huyết áp cao"},
+        )
+        self.assertEqual(r_post_patch.status_code, 200, r_post_patch.get_data(as_text=True))
+        c_trash = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vcnguyen"),
+            json={"action": "create_consult", "patientName": "BN Mobile Thùng Rác", "phone": CANARY_PHONE, "mainSurgeonId": 6},
+        ).get_json()["case"]
+        r_trash_patch = client.patch(
+            f"/api/robot/cases/{c_trash['robotCaseCode']}",
+            headers=self._headers("vcnguyen"),
+            json={"action": "soft_delete", "expectedRevision": c_trash["caseRevision"], "deleteReason": "Nhập nhầm mẫu"},
+        )
+        self.assertEqual(r_trash_patch.status_code, 200, r_trash_patch.get_data(as_text=True))
+
+        port = _find_free_port()
+        srv = make_server("127.0.0.1", port, self.sf.app, threaded=True)
+        srv_thread = threading.Thread(target=srv.serve_forever, daemon=True)
+        srv_thread.start()
+        base_url = f"http://127.0.0.1:{port}"
+
+        def _open_mob_page(browser_name: str, width: int, height: int, username: str):
+            u = self._users[username]
+            token = self.sf._create_jwt(username, u)
+            session_obj = {
+                "staffId": u["staffId"],
+                "username": username,
+                "name": u["name"],
+                "role": u["role"],
+                "title": u["title"],
+                "isAdmin": u["isAdmin"],
+                "isSuperAdmin": u["isSuperAdmin"],
+                "isRobotCoordinator": username == "vcnguyen",
+                "mustChangePassword": False,
+            }
+            ctx = self.browsers[browser_name].new_context(
+                viewport={"width": width, "height": height},
+                service_workers="block",
+            )
+            ctx.route("**/api/emr*", lambda route: route.fulfill(status=200, content_type="application/json", body='{"patients":[]}'))
+            ctx.add_init_script(
+                f"""
+                localStorage.setItem('ptdtt_cache_ver', '2609281105');
+                localStorage.setItem('ptdtt_sw_build', {json.dumps(self.sw_build_ver)});
+                localStorage.setItem('ptdtt_jwt', {json.dumps(token)});
+                sessionStorage.setItem('ptdtt_jwt', {json.dumps(token)});
+                localStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
+                sessionStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
+                localStorage.setItem('ptdtt_onboarding_done', 'true');
+                """
+            )
+            pg = ctx.new_page()
+            pg.goto(base_url + "/", wait_until="load")
+            pg.wait_for_function(
+                "() => Boolean(typeof Store !== 'undefined' && Store._hasLoadedServerOnce === true && document.getElementById('nav-robot-schedule'))",
+                timeout=10000,
+            )
+            pg.click("#nav-robot-schedule")
+            pg.wait_for_selector("#robot-schedule-page .rbt-header", timeout=8000)
+            return ctx, pg
+
+        def _measure_ov(pg):
+            return pg.evaluate(
+                """() => {
+                    const vw = window.innerWidth;
+                    const docOv = document.documentElement.scrollWidth - vw;
+                    const bodyOv = document.body.scrollWidth - vw;
+                    const mc = document.getElementById('main-content');
+                    const rbt = document.getElementById('robot-schedule-page');
+                    const modal = document.getElementById('modal');
+                    const mb = document.getElementById('modal-body');
+                    const overlay = document.getElementById('modal-overlay');
+                    const mcOv = mc ? (mc.scrollWidth - mc.clientWidth) : 0;
+                    const rbtOv = rbt ? (rbt.scrollWidth - rbt.clientWidth) : 0;
+                    const modalOpen = Boolean(overlay && overlay.classList.contains('active'));
+                    const modalOv = (modalOpen && modal) ? (modal.scrollWidth - modal.clientWidth) : 0;
+                    const mbOv = (modalOpen && mb) ? (mb.scrollWidth - mb.clientWidth) : 0;
+                    let maxRight = 0;
+                    if (rbt && !modalOpen) {
+                        for (const el of rbt.querySelectorAll('.rbt-header, .rbt-kpi-grid, .rbt-subtabs-wrap, .rbt-day-strip, .rbt-mcard-list, .rbt-mcard, #rbt-neg-probe')) {
+                            const r = el.getBoundingClientRect();
+                            if (r.width > 0) maxRight = Math.max(maxRight, Math.round(r.right - vw));
+                        }
+                    }
+                    if (modalOpen && modal) {
+                        for (const el of modal.querySelectorAll('#rbt-case-form, .rbt-form-grid, #rbt-neg-probe-modal')) {
+                            const r = el.getBoundingClientRect();
+                            if (r.width > 0) maxRight = Math.max(maxRight, Math.round(r.right - vw));
+                        }
+                    }
+                    return {
+                        docOv, bodyOv, mcOv, rbtOv, modalOv, mbOv, maxRight,
+                        worst: Math.max(docOv, bodyOv, mcOv, rbtOv, modalOv, mbOv, maxRight),
+                    };
+                }"""
+            )
+
+        try:
+            # 1) Android Compact 360x800 (Chromium): compact header, KPI jump, Day-Pill + Cả tuần, 4 card tabs, pagination, FAB + Pill Ca 1..3 + Date presets, Light/Dark + Negative Probe
+            ctx_and_sm, apage = _open_mob_page("chromium", 360, 800, "vcnguyen")
+            try:
+                hdr_h = apage.locator("#robot-schedule-page .rbt-header").bounding_box()["height"]
+                self.assertLessEqual(hdr_h, 90, f"Compact mobile header too tall: {hdr_h}")
+                self.assertGreaterEqual(apage.locator("#robot-schedule-page .rbt-day-pill").count(), 7)  # 6 days + Cả tuần
+
+                # KPI chip jump to Consult tab and verify cards visible, table hidden
+                apage.click('.rbt-kpi-card[data-rbt-code="consult"]')
+                apage.wait_for_selector('.rbt-subtab[data-rbt-code="consult"].is-active', timeout=4000)
+                self.assertTrue(apage.locator("#robot-schedule-page .rbt-mcard-list").first.is_visible())
+                self.assertFalse(apage.locator("#robot-schedule-page .rbt-table").first.is_visible())
+                self.assertLessEqual(_measure_ov(apage)["worst"], 0)
+
+                # Postponed & Trash tabs card rendering + zero overflow
+                for sub_key in ("postponed", "trash"):
+                    apage.click(f'.rbt-subtab[data-rbt-code="{sub_key}"]')
+                    apage.wait_for_selector(f'.rbt-subtab[data-rbt-code="{sub_key}"].is-active', timeout=4000)
+                    self.assertTrue(apage.locator("#robot-schedule-page .rbt-mcard-list .rbt-mcard").first.is_visible())
+                    self.assertLessEqual(_measure_ov(apage)["worst"], 0)
+
+                # Completed tab: 20 cards initially, load more reveals all 25
+                apage.click('.rbt-subtab[data-rbt-code="completed"]')
+                apage.wait_for_selector('.rbt-subtab[data-rbt-code="completed"].is-active', timeout=4000)
+                self.assertEqual(apage.locator("#robot-schedule-page .rbt-mcard-list .rbt-mcard").count(), 20)
+                apage.click('[data-rbt-action="load_more_completed"]')
+                apage.wait_for_function(
+                    "() => document.querySelectorAll('#robot-schedule-page .rbt-mcard-list .rbt-mcard').length === 25",
+                    timeout=4000,
+                )
+
+                # Jump back to Week tab & toggle "Cả tuần" hides empty days
+                apage.click('.rbt-kpi-card[data-rbt-code="week"]')
+                apage.wait_for_selector('.rbt-subtab[data-rbt-code="week"].is-active', timeout=4000)
+                apage.click('[data-rbt-action="toggle_week_all"]')
+                apage.wait_for_selector('.rbt-day-pill--all.is-active', timeout=4000)
+                self.assertIn("ngày trống", apage.inner_text("#robot-schedule-page"))
+
+                # Dark Mode overflow check on Android
+                apage.evaluate("() => document.documentElement.setAttribute('data-theme', 'dark')")
+                self.assertLessEqual(_measure_ov(apage)["worst"], 0)
+                apage.evaluate("() => document.documentElement.setAttribute('data-theme', 'light')")
+
+                # FAB -> Bottom Sheet -> Tạo lịch Robot -> Segmented Pills Ca 1..3 + capacity 2/3 -> Ngày mai 0/3 + anti-zoom font >= 16px
+                apage.click("#rbt-mobile-fab")
+                apage.wait_for_selector("#rbt-fab-sheet", timeout=4000)
+                apage.click('#rbt-fab-sheet [data-rbt-action="open_create_case"]')
+                apage.wait_for_selector("#rbt-case-form", timeout=5000)
+                self.assertTrue(apage.evaluate("() => document.getElementById('rbt-mobile-fab').hidden"))
+                self.assertIn("2/3 ca", apage.inner_text("#rbt-day-capacity-hint"))
+
+                apage.click('[data-rbt-slot-pill="Ca 3"]')
+                self.assertEqual(apage.locator('#rbt-case-form select[name="caseSlot"]').input_value(), "Ca 3")
+                apage.click('[data-rbt-date-preset="1"][data-rbt-date-target="surgeryDate"]')
+                self.assertEqual(apage.locator('#rbt-case-form input[name="surgeryDate"]').input_value(), tomorrow_iso)
+                self.assertIn("0/3 ca", apage.inner_text("#rbt-day-capacity-hint"))
+
+                erg = apage.evaluate("""() => {
+                    const inp = document.querySelector('#rbt-case-form input[name="patientName"]');
+                    const pill = document.querySelector('#rbt-case-form [data-rbt-slot-pill="Ca 3"]');
+                    return {
+                        fontPx: inp ? parseFloat(getComputedStyle(inp).fontSize) : 0,
+                        pillH: pill ? Math.round(pill.getBoundingClientRect().height) : 0
+                    };
+                }""")
+                self.assertGreaterEqual(erg["fontPx"], 16)
+                self.assertGreaterEqual(erg["pillH"], 44)
+                apage.evaluate("() => Modal.close(true)")
+
+                # Negative Overflow Probe on 360px Android
+                apage.evaluate("() => { const p = document.createElement('div'); p.id = 'rbt-neg-probe'; p.style.cssText = 'width:600px;min-width:600px;height:10px;'; document.getElementById('robot-schedule-page').appendChild(p); }")
+                self.assertGreater(_measure_ov(apage)["worst"], 100)
+                apage.evaluate("() => document.getElementById('rbt-neg-probe')?.remove()")
+            finally:
+                ctx_and_sm.close()
+
+            # 2) Android Large 412x915 (Chromium): tel: link RBAC + Bottom Sheet ••• dispatch
+            ctx_and_lg, lpage = _open_mob_page("chromium", 412, 915, "vcnguyen")
+            try:
+                self.assertGreaterEqual(lpage.locator('#robot-schedule-page a.rbt-btn-call[href^="tel:"]').count(), 1)
+                lpage.locator('#robot-schedule-page [data-rbt-action="open_case_sheet"]').first.click()
+                lpage.wait_for_selector("#rbt-case-action-sheet", timeout=4000)
+                lpage.click('#rbt-case-action-sheet [data-rbt-action="open_edit_schedule"]')
+                lpage.wait_for_selector("#rbt-case-form", timeout=5000)
+                lpage.evaluate("() => Modal.close(true)")
+            finally:
+                ctx_and_lg.close()
+
+            ctx_and_ro, rpage = _open_mob_page("chromium", 412, 915, "ttdanh")
+            try:
+                self.assertEqual(rpage.locator('a[href^="tel:"]').count(), 0)
+                self.assertNotIn(CANARY_PHONE, rpage.inner_html("#robot-schedule-page"))
+            finally:
+                ctx_and_ro.close()
+
+            # 3) iPhone SE 375x812 & iPhone 14/15 390x844 (WebKit): FAB vs Bottom Nav clearance, 16px anti-zoom, Light/Dark, .kb-open, Probe & Zero-PHI
+            for vw, vh in ((375, 812), (390, 844)):
+                ctx_ios, ipage = _open_mob_page("webkit", vw, vh, "vcnguyen")
+                try:
+                    for theme in ("light", "dark"):
+                        ipage.evaluate(f"() => document.documentElement.setAttribute('data-theme', '{theme}')")
+                        ov = _measure_ov(ipage)
+                        self.assertLessEqual(ov["worst"], 0, f"iPhone WebKit {vw}x{vh} {theme} overflow: {ov}")
+
+                    # FAB sits strictly above .sidebar bottom nav & touch target >= 44px
+                    geom = ipage.evaluate("""() => {
+                        const fab = document.getElementById('rbt-mobile-fab')?.getBoundingClientRect();
+                        const nav = document.querySelector('.sidebar')?.getBoundingClientRect();
+                        const cta = document.querySelector('#robot-schedule-page .rbt-mcard__primary')?.getBoundingClientRect();
+                        return {
+                            fabW: fab ? Math.round(fab.width) : 0,
+                            fabH: fab ? Math.round(fab.height) : 0,
+                            fabBottom: fab ? Math.round(fab.bottom) : 0,
+                            navTop: nav ? Math.round(nav.top) : 9999,
+                            ctaH: cta ? Math.round(cta.height) : 0
+                        };
+                    }""")
+                    self.assertGreaterEqual(geom["fabW"], 44)
+                    self.assertGreaterEqual(geom["fabH"], 44)
+                    self.assertGreaterEqual(geom["ctaH"], 44)
+                    self.assertLessEqual(geom["fabBottom"], geom["navTop"] + 2)
+
+                    # Open modal via FAB, check .kb-open + 16px font + Negative Probe
+                    ipage.click("#rbt-mobile-fab")
+                    ipage.wait_for_selector("#rbt-fab-sheet", timeout=4000)
+                    ipage.click('#rbt-fab-sheet [data-rbt-action="open_create_consult"]')
+                    ipage.wait_for_selector("#rbt-case-form", timeout=5000)
+                    ipage.evaluate("() => document.getElementById('modal-overlay').classList.add('kb-open')")
+                    self.assertLessEqual(_measure_ov(ipage)["worst"], 0)
+                    font_ok = ipage.evaluate("""() => {
+                        const els = [...document.querySelectorAll('#rbt-case-form input, #rbt-case-form select, #rbt-case-form textarea')];
+                        return els.every(el => parseFloat(getComputedStyle(el).fontSize) >= 16);
+                    }""")
+                    self.assertTrue(font_ok)
+                    ipage.evaluate("() => { const p = document.createElement('div'); p.id = 'rbt-neg-probe-modal'; p.style.cssText = 'width:600px;min-width:600px;height:10px;'; document.getElementById('rbt-case-form').appendChild(p); }")
+                    self.assertGreater(_measure_ov(ipage)["worst"], 100)
+                    ipage.evaluate("() => { document.getElementById('rbt-neg-probe-modal')?.remove(); Modal.close(true); }")
+
+                    if vw == 390:
+                        ipage.evaluate("() => { Auth.logout(); App.showLogin(); }")
+                        self.assertFalse(ipage.evaluate(f"() => JSON.stringify(localStorage).includes({json.dumps(CANARY_PHONE)})"))
+                        self.assertFalse(ipage.evaluate(f"() => JSON.stringify(sessionStorage).includes({json.dumps(CANARY_PHONE)})"))
+                finally:
+                    ctx_ios.close()
+
+            # 4) Desktop Regression (1440x900 Chromium): Desktop table preserved & mobile controls hidden
+            ctx_d, dpage = _open_mob_page("chromium", 1440, 900, "vcnguyen")
+            try:
+                self.assertFalse(dpage.locator("#rbt-mobile-fab").is_visible())
+                dpage.click('.rbt-subtab[data-rbt-code="completed"]')
+                dpage.wait_for_selector("#robot-schedule-page .rbt-table", timeout=5000)
+                self.assertTrue(dpage.locator("#robot-schedule-page .rbt-table").first.is_visible())
+                self.assertFalse(dpage.locator("#robot-schedule-page .rbt-mcard-list").first.is_visible())
+            finally:
+                ctx_d.close()
         finally:
             srv.shutdown()
             srv.server_close()
