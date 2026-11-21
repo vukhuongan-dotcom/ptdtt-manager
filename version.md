@@ -56,8 +56,8 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Tích hợp phân hệ Điều phối Lịch mổ Robot liên thông nguyên tử 2 chiều với Lịch mổ tuần, Dual-WAL, Zero-Local-PHI & Mẫu in A5 P.CTXH (FEAT-231) (`[FEAT-231]`, build `v2611211215`).
-- Đồng bộ quy chuẩn khuyến nghị 7 mô hình Plan theo Google Antigravity v2.34.0 (`[FEAT-230]`).
+- Tích hợp phân hệ Điều phối Lịch mổ Robot liên thông nguyên tử 2 chiều với Lịch mổ tuần, Dual-WAL, Zero-Local-PHI & Mẫu in A5 P.CTXH (FEAT-231) (`[FEAT-231]`, commit `f212713`, build `v2611211215`).
+- Đồng bộ quy chuẩn khuyến nghị 7 mô hình Plan theo Google Antigravity v2.34.0 (`[FEAT-230]`, commit `f212713`).
 - Đồng bộ quy chuẩn Plan V3 từ 5 lên 7 cấu hình nội sinh AG (bổ sung Gemini 4 Neon & Orchestrator Neon) (`[FEAT-229]`, commit `af4dd66`).
 - Cập nhật lịch SHCM Khoa PTĐTT đến 07/06/2027: bổ sung 3 buổi 19/10, 02/11, 16/11 và tịnh tiến +6 tuần cho 14 buổi tiếp theo (FEAT-228) (`[FEAT-228]`, commit `478a689`, build `v2611160654`).
 - Bổ sung Tab Nghiên cứu khoa học (NCKH) dành riêng cho Ban Chủ nhiệm (5 sub-tabs: Dashboard, Đề tài xét duyệt, Đề tài nghiệm thu, Sáng kiến xét duyệt, Sáng kiến công nhận; form CRUD, Chia đều %, chuyển trạng thái 1 chạm, xuất ảnh 2K PNG và 8 bản ghi QĐ 2026) (`[FEAT-226]`, commit `8f98799`, build `v2611122150`).
