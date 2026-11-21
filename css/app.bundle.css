@@ -3670,6 +3670,10 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     #dashboard-page > .page-header .page-title {
         font-size: 1rem;
         font-weight: 700;
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         margin: 0;
         line-height: 1.25;
@@ -5233,6 +5237,10 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
     #staff-tracking-page > .page-header .page-title {
         font-size: 1rem;
         font-weight: 700;
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         margin: 0;
         display: flex;
@@ -5253,6 +5261,7 @@ tbody tr:hover { background: rgba(0,0,0,0.02); }
         font-size: 0.72rem;
         font-weight: 700;
         background: rgba(255, 255, 255, 0.18);
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         border: 1px solid rgba(255, 255, 255, 0.3);
         flex-shrink: 0;
@@ -7700,6 +7709,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 
     #schedule-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 0.98rem;
         margin: 0;
@@ -14760,6 +14773,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 
     #surgery-stats-page > .page-header.sstats-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 0.98rem;
         margin: 0;
@@ -15813,8 +15830,22 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         display: none;
     }
 
+    #rooms-page-container > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
+        color: #FFFFFF;
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
     .rm-title-mobile {
         display: inline;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 1rem;
         font-weight: 700;
@@ -16580,6 +16611,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 
     #research-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 1.05rem;
         margin: 0;
@@ -20110,6 +20145,10 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 
     #reports-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 1.05rem;
         margin: 0;

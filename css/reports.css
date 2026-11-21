@@ -785,6 +785,10 @@
     }
 
     #reports-page > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 1.05rem;
         margin: 0;

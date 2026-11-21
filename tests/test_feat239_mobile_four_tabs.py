@@ -358,7 +358,7 @@ class TestFeat239MobileFourTabs(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211822"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611212030"
 
         client = cls.sf.app.test_client()
         token = cls.sf._create_jwt("vkan", users["vkan"])
@@ -845,6 +845,77 @@ class TestFeat239MobileFourTabs(unittest.TestCase):
                 self.assertEqual(perr, [], f"Page errors on {engine} {vw}x{vh} {theme}: {perr}")
             finally:
                 ctx.close()
+
+    def test_06_mobile_navy_headers_white_text_contrast(self):
+        all_tabs = [
+            ("dashboard", "#dashboard-page"),
+            ("staff-tracking", "#staff-tracking-page"),
+            ("rooms", "#rooms-page-container"),
+            ("reports", "#reports-page"),
+            ("schedule", "#schedule-page"),
+            ("surgery-stats", "#surgery-stats-page"),
+            ("research", "#research-page"),
+        ]
+        for engine, vw, vh in (("chromium", 360, 800), ("webkit", 390, 844)):
+            for theme in ("light", "dark"):
+                ctx, page, cerr, perr = self._open_page(engine, vw, vh, username="vkan", theme=theme)
+                try:
+                    for tab_name, sel in all_tabs:
+                        self._navigate_tab(page, tab_name, sel)
+                        styles = page.evaluate(
+                            f"""() => {{
+                                const t = document.querySelector('{sel} > .page-header .page-title');
+                                const cs = getComputedStyle(t);
+                                const res = {{
+                                    fill: cs.webkitTextFillColor,
+                                    color: cs.color,
+                                    bgImg: cs.backgroundImage
+                                }};
+                                const pill = document.querySelector('{sel} .st-hdr-ratio-pill');
+                                if (pill) {{
+                                    const pcs = getComputedStyle(pill);
+                                    res.pillFill = pcs.webkitTextFillColor;
+                                    res.pillColor = pcs.color;
+                                }}
+                                const rmMob = document.querySelector('{sel} .rm-title-mobile');
+                                if (rmMob) {{
+                                    const rcs = getComputedStyle(rmMob);
+                                    res.rmFill = rcs.webkitTextFillColor;
+                                    res.rmColor = rcs.color;
+                                }}
+                                return res;
+                            }}"""
+                        )
+                        self.assertEqual(styles["fill"], "rgb(255, 255, 255)", f"{tab_name} ({engine}/{theme}) fill={styles['fill']}")
+                        self.assertEqual(styles["color"], "rgb(255, 255, 255)", f"{tab_name} ({engine}/{theme}) color={styles['color']}")
+                        self.assertEqual(styles["bgImg"], "none", f"{tab_name} ({engine}/{theme}) bgImg={styles['bgImg']}")
+                        if "pillFill" in styles:
+                            self.assertEqual(styles["pillFill"], "rgb(255, 255, 255)")
+                            self.assertEqual(styles["pillColor"], "rgb(255, 255, 255)")
+                        if "rmFill" in styles:
+                            self.assertEqual(styles["rmFill"], "rgb(255, 255, 255)")
+                            self.assertEqual(styles["rmColor"], "rgb(255, 255, 255)")
+                    self.assertEqual(cerr, [])
+                    self.assertEqual(perr, [])
+                finally:
+                    ctx.close()
+
+        # Desktop Light Mode preserves gradient .page-title
+        ctx, page, cerr, perr = self._open_page("chromium", 1440, 900, username="vkan", theme="light")
+        try:
+            self._navigate_tab(page, "reports", "#reports-page")
+            desk = page.evaluate(
+                """() => {
+                    const cs = getComputedStyle(document.querySelector('#reports-page > .page-header .page-title'));
+                    return { fill: cs.webkitTextFillColor, bgImg: cs.backgroundImage };
+                }"""
+            )
+            self.assertNotEqual(desk["bgImg"], "none")
+            self.assertEqual(desk["fill"], "rgba(0, 0, 0, 0)")
+            self.assertEqual(cerr, [])
+            self.assertEqual(perr, [])
+        finally:
+            ctx.close()
 
 
 if __name__ == "__main__":

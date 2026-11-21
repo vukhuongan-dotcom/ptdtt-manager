@@ -540,8 +540,22 @@
         display: none;
     }
 
+    #rooms-page-container > .page-header .page-title {
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
+        color: #FFFFFF;
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
     .rm-title-mobile {
         display: inline;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         font-size: 1rem;
         font-weight: 700;

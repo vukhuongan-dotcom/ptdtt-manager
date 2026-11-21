@@ -430,6 +430,10 @@
     #staff-tracking-page > .page-header .page-title {
         font-size: 1rem;
         font-weight: 700;
+        background: none;
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         margin: 0;
         display: flex;
@@ -450,6 +454,7 @@
         font-size: 0.72rem;
         font-weight: 700;
         background: rgba(255, 255, 255, 0.18);
+        -webkit-text-fill-color: #FFFFFF;
         color: #FFFFFF;
         border: 1px solid rgba(255, 255, 255, 0.3);
         flex-shrink: 0;
