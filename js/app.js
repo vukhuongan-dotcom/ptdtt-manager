@@ -6,6 +6,23 @@ const App = {
     _idleListenersBound: false,
     _networkStatusBound: false,
     _swipeBound: false,
+    _mobileNavTooltipTimer: null,
+    _mobilePageTitles: {
+        dashboard: 'Tổng quan',
+        surgery: 'Lịch mổ tuần',
+        'robot-schedule': 'Điều phối Robot',
+        'surgery-approval': 'Duyệt mổ khoa',
+        rooms: 'Phòng bệnh',
+        reports: 'Báo cáo',
+        'staff-tracking': 'Theo dõi NV',
+        schedule: 'Phân công tuần',
+        staff: 'Nhân sự',
+        plans: 'Kế hoạch',
+        'surgery-stats': 'Thống kê PT',
+        research: 'Sinh hoạt CM',
+        conferences: 'Hội nghị',
+        nckh: 'Nghiên cứu KH',
+    },
 
     pages: {
         dashboard: DashboardPage,
@@ -292,6 +309,7 @@ const App = {
                 this.navigate('dashboard');
             }
         }
+        this._updateMobileNavScrollFades();
     },
 
     // === Idle Auto-Logout (10 minutes) ===
@@ -428,6 +446,82 @@ const App = {
         document.getElementById('mobile-logout-btn').addEventListener('click', () => {
             Auth.quickSwitchAccount();
         });
+        this.updateMobileHeaderTitle(this.currentPage);
+    },
+
+    updateMobileHeaderTitle(page) {
+        const titleEl = document.getElementById('mobile-header-title') || document.querySelector('.mobile-header-title');
+        if (!titleEl) return;
+        const target = page || this.currentPage || 'dashboard';
+        titleEl.textContent = this._mobilePageTitles[target] || 'Quản lý Khoa';
+    },
+
+    _updateMobileNavScrollFades() {
+        const sidebar = document.getElementById('sidebar');
+        const nav = sidebar?.querySelector('.sidebar-nav');
+        if (!sidebar || !nav) return;
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('has-scroll-left', 'has-scroll-right');
+            return;
+        }
+        const hasLeft = nav.scrollLeft > 4;
+        const hasRight = nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4;
+        sidebar.classList.toggle('has-scroll-left', hasLeft);
+        sidebar.classList.toggle('has-scroll-right', hasRight);
+    },
+
+    _getOrCreateMobileNavTooltip() {
+        let tip = document.getElementById('mobile-nav-tooltip');
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.id = 'mobile-nav-tooltip';
+            tip.setAttribute('role', 'tooltip');
+            tip.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(tip);
+        }
+        return tip;
+    },
+
+    _showMobileNavTooltip(item) {
+        if (!item || window.innerWidth > 768) return;
+        const label = (item.getAttribute('aria-label') || item.querySelector('span')?.textContent || '').trim();
+        if (!label) return;
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+        const tip = this._getOrCreateMobileNavTooltip();
+        tip.textContent = label;
+        tip.classList.remove('is-visible');
+
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+        const tipW = tip.offsetWidth || 96;
+        const tipH = tip.offsetHeight || 30;
+        const centeredLeft = itemRect.left + (itemRect.width / 2) - (tipW / 2);
+        const clampedLeft = Math.max(8, Math.min(window.innerWidth - tipW - 8, centeredLeft));
+        const topPos = Math.max(8, sidebarRect.top - tipH - 8);
+
+        tip.style.left = `${Math.round(clampedLeft)}px`;
+        tip.style.top = `${Math.round(topPos)}px`;
+        tip.setAttribute('aria-hidden', 'false');
+        tip.classList.add('is-visible');
+
+        if (this._mobileNavTooltipTimer) clearTimeout(this._mobileNavTooltipTimer);
+        this._mobileNavTooltipTimer = setTimeout(() => {
+            this._hideMobileNavTooltip();
+        }, 1200);
+    },
+
+    _hideMobileNavTooltip() {
+        if (this._mobileNavTooltipTimer) {
+            clearTimeout(this._mobileNavTooltipTimer);
+            this._mobileNavTooltipTimer = null;
+        }
+        const tip = document.getElementById('mobile-nav-tooltip');
+        if (tip) {
+            tip.classList.remove('is-visible');
+            tip.setAttribute('aria-hidden', 'true');
+        }
     },
 
     // === Sidebar User ===
@@ -495,13 +589,87 @@ const App = {
     bindNavigation() {
         if (this._navBound) return;
         this._navBound = true;
+
+        const sidebarNav = document.querySelector('#sidebar .sidebar-nav');
+        if (sidebarNav) {
+            sidebarNav.addEventListener('scroll', () => {
+                this._updateMobileNavScrollFades();
+                this._hideMobileNavTooltip();
+            }, { passive: true });
+        }
+        window.addEventListener('resize', () => {
+            this._updateMobileNavScrollFades();
+            this._hideMobileNavTooltip();
+        }, { passive: true });
+
         document.querySelectorAll('.nav-item').forEach(item => {
+            let lpTimer = null;
+            let startX = 0;
+            let startY = 0;
+
+            const cancelLongPress = () => {
+                if (lpTimer) {
+                    clearTimeout(lpTimer);
+                    lpTimer = null;
+                }
+            };
+
+            item.addEventListener('pointerdown', (e) => {
+                if (window.innerWidth > 768) return;
+                if (e.button && e.button !== 0) return;
+                cancelLongPress();
+                item._lpSuppressUntil = 0;
+                startX = e.clientX || 0;
+                startY = e.clientY || 0;
+                lpTimer = setTimeout(() => {
+                    lpTimer = null;
+                    item._lpSuppressUntil = Date.now() + 600;
+                    this._showMobileNavTooltip(item);
+                }, 350);
+            });
+
+            item.addEventListener('pointermove', (e) => {
+                if (!lpTimer) return;
+                const dx = Math.abs((e.clientX || 0) - startX);
+                const dy = Math.abs((e.clientY || 0) - startY);
+                if (dx > 8 || dy > 8) {
+                    cancelLongPress();
+                    this._hideMobileNavTooltip();
+                }
+            });
+
+            item.addEventListener('pointerup', () => {
+                cancelLongPress();
+            });
+
+            item.addEventListener('pointercancel', () => {
+                cancelLongPress();
+                this._hideMobileNavTooltip();
+            });
+
+            item.addEventListener('contextmenu', (e) => {
+                if (window.innerWidth <= 768) e.preventDefault();
+            });
+
             item.addEventListener('click', (e) => {
                 e.preventDefault();
+                if (item._lpSuppressUntil && Date.now() < item._lpSuppressUntil) {
+                    item._lpSuppressUntil = 0;
+                    return;
+                }
                 const page = item.dataset.page;
                 this.navigate(page);
             });
+
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.navigate(item.dataset.page);
+                }
+            });
         });
+
+        this._updateMobileNavScrollFades();
 
         // Global shortcut Ctrl+Z / Cmd+Z for schedule undo
         document.addEventListener('keydown', (e) => {
@@ -552,17 +720,40 @@ const App = {
         }
 
         this.currentPage = page;
+        this._hideMobileNavTooltip();
 
         // Update nav active state + aria-current (A4: accessibility)
+        let activeItem = null;
         document.querySelectorAll('.nav-item').forEach(item => {
             const isCurrent = item.dataset.page === page;
             item.classList.toggle('active', isCurrent);
             if (isCurrent) {
                 item.setAttribute('aria-current', 'page');
+                activeItem = item;
             } else {
                 item.removeAttribute('aria-current');
             }
         });
+
+        this.updateMobileHeaderTitle(page);
+        if (activeItem && window.innerWidth <= 768) {
+            const reduceMotion = typeof window.matchMedia === 'function'
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            try {
+                activeItem.scrollIntoView({
+                    behavior: reduceMotion ? 'auto' : 'smooth',
+                    inline: 'center',
+                    block: 'nearest',
+                });
+            } catch (_) {
+                activeItem.scrollIntoView();
+            }
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => this._updateMobileNavScrollFades());
+            } else {
+                this._updateMobileNavScrollFades();
+            }
+        }
 
         this.renderCurrentPage();
     },

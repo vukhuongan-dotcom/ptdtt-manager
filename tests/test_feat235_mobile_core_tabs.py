@@ -195,7 +195,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211653"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211720"
 
         # Seed 2 Robot cases via live API so Robot Mobile cards render for '+' overlap test
         client = cls.sf.app.test_client()
@@ -695,6 +695,171 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
                     self.assertEqual(page_errs, [])
                 finally:
                     ctx.close()
+
+    def test_06_mobile_icon_only_nav_14_duotone_icons_order_and_tooltip(self):
+        """FEAT-237: Icon-only Mobile bottom nav, 14 unique Medical Duotone icons, synced clinical-first order, dynamic Mobile header & 350ms long-press tooltip."""
+        expected_order = [
+            "nav-dashboard",
+            "nav-surgery",
+            "nav-robot-schedule",
+            "nav-surgery-approval",
+            "nav-rooms",
+            "nav-reports",
+            "nav-staff-tracking",
+            "nav-schedule",
+            "nav-staff",
+            "nav-plans",
+            "nav-surgery-stats",
+            "nav-research",
+            "nav-conferences",
+            "nav-nckh",
+        ]
+
+        # 1) Mobile viewports: Chromium 360x800 (Android) + WebKit 390x844 Light & Dark #0C1022
+        for engine, w, h, dark in (
+            ("chromium", 360, 800, False),
+            ("webkit", 390, 844, False),
+            ("webkit", 390, 844, True),
+        ):
+            with self.subTest(engine=engine, width=w, height=h, dark=dark):
+                ctx, page, console_errs, page_errs = self._open_page(engine, w, h, "vkan")
+                try:
+                    if dark:
+                        page.evaluate("() => document.documentElement.setAttribute('data-theme', 'dark')")
+                    nav_audit = page.evaluate(
+                        """() => {
+                            const items = [...document.querySelectorAll('.sidebar-nav .nav-item')]
+                                .filter(el => el.id !== 'nav-patients' && el.id !== 'nav-tasks');
+                            const ids = items.map(el => el.id);
+                            const spanDisplays = items.map(el => {
+                                const sp = el.querySelector('span');
+                                return sp ? getComputedStyle(sp).display : null;
+                            });
+                            const svgData = items.map(el => {
+                                const svg = el.querySelector('svg');
+                                const r = svg ? svg.getBoundingClientRect() : null;
+                                return {
+                                    hasNavIconClass: Boolean(svg && svg.classList.contains('nav-icon')),
+                                    hasDuotoneFill: Boolean(svg && svg.querySelector('.ni-fill')),
+                                    shape: svg ? svg.innerHTML.replace(/\\s+/g, ' ').trim() : '',
+                                    w: r ? Math.round(r.width) : 0,
+                                    h: r ? Math.round(r.height) : 0,
+                                };
+                            });
+                            const rects = items.map(el => {
+                                const r = el.getBoundingClientRect();
+                                return { id: el.id, w: Math.round(r.width), h: Math.round(r.height), right: r.right, left: r.left };
+                            });
+                            const visibleInFirstScreen = rects.filter(r => r.left >= -1 && r.right <= window.innerWidth + 1).length;
+                            const activeEl = document.querySelector('.sidebar-nav .nav-item.active');
+                            return {
+                                ids,
+                                anyHref: items.some(el => el.hasAttribute('href')),
+                                allAriaLabels: items.every(el => Boolean((el.getAttribute('aria-label') || '').trim())),
+                                allTitles: items.every(el => Boolean((el.getAttribute('title') || '').trim())),
+                                spanDisplays,
+                                svgCount: svgData.length,
+                                uniqueShapes: new Set(svgData.map(s => s.shape)).size,
+                                allHaveNavIconClass: svgData.every(s => s.hasNavIconClass),
+                                allHaveDuotone: svgData.every(s => s.hasDuotoneFill),
+                                minSvgW: Math.min(...svgData.map(s => s.w)),
+                                minSvgH: Math.min(...svgData.map(s => s.h)),
+                                minTouchW: Math.min(...rects.map(r => r.w)),
+                                minTouchH: Math.min(...rects.map(r => r.h)),
+                                visibleInFirstScreen,
+                                activeBoxShadow: activeEl ? getComputedStyle(activeEl).boxShadow : null,
+                                initialHeaderTitle: document.getElementById('mobile-header-title')?.textContent?.trim(),
+                                scrollWidth: document.documentElement.scrollWidth,
+                                innerWidth: window.innerWidth,
+                            };
+                        }"""
+                    )
+                    self.assertEqual(nav_audit["ids"], expected_order)
+                    self.assertFalse(nav_audit["anyHref"], "Nav items must use role=button without href=#")
+                    self.assertTrue(nav_audit["allAriaLabels"])
+                    self.assertTrue(nav_audit["allTitles"])
+                    self.assertTrue(all(d == "none" for d in nav_audit["spanDisplays"]), f"Expected all spans hidden: {nav_audit['spanDisplays']}")
+                    self.assertEqual(nav_audit["svgCount"], 14)
+                    self.assertEqual(nav_audit["uniqueShapes"], 14, "All 14 tabs must have distinct SVG icons")
+                    self.assertTrue(nav_audit["allHaveNavIconClass"])
+                    self.assertTrue(nav_audit["allHaveDuotone"])
+                    self.assertGreaterEqual(nav_audit["minSvgW"], 22)
+                    self.assertGreaterEqual(nav_audit["minSvgH"], 22)
+                    self.assertGreaterEqual(nav_audit["minTouchW"], 44)
+                    self.assertGreaterEqual(nav_audit["minTouchH"], 44)
+                    self.assertGreaterEqual(nav_audit["visibleInFirstScreen"], 7)
+                    self.assertEqual(nav_audit["activeBoxShadow"], "none", "Desktop green left-border must NOT bleed onto Mobile")
+                    self.assertEqual(nav_audit["initialHeaderTitle"], "Tổng quan")
+                    self.assertLessEqual(nav_audit["scrollWidth"], nav_audit["innerWidth"])
+
+                    # Clicking tabs updates #mobile-header-title dynamically
+                    for nav_sel, exp_page, exp_title in (
+                        ("#nav-robot-schedule", "robot-schedule", "Điều phối Robot"),
+                        ("#nav-rooms", "rooms", "Phòng bệnh"),
+                        ("#nav-reports", "reports", "Báo cáo"),
+                    ):
+                        page.click(nav_sel)
+                        page.wait_for_function(f"() => App.currentPage === '{exp_page}'", timeout=4000)
+                        self.assertEqual(page.locator("#mobile-header-title").inner_text().strip(), exp_title)
+
+                    # Long-press (350ms) on #nav-rooms shows clamped #mobile-nav-tooltip & suppresses click navigation
+                    rooms_box = page.locator("#nav-rooms").bounding_box()
+                    cx = rooms_box["x"] + rooms_box["width"] / 2
+                    cy = rooms_box["y"] + rooms_box["height"] / 2
+                    page.locator("#nav-rooms").dispatch_event("pointerdown", {"button": 0, "clientX": cx, "clientY": cy})
+                    page.wait_for_selector("#mobile-nav-tooltip.is-visible", timeout=2000)
+                    tip_state = page.evaluate(
+                        """() => {
+                            const tip = document.getElementById('mobile-nav-tooltip');
+                            const r = tip ? tip.getBoundingClientRect() : null;
+                            return {
+                                text: tip ? tip.textContent.trim() : '',
+                                left: r ? r.left : -1,
+                                right: r ? r.right : 9999,
+                                top: r ? r.top : -1,
+                                innerWidth: window.innerWidth,
+                            };
+                        }"""
+                    )
+                    self.assertEqual(tip_state["text"], "Phòng bệnh")
+                    self.assertGreaterEqual(tip_state["left"], 8 - 1)
+                    self.assertLessEqual(tip_state["right"], tip_state["innerWidth"] - 8 + 1)
+                    self.assertGreaterEqual(tip_state["top"], 8 - 1)
+
+                    page.locator("#nav-rooms").dispatch_event("pointerup", {"button": 0, "clientX": cx, "clientY": cy})
+                    page.locator("#nav-rooms").dispatch_event("click")
+                    self.assertEqual(page.evaluate("() => App.currentPage"), "reports", "Long-press release click must NOT navigate accidentally")
+
+                    self.assertEqual(console_errs, [])
+                    self.assertEqual(page_errs, [])
+                finally:
+                    ctx.close()
+
+        # 2) Desktop 1440x900 keeps full labels visible + synced 14-tab clinical-first order + 14 Duotone icons
+        ctx_d, dpage, console_d, page_d = self._open_page("chromium", 1440, 900, "vkan")
+        try:
+            desk = dpage.evaluate(
+                """() => {
+                    const items = [...document.querySelectorAll('.sidebar-nav .nav-item')]
+                        .filter(el => el.id !== 'nav-patients' && el.id !== 'nav-tasks');
+                    const labelsVisible = items.every(el => {
+                        const sp = el.querySelector('span');
+                        return sp && getComputedStyle(sp).display !== 'none';
+                    });
+                    return {
+                        ids: items.map(el => el.id),
+                        labelsVisible,
+                        duotoneCount: items.filter(el => el.querySelector('svg.nav-icon .ni-fill')).length,
+                    };
+                }"""
+            )
+            self.assertEqual(desk["ids"], expected_order)
+            self.assertTrue(desk["labelsVisible"], "Desktop sidebar must keep all tab text labels visible")
+            self.assertEqual(desk["duotoneCount"], 14)
+            self.assertEqual(console_d, [])
+            self.assertEqual(page_d, [])
+        finally:
+            ctx_d.close()
 
 
 if __name__ == "__main__":

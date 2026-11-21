@@ -6,7 +6,7 @@ Covers:
 - TC-226-01: Backend RBAC, idempotent _ensure_nckh_bootstrapped() seeding (8 records),
              per-user ETag isolation, and 403/409 anti-leak on GET/PUT /api/data & /api/data/nckhItems
              across all 3 BCN accounts (nphuu, vkan, ntnthuy) vs non-BCN doctor/nurse.
-- TC-226-02: Sidebar DOM order (#nav-conferences -> #nav-nckh -> #nav-reports),
+- TC-226-02: Sidebar DOM order (#nav-conferences -> #nav-nckh & #nav-rooms -> #nav-reports),
              BCN visibility vs non-BCN hidden state, and GlobalSearch isolation.
 - TC-226-03: Exact 8 seed records across 5 sub-tabs (2 topic_approved, 2 topic_accepted,
              2 initiative_approved, 2 initiative_recognized), zero 6-member council fields,
@@ -314,7 +314,7 @@ class TestFeat226NckhTab(unittest.TestCase):
                 d["nckhItems"] = saved_items
 
     def test_tc_226_02_sidebar_order_visibility_and_search_isolation(self):
-        """TC-226-02: Sidebar order (#nav-conferences -> #nav-nckh -> #nav-reports), BCN visibility, and GlobalSearch isolation."""
+        """TC-226-02: Sidebar order (#nav-conferences -> #nav-nckh & #nav-rooms -> #nav-reports), BCN visibility, and GlobalSearch isolation."""
         # Check BCN user (ntnthuy — Điều dưỡng trưởng, isAdmin=true)
         ctx_bcn, page_bcn = self._open_authenticated_page("chromium", "ntnthuy", 1440, 900)
         try:
@@ -331,9 +331,10 @@ class TestFeat226NckhTab(unittest.TestCase):
             ids = nav_info["ids"]
             idx_conf = ids.index("nav-conferences")
             idx_nckh = ids.index("nav-nckh")
+            idx_rooms = ids.index("nav-rooms")
             idx_rep = ids.index("nav-reports")
             self.assertEqual(idx_nckh, idx_conf + 1, "#nav-nckh must sit immediately after #nav-conferences")
-            self.assertEqual(idx_rep, idx_nckh + 1, "#nav-nckh must sit immediately before #nav-reports")
+            self.assertEqual(idx_rep, idx_rooms + 1, "#nav-reports must sit immediately after #nav-rooms in clinical-first order")
             self.assertTrue(nav_info["nckhVisible"], "BCN account ntnthuy must see #nav-nckh")
 
             # GlobalSearch for BCN finds NCKH items

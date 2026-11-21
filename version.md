@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611211653`
+> 📌 **Current Build Stamp:** `2611211720`
 
 ---
 
@@ -56,6 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
+- Thiết kế lại thanh tab Mobile dạng Icon-Only (bỏ tên tab, giữ chiều cao thoải mái), tái thiết kế bộ 14 icon Duotone Y khoa không trùng lặp dùng chung Desktop & Mobile, đồng bộ thứ tự 14 tab ưu tiên lâm sàng trên cả Laptop lẫn Mobile, kèm tên tab động trên Mobile Header và tooltip nhấn giữ 350ms (FEAT-237) (`[FEAT-237]`, build `v2611211720`).
 - Bỏ thẻ Hoạt động sắp tới khỏi tab Tổng quan trên cả Desktop/Laptop và Mobile; cân bằng bố cục .duty-grid thành 2 cột đều nhau (Trực khoa hôm nay & Trực cấp cứu hôm nay) (FEAT-236) (`[FEAT-236]`, commit `63059d3`, build `v2611211653`).
 - Thiết kế lại giao diện Mobile (Android & iPhone) 3 tab Tổng quan, Theo dõi nhân sự, Phòng bệnh (kèm đưa lọc POD/tìm kiếm/BS vắng & modal phòng lên Desktop) và đưa nút + tab Mổ Robot vào thanh header (FEAT-235) (`[FEAT-235]`, commit `f8fe725`, build `v2611211452`).
 - Thiết kế lại giao diện Mobile (Android Chrome & iPhone WebKit) tab Điều phối Lịch mổ Robot: Header gọn, KPI chip, Day-Pill + Cả tuần, Mobile Cards cho 4 tab bảng, Bottom Sheet •••, FAB +, Gọi tel: theo RBAC, Segmented Pill Ca 1–Ca 3 + gợi ý x/3 ca và chống iOS zoom (FEAT-234) (`[FEAT-234]`, commit `1724c87`, build `v2611211420`).

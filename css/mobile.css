@@ -171,33 +171,107 @@
 
     .nav-item {
         flex-direction: column;
-        gap: 2px;
-        padding: 7px 4px 5px;
-        /* U4 fix: 0.6rem (9px) → 0.72rem (10.8px) — WCAG 1.4.4 min font-size */
-        font-size: 0.72rem;
-        min-width: 56px;
-        min-height: 44px; /* A3: WCAG 2.5.5 touch target */
+        gap: 0;
+        padding: 6px 4px;
+        min-width: 50px;
+        min-height: 52px; /* A3: WCAG 2.5.5 touch target + comfortable bar height */
         text-align: center;
         justify-content: center;
         align-items: center;
         border-radius: 0;
-        flex-shrink: 0;
+        border-top: 2.5px solid transparent;
+        box-shadow: none;
+        flex: 0 0 auto;
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: pan-x manipulation;
     }
     .nav-item::before { display: none; }
-    .nav-item svg { width: 18px; height: 18px; }
+    .nav-item::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) scale(0.86);
+        width: 40px;
+        height: 34px;
+        border-radius: 12px;
+        background: var(--primary-soft);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+    .nav-item svg,
+    .nav-item svg.nav-icon {
+        width: 23px;
+        height: 23px;
+        position: relative;
+        z-index: 1;
+    }
     .nav-item span {
-        display: block !important;
-        /* U0 A2: 0.58rem = 8.1px — tăng lên 0.73rem ≈ 10.9px ≥ WCAG min */
-        font-size: 0.73rem;
-        white-space: nowrap;
-        max-width: 54px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        display: none !important;
     }
 
     .nav-item.active {
-        background: var(--primary-soft);
-        border-top: 2px solid var(--primary);
+        background: transparent;
+        box-shadow: none;
+        border-top-color: var(--primary);
+        color: var(--primary);
+    }
+    .nav-item.active::after {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    .nav-item.active svg,
+    .nav-item.active svg.nav-icon {
+        color: var(--primary);
+    }
+
+    /* Dark Mode (#0C1022 Zero-Teal) Mobile Bottom Nav */
+    [data-theme="dark"] .sidebar {
+        background: #0C1022;
+        border-top-color: rgba(178, 193, 253, 0.14);
+    }
+    [data-theme="dark"] .nav-item {
+        color: #94A3B8;
+    }
+    [data-theme="dark"] .nav-item.active {
+        color: #38BDF8;
+        border-top-color: #38BDF8;
+    }
+    [data-theme="dark"] .nav-item.active svg,
+    [data-theme="dark"] .nav-item.active svg.nav-icon {
+        color: #38BDF8;
+    }
+    [data-theme="dark"] .nav-item.active::after {
+        background: rgba(24, 120, 180, 0.24);
+    }
+
+    /* Long-press floating tooltip on Mobile Icon-Only Nav */
+    #mobile-nav-tooltip {
+        position: fixed;
+        z-index: 1100;
+        pointer-events: none;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+        background: #1D2357;
+        color: #FFFFFF;
+        box-shadow: 0 6px 18px rgba(17, 21, 66, 0.28);
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    #mobile-nav-tooltip.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    [data-theme="dark"] #mobile-nav-tooltip {
+        background: #131A35;
+        color: #F8FAFC;
+        border: 1px solid rgba(56, 189, 248, 0.45);
     }
 
     /* ---- Main Content ---- */
@@ -669,17 +743,34 @@
         margin-top: 2px;
     }
 
-    /* ===== SCROLL FADE — bottom nav ===== */
+    /* ===== SCROLL FADE — bottom nav (bidirectional) ===== */
+    .sidebar::before,
     .sidebar::after {
         content: '';
         position: absolute;
-        right: 0;
         top: 0;
         bottom: 0;
         width: 24px;
-        background: linear-gradient(to right, transparent, var(--bg-secondary));
         pointer-events: none;
-        z-index: 1;
+        z-index: 2;
+        opacity: 0;
+        transition: opacity 0.16s ease;
+    }
+    .sidebar::before {
+        left: 0;
+        background: linear-gradient(to left, transparent, var(--bg-secondary));
+    }
+    .sidebar::after {
+        right: 0;
+        background: linear-gradient(to right, transparent, var(--bg-secondary));
+    }
+    .sidebar.has-scroll-left::before { opacity: 1; }
+    .sidebar.has-scroll-right::after { opacity: 1; }
+    [data-theme="dark"] .sidebar::before {
+        background: linear-gradient(to left, transparent, #0C1022);
+    }
+    [data-theme="dark"] .sidebar::after {
+        background: linear-gradient(to right, transparent, #0C1022);
     }
 }
 
@@ -691,10 +782,9 @@
     .surgery-stats-grid { grid-template-columns: 1fr !important; }
     .rsch-stats { grid-template-columns: repeat(2, 1fr) !important; }
     .main-content { padding: 60px 8px 68px; }
-    .nav-item { min-width: 48px; padding: 6px 3px 4px; }
-    .nav-item svg { width: 16px; height: 16px; }
-    /* U0 A2: 0.52rem = 7.3px — tăng lên 0.72rem (min WCAG) */
-    .nav-item span { font-size: 0.72rem; max-width: 46px; }
+    .nav-item { min-width: 48px; min-height: 50px; padding: 5px 3px; }
+    .nav-item svg,
+    .nav-item svg.nav-icon { width: 22px; height: 22px; }
     .page-title { font-size: 1.05rem; }
     .page-subtitle { font-size: 0.72rem; }
 
@@ -707,6 +797,14 @@
 
 /* ===== COMPACT ANDROID PHONES — max-width: 389px (360×800) ===== */
 @media (max-width: 389px) {
+    .nav-item {
+        min-width: 45px;
+    }
+    .nav-item svg,
+    .nav-item svg.nav-icon {
+        width: 22px;
+        height: 22px;
+    }
     .mobile-header {
         padding: 0 8px;
         gap: 4px;

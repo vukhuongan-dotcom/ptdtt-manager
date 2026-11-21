@@ -74,6 +74,10 @@
     transition: background var(--transition-fast), color var(--transition-fast), font-weight var(--transition-fast);
     position: relative;
     overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .nav-item::before {
@@ -104,6 +108,33 @@
 /* Giữ ::before cho transition nhưng ẩn đi — chỉ dùng pill */
 .nav-item.active::before { opacity: 0; }
 .nav-item.active svg { color: var(--primary); }
+
+/* FEAT-237: Medical Duotone Navigation Icons */
+.nav-item svg.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.16s ease, color 0.16s ease;
+}
+.nav-item svg.nav-icon .ni-fill {
+    opacity: 0.13;
+    transition: opacity 0.16s ease;
+}
+.nav-item:hover svg.nav-icon .ni-fill {
+    opacity: 0.2;
+}
+.nav-item.active svg.nav-icon {
+    stroke-width: 2.1;
+}
+.nav-item.active svg.nav-icon .ni-fill {
+    opacity: 0.24;
+}
+[data-theme="dark"] .nav-item svg.nav-icon .ni-fill {
+    opacity: 0.18;
+}
+[data-theme="dark"] .nav-item.active svg.nav-icon .ni-fill {
+    opacity: 0.3;
+}
 
 .sidebar-footer {
     padding: 10px 12px;
