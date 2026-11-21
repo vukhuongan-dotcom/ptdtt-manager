@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611211250`
+> 📌 **Current Build Stamp:** `2611211315`
 
 ---
 
@@ -78,6 +78,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 - Xác nhận hiệu lực `Quyết định 1073/QĐ-BVBD` (`12/06/2024` — chưa có văn bản thay thế) và bảng xếp cột bác sĩ chính Khoa PTĐTT năm 2026 (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`, thời hạn 01 năm, mỗi năm Bệnh viện xếp cột lại); bổ sung kiểm soát vượt cột theo tính chất mổ: mổ chương trình & mổ yêu cầu không được phép vượt cột (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`), mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP` nếu vượt từ 02 cột trở lên) (`[FEAT-200]`, build `v2610312158`).
 
 ### Fixed
+- Điều chỉnh độ rộng cột bảng Điều phối Lịch mổ Robot & Phiếu in A5 chống rớt chữ cột PTV chính, mã ca, ngày mổ và dòng tên bệnh nhân (BUG-233) (`[BUG-233]`, build `v2611211315`).
 - Sửa sao lưu off-site bị kẹt từ 31/10: bước GitHub không còn chặn bước pull_ready (`[BUG-228]`, commit `ecbcac1`) (`[BUG-228]`).
 - BUG-227: Chuẩn hóa nhãn 'Ngày nộp xét duyệt' cho Sáng kiến cải tiến (SKCT) và tái cấu trúc bảng SKCT Desktop sang bố cục 5 cột cố định (table-layout: fixed, lưới tác giả 2 cột .nckh-author-grid, dải meta-tag Khoa/Khối 1 dòng, khử lặp ghi chú Quyết định) (`[BUG-227]`, commit `c68ba5d`, build `v2611131015`).
 - Chuẩn hóa toàn diện giao diện modal Thêm ca mổ trên iPhone Air (iOS WebKit) so với Android (Blink): chống tràn ngang input[type=date], nâng z-index .modal-overlay lên 1100, xóa khe hở 16px dưới .modal-footer sticky và bổ sung đồng bộ VisualViewport (.kb-open) khi mở bàn phím ảo (BUG-225, commit 95a6bbc, build v2611122040) (`[BUG-225]`).

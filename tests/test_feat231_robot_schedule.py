@@ -1278,7 +1278,19 @@ class TestFeat231RobotSchedule(unittest.TestCase):
 
     def test_tc_r17_calendar_picker_no_typing_and_max_3_cases_per_day(self):
         # 1) API Contract: Ca 1..Ca 3 only, max 3 cases/day capacity, calendar-only expectedTimeframe
-        _, _, client = self._new_env(sandbox_only=False)
+        hist_robot = [{
+            "id": 9101,
+            "patientName": "BN Hồi Cứu Robot Dài",
+            "birthYear": 1966,
+            "admissionId": "26019101",
+            "diagnosis": "Ung thư trực tràng 1/3 giữa xâm lấn thanh mạc cT3N1M0",
+            "method": "Phẫu thuật Robot cắt trước thấp trực tràng kèm nạo vét hạch chậu bên và nối máy EEA",
+            "surgeryType": "robot",
+            "approachType": "robot",
+            "date": _iso_offset(-2),
+            "mainSurgeon": 6,
+        }]
+        _, _, client = self._new_env(sandbox_only=False, preseed_surgeries=hist_robot)
         bs = client.get("/api/robot/bootstrap", headers=self._headers("vcnguyen")).get_json()
         self.assertEqual(bs["validSlots"], ["Ca 1", "Ca 2", "Ca 3"])
 
@@ -1445,11 +1457,19 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 page.click("#rbt-form-submit-btn")
                 page.wait_for_selector("#rbt-case-form", state="hidden", timeout=6000)
 
-                # Verify Consult tab renders formatted dd/mm/yyyy date
+                # Verify Consult tab renders formatted dd/mm/yyyy date & single-line PTV column
                 page.click('.rbt-subtab[data-rbt-code="consult"]')
                 page.wait_for_selector('[data-rbt-action="open_schedule_step1"]', timeout=5000)
                 consult_html = page.inner_html("#robot-schedule-page")
                 self.assertIn(exp_date_vi, consult_html)
+                consult_col = page.evaluate("""() => {
+                    const el = document.querySelector('#robot-schedule-page td.rbt-col-surgeon');
+                    if (!el) return null;
+                    return { ws: getComputedStyle(el).whiteSpace, sw: el.scrollWidth, cw: el.clientWidth };
+                }""")
+                self.assertIsNotNone(consult_col)
+                self.assertEqual(consult_col["ws"], "nowrap")
+                self.assertLessEqual(consult_col["sw"], consult_col["cw"] + 1)
 
                 # Open Step 1 scheduling modal: surgeryDate pre-filled with expectedTimeframe, no typing, slots strictly Ca 1..3
                 page.locator('[data-rbt-action="open_schedule_step1"]').first.click()
@@ -1468,6 +1488,19 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 )
                 self.assertEqual(slot_values, ["", "Ca 1", "Ca 2", "Ca 3"])
                 page.evaluate("() => Modal.close(true)")
+
+                # Verify Completed tab PTV chính column never wraps with long method/diagnosis strings (BUG-233)
+                page.click('.rbt-subtab[data-rbt-code="completed"]')
+                page.wait_for_selector('#robot-schedule-page td.rbt-col-surgeon', timeout=5000)
+                completed_col = page.evaluate("""() => {
+                    const el = document.querySelector('#robot-schedule-page td.rbt-col-surgeon');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { ws: getComputedStyle(el).whiteSpace, sw: el.scrollWidth, cw: el.clientWidth, h: rect.height };
+                }""")
+                self.assertIsNotNone(completed_col)
+                self.assertEqual(completed_col["ws"], "nowrap")
+                self.assertLessEqual(completed_col["sw"], completed_col["cw"] + 1)
 
                 # Verify A5 Print date input is also picker-only (no typing)
                 page.click('[data-rbt-action="open_print_pctxh"]')

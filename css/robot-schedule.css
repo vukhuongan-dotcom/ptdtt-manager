@@ -397,6 +397,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    min-width: 0;
     max-width: 100%;
     overflow: hidden;
 }
@@ -405,6 +406,7 @@
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .rbt-table {
@@ -426,6 +428,62 @@
     color: var(--text-primary);
     font-weight: 700;
     font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.rbt-table .rbt-badge {
+    white-space: nowrap;
+}
+
+.rbt-table .rbt-card-actions {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.rbt-col-nowrap {
+    white-space: nowrap;
+}
+
+.rbt-col-code {
+    white-space: nowrap;
+    min-width: 108px;
+}
+
+.rbt-col-date {
+    white-space: nowrap;
+    min-width: 104px;
+}
+
+.rbt-col-surgeon {
+    white-space: nowrap;
+    min-width: 155px;
+}
+
+.rbt-col-patient {
+    min-width: 185px;
+}
+
+.rbt-col-patient-line {
+    white-space: nowrap;
+}
+
+.rbt-col-clinical {
+    min-width: 220px;
+    width: 36%;
+}
+
+.rbt-col-status {
+    white-space: nowrap;
+    min-width: 145px;
+}
+
+.rbt-col-actions {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.rbt-a5-table .rbt-col-nowrap,
+.rbt-a5-table .rbt-col-surgeon {
     white-space: nowrap;
 }
 

@@ -602,18 +602,18 @@
                 const isOwner = (perms.username && rc.createdByUsername === perms.username) || (perms.staffId && Number(rc.mainSurgeonId) === Number(perms.staffId));
                 return `
                     <tr>
-                        <td><strong>${esc(code)}</strong>${rc.isTestSandboxCase ? '<br><span class="rbt-badge rbt-badge--sandbox">TEST</span>' : ''}</td>
-                        <td>
-                            <div><strong>${esc(rc.patientName)}</strong> ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''}</div>
-                            <div class="text-secondary">SĐT: ${esc(rc.phone || '—')} ${rc.admissionId ? `· NV: ${esc(rc.admissionId)}` : ''}</div>
+                        <td class="rbt-col-code"><strong>${esc(code)}</strong>${rc.isTestSandboxCase ? '<br><span class="rbt-badge rbt-badge--sandbox">TEST</span>' : ''}</td>
+                        <td class="rbt-col-patient">
+                            <div class="rbt-col-patient-line"><strong>${esc(rc.patientName)}</strong> ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''}</div>
+                            <div class="text-secondary rbt-col-patient-line">SĐT: ${esc(rc.phone || '—')} ${rc.admissionId ? `· NV: ${esc(rc.admissionId)}` : ''}</div>
                         </td>
-                        <td>
+                        <td class="rbt-col-clinical">
                             <div>${esc(rc.diagnosis || '—')}</div>
                             <div class="text-secondary">${esc(rc.robotProcedure || '—')}</div>
                         </td>
-                        <td>${esc(rc.mainSurgeonName || '—')}${rc.expectedTimeframe ? `<div class="text-secondary">Dự kiến: ${esc(_fmtViDate(rc.expectedTimeframe))}</div>` : ''}</td>
-                        <td><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>${rc.consultNote ? `<div class="text-secondary">${esc(rc.consultNote)}</div>` : ''}</td>
-                        <td>
+                        <td class="rbt-col-surgeon">${esc(rc.mainSurgeonName || '—')}${rc.expectedTimeframe ? `<div class="text-secondary">Dự kiến: ${esc(_fmtViDate(rc.expectedTimeframe))}</div>` : ''}</td>
+                        <td class="rbt-col-status"><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>${rc.consultNote ? `<div class="text-secondary">${esc(rc.consultNote)}</div>` : ''}</td>
+                        <td class="rbt-col-actions">
                             <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
                                 ${(rc.status !== 'cho_xep_lich' && (perms.canManageRobot || isOwner)) ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_consult_result" data-rbt-code="${esc(code)}">Kết quả TV</button>` : ''}
                                 ${perms.canEditSchedule ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="open_schedule_step1" data-rbt-code="${esc(code)}">📅 Xếp lịch B1</button>` : ''}
@@ -631,12 +631,12 @@
                         <table class="rbt-table">
                             <thead>
                                 <tr>
-                                    <th>Mã ca</th>
-                                    <th>Bệnh nhân &amp; Liên hệ</th>
-                                    <th>Chẩn đoán &amp; PPPT</th>
-                                    <th>PTV &amp; Dự kiến</th>
-                                    <th>Trạng thái tư vấn</th>
-                                    <th>Thao tác</th>
+                                    <th class="rbt-col-code">Mã ca</th>
+                                    <th class="rbt-col-patient">Bệnh nhân &amp; Liên hệ</th>
+                                    <th class="rbt-col-clinical">Chẩn đoán &amp; PPPT</th>
+                                    <th class="rbt-col-surgeon">PTV &amp; Dự kiến</th>
+                                    <th class="rbt-col-status">Trạng thái tư vấn</th>
+                                    <th class="rbt-col-actions">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>${rows}</tbody>
@@ -662,15 +662,15 @@
                     : `${rc.postponeReasonLabel || rc.postponeReasonCode || '—'}${rc.postponeReasonNote ? ` — ${rc.postponeReasonNote}` : ''}`;
                 return `
                     <tr>
-                        <td><strong>${esc(code)}</strong></td>
-                        <td>
-                            <div><strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')})</div>
-                            <div class="text-secondary">SĐT: ${esc(rc.phone || '—')}</div>
+                        <td class="rbt-col-code"><strong>${esc(code)}</strong></td>
+                        <td class="rbt-col-patient">
+                            <div class="rbt-col-patient-line"><strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')})</div>
+                            <div class="text-secondary rbt-col-patient-line">SĐT: ${esc(rc.phone || '—')}</div>
                         </td>
-                        <td><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span><div class="text-secondary">Từ ngày: ${_fmtViDate(rc.surgeryDate)} · ${esc(rc.caseSlot || '—')}</div></td>
-                        <td>${esc(reasonText)}</td>
-                        <td>${esc(rc.mainSurgeonName || '—')}</td>
-                        <td>
+                        <td class="rbt-col-status"><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span><div class="text-secondary">Từ ngày: ${_fmtViDate(rc.surgeryDate)} · ${esc(rc.caseSlot || '—')}</div></td>
+                        <td class="rbt-col-clinical">${esc(reasonText)}</td>
+                        <td class="rbt-col-surgeon">${esc(rc.mainSurgeonName || '—')}</td>
+                        <td class="rbt-col-actions">
                             <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
                                 ${perms.canEditSchedule ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="${rc.status === 'xuat_vien_cho' ? 'open_readmit' : 'open_restore_schedule'}" data-rbt-code="${esc(code)}">${rc.status === 'xuat_vien_cho' ? '🏥 Nhập lại &amp; Xếp lịch' : '📅 Xếp lịch lại'}</button>` : ''}
                                 ${perms.canSoftDelete ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="soft_delete" data-rbt-code="${esc(code)}">🗑️</button>` : ''}
@@ -695,12 +695,12 @@
                             <table class="rbt-table">
                                 <thead>
                                     <tr>
-                                        <th>Mã ca</th>
-                                        <th>Bệnh nhân</th>
-                                        <th>Trạng thái &amp; Lịch cũ</th>
-                                        <th>Lý do hoãn / Xuất viện chờ</th>
-                                        <th>PTV</th>
-                                        <th>Thao tác</th>
+                                        <th class="rbt-col-code">Mã ca</th>
+                                        <th class="rbt-col-patient">Bệnh nhân</th>
+                                        <th class="rbt-col-status">Trạng thái &amp; Lịch cũ</th>
+                                        <th class="rbt-col-clinical">Lý do hoãn / Xuất viện chờ</th>
+                                        <th class="rbt-col-surgeon">PTV</th>
+                                        <th class="rbt-col-actions">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>${rows}</tbody>
@@ -772,18 +772,18 @@
                     ((diff !== null && diff >= 0 && diff <= lookbackDays) || perms.isSuperAdmin);
                 return `
                     <tr>
-                        <td><strong>${_fmtViDate(item.date)}</strong></td>
-                        <td>
-                            <div><strong>${esc(item.patientName)}</strong> ${item.birthYear ? `(${esc(item.birthYear)})` : ''}</div>
-                            <div class="text-secondary">${item.robotCaseCode ? `<code>${esc(item.robotCaseCode)}</code>` : `Lịch tuần #${esc(item.surgeryId)}`} ${item.admissionId ? `· NV: ${esc(item.admissionId)}` : ''}</div>
+                        <td class="rbt-col-date"><strong>${_fmtViDate(item.date)}</strong></td>
+                        <td class="rbt-col-patient">
+                            <div class="rbt-col-patient-line"><strong>${esc(item.patientName)}</strong> ${item.birthYear ? `(${esc(item.birthYear)})` : ''}</div>
+                            <div class="text-secondary rbt-col-patient-line">${item.robotCaseCode ? `<code>${esc(item.robotCaseCode)}</code>` : `Lịch tuần #${esc(item.surgeryId)}`} ${item.admissionId ? `· NV: ${esc(item.admissionId)}` : ''}</div>
                         </td>
-                        <td>
+                        <td class="rbt-col-clinical">
                             <div>${esc(item.diagnosis || '—')}</div>
                             <div class="text-secondary">${esc(item.method || '—')}</div>
                         </td>
-                        <td>${esc(item.mainSurgeonName || '—')}</td>
-                        <td>${item.completionSource === 'auto_date_rollover' ? '<span class="rbt-badge rbt-badge--ocean">Chuyển tự động qua ngày</span>' : '<span class="rbt-badge rbt-badge--navy">Dữ liệu lịch sử</span>'}</td>
-                        <td>
+                        <td class="rbt-col-surgeon">${esc(item.mainSurgeonName || '—')}</td>
+                        <td class="rbt-col-status">${item.completionSource === 'auto_date_rollover' ? '<span class="rbt-badge rbt-badge--ocean">Chuyển tự động qua ngày</span>' : '<span class="rbt-badge rbt-badge--navy">Dữ liệu lịch sử</span>'}</td>
+                        <td class="rbt-col-actions">
                             ${canPostponeRetro ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_postpone" data-rbt-code="${esc(item.robotCaseCode)}">⏸️ Hoãn hậu kiểm</button>` : '—'}
                         </td>
                     </tr>
@@ -822,12 +822,12 @@
                             <table class="rbt-table">
                                 <thead>
                                     <tr>
-                                        <th>Ngày mổ</th>
-                                        <th>Bệnh nhân &amp; Mã</th>
-                                        <th>Chẩn đoán &amp; PPPT</th>
-                                        <th>PTV chính</th>
-                                        <th>Nguồn ghi nhận</th>
-                                        <th>Hậu kiểm (≤${lookbackDays} ngày)</th>
+                                        <th class="rbt-col-date">Ngày mổ</th>
+                                        <th class="rbt-col-patient">Bệnh nhân &amp; Mã</th>
+                                        <th class="rbt-col-clinical">Chẩn đoán &amp; PPPT</th>
+                                        <th class="rbt-col-surgeon">PTV chính</th>
+                                        <th class="rbt-col-status">Nguồn ghi nhận</th>
+                                        <th class="rbt-col-actions">Hậu kiểm (≤${lookbackDays} ngày)</th>
                                     </tr>
                                 </thead>
                                 <tbody>${rows}</tbody>
@@ -847,11 +847,11 @@
                 const code = rc.robotCaseCode || '';
                 return `
                     <tr>
-                        <td><strong>${esc(code)}</strong></td>
-                        <td><strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')})</td>
-                        <td>${esc(rc.deleteReason || '—')}</td>
-                        <td>${_fmtViDate(String(rc.deletedAt || '').slice(0, 10))} · ${esc(rc.deletedBy || '—')}</td>
-                        <td>
+                        <td class="rbt-col-code"><strong>${esc(code)}</strong></td>
+                        <td class="rbt-col-patient rbt-col-nowrap"><strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')})</td>
+                        <td class="rbt-col-clinical">${esc(rc.deleteReason || '—')}</td>
+                        <td class="rbt-col-nowrap">${_fmtViDate(String(rc.deletedAt || '').slice(0, 10))} · ${esc(rc.deletedBy || '—')}</td>
+                        <td class="rbt-col-actions">
                             <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
                                 ${perms.canSoftDelete ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="restore_trash" data-rbt-code="${esc(code)}">↺ Khôi phục</button>` : ''}
                                 ${perms.canArchiveDeleted ? `<button type="button" class="btn btn-danger rbt-btn-xs" data-rbt-action="archive_delete" data-rbt-code="${esc(code)}">🗄️ Lưu trữ ẩn</button>` : ''}
@@ -870,11 +870,11 @@
                         <table class="rbt-table">
                             <thead>
                                 <tr>
-                                    <th>Mã ca</th>
-                                    <th>Bệnh nhân</th>
-                                    <th>Lý do đưa vào thùng rác</th>
-                                    <th>Thời gian &amp; Người thực hiện</th>
-                                    <th>Thao tác</th>
+                                    <th class="rbt-col-code">Mã ca</th>
+                                    <th class="rbt-col-patient rbt-col-nowrap">Bệnh nhân</th>
+                                    <th class="rbt-col-clinical">Lý do đưa vào thùng rác</th>
+                                    <th class="rbt-col-nowrap">Thời gian &amp; Người thực hiện</th>
+                                    <th class="rbt-col-actions">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>${rows}</tbody>
@@ -1664,25 +1664,25 @@
                     <table class="rbt-a5-table">
                         <thead>
                             <tr>
-                                <th>STT</th>
+                                <th class="rbt-col-nowrap">STT</th>
                                 <th>Họ và tên BN</th>
-                                <th>NS / Giới</th>
-                                <th>Số NV</th>
+                                <th class="rbt-col-nowrap">NS / Giới</th>
+                                <th class="rbt-col-nowrap">Số NV</th>
                                 <th>Chẩn đoán &amp; Phương pháp PT Robot</th>
-                                <th>Ngày / Ca</th>
-                                <th>PTV chính</th>
+                                <th class="rbt-col-nowrap">Ngày / Ca</th>
+                                <th class="rbt-col-surgeon">PTV chính</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${rowsData.length ? rowsData.map((c, idx) => `
                                 <tr>
-                                    <td>${idx + 1}</td>
-                                    <td><strong>${esc(c.patientName)}</strong></td>
-                                    <td>${esc(c.birthYear || '—')}<br>${esc(c.gender || '')}</td>
-                                    <td>${esc(c.admissionId || '—')}</td>
+                                    <td class="rbt-col-nowrap">${idx + 1}</td>
+                                    <td><strong class="rbt-col-patient-line">${esc(c.patientName)}</strong></td>
+                                    <td class="rbt-col-nowrap">${esc(c.birthYear || '—')}<br>${esc(c.gender || '')}</td>
+                                    <td class="rbt-col-nowrap">${esc(c.admissionId || '—')}</td>
                                     <td><strong>${esc(c.diagnosis || '—')}</strong><br>${esc(c.robotProcedure || '—')}</td>
-                                    <td>${_fmtViDate(c.surgeryDate)}<br>${esc(c.caseSlot || '—')}</td>
-                                    <td>${esc(c.mainSurgeonName || '—')}</td>
+                                    <td class="rbt-col-nowrap">${_fmtViDate(c.surgeryDate)}<br>${esc(c.caseSlot || '—')}</td>
+                                    <td class="rbt-col-surgeon">${esc(c.mainSurgeonName || '—')}</td>
                                 </tr>
                             `).join('') : `<tr><td colspan="7" style="text-align:center;">Không có ca Robot phù hợp trong khoảng chọn.</td></tr>`}
                         </tbody>
