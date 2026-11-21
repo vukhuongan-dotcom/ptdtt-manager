@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Thiết kế lại giao diện Mobile (Android & iPhone) 3 tab Tổng quan, Theo dõi nhân sự, Phòng bệnh (kèm đưa lọc POD/tìm kiếm/BS vắng & modal phòng lên Desktop) và đưa nút + tab Mổ Robot vào thanh header (FEAT-235) (`[FEAT-235]`, build `v2611211452`).
+- Thiết kế lại giao diện Mobile (Android & iPhone) 3 tab Tổng quan, Theo dõi nhân sự, Phòng bệnh (kèm đưa lọc POD/tìm kiếm/BS vắng & modal phòng lên Desktop) và đưa nút + tab Mổ Robot vào thanh header (FEAT-235) (`[FEAT-235]`, commit `f8fe725`, build `v2611211452`).
 - Thiết kế lại giao diện Mobile (Android Chrome & iPhone WebKit) tab Điều phối Lịch mổ Robot: Header gọn, KPI chip, Day-Pill + Cả tuần, Mobile Cards cho 4 tab bảng, Bottom Sheet •••, FAB +, Gọi tel: theo RBAC, Segmented Pill Ca 1–Ca 3 + gợi ý x/3 ca và chống iOS zoom (FEAT-234) (`[FEAT-234]`, commit `1724c87`, build `v2611211420`).
 - Chuẩn hóa ô Thời gian dự kiến & Ngày mổ bằng lịch chọn ngày không nhập tay và giới hạn công suất Robot tối đa 3 ca/ngày (Ca 1–Ca 3) (FEAT-232) (`[FEAT-232]`, commit `d5fb107`, build `v2611211250`).
 - Tích hợp phân hệ Điều phối Lịch mổ Robot liên thông nguyên tử 2 chiều với Lịch mổ tuần, Dual-WAL, Zero-Local-PHI & Mẫu in A5 P.CTXH (FEAT-231) (`[FEAT-231]`, commit `f212713`, build `v2611211215`).
