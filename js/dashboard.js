@@ -90,13 +90,6 @@ const DashboardPage = {
         const todayDutyKhoa = this.getTodayDutyByGroup(staff, today, 'khoa');
         const todayDutyCapCuu = this.getTodayDutyByGroup(staff, today, 'capcuu');
 
-        const upcomingPlans = plans
-            .filter(p => p.date >= today)
-            .sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''))
-            .slice(0, 4);
-
-        const dotColors = ['cyan', 'purple', 'green', 'cyan'];
-
         // Birthday staff detection
         const todayBirthdays = this.getTodayBirthdays(staff, today);
         const canSeeApproval = (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.isFeatureVisibleForCurrentUser === 'function' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser());
@@ -396,7 +389,7 @@ const DashboardPage = {
             </div>
         </div>
 
-        <!-- BOTTOM OPERATIONAL GRID (3 Balanced Columns) -->
+        <!-- BOTTOM OPERATIONAL GRID (2 Balanced Columns) -->
         <div class="duty-grid">
             <div class="widget-card slide-up" style="animation-delay:0.25s">
                 <h3 class="widget-title">🏥 Trực khoa hôm nay</h3>
@@ -430,19 +423,6 @@ const DashboardPage = {
                     <span class="badge ${eff.status === 'active' ? 'badge-success' : statusInfo.badge}">${eff.status === 'active' ? 'Sẵn sàng' : statusInfo.label}</span>
                 </div>`;
                 }).join(''); })() : '<p class="widget-empty-msg">Chưa phân công</p>'}
-            </div>
-
-            <div class="widget-card slide-up" style="animation-delay:0.35s">
-                <h3 class="widget-title">📅 Hoạt động sắp tới</h3>
-                ${upcomingPlans.length > 0 ? upcomingPlans.map((p, i) => `
-                <div class="timeline-item">
-                    <div class="timeline-dot ${dotColors[i % dotColors.length]}"></div>
-                    <div class="timeline-content">
-                        <div class="timeline-title">${p.title}</div>
-                        <div class="timeline-time">${Utils.formatDateShort(p.date)} · ${p.time || ''}</div>
-                    </div>
-                </div>
-                `).join('') : '<p class="widget-empty-msg">Chưa có hoạt động nào sắp tới</p>'}
             </div>
         </div>
         </div>

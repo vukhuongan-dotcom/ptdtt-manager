@@ -195,7 +195,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211452"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211653"
 
         # Seed 2 Robot cases via live API so Robot Mobile cards render for '+' overlap test
         client = cls.sf.app.test_client()
@@ -379,13 +379,25 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         """Dashboard Mobile 2 sub-views, 4 KPI nav, Quick Shortcuts, Touch Tooltip Clamp, toggleSeries data-series & Desktop unchanged."""
         ctx, page, console_errs, page_errs = self._open_page("chromium", 390, 844, "vkan")
         try:
-            # 1) Default mobile tab is 'today': KPIs + duty + bed-flow visible, trend chart hidden
+            # 1) Default mobile tab is 'today': KPIs + duty (2 stacked cards, no 'Hoạt động sắp tới') + bed-flow visible, trend chart hidden
             self.assertEqual(page.locator("#dashboard-page").get_attribute("data-mobile-tab"), "today")
             self.assertTrue(page.locator(".dash-mobile-tabs").is_visible())
             self.assertTrue(page.locator(".dash-quick-shortcuts").is_visible())
             self.assertTrue(page.locator("#dashboard-page .bed-flow-widget").is_visible())
             self.assertFalse(page.locator("#dashboard-page .trend-chart-card").is_visible())
             self.assertFalse(page.locator("#dashboard-page .mis-widget").is_visible())
+
+            self.assertNotIn("Hoạt động sắp tới", page.locator("#dashboard-page").inner_text())
+            m_duty_cards = page.locator("#dashboard-page .duty-grid > .widget-card")
+            self.assertEqual(m_duty_cards.count(), 2)
+            mbox1 = m_duty_cards.nth(0).bounding_box()
+            mbox2 = m_duty_cards.nth(1).bounding_box()
+            self.assertGreaterEqual(mbox2["y"], mbox1["y"] + mbox1["height"] - 2)
+            self.assertLessEqual(abs(mbox1["width"] - mbox2["width"]), 2)
+            self.assertLessEqual(
+                page.evaluate("() => document.documentElement.scrollWidth"),
+                page.evaluate("() => window.innerWidth"),
+            )
 
             hdr_h = page.locator("#dashboard-page > .page-header").bounding_box()["height"]
             self.assertLessEqual(hdr_h, 80, f"Compact Navy-Ocean header too tall: {hdr_h}")
@@ -442,17 +454,31 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         finally:
             ctx_u.close()
 
-        # Desktop 1440x900 keeps standard layout unchanged
-        ctx_d, dpage, _, _ = self._open_page("chromium", 1440, 900, "vkan")
-        try:
-            self.assertFalse(dpage.locator(".dash-mobile-tabs").is_visible())
-            self.assertFalse(dpage.locator(".dash-quick-shortcuts").is_visible())
-            self.assertTrue(dpage.locator("#dashboard-page .stats-grid").is_visible())
-            self.assertTrue(dpage.locator("#dashboard-page .trend-chart-card").is_visible())
-            self.assertTrue(dpage.locator("#dashboard-page .bed-flow-widget").is_visible())
-            self.assertTrue(dpage.locator("#dashboard-page .duty-grid").is_visible())
-        finally:
-            ctx_d.close()
+        # Desktop 1440x900 & Laptop 1024x768 keep 2 balanced side-by-side .duty-grid cards without 'Hoạt động sắp tới'
+        for vp_w, vp_h in ((1440, 900), (1024, 768)):
+            ctx_d, dpage, _, _ = self._open_page("chromium", vp_w, vp_h, "vkan")
+            try:
+                self.assertFalse(dpage.locator(".dash-mobile-tabs").is_visible())
+                self.assertFalse(dpage.locator(".dash-quick-shortcuts").is_visible())
+                self.assertTrue(dpage.locator("#dashboard-page .stats-grid").is_visible())
+                self.assertTrue(dpage.locator("#dashboard-page .trend-chart-card").is_visible())
+                self.assertTrue(dpage.locator("#dashboard-page .bed-flow-widget").is_visible())
+                self.assertTrue(dpage.locator("#dashboard-page .duty-grid").is_visible())
+                self.assertNotIn("Hoạt động sắp tới", dpage.locator("#dashboard-page").inner_text())
+
+                duty_cards = dpage.locator("#dashboard-page .duty-grid > .widget-card")
+                self.assertEqual(duty_cards.count(), 2)
+                box1 = duty_cards.nth(0).bounding_box()
+                box2 = duty_cards.nth(1).bounding_box()
+                self.assertLessEqual(abs(box1["y"] - box2["y"]), 2)
+                self.assertLessEqual(abs(box1["width"] - box2["width"]), 2)
+                self.assertGreater(box2["x"], box1["x"] + box1["width"])
+                self.assertLessEqual(
+                    dpage.evaluate("() => document.documentElement.scrollWidth"),
+                    dpage.evaluate("() => window.innerWidth"),
+                )
+            finally:
+                ctx_d.close()
 
     def test_03_staff_tracking_mobile_day_view_bottom_sheet_and_desktop(self):
         """Staff Tracking defaults to 'Theo ngày' on Mobile, preserves grid view + Desktop, Bottom Sheet 5 buttons & 4 range chips work."""
