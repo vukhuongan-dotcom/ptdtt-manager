@@ -48,7 +48,8 @@ class TestBug225IosSurgeryModalUx(unittest.TestCase):
                 isSuperAdmin: true
             }};
             localStorage.setItem('ptdtt_cache_ver', '2609281105');
-            localStorage.setItem('ptdtt_sw_build', window.SW_BUILD_VER || '2611211720');
+            localStorage.setItem('ptdtt_sw_build', window.SW_BUILD_VER || '2611211733');
+            localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
             localStorage.setItem('ptdtt_data', {json.dumps(self.db_raw)});
             localStorage.setItem('ptdtt_auth', JSON.stringify(sessionObj));
             localStorage.setItem('ptdtt_session', JSON.stringify(sessionObj));

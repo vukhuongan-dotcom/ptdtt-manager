@@ -233,6 +233,7 @@ class TestFeat226NckhTab(unittest.TestCase):
             localStorage.setItem('ptdtt_session', {json.dumps(session_json)});
             sessionStorage.setItem('ptdtt_session', {json.dumps(session_json)});
             localStorage.setItem('ptdtt_onboarding_done', 'true');
+            localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
             """
         )
         page = context.new_page()

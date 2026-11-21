@@ -187,3 +187,188 @@ const Onboarding = {
         if (existing) existing.remove();
     }
 };
+
+// ===== ICON GUIDE NOTICE (1-WEEK LOGIN ANNOUNCEMENT — FEAT-238) =====
+const IconGuideNotice = {
+    CAMPAIGN_ID: 'v261121',
+    START_AT: '2026-11-21T00:00:00+07:00',
+    EXPIRES_AT: '2026-11-28T23:59:59+07:00',
+    STORAGE_KEY_GLOBAL: 'ptdtt_icon_guide_v261121_dismissed',
+    STORAGE_KEY_PREFIX: 'ptdtt_icon_guide_v261121_dismissed:',
+    SESSION_KEY_PREFIX: 'ptdtt_icon_guide_v261121_session:',
+    _escHandler: null,
+
+    ITEMS: [
+        // Tác nghiệp hằng ngày (8 tab đầu)
+        { group: 'daily', page: 'dashboard', name: 'Tổng quan', desc: 'Chỉ số nhanh & lịch trực hôm nay' },
+        { group: 'daily', page: 'surgery', name: 'Lịch mổ tuần', desc: 'Lịch phẫu thuật 7 ngày & phân loại ca' },
+        { group: 'daily', page: 'robot-schedule', name: 'Điều phối Robot', desc: 'Xếp lịch & quản lý ca mổ Robot' },
+        { group: 'daily', page: 'surgery-approval', name: 'Duyệt mổ khoa', desc: 'Trình & phê duyệt hồ sơ tiền phẫu' },
+        { group: 'daily', page: 'rooms', name: 'Phòng bệnh', desc: 'Sơ đồ giường & bác sĩ phụ trách' },
+        { group: 'daily', page: 'reports', name: 'Báo cáo', desc: 'Sổ giao ban buồng bệnh 7h & 16h' },
+        { group: 'daily', page: 'staff-tracking', name: 'Theo dõi NV', desc: 'Chấm công có mặt / vắng mặt hàng ngày' },
+        { group: 'daily', page: 'schedule', name: 'Phân công tuần', desc: 'Lịch trực khoa, cấp cứu & công tác tuần' },
+        // Quản trị & Học thuật (6 tab sau)
+        { group: 'manage', page: 'staff', name: 'Nhân sự', desc: 'Danh bạ & thông tin nhân sự khoa' },
+        { group: 'manage', page: 'plans', name: 'Kế hoạch', desc: 'Lịch SHCM & công tác theo tháng' },
+        { group: 'manage', page: 'surgery-stats', name: 'Thống kê PT', desc: 'Thống kê số ca mổ theo bác sĩ' },
+        { group: 'manage', page: 'research', name: 'Sinh hoạt CM', desc: 'Lịch & bài trình bày chuyên môn' },
+        { group: 'manage', page: 'conferences', name: 'Hội nghị', desc: 'Hội nghị khoa học & báo cáo viên' },
+        { group: 'manage', page: 'nckh', name: 'Nghiên cứu KH', desc: 'Đề tài NCKH & sáng kiến cải tiến' },
+    ],
+
+    _getUsername() {
+        try {
+            if (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') {
+                return Auth.getSession()?.username || 'guest';
+            }
+        } catch (_) { /* noop */ }
+        return 'guest';
+    },
+
+    isWithinWindow(nowDate) {
+        const ts = (nowDate instanceof Date ? nowDate : new Date()).getTime();
+        const start = Date.parse(this.START_AT);
+        const end = Date.parse(this.EXPIRES_AT);
+        return Number.isFinite(ts) && ts >= start && ts <= end;
+    },
+
+    isDismissed(username) {
+        const user = username || this._getUsername();
+        try {
+            if (localStorage.getItem(this.STORAGE_KEY_GLOBAL) === '1') return true;
+            if (localStorage.getItem(this.STORAGE_KEY_PREFIX + user) === '1') return true;
+            if (sessionStorage.getItem(this.SESSION_KEY_PREFIX + user) === '1') return true;
+        } catch (_) {
+            return false;
+        }
+        return false;
+    },
+
+    clearSessionDismiss(username) {
+        const user = username || this._getUsername();
+        try {
+            sessionStorage.removeItem(this.SESSION_KEY_PREFIX + user);
+        } catch (_) { /* noop */ }
+    },
+
+    shouldShow(opts = {}) {
+        if (!this.isWithinWindow(opts.now)) return false;
+        if (this.isDismissed(opts.username)) return false;
+        try {
+            if (typeof Auth !== 'undefined' && Auth.getSession()?.mustChangePassword) return false;
+            if (typeof Onboarding !== 'undefined' && typeof Onboarding.shouldShow === 'function' && Onboarding.shouldShow()) {
+                return false;
+            }
+        } catch (_) { /* noop */ }
+        return true;
+    },
+
+    _getVisibleItems() {
+        return this.ITEMS.reduce((acc, item) => {
+            const navEl = document.getElementById(`nav-${item.page}`);
+            if (!navEl) return acc;
+            const cs = typeof getComputedStyle === 'function' ? getComputedStyle(navEl) : null;
+            if (navEl.style.display === 'none' || (cs && cs.display === 'none')) return acc;
+            const svg = navEl.querySelector('svg.nav-icon');
+            acc.push({ ...item, svgHtml: svg ? svg.outerHTML : '' });
+            return acc;
+        }, []);
+    },
+
+    _renderGroup(label, items) {
+        if (!items.length) return '';
+        return `
+            <div class="ig-group">
+                <div class="ig-group-label">${label}</div>
+                <div class="ig-grid">
+                    ${items.map(it => `
+                        <div class="ig-item" data-ig-page="${it.page}">
+                            <div class="ig-icon-badge" aria-hidden="true">${it.svgHtml}</div>
+                            <div class="ig-text">
+                                <div class="ig-name">${it.name}</div>
+                                <div class="ig-desc">${it.desc}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    },
+
+    open(opts = {}) {
+        if (!opts.force && !this.shouldShow(opts)) return false;
+        const visibleItems = this._getVisibleItems();
+        if (!visibleItems.length) return false;
+
+        this.close({ silent: true });
+
+        const dailyItems = visibleItems.filter(it => it.group === 'daily');
+        const manageItems = visibleItems.filter(it => it.group === 'manage');
+
+        const overlay = document.createElement('div');
+        overlay.id = 'icon-guide-overlay';
+        overlay.className = 'icon-guide-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'ig-modal-title');
+        overlay.innerHTML = `
+            <div class="ig-dialog">
+                <div class="ig-header">
+                    <div class="ig-header-main">
+                        <span class="ig-badge">MỚI · 21/11 – 28/11</span>
+                        <h3 class="ig-title" id="ig-modal-title">Bộ biểu tượng điều hướng mới</h3>
+                        <p class="ig-subtitle">Trên điện thoại, thanh đáy hiển thị gọn bằng biểu tượng — nhấn giữ biểu tượng để xem tên mục.</p>
+                    </div>
+                    <button type="button" class="ig-close-btn" id="ig-close-x" aria-label="Đóng thông báo" onclick="IconGuideNotice.close()">&times;</button>
+                </div>
+                <div class="ig-body">
+                    ${this._renderGroup('Tác nghiệp hằng ngày', dailyItems)}
+                    ${this._renderGroup('Quản trị & Học thuật', manageItems)}
+                </div>
+                <div class="ig-footer">
+                    <button type="button" class="ig-btn ig-btn-secondary" id="ig-btn-close" onclick="IconGuideNotice.close()">Đóng</button>
+                    <button type="button" class="ig-btn ig-btn-primary" id="ig-btn-dismiss" onclick="IconGuideNotice.dismissPermanently()">Đã hiểu, không hiện lại</button>
+                </div>
+            </div>
+        `;
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) this.close();
+        });
+
+        this._escHandler = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.close();
+            }
+        };
+        document.addEventListener('keydown', this._escHandler);
+
+        document.body.appendChild(overlay);
+        return true;
+    },
+
+    close(opts = {}) {
+        if (!opts.silent) {
+            try {
+                sessionStorage.setItem(this.SESSION_KEY_PREFIX + this._getUsername(), '1');
+            } catch (_) { /* noop */ }
+        }
+        const existing = document.getElementById('icon-guide-overlay');
+        if (existing) existing.remove();
+        if (this._escHandler) {
+            document.removeEventListener('keydown', this._escHandler);
+            this._escHandler = null;
+        }
+    },
+
+    dismissPermanently() {
+        const user = this._getUsername();
+        try {
+            localStorage.setItem(this.STORAGE_KEY_PREFIX + user, '1');
+            sessionStorage.setItem(this.SESSION_KEY_PREFIX + user, '1');
+        } catch (_) { /* noop */ }
+        this.close({ silent: true });
+    }
+};

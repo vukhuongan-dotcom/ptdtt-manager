@@ -53,7 +53,7 @@
 
     const _getClientBuild = () => String(
         (typeof window !== 'undefined' && (window.SW_BUILD_VER || window.REQUIRED_VER)) ||
-        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611211720')
+        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611211733')
     );
 
     const _parseIsoLocal = (isoStr) => {

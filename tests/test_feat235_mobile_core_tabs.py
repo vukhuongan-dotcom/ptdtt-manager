@@ -195,7 +195,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211720"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611211733"
 
         # Seed 2 Robot cases via live API so Robot Mobile cards render for '+' overlap test
         client = cls.sf.app.test_client()
@@ -245,7 +245,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         if getattr(cls, "tmp_root_obj", None):
             cls.tmp_root_obj.cleanup()
 
-    def _open_page(self, browser_name: str, width: int, height: int, username: str = "vkan"):
+    def _open_page(self, browser_name: str, width: int, height: int, username: str = "vkan", show_icon_guide: bool = False):
         u = self._users[username]
         token = self.sf._create_jwt(username, u)
         session_obj = {
@@ -264,6 +264,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
             service_workers="block",
         )
         ctx.route("**/api/emr*", lambda route: route.fulfill(status=200, content_type="application/json", body='{"patients":[]}'))
+        dismiss_script = "" if show_icon_guide else "localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');"
         ctx.add_init_script(
             f"""
             localStorage.setItem('ptdtt_cache_ver', '2609281105');
@@ -274,6 +275,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
             sessionStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
             localStorage.setItem('ptdtt_onboarding_done', 'true');
             localStorage.setItem('ptdtt_theme', 'light');
+            {dismiss_script}
             """
         )
         page = ctx.new_page()
@@ -860,6 +862,100 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
             self.assertEqual(page_d, [])
         finally:
             ctx_d.close()
+
+    def test_07_icon_guide_announcement_one_week_modal(self):
+        """FEAT-238: 1-week login notice (21/11–28/11/2026) auto-opens, clones Duotone icons per RBAC, fits 360x800/WebKit/Desktop cleanly, user self-dismisses."""
+        # 1) SuperAdmin on Mobile 360x800 (Chromium) & 390x844 (WebKit Dark #0C1022) & Desktop 1440x900
+        for engine, w, h, dark in (
+            ("chromium", 360, 800, False),
+            ("webkit", 390, 844, True),
+            ("chromium", 1440, 900, False),
+        ):
+            with self.subTest(engine=engine, width=w, height=h, dark=dark):
+                ctx, page, console_errs, page_errs = self._open_page(engine, w, h, "vkan", show_icon_guide=True)
+                try:
+                    if dark:
+                        page.evaluate("() => document.documentElement.setAttribute('data-theme', 'dark')")
+                    page.wait_for_selector("#icon-guide-overlay .ig-dialog", timeout=3500)
+
+                    audit = page.evaluate(
+                        """() => {
+                            const dlg = document.querySelector('#icon-guide-overlay .ig-dialog');
+                            const r = dlg ? dlg.getBoundingClientRect() : null;
+                            const items = [...document.querySelectorAll('#icon-guide-overlay .ig-item')];
+                            const btns = [...document.querySelectorAll('#icon-guide-overlay .ig-btn')];
+                            return {
+                                left: r ? r.left : -1,
+                                right: r ? r.right : 9999,
+                                top: r ? r.top : -1,
+                                height: r ? r.height : 9999,
+                                innerWidth: window.innerWidth,
+                                innerHeight: window.innerHeight,
+                                scrollWidth: document.documentElement.scrollWidth,
+                                itemCount: items.length,
+                                allHaveSvgFill: items.every(it => Boolean(it.querySelector('.ig-icon-badge svg.nav-icon .ni-fill'))),
+                                allHaveText: items.every(it => Boolean((it.querySelector('.ig-name')?.textContent || '').trim()) && Boolean((it.querySelector('.ig-desc')?.textContent || '').trim())),
+                                minBtnH: btns.length ? Math.min(...btns.map(b => Math.round(b.getBoundingClientRect().height))) : 0,
+                                withinNov28: IconGuideNotice.isWithinWindow(new Date('2026-11-28T23:59:59+07:00')),
+                                expiredNov29: IconGuideNotice.isWithinWindow(new Date('2026-11-29T00:00:00+07:00')),
+                            };
+                        }"""
+                    )
+                    self.assertGreaterEqual(audit["left"], 0)
+                    self.assertLessEqual(audit["right"], audit["innerWidth"] + 1)
+                    self.assertGreaterEqual(audit["top"], 0)
+                    self.assertLessEqual(audit["height"], audit["innerHeight"])
+                    self.assertLessEqual(audit["scrollWidth"], audit["innerWidth"])
+                    self.assertEqual(audit["itemCount"], 14)
+                    self.assertTrue(audit["allHaveSvgFill"])
+                    self.assertTrue(audit["allHaveText"])
+                    self.assertGreaterEqual(audit["minBtnH"], 44)
+                    self.assertTrue(audit["withinNov28"])
+                    self.assertFalse(audit["expiredNov29"])
+
+                    # Clicking 'Đóng' dismisses for current session only
+                    page.click("#ig-btn-close")
+                    self.assertEqual(page.locator("#icon-guide-overlay").count(), 0)
+                    self.assertFalse(page.evaluate("() => IconGuideNotice.shouldShow()"))
+                    page.evaluate("() => IconGuideNotice.clearSessionDismiss()")
+                    self.assertTrue(page.evaluate("() => IconGuideNotice.shouldShow()"))
+
+                    # Reopen & click 'Đã hiểu, không hiện lại' -> persists across reload
+                    self.assertTrue(page.evaluate("() => IconGuideNotice.open()"))
+                    page.wait_for_selector("#icon-guide-overlay", timeout=2000)
+                    page.click("#ig-btn-dismiss")
+                    self.assertEqual(page.locator("#icon-guide-overlay").count(), 0)
+                    self.assertFalse(page.evaluate("() => { IconGuideNotice.clearSessionDismiss(); return IconGuideNotice.shouldShow(); }"))
+
+                    page.reload(wait_until="load")
+                    page.wait_for_function(
+                        "() => Boolean(typeof Store !== 'undefined' && Store._hasLoadedServerOnce === true && document.getElementById('dashboard-page'))",
+                        timeout=12000,
+                    )
+                    page.wait_for_timeout(600)
+                    self.assertEqual(page.locator("#icon-guide-overlay").count(), 0)
+
+                    self.assertEqual(console_errs, [])
+                    self.assertEqual(page_errs, [])
+                finally:
+                    ctx.close()
+
+        # 2) RBAC isolation: normal user 'vnatuan' must NOT see Admin-only tabs (surgery-stats, nckh)
+        ctx_u, upage, u_c_errs, u_p_errs = self._open_page("chromium", 390, 844, "vnatuan", show_icon_guide=True)
+        try:
+            upage.wait_for_selector("#icon-guide-overlay .ig-dialog", timeout=3500)
+            pages_shown = upage.eval_on_selector_all(
+                "#icon-guide-overlay .ig-item",
+                "els => els.map(el => el.getAttribute('data-ig-page'))",
+            )
+            self.assertNotIn("surgery-stats", pages_shown)
+            self.assertNotIn("nckh", pages_shown)
+            self.assertIn("dashboard", pages_shown)
+            self.assertIn("surgery", pages_shown)
+            self.assertEqual(u_c_errs, [])
+            self.assertEqual(u_p_errs, [])
+        finally:
+            ctx_u.close()
 
 
 if __name__ == "__main__":

@@ -122,6 +122,9 @@ const App = {
         if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage.purgeMemoryState === 'function') {
             RobotSchedulePage.purgeMemoryState();
         }
+        if (typeof IconGuideNotice !== 'undefined') {
+            IconGuideNotice.close({ silent: true });
+        }
         document.getElementById('app').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
 
@@ -145,6 +148,9 @@ const App = {
         // Start authenticated server sync + polling now that JWT is available
         await Store.startAuthenticatedSync();
 
+        if (typeof IconGuideNotice !== 'undefined') {
+            IconGuideNotice.clearSessionDismiss();
+        }
         this.showApp();
     },
 
@@ -179,6 +185,12 @@ const App = {
         } else if (Onboarding.shouldShow()) {
             // Auto-start onboarding for first-time users
             setTimeout(() => Onboarding.start(), 800);
+        } else if (typeof IconGuideNotice !== 'undefined' && IconGuideNotice.shouldShow()) {
+            setTimeout(() => {
+                if (Auth.getSession() && !Auth.getSession().mustChangePassword) {
+                    IconGuideNotice.open();
+                }
+            }, 450);
         }
 
         // P3.3b: Keyboard shortcuts
