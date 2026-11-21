@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Bỏ thẻ Hoạt động sắp tới khỏi tab Tổng quan trên cả Desktop/Laptop và Mobile; cân bằng bố cục .duty-grid thành 2 cột đều nhau (Trực khoa hôm nay & Trực cấp cứu hôm nay) (FEAT-236) (`[FEAT-236]`, build `v2611211653`).
+- Bỏ thẻ Hoạt động sắp tới khỏi tab Tổng quan trên cả Desktop/Laptop và Mobile; cân bằng bố cục .duty-grid thành 2 cột đều nhau (Trực khoa hôm nay & Trực cấp cứu hôm nay) (FEAT-236) (`[FEAT-236]`, commit `63059d3`, build `v2611211653`).
 - Thiết kế lại giao diện Mobile (Android & iPhone) 3 tab Tổng quan, Theo dõi nhân sự, Phòng bệnh (kèm đưa lọc POD/tìm kiếm/BS vắng & modal phòng lên Desktop) và đưa nút + tab Mổ Robot vào thanh header (FEAT-235) (`[FEAT-235]`, commit `f8fe725`, build `v2611211452`).
 - Thiết kế lại giao diện Mobile (Android Chrome & iPhone WebKit) tab Điều phối Lịch mổ Robot: Header gọn, KPI chip, Day-Pill + Cả tuần, Mobile Cards cho 4 tab bảng, Bottom Sheet •••, FAB +, Gọi tel: theo RBAC, Segmented Pill Ca 1–Ca 3 + gợi ý x/3 ca và chống iOS zoom (FEAT-234) (`[FEAT-234]`, commit `1724c87`, build `v2611211420`).
 - Chuẩn hóa ô Thời gian dự kiến & Ngày mổ bằng lịch chọn ngày không nhập tay và giới hạn công suất Robot tối đa 3 ca/ngày (Ca 1–Ca 3) (FEAT-232) (`[FEAT-232]`, commit `d5fb107`, build `v2611211250`).
