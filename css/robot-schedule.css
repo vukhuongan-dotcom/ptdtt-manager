@@ -953,7 +953,7 @@
 
     .rbt-page {
         gap: 10px;
-        padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     }
 
     .rbt-header {
@@ -964,23 +964,33 @@
         flex-wrap: nowrap;
     }
 
+    .rbt-header__title-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     .rbt-header__sub {
         display: none;
     }
 
     .rbt-header__title {
-        font-size: 1rem;
+        font-size: 0.95rem;
         gap: 6px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .rbt-role-pill {
         font-size: 0.68rem;
         padding: 2px 7px;
+        flex-shrink: 0;
     }
 
     .rbt-mobile-hdr-tools {
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         flex-shrink: 0;
     }
 
@@ -1337,25 +1347,27 @@
         justify-content: center;
     }
 
-    /* Thumb-Zone FAB "+" */
-    .rbt-fab {
-        position: fixed;
-        right: calc(16px + env(safe-area-inset-right, 0px));
-        bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #1D2357 0%, #1878B4 100%);
-        color: #FFFFFF;
-        border: 2px solid rgba(255, 255, 255, 0.45);
-        box-shadow: 0 6px 20px rgba(29, 35, 87, 0.36);
-        font-size: 1.7rem;
-        font-weight: 700;
+    /* Inline Header "+" Action Button (moved from fixed bottom-right so cards & ••• stay unobstructed) */
+    .rbt-fab,
+    .rbt-mobile-fab-hdr {
+        position: static;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border-radius: 10px;
+        background: #FFFFFF;
+        color: #1D2357;
+        border: 1px solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 2px 8px rgba(12, 16, 34, 0.22);
+        font-size: 1.35rem;
+        font-weight: 800;
         line-height: 1;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        z-index: 950;
         touch-action: manipulation;
     }
 

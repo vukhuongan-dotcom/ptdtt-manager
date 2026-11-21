@@ -2,6 +2,31 @@
 const DashboardPage = {
     _trendMonths: 6,
     _hiddenSeries: {},
+    _mobileTab: 'today', // 'today' | 'analytics' (Mobile <= 768px)
+    _activeTouchBarIndex: -1,
+    _tooltipPinnedByTap: false,
+
+    setMobileTab(tab) {
+        const next = (tab === 'analytics') ? 'analytics' : 'today';
+        this._mobileTab = next;
+        const pageEl = document.getElementById('dashboard-page');
+        if (pageEl) {
+            pageEl.setAttribute('data-mobile-tab', next);
+        }
+        document.querySelectorAll('.dash-mobile-tab-btn').forEach(btn => {
+            const active = btn.getAttribute('data-dash-tab') === next;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        const tip = document.getElementById('trend-tooltip');
+        if (tip && next !== 'analytics') {
+            tip.classList.remove('visible');
+            this._activeTouchBarIndex = -1;
+        }
+        if (next === 'analytics') {
+            requestAnimationFrame(() => requestAnimationFrame(() => this.renderTrendChart()));
+        }
+    },
 
     render() {
         const staff = Store.getAll('staff');
@@ -74,8 +99,11 @@ const DashboardPage = {
 
         // Birthday staff detection
         const todayBirthdays = this.getTodayBirthdays(staff, today);
+        const canSeeApproval = (typeof SurgeryApprovalPage !== 'undefined' && typeof SurgeryApprovalPage.isFeatureVisibleForCurrentUser === 'function' && SurgeryApprovalPage.isFeatureVisibleForCurrentUser());
+        const isAnalyticsTab = this._mobileTab === 'analytics';
 
         return `
+        <div id="dashboard-page" class="dash-page" data-mobile-tab="${this._mobileTab}">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Tổng quan</h1>
@@ -90,6 +118,11 @@ const DashboardPage = {
         </div>
 
         ${this.renderBirthdayBanner(todayBirthdays, today)}
+
+        <div class="dash-mobile-tabs" role="tablist" aria-label="Phân khu Tổng quan">
+            <button type="button" class="dash-mobile-tab-btn ${!isAnalyticsTab ? 'is-active' : ''}" role="tab" aria-selected="${!isAnalyticsTab ? 'true' : 'false'}" data-dash-tab="today" onclick="DashboardPage.setMobileTab('today')">⚡ Hôm nay</button>
+            <button type="button" class="dash-mobile-tab-btn ${isAnalyticsTab ? 'is-active' : ''}" role="tab" aria-selected="${isAnalyticsTab ? 'true' : 'false'}" data-dash-tab="analytics" onclick="DashboardPage.setMobileTab('analytics')">📈 Phân tích</button>
+        </div>
 
         <!-- TOP STATS GRID -->
         <div class="stats-grid">
@@ -109,7 +142,7 @@ const DashboardPage = {
                 });
                 const present = allStaff.length - absentList.length;
                 const isLow = absentList.length > 0 && (present / allStaff.length) < 0.8;
-                return `<div class="stat-card slide-up" style="animation-delay:0s">
+                return `<div class="stat-card stat-card-interactive slide-up" style="animation-delay:0s;cursor:pointer" role="button" tabindex="0" data-dash-nav="staff-tracking" onclick="App.navigate('staff-tracking')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.navigate('staff-tracking');}" title="Nhấn để xem Theo dõi nhân sự">
                     <div class="stat-header">
                         <span class="stat-label">Nhân sự</span>
                         <div class="stat-icon ${isLow ? 'red' : 'cyan'}">
@@ -126,7 +159,7 @@ const DashboardPage = {
                 </div>`;
             })()}
 
-            <div class="stat-card slide-up" style="animation-delay:0.05s">
+            <div class="stat-card stat-card-interactive slide-up" style="animation-delay:0.05s;cursor:pointer" role="button" tabindex="0" data-dash-nav="reports" onclick="App.navigate('reports')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.navigate('reports');}" title="Nhấn để xem Báo cáo buồng bệnh">
                 <div class="stat-header">
                     <span class="stat-label">BN đang điều trị</span>
                     <div class="stat-icon purple">
@@ -137,7 +170,7 @@ const DashboardPage = {
                 <div class="stat-change">📋 ${latestReport ? latestReport.shortLabel : 'Đang cập nhật'}</div>
             </div>
 
-            <div class="stat-card slide-up" style="animation-delay:0.1s">
+            <div class="stat-card stat-card-interactive slide-up" style="animation-delay:0.1s;cursor:pointer" role="button" tabindex="0" data-dash-nav="surgery" onclick="App.navigate('surgery')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.navigate('surgery');}" title="Nhấn để xem Lịch mổ tuần">
                 <div class="stat-header">
                     <span class="stat-label">PT hôm nay</span>
                     <div class="stat-icon green">
@@ -152,7 +185,7 @@ const DashboardPage = {
                 <div class="stat-change">${Object.entries(SURGERY_TYPES).map(([k,t]) => `${t.label}: ${dailyS[k]||0}`).join(' · ')}</div>
             </div>
 
-            <div class="stat-card slide-up" style="animation-delay:0.15s;cursor:pointer" onclick="App.navigate('plans')" title="Nhấn để xem Lịch kế hoạch chi tiết">
+            <div class="stat-card stat-card-interactive slide-up" style="animation-delay:0.15s;cursor:pointer" role="button" tabindex="0" data-dash-nav="plans" onclick="App.navigate('plans')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.navigate('plans');}" title="Nhấn để xem Lịch kế hoạch chi tiết">
                 <div class="stat-header">
                     <span class="stat-label">Kế hoạch tháng ${parseInt(_now.getMonth() + 1)}</span>
                     <div class="stat-icon amber">
@@ -167,6 +200,13 @@ const DashboardPage = {
                 <div class="stat-value">${(plans || []).filter(p => p.date && p.date.startsWith(today.slice(0, 7))).length}</div>
                 <div class="stat-change">📅 Lịch SHCM & công tác khoa</div>
             </div>
+        </div>
+
+        <div class="dash-quick-shortcuts" role="navigation" aria-label="Lối tắt nhanh">
+            <button type="button" class="dash-shortcut-pill" data-dash-shortcut="robot-schedule" onclick="App.navigate('robot-schedule')">🤖 Mổ Robot</button>
+            <button type="button" class="dash-shortcut-pill" data-dash-shortcut="rooms" onclick="App.navigate('rooms')">🏥 Phòng bệnh</button>
+            ${canSeeApproval ? `<button type="button" class="dash-shortcut-pill" data-dash-shortcut="surgery-approval" onclick="App.navigate('surgery-approval')">✅ Duyệt mổ</button>` : ''}
+            <button type="button" class="dash-shortcut-pill" data-dash-shortcut="schedule" onclick="App.navigate('schedule')">📅 Phân công trực</button>
         </div>
 
         <!-- HERO ANALYTICS ROW (2/3 + 1/3 Grid) -->
@@ -217,27 +257,27 @@ const DashboardPage = {
 
                 <!-- Togglable Legend (Exact colors from Lịch Mổ Tuần) -->
                 <div class="trend-chart-legend">
-                    <div class="trend-legend-item ${this._hiddenSeries['yeucau'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('yeucau')">
+                    <button type="button" class="trend-legend-item ${this._hiddenSeries['yeucau'] ? 'inactive' : ''}" data-series="yeucau" onclick="DashboardPage.toggleSeries('yeucau')">
                         <div class="trend-legend-dot trend-dot-yeucau"></div>
                         PT Yêu cầu
-                    </div>
-                    <div class="trend-legend-item ${this._hiddenSeries['chuongtrinh'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('chuongtrinh')">
+                    </button>
+                    <button type="button" class="trend-legend-item ${this._hiddenSeries['chuongtrinh'] ? 'inactive' : ''}" data-series="chuongtrinh" onclick="DashboardPage.toggleSeries('chuongtrinh')">
                         <div class="trend-legend-dot trend-dot-chuongtrinh"></div>
                         PT Chương trình
-                    </div>
-                    <div class="trend-legend-item ${this._hiddenSeries['robot'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('robot')">
+                    </button>
+                    <button type="button" class="trend-legend-item ${this._hiddenSeries['robot'] ? 'inactive' : ''}" data-series="robot" onclick="DashboardPage.toggleSeries('robot')">
                         <div class="trend-legend-dot trend-dot-robot"></div>
                         PT Robot
-                    </div>
-                    <div class="trend-legend-item ${this._hiddenSeries['bankhan'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('bankhan')">
+                    </button>
+                    <button type="button" class="trend-legend-item ${this._hiddenSeries['bankhan'] ? 'inactive' : ''}" data-series="bankhan" onclick="DashboardPage.toggleSeries('bankhan')">
                         <div class="trend-legend-dot trend-dot-bankhan"></div>
                         Bán khẩn
-                    </div>
-                    <div class="trend-legend-item ${this._hiddenSeries['total'] ? 'inactive' : ''}" onclick="DashboardPage.toggleSeries('total')">
+                    </button>
+                    <button type="button" class="trend-legend-item ${this._hiddenSeries['total'] ? 'inactive' : ''}" data-series="total" onclick="DashboardPage.toggleSeries('total')">
                         <div class="trend-legend-dot trend-dot-total"></div>
                         ● Tổng số ca
-                    </div>
-                    <div class="trend-legend-item" title="Đường trung bình các tháng lịch đã hoàn tất">
+                    </button>
+                    <div class="trend-legend-item trend-legend-ref" title="Đường trung bình các tháng lịch đã hoàn tất">
                         <div class="trend-legend-line-dashed"></div>
                         ${avgRef.avgValue !== null ? `TB ${avgRef.completedCount} tháng trước (${Math.round(avgRef.avgValue)} ca)` : 'Mốc TB (chưa đủ tháng)'}
                     </div>
@@ -405,6 +445,7 @@ const DashboardPage = {
                 `).join('') : '<p class="widget-empty-msg">Chưa có hoạt động nào sắp tới</p>'}
             </div>
         </div>
+        </div>
         `;
     },
 
@@ -465,11 +506,10 @@ const DashboardPage = {
     toggleSeries(seriesKey) {
         this._hiddenSeries[seriesKey] = !this._hiddenSeries[seriesKey];
         this.renderTrendChart();
-        // Update legend active UI
-        const legendItems = document.querySelectorAll('.trend-legend-item');
+        const legendItems = document.querySelectorAll('.trend-legend-item[data-series]');
         legendItems.forEach(el => {
-            if (el.textContent.includes(seriesKey)) {
-                el.classList.toggle('inactive', this._hiddenSeries[seriesKey]);
+            if (el.getAttribute('data-series') === seriesKey) {
+                el.classList.toggle('inactive', !!this._hiddenSeries[seriesKey]);
             }
         });
     },
@@ -481,8 +521,11 @@ const DashboardPage = {
         const wrap = document.getElementById('trend-chart-wrap');
         if (!wrap) return;
 
-        const w = wrap.clientWidth || 600;
-        const h = wrap.clientHeight || 280;
+        // Guard hidden container (e.g. when mobile sub-view 'today' is active)
+        const w = wrap.clientWidth;
+        const h = wrap.clientHeight || 270;
+        if (!w || w < 20 || !h || h < 20) return;
+
         const dpr = window.devicePixelRatio || 1;
         canvas.width = w * dpr;
         canvas.height = h * dpr;
@@ -503,7 +546,9 @@ const DashboardPage = {
         const data = SurgeryMetrics.getMonthlyTrend(surgeries, numMonths, now);
         if (!data || data.length === 0) return;
 
-        const pad = { top: 32, right: 24, bottom: 38, left: 46 };
+        const pad = w <= 440
+            ? { top: 28, right: 12, bottom: 36, left: 36 }
+            : { top: 32, right: 24, bottom: 38, left: 46 };
         const cW = w - pad.left - pad.right;
         const cH = h - pad.top - pad.bottom;
 
@@ -518,7 +563,7 @@ const DashboardPage = {
 
         const yOf = v => pad.top + cH - (v / yMax) * cH;
         const xOf = i => pad.left + (i + 0.5) * (cW / data.length);
-        const barWidth = Math.min(Math.max((cW / data.length) * 0.46, 18), 44);
+        const barWidth = Math.min(Math.max((cW / data.length) * 0.46, 10), 44);
 
         const isDark = (document.documentElement.getAttribute('data-theme') === 'dark') ||
                        (localStorage.getItem('ptdtt_theme') === 'dark') ||
@@ -626,16 +671,19 @@ const DashboardPage = {
                 yBottom: yOf(0)
             });
 
-            // X-axis label
-            ctx.font = m.isCurrentMonth ? 'bold 11px "Noto Sans", sans-serif' : '11px "Noto Sans", sans-serif';
+            // X-axis label (compact when narrow with many months)
+            const compactXLabel = (w <= 440 && data.length >= 9)
+                ? `T${m.month}`
+                : m.shortLabel;
+            ctx.font = m.isCurrentMonth ? 'bold 10.5px "Noto Sans", sans-serif' : '10.5px "Noto Sans", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = m.isCurrentMonth ? (Utils.cssVar('--accent') || '#1878B4') : textMuted;
-            ctx.fillText(m.shortLabel + (m.isCurrentMonth ? '*' : ''), xCenter, h - pad.bottom + 16);
+            ctx.fillText(compactXLabel + (m.isCurrentMonth ? '*' : ''), xCenter, h - pad.bottom + 16);
 
             if (m.isCurrentMonth) {
                 ctx.font = '9px "Noto Sans", sans-serif';
                 ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
-                ctx.fillText(`(tính đến ${now.getDate()}/${m.month})`, xCenter, h - pad.bottom + 28);
+                ctx.fillText(w <= 440 ? `(${now.getDate()}/${m.month})` : `(tính đến ${now.getDate()}/${m.month})`, xCenter, h - pad.bottom + 28);
             }
         });
 
@@ -681,17 +729,23 @@ const DashboardPage = {
             ctx.restore();
         }
 
-        // 5. Tooltip on Hover
-        canvas.onmousemove = (e) => {
+        // 5. Tooltip on Hover (Desktop) & Tap/Click (Android & iPhone)
+        this._activeTouchBarIndex = -1;
+        const hideTooltip = () => {
+            const t = document.getElementById('trend-tooltip');
+            if (t) t.classList.remove('visible');
+            this._activeTouchBarIndex = -1;
+            this._tooltipPinnedByTap = false;
+        };
+
+        const showTooltipAtClientX = (clientX, isTap = false) => {
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
+            const mx = clientX - rect.left;
             const tooltip = document.getElementById('trend-tooltip');
             if (!tooltip) return;
 
             let hovered = barCoordinates.find(b => mx >= b.xLeft - 6 && mx <= b.xRight + 6);
             if (!hovered) {
-                // Check closest
                 let closest = -1, minD = Infinity;
                 barCoordinates.forEach((b, idx) => {
                     const d = Math.abs(mx - b.xCenter);
@@ -702,106 +756,135 @@ const DashboardPage = {
                 }
             }
 
-            if (hovered) {
-                const m = hovered.month;
-                const dd = String(now.getDate()).padStart(2, '0');
-                const mm = String(m.month).padStart(2, '0');
-                const statusTag = m.isCurrentMonth
-                    ? `<span class="trend-tooltip-badge live">Tháng hiện tại (tính đến ${dd}/${mm})</span>`
-                    : '<span class="trend-tooltip-badge">Hoàn tất</span>';
+            if (!hovered) {
+                hideTooltip();
+                return;
+            }
 
-                let comparisonLine = 'Chưa có mốc trung bình các tháng trước để so sánh';
-                if (avgValue !== null && avgValue > 0) {
-                    const roundedAvg = Math.round(avgValue);
-                    if (m.isCurrentMonth) {
-                        const pctOfAvg = Math.round((m.total / avgValue) * 100);
-                        comparisonLine = `Đã ghi nhận <strong>${m.total} ca</strong> (bằng <strong>${pctOfAvg}%</strong> mức TB ${completedMonths.length} tháng trước: ${roundedAvg} ca)`;
+            if (isTap && this._tooltipPinnedByTap && this._activeTouchBarIndex === hovered.index && tooltip.classList.contains('visible')) {
+                hideTooltip();
+                return;
+            }
+
+            const m = hovered.month;
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(m.month).padStart(2, '0');
+            const statusTag = m.isCurrentMonth
+                ? `<span class="trend-tooltip-badge live">Tháng hiện tại (tính đến ${dd}/${mm})</span>`
+                : '<span class="trend-tooltip-badge">Hoàn tất</span>';
+
+            let comparisonLine = 'Chưa có mốc trung bình các tháng trước để so sánh';
+            if (avgValue !== null && avgValue > 0) {
+                const roundedAvg = Math.round(avgValue);
+                if (m.isCurrentMonth) {
+                    const pctOfAvg = Math.round((m.total / avgValue) * 100);
+                    comparisonLine = `Đã ghi nhận <strong>${m.total} ca</strong> (bằng <strong>${pctOfAvg}%</strong> mức TB ${completedMonths.length} tháng trước: ${roundedAvg} ca)`;
+                } else {
+                    const diffPct = Math.round(((m.total - avgValue) / avgValue) * 100);
+                    if (diffPct > 0) {
+                        comparisonLine = `Cao hơn TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>+${diffPct}%</strong>`;
+                    } else if (diffPct < 0) {
+                        comparisonLine = `Thấp hơn TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>${diffPct}%</strong>`;
                     } else {
-                        const diffPct = Math.round(((m.total - avgValue) / avgValue) * 100);
-                        if (diffPct > 0) {
-                            comparisonLine = `Cao hơn TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>+${diffPct}%</strong>`;
-                        } else if (diffPct < 0) {
-                            comparisonLine = `Thấp hơn TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>${diffPct}%</strong>`;
-                        } else {
-                            comparisonLine = `Tương đương TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>(0%)</strong>`;
-                        }
+                        comparisonLine = `Tương đương TB ${completedMonths.length} tháng trước (${roundedAvg} ca) <strong>(0%)</strong>`;
                     }
                 }
-
-                let coverageHtml = '';
-                if (m.isCurrentMonth) {
-                    const formattedLatest = m.latestCaseDateInMonth
-                        ? String(m.latestCaseDateInMonth).split('T')[0].split('-').reverse().join('/')
-                        : '—';
-                    const latestInfo = m.total > 0
-                        ? `Ngày có ca gần nhất trên lịch: <strong>${formattedLatest}</strong>`
-                        : `Chưa có ca mổ nào trên lịch từ 01/${mm} đến ${dd}/${mm}`;
-                    const afterTodayInfo = (m.scheduledAfterToday || 0) > 0
-                        ? `<div class="trend-proj-sub">Đã xếp lịch sau ngày ${dd}/${mm}: <strong>+${m.scheduledAfterToday} ca</strong></div>`
-                        : '';
-                    coverageHtml = `
-                        <div class="trend-tooltip-proj-box">
-                            <div class="trend-proj-title">${latestInfo}</div>
-                            ${afterTodayInfo}
-                            <div class="trend-proj-sub">${comparisonLine}</div>
-                        </div>`;
-                } else {
-                    coverageHtml = `
-                        <div class="trend-tooltip-proj-box">
-                            <div class="trend-proj-sub">${comparisonLine}</div>
-                        </div>`;
-                }
-
-                tooltip.innerHTML = `
-                    <div class="trend-tooltip-header">
-                        <strong>${m.label}</strong>
-                        ${statusTag}
-                    </div>
-                    <div class="trend-tooltip-total-row">
-                        <span>${m.isCurrentMonth ? `Số ca ghi nhận trên lịch (tính đến ${dd}/${mm}):` : 'Tổng số ca:'}</span>
-                        <strong class="trend-tooltip-total-num">${m.total} ca</strong>
-                    </div>
-                    <div class="trend-tooltip-breakdown">
-                        <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:var(--stype-yeucau)"></span> PT Yêu cầu</span>
-                            <strong>${m.byType.yeucau} <small>(${m.total > 0 ? (m.byType.yeucau/m.total*100).toFixed(1) : 0}%)</small></strong>
-                        </div>
-                        <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:var(--stype-chuongtrinh)"></span> PT Chương trình</span>
-                            <strong>${m.byType.chuongtrinh} <small>(${m.total > 0 ? (m.byType.chuongtrinh/m.total*100).toFixed(1) : 0}%)</small></strong>
-                        </div>
-                        <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:var(--stype-robot)"></span> PT Robot</span>
-                            <strong>${m.byType.robot} <small>(${m.total > 0 ? (m.byType.robot/m.total*100).toFixed(1) : 0}%)</small></strong>
-                        </div>
-                        <div class="trend-tooltip-row">
-                            <span><span class="trend-legend-dot" style="background:var(--stype-bankhan)"></span> Bán khẩn</span>
-                            <strong>${m.byType.bankhan} <small>(${m.total > 0 ? (m.byType.bankhan/m.total*100).toFixed(1) : 0}%)</small></strong>
-                        </div>
-                    </div>
-                    <div class="trend-tooltip-mis-row">
-                        <span>✨ Tỉ lệ MIS (Nội soi + Robot):</span>
-                        <strong class="text-blue">${m.mis.misPct}%</strong>
-                    </div>
-                    ${coverageHtml}
-                `;
-                tooltip.classList.add('visible');
-
-                // Positioning
-                const tipW = tooltip.offsetWidth || 220;
-                let leftPos = hovered.xCenter - tipW / 2;
-                if (leftPos < 10) leftPos = 10;
-                if (leftPos + tipW > w - 10) leftPos = w - tipW - 10;
-                tooltip.style.left = leftPos + 'px';
-                tooltip.style.top = '10px';
-            } else {
-                tooltip.classList.remove('visible');
             }
+
+            let coverageHtml = '';
+            if (m.isCurrentMonth) {
+                const formattedLatest = m.latestCaseDateInMonth
+                    ? String(m.latestCaseDateInMonth).split('T')[0].split('-').reverse().join('/')
+                    : '—';
+                const latestInfo = m.total > 0
+                    ? `Ngày có ca gần nhất trên lịch: <strong>${formattedLatest}</strong>`
+                    : `Chưa có ca mổ nào trên lịch từ 01/${mm} đến ${dd}/${mm}`;
+                const afterTodayInfo = (m.scheduledAfterToday || 0) > 0
+                    ? `<div class="trend-proj-sub">Đã xếp lịch sau ngày ${dd}/${mm}: <strong>+${m.scheduledAfterToday} ca</strong></div>`
+                    : '';
+                coverageHtml = `
+                    <div class="trend-tooltip-proj-box">
+                        <div class="trend-proj-title">${latestInfo}</div>
+                        ${afterTodayInfo}
+                        <div class="trend-proj-sub">${comparisonLine}</div>
+                    </div>`;
+            } else {
+                coverageHtml = `
+                    <div class="trend-tooltip-proj-box">
+                        <div class="trend-proj-sub">${comparisonLine}</div>
+                    </div>`;
+            }
+
+            tooltip.innerHTML = `
+                <div class="trend-tooltip-header">
+                    <strong>${m.label}</strong>
+                    ${statusTag}
+                </div>
+                <div class="trend-tooltip-total-row">
+                    <span>${m.isCurrentMonth ? `Số ca ghi nhận trên lịch (tính đến ${dd}/${mm}):` : 'Tổng số ca:'}</span>
+                    <strong class="trend-tooltip-total-num">${m.total} ca</strong>
+                </div>
+                <div class="trend-tooltip-breakdown">
+                    <div class="trend-tooltip-row">
+                        <span><span class="trend-legend-dot" style="background:var(--stype-yeucau)"></span> PT Yêu cầu</span>
+                        <strong>${m.byType.yeucau} <small>(${m.total > 0 ? (m.byType.yeucau/m.total*100).toFixed(1) : 0}%)</small></strong>
+                    </div>
+                    <div class="trend-tooltip-row">
+                        <span><span class="trend-legend-dot" style="background:var(--stype-chuongtrinh)"></span> PT Chương trình</span>
+                        <strong>${m.byType.chuongtrinh} <small>(${m.total > 0 ? (m.byType.chuongtrinh/m.total*100).toFixed(1) : 0}%)</small></strong>
+                    </div>
+                    <div class="trend-tooltip-row">
+                        <span><span class="trend-legend-dot" style="background:var(--stype-robot)"></span> PT Robot</span>
+                        <strong>${m.byType.robot} <small>(${m.total > 0 ? (m.byType.robot/m.total*100).toFixed(1) : 0}%)</small></strong>
+                    </div>
+                    <div class="trend-tooltip-row">
+                        <span><span class="trend-legend-dot" style="background:var(--stype-bankhan)"></span> Bán khẩn</span>
+                        <strong>${m.byType.bankhan} <small>(${m.total > 0 ? (m.byType.bankhan/m.total*100).toFixed(1) : 0}%)</small></strong>
+                    </div>
+                </div>
+                <div class="trend-tooltip-mis-row">
+                    <span>✨ Tỉ lệ MIS (Nội soi + Robot):</span>
+                    <strong class="text-blue">${m.mis.misPct}%</strong>
+                </div>
+                ${coverageHtml}
+            `;
+            tooltip.classList.add('visible');
+            this._activeTouchBarIndex = hovered.index;
+            this._tooltipPinnedByTap = Boolean(isTap);
+
+            // Clamped positioning strictly inside chart wrap width
+            const tipW = Math.min(tooltip.offsetWidth || 220, Math.max(w - 16, 160));
+            let leftPos = hovered.xCenter - tipW / 2;
+            if (leftPos < 8) leftPos = 8;
+            if (leftPos + tipW > w - 8) leftPos = Math.max(8, w - tipW - 8);
+            tooltip.style.left = leftPos + 'px';
+            tooltip.style.top = '8px';
         };
 
-        canvas.onmouseleave = () => {
-            const t = document.getElementById('trend-tooltip');
-            if (t) t.classList.remove('visible');
+        let touchStart = null;
+        let skipNextClick = false;
+        canvas.onmousemove = (e) => showTooltipAtClientX(e.clientX, false);
+        canvas.onmouseleave = hideTooltip;
+        canvas.ontouchstart = (e) => {
+            if (e.touches && e.touches.length === 1) {
+                touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        };
+        canvas.ontouchend = (e) => {
+            if (!touchStart || !e.changedTouches || !e.changedTouches.length) return;
+            const t = e.changedTouches[0];
+            if (Math.abs(t.clientX - touchStart.x) < 12 && Math.abs(t.clientY - touchStart.y) < 12) {
+                skipNextClick = true;
+                showTooltipAtClientX(t.clientX, true);
+            }
+            touchStart = null;
+        };
+        canvas.onclick = (e) => {
+            if (skipNextClick) {
+                skipNextClick = false;
+                return;
+            }
+            showTooltipAtClientX(e.clientX, true);
         };
     },
 

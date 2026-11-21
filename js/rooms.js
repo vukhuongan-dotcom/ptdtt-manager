@@ -50,38 +50,168 @@ const ROOM_DATA = [
 const SHOW_PATIENT_COUNT = false;
 
 const RoomsPage = {
-    render() {
+    selectedPod: 'all', // 'all' | 1 | 2 | 3
+    searchQuery: '',
+    mobileSearchOpen: false,
+
+    _stripVn(str) {
+        return String(str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .toLowerCase();
+    },
+
+    _esc(str) {
+        if (typeof Utils !== 'undefined' && typeof Utils.escapeHtml === 'function') {
+            return Utils.escapeHtml(String(str ?? ''));
+        }
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
+    _sanitizePhone(phone) {
+        const digits = String(phone || '').replace(/\D/g, '');
+        return digits.length >= 9 ? digits : '';
+    },
+
+    _getTodayStr() {
+        const now = new Date();
+        if (typeof Utils !== 'undefined' && typeof Utils.localDateStr === 'function') {
+            return Utils.localDateStr(now);
+        }
+        return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    },
+
+    _getDoctorStatusToday(staff) {
+        if (!staff) return { status: 'active', fromDate: null, toDate: null };
+        const today = this._getTodayStr();
+        if (typeof StaffPage !== 'undefined' && typeof StaffPage.getEffectiveStatus === 'function') {
+            return StaffPage.getEffectiveStatus(staff, today);
+        }
+        const entries = (typeof Store !== 'undefined' && Store.getAll) ? (Store.getAll('staffStatuses') || []) : [];
+        const dayEntry = entries.find(e => e.staffId === staff.id && e.date === today);
+        if (dayEntry && dayEntry.status !== 'active') {
+            return { status: dayEntry.status, fromDate: today, toDate: today };
+        }
+        if (staff.statusType && staff.statusType !== 'active' && staff.statusFrom && staff.statusTo) {
+            if (today >= staff.statusFrom && today <= staff.statusTo) {
+                return { status: staff.statusType, fromDate: staff.statusFrom, toDate: staff.statusTo };
+            }
+        }
+        return { status: 'active', fromDate: null, toDate: null };
+    },
+
+    _getStatusInfo(statusKey) {
+        const fallback = {
+            active: { label: 'Có mặt', icon: '🟢', abbr: '' },
+            leave: { label: 'Nghỉ phép', icon: '🟡', abbr: 'NP' },
+            sick: { label: 'Bệnh ốm', icon: '🔴', abbr: 'B' },
+            business: { label: 'Công tác', icon: '🟣', abbr: 'CT' },
+            dayoff: { label: 'Nghỉ bù', icon: '🔵', abbr: 'NB' }
+        };
+        if (typeof STAFF_STATUSES !== 'undefined' && STAFF_STATUSES[statusKey]) {
+            return STAFF_STATUSES[statusKey];
+        }
+        return fallback[statusKey] || fallback.active;
+    },
+
+    setPodFilter(podId) {
+        this.selectedPod = podId === 'all' ? 'all' : Number(podId);
+        document.querySelectorAll('#rooms-page-container .rm-pod-pill').forEach(btn => {
+            const active = String(btn.getAttribute('data-pod')) === String(this.selectedPod);
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        this._refreshRoomsContent();
+    },
+
+    toggleMobileSearch() {
+        this.mobileSearchOpen = !this.mobileSearchOpen;
+        if (!this.mobileSearchOpen && this.searchQuery) {
+            this.searchQuery = '';
+            const inp = document.getElementById('rooms-search-input');
+            if (inp) inp.value = '';
+            const clearBtn = document.getElementById('rooms-search-clear');
+            if (clearBtn) clearBtn.hidden = true;
+            this._refreshRoomsContent();
+        }
+        const wrap = document.getElementById('rooms-search-wrap');
+        if (wrap) wrap.classList.toggle('is-mobile-open', this.mobileSearchOpen || !!this.searchQuery);
+        const btn = document.getElementById('rooms-mobile-search-toggle');
+        if (btn) {
+            btn.classList.toggle('is-active', this.mobileSearchOpen || !!this.searchQuery);
+            btn.textContent = this.mobileSearchOpen ? '✕' : '🔍';
+        }
+        if (this.mobileSearchOpen) {
+            setTimeout(() => {
+                const inp = document.getElementById('rooms-search-input');
+                if (inp) inp.focus();
+            }, 30);
+        }
+    },
+
+    setSearchQuery(val) {
+        this.searchQuery = val || '';
+        const clearBtn = document.getElementById('rooms-search-clear');
+        if (clearBtn) clearBtn.hidden = !this.searchQuery;
+        const wrap = document.getElementById('rooms-search-wrap');
+        if (wrap) wrap.classList.toggle('is-mobile-open', this.mobileSearchOpen || !!this.searchQuery);
+        this._refreshRoomsContent();
+    },
+
+    clearSearch() {
+        this.searchQuery = '';
+        const inp = document.getElementById('rooms-search-input');
+        if (inp) {
+            inp.value = '';
+            inp.focus();
+        }
+        const clearBtn = document.getElementById('rooms-search-clear');
+        if (clearBtn) clearBtn.hidden = true;
+        this._refreshRoomsContent();
+    },
+
+    _refreshRoomsContent() {
+        const target = document.getElementById('rooms-pod-content');
+        if (!target) {
+            App.renderCurrentPage();
+            return;
+        }
         const emrData = (typeof EMR !== 'undefined') ? EMR.getData() : null;
-        const emrStatus = (typeof EMR !== 'undefined') ? EMR.getStatus() : 'idle';
-        const totalPatients = emrData ? emrData.totalDept : null;
-        const lastUpdate = (typeof EMR !== 'undefined') ? EMR.getTimeSinceUpdate() : '';
-        const isAdmin = App.isAdmin();
+        target.innerHTML = this._renderPodsContentHtml(emrData);
+    },
 
-        return `
-        <div id="rooms-page-container">
-            <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-                <div>
-                    <h1 class="page-title">Sơ đồ phòng bệnh (Mô hình 3 POD)</h1>
-                    <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Tầng 7, Tòa B</p>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px">
-                    ${isAdmin ? `
-                        <button class="btn btn-outline" onclick="RoomsPage.exportImage()" title="Xuất hình ảnh sơ đồ phòng bệnh (Chỉ Admin)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:0.85rem;font-weight:600;cursor:pointer">
-                            📷 <span>Xuất hình sơ đồ</span>
-                        </button>
-                    ` : ''}
-                    ${(SHOW_PATIENT_COUNT && totalPatients !== null) ? `<div style="display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--border-radius);padding:8px 14px">
-                        <span style="font-size:1.2rem;font-weight:700;color:var(--primary)">${totalPatients}</span>
-                        <span style="font-size:0.85rem;color:var(--text-secondary)">bệnh nhân</span>
-                        <span style="font-size:0.75rem;color:var(--text-muted);margin-left:4px">· ${lastUpdate}</span>
-                    </div>` : ''}
-                </div>
-            </div>
+    _roomMatchesQuery(roomObj, cleanQuery) {
+        if (!cleanQuery) return true;
+        const roomVariants = this._stripVn(`${roomObj.room} b${roomObj.room} p${roomObj.room}`);
+        if (roomVariants.includes(cleanQuery)) return true;
+        return (roomObj.doctors || []).some(d => {
+            const staff = Store.getById('staff', d.id);
+            if (!staff) return false;
+            const hay = this._stripVn(`${staff.title || ''} ${staff.name || ''}`);
+            return hay.includes(cleanQuery);
+        });
+    },
 
-            ${POD_CONFIG.map(pod => {
-                const podRooms = ROOM_DATA.filter(r => r.pod === pod.id);
-                return `
-                <div class="pod-section">
+    _renderPodsContentHtml(emrData) {
+        const cleanQuery = this._stripVn((this.searchQuery || '').trim());
+        const visiblePods = POD_CONFIG.filter(pod =>
+            this.selectedPod === 'all' || String(pod.id) === String(this.selectedPod)
+        );
+
+        let totalRenderedRooms = 0;
+        const sectionsHtml = visiblePods.map(pod => {
+            const podRooms = ROOM_DATA.filter(r => r.pod === pod.id && this._roomMatchesQuery(r, cleanQuery));
+            if (!podRooms.length) return '';
+            totalRenderedRooms += podRooms.length;
+            return `
+                <div class="pod-section" data-pod-section="${pod.id}">
                     <div class="pod-section-header ${pod.classSuffix}">
                         <div class="pod-section-title" style="color:${pod.color}">
                             <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${pod.color}"></span>
@@ -94,27 +224,36 @@ const RoomsPage = {
                             const patientCount = this._getPatientCount(r.room, emrData);
                             const hasPatients = patientCount !== null && patientCount > 0;
                             return `
-                            <div class="room-card room-card-${pod.classSuffix}">
+                            <div class="room-card room-card-${pod.classSuffix} rm-card-interactive" role="button" tabindex="0" data-room="${this._esc(r.room)}" onclick="RoomsPage.openRoomDetail('${this._esc(r.room)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();RoomsPage.openRoomDetail('${this._esc(r.room)}');}" title="Chạm để xem chi tiết phòng B${this._esc(r.room)}">
                                 <div class="room-card-header">
                                     <div style="display:flex;align-items:center">
                                         <span class="pod-badge">${pod.title}</span>
                                         <span class="room-number">B${r.room}</span>
                                     </div>
-                                    ${SHOW_PATIENT_COUNT ? `<span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>` : ''}
+                                    <div style="display:flex;align-items:center;gap:6px">
+                                        ${SHOW_PATIENT_COUNT ? `<span class="room-patient-count" title="Số BN" style="${hasPatients ? 'background:rgba(255,255,255,0.25);color:#fff;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85rem' : 'color:rgba(255,255,255,0.6)'}">${patientCount !== null ? patientCount + ' BN' : '—'}</span>` : ''}
+                                        <span class="rm-card-chevron" aria-hidden="true">›</span>
+                                    </div>
                                 </div>
                                 <div class="room-card-body">
                                     ${r.doctors.map(d => {
                                         const staff = Store.getById('staff', d.id);
                                         if (!staff) return '';
-                                        const fullName = staff.title + ' ' + staff.name;
+                                        const fullName = `${staff.title ? staff.title + ' ' : ''}${staff.name}`;
                                         const roleLabel = d.role === 'NT' ? 'Nội trú' : d.role === 'HV' ? 'Học viên' : d.role === 'CH' ? 'Cử nhân' : 'BS điều trị';
                                         const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'HV' ? 'room-role-hv' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
+                                        const eff = this._getDoctorStatusToday(staff);
+                                        const isAbsent = eff.status !== 'active';
+                                        const stInfo = isAbsent ? this._getStatusInfo(eff.status) : null;
                                         return `
-                                        <div class="room-doctor">
+                                        <div class="room-doctor ${isAbsent ? 'is-absent-today' : ''}">
                                             ${Utils.renderAvatar(staff, 'sm', { extraClass: 'room-doc-avatar' })}
                                             <div class="room-doc-info">
-                                                <div class="room-doc-name">${fullName}</div>
-                                                <div class="room-doc-role ${roleBadge}">${roleLabel}</div>
+                                                <div class="room-doc-name">${this._esc(fullName)}</div>
+                                                <div class="room-doc-meta-row">
+                                                    <span class="room-doc-role ${roleBadge}">${roleLabel}</span>
+                                                    ${isAbsent && stInfo ? `<span class="room-doc-absent-badge rm-st-${eff.status}" title="Trạng thái hôm nay: ${this._esc(stInfo.label)}">${stInfo.icon} ${this._esc(stInfo.label)}</span>` : ''}
+                                                </div>
                                             </div>
                                         </div>`;
                                     }).join('')}
@@ -123,41 +262,141 @@ const RoomsPage = {
                         }).join('')}
                     </div>
                 </div>`;
-            }).join('')}
+        }).join('');
 
-            <div class="card rooms-legend" style="margin-top:20px">
-                <h3 style="font-size:0.9rem;margin-bottom:10px;color:var(--text-primary)">📋 Chú thích & Mô hình POD</h3>
-                <div class="rooms-legend-items">
-                    <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#ef4444"></span> 🔴 <strong>POD 1 (Đỏ):</strong> P718, P707</span>
-                    <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#f59e0b"></span> 🟡 <strong>POD 2 (Vàng):</strong> P705, P706, P711, P712, P712A, P719</span>
-                    <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#10b981"></span> 🟢 <strong>POD 3 (Xanh lá):</strong> P708, P709, P710</span>
+        if (totalRenderedRooms === 0) {
+            return `
+            <div class="rm-empty-state card">
+                <div>🔍 Không tìm thấy phòng bệnh hoặc bác sĩ phù hợp với bộ lọc hiện tại.</div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="RoomsPage.selectedPod='all';RoomsPage.clearSearch();RoomsPage.setPodFilter('all')">Hiện tất cả 11 phòng</button>
+            </div>`;
+        }
+
+        return sectionsHtml;
+    },
+
+    openRoomDetail(roomNumber) {
+        const r = ROOM_DATA.find(item => String(item.room) === String(roomNumber));
+        if (!r) return;
+        const pod = POD_CONFIG.find(p => p.id === r.pod) || POD_CONFIG[0];
+
+        const docsHtml = (r.doctors || []).map(d => {
+            const staff = Store.getById('staff', d.id);
+            if (!staff) return '';
+            const fullName = `${staff.title ? staff.title + ' ' : ''}${staff.name}`;
+            const roleLabel = d.role === 'NT' ? 'BS Nội trú (phụ)' : d.role === 'HV' ? 'BS Học viên (phụ)' : d.role === 'CH' ? 'Cử nhân' : 'BS Điều trị (chính)';
+            const roleBadge = d.role === 'NT' ? 'room-role-nt' : d.role === 'HV' ? 'room-role-hv' : d.role === 'CH' ? 'room-role-ch' : 'room-role-bs';
+            const eff = this._getDoctorStatusToday(staff);
+            const stInfo = this._getStatusInfo(eff.status);
+            const digits = this._sanitizePhone(staff.phone);
+            const statusText = eff.status === 'active'
+                ? '🟢 Có mặt hôm nay'
+                : `${stInfo.icon} ${stInfo.label}${eff.fromDate && eff.toDate ? ` (${Utils.formatDateShort(eff.fromDate)}–${Utils.formatDateShort(eff.toDate)})` : ''}`;
+
+            return `
+            <div class="rm-detail-doc-row">
+                <div class="rm-detail-doc-main">
+                    ${Utils.renderAvatar(staff, 'sm', { extraClass: 'room-doc-avatar' })}
+                    <div class="rm-detail-doc-info">
+                        <div class="rm-detail-doc-name">${this._esc(fullName)}</div>
+                        <div class="rm-detail-doc-badges">
+                            <span class="room-doc-role ${roleBadge}">${roleLabel}</span>
+                            <span class="rm-detail-status-pill rm-st-${eff.status}">${this._esc(statusText)}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="rooms-legend-items" style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
-                    <span class="rooms-legend-item"><span class="room-legend-dot room-role-bs"></span> BS điều trị (chính)</span>
-                    <span class="rooms-legend-item"><span class="room-legend-dot room-role-nt"></span> BS nội trú (phụ)</span>
-                    <span class="rooms-legend-item"><span class="room-legend-dot room-role-hv" style="background:#f97316"></span> BS học viên (phụ)</span>
+                ${digits ? `<a class="rm-call-btn" href="tel:${digits}" aria-label="Gọi ${this._esc(fullName)}">📞 Gọi</a>` : ''}
+            </div>`;
+        }).join('');
+
+        Modal.open(`Phòng B${this._esc(r.room)} — ${this._esc(pod.title)}`, `
+            <div id="rm-detail-modal" class="rm-detail-modal">
+                <div class="rm-detail-banner ${pod.classSuffix}">
+                    <span class="rm-detail-pod-chip" style="background:${pod.color}">${pod.title}</span>
+                    <span>Phòng bệnh B${this._esc(r.room)} · Tầng 7, Tòa B</span>
+                </div>
+                <div class="rm-detail-doc-list">
+                    ${docsHtml || '<p class="td-muted">Chưa có bác sĩ phụ trách.</p>'}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
                 </div>
             </div>
+        `);
+    },
+
+    render() {
+        const emrData = (typeof EMR !== 'undefined') ? EMR.getData() : null;
+        const totalPatients = emrData ? emrData.totalDept : null;
+        const lastUpdate = (typeof EMR !== 'undefined') ? EMR.getTimeSinceUpdate() : '';
+        const isAdmin = App.isAdmin();
+        const isDesktop = (typeof window !== 'undefined') ? window.innerWidth >= 769 : true;
+        const podEmoji = { 1: '🔴', 2: '🟡', 3: '🟢' };
+
+        const podPillsHtml = `
+            <button type="button" class="rm-pod-pill ${this.selectedPod === 'all' ? 'is-active' : ''}" data-pod="all" aria-pressed="${this.selectedPod === 'all' ? 'true' : 'false'}" onclick="RoomsPage.setPodFilter('all')">Tất cả (${ROOM_DATA.length})</button>
+            ${POD_CONFIG.map(pod => {
+                const cnt = ROOM_DATA.filter(r => r.pod === pod.id).length;
+                const active = String(this.selectedPod) === String(pod.id);
+                return `<button type="button" class="rm-pod-pill rm-pod-pill-${pod.classSuffix} ${active ? 'is-active' : ''}" data-pod="${pod.id}" aria-pressed="${active ? 'true' : 'false'}" onclick="RoomsPage.setPodFilter(${pod.id})">${podEmoji[pod.id] || ''} ${pod.title} · ${cnt}</button>`;
+            }).join('')}
+        `;
+
+        return `
+        <div id="rooms-page-container" class="rm-page">
+            <div class="page-header">
+                <div class="rm-header-title-wrap">
+                    <h1 class="page-title"><span class="rm-title-mobile">🏥 Phòng bệnh</span><span class="rm-title-desktop">Sơ đồ phòng bệnh (Mô hình 3 POD)</span></h1>
+                    <p class="page-subtitle">Khoa Phẫu thuật Đại trực tràng — Tầng 7, Tòa B</p>
+                </div>
+                <div class="rm-header-actions">
+                    <button type="button" id="rooms-mobile-search-toggle" class="rm-mobile-icon-btn ${this.mobileSearchOpen || this.searchQuery ? 'is-active' : ''}" onclick="RoomsPage.toggleMobileSearch()" aria-label="Tìm phòng hoặc bác sĩ" title="Tìm phòng hoặc bác sĩ">${this.mobileSearchOpen ? '✕' : '🔍'}</button>
+                    ${isAdmin ? `
+                        <button type="button" class="btn btn-outline rm-export-btn" onclick="RoomsPage.exportImage()" title="Xuất hình ảnh sơ đồ phòng bệnh (Chỉ Admin)">
+                            📷 <span class="rm-export-label">Xuất hình sơ đồ</span>
+                        </button>
+                    ` : ''}
+                    ${(SHOW_PATIENT_COUNT && totalPatients !== null) ? `<div class="rm-patient-total-pill">
+                        <span style="font-size:1.2rem;font-weight:700;color:var(--primary)">${totalPatients}</span>
+                        <span style="font-size:0.85rem;color:var(--text-secondary)">bệnh nhân</span>
+                        <span style="font-size:0.75rem;color:var(--text-muted);margin-left:4px">· ${lastUpdate}</span>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <div class="rm-toolbar">
+                <div class="rm-pod-pills" role="group" aria-label="Lọc theo POD">${podPillsHtml}</div>
+                <div id="rooms-search-wrap" class="rm-search-wrap ${(this.mobileSearchOpen || this.searchQuery) ? 'is-mobile-open' : ''}">
+                    <input type="search" id="rooms-search-input" class="form-input rm-search-input" value="${this._esc(this.searchQuery)}" placeholder="Tìm phòng (712A) hoặc tên BS..." aria-label="Tìm phòng bệnh hoặc bác sĩ" oninput="RoomsPage.setSearchQuery(this.value)">
+                    <button type="button" id="rooms-search-clear" class="btn btn-secondary btn-sm rm-search-clear" onclick="RoomsPage.clearSearch()" ${this.searchQuery ? '' : 'hidden'}>Xóa</button>
+                </div>
+            </div>
+
+            <div id="rooms-pod-content">
+                ${this._renderPodsContentHtml(emrData)}
+            </div>
+
+            <details id="rm-legend-details" class="card rooms-legend rm-legend-details" style="margin-top:20px" ${isDesktop ? 'open' : ''}>
+                <summary class="rm-legend-summary">📋 Chú thích &amp; Mô hình 3 POD</summary>
+                <div class="rm-legend-body">
+                    <div class="rooms-legend-items">
+                        <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#ef4444"></span> 🔴 <strong>POD 1 (Đỏ):</strong> P718, P707</span>
+                        <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#f59e0b"></span> 🟡 <strong>POD 2 (Vàng):</strong> P705, P706, P711, P712, P712A, P719</span>
+                        <span class="rooms-legend-item"><span class="room-legend-dot" style="background:#10b981"></span> 🟢 <strong>POD 3 (Xanh lá):</strong> P708, P709, P710</span>
+                    </div>
+                    <div class="rooms-legend-items" style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
+                        <span class="rooms-legend-item"><span class="room-legend-dot room-role-bs"></span> BS điều trị (chính)</span>
+                        <span class="rooms-legend-item"><span class="room-legend-dot room-role-nt"></span> BS nội trú (phụ)</span>
+                        <span class="rooms-legend-item"><span class="room-legend-dot room-role-hv" style="background:#f97316"></span> BS học viên (phụ)</span>
+                    </div>
+                </div>
+            </details>
         </div>
         `;
     },
 
-    async exportImage() {
-        if (!App.isAdmin()) {
-            Toast.error('Chức năng xuất hình sơ đồ phòng bệnh chỉ dành cho Admin.');
-            return;
-        }
-
-        try {
-            Toast.info('🖼️ Đang tạo hình ảnh sơ đồ phòng bệnh chuẩn quy cách...');
-
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const dateFmt = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
-            const timeFmt = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-            // Build isolated iframe HTML following site export principles
-            const fullHtml = `
+    _buildExportHtml(dateFmt) {
+        return `
             <!DOCTYPE html>
             <html lang="vi">
             <head>
@@ -496,7 +735,22 @@ const RoomsPage = {
                 </div>
             </body>
             </html>
-            `;
+        `;
+    },
+
+    async exportImage() {
+        if (!App.isAdmin()) {
+            Toast.error('Chức năng xuất hình sơ đồ phòng bệnh chỉ dành cho Admin.');
+            return;
+        }
+
+        try {
+            Toast.info('🖼️ Đang tạo hình ảnh sơ đồ phòng bệnh chuẩn quy cách...');
+
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const dateFmt = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+            const fullHtml = this._buildExportHtml(dateFmt);
 
             // Render in isolated iframe (prevents layout shift / screen size dependency)
             const iframe = document.createElement('iframe');

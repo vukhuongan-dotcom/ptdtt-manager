@@ -53,7 +53,7 @@
 
     const _getClientBuild = () => String(
         (typeof window !== 'undefined' && (window.SW_BUILD_VER || window.REQUIRED_VER)) ||
-        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611211420')
+        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611211452')
     );
 
     const _parseIsoLocal = (isoStr) => {
@@ -463,6 +463,7 @@
                             <button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="reload" title="Đồng bộ lại">↻</button>
                         </div>
                         <div class="rbt-mobile-hdr-tools rbt-mobile-only-flex">
+                            ${canShowFab ? `<button type="button" id="rbt-mobile-fab" class="rbt-mobile-icon-btn rbt-mobile-fab-hdr rbt-fab rbt-mobile-only-flex" data-rbt-action="open_fab_sheet" aria-label="Tạo hồ sơ Robot mới" title="Tạo hồ sơ Robot mới">+</button>` : ''}
                             <button type="button" class="rbt-mobile-icon-btn ${this._mobileSearchOpen ? 'is-active' : ''}" data-rbt-action="toggle_mobile_search" aria-label="Tìm kiếm và lọc ca" title="Tìm kiếm &amp; Lọc">${this._mobileSearchOpen ? '✕' : '🔍'}</button>
                             <button type="button" class="rbt-mobile-icon-btn" data-rbt-action="open_mobile_menu" aria-label="Menu tiện ích Robot" title="In A5 &amp; Đồng bộ">⋮</button>
                         </div>
@@ -509,7 +510,6 @@
                     </div>
 
                     ${bodyHtml}
-                    ${canShowFab ? `<button type="button" id="rbt-mobile-fab" class="rbt-fab rbt-mobile-only-flex" data-rbt-action="open_fab_sheet" aria-label="Tạo hồ sơ Robot mới" title="Tạo hồ sơ Robot mới">+</button>` : ''}
                 </div>
             `;
         },

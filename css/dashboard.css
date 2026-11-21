@@ -783,11 +783,17 @@
     font-size: 0.78rem;
     font-weight: 500;
     color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    font-family: inherit;
     cursor: pointer;
     user-select: none;
     padding: 3px 6px;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: opacity 0.2s ease, background 0.2s ease;
+}
+.trend-legend-ref {
+    cursor: default;
 }
 .trend-legend-item:hover {
     background: var(--bg-tertiary);
@@ -1274,22 +1280,358 @@
     }
 }
 
+/* Mobile-only Dashboard controls — hidden on Desktop >= 769px */
+.dash-mobile-tabs,
+.dash-quick-shortcuts {
+    display: none;
+}
+
+.stat-card-interactive:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 @media (max-width: 768px) {
-    .sidebar-widgets-column {
-        grid-template-columns: 1fr;
-    }
-    .trend-kpi-strip {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-    .trend-chart-header {
+    #dashboard-page.dash-page {
+        display: flex;
         flex-direction: column;
         gap: 10px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
     }
-    .trend-filter-pills {
-        align-self: flex-start;
+
+    /* Unified Brand v1: 1-row Navy-Ocean Header (beats mobile.css .page-header) */
+    #dashboard-page > .page-header {
+        order: 1;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 8px;
+        padding: 10px 12px;
+        margin-bottom: 0;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #1D2357 0%, #263174 58%, #1878B4 100%);
+        color: #FFFFFF;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.18);
     }
-    .trend-chart-container {
+
+    #dashboard-page > .page-header .page-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        margin: 0;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    #dashboard-page > .page-header .page-subtitle {
+        display: none;
+    }
+
+    #dashboard-page > .page-header .dash-header-right {
+        flex-shrink: 0;
+        text-align: right;
+        padding: 4px 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.24);
+    }
+
+    #dashboard-page > .page-header .dash-date-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.88);
+        line-height: 1.2;
+        max-width: 175px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #dashboard-page > .page-header .dash-clock {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        margin-top: 1px;
+        line-height: 1.15;
+    }
+
+    #dashboard-page > .birthday-banner {
+        order: 2;
+        margin-bottom: 0;
+    }
+
+    /* Segmented Sub-views: Hôm nay | Phân tích */
+    #dashboard-page > .dash-mobile-tabs {
+        order: 3;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 4px;
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+    }
+
+    .dash-mobile-tab-btn {
+        min-height: 44px;
+        padding: 8px 10px;
+        border: none;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 0.86rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        touch-action: manipulation;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .dash-mobile-tab-btn.is-active {
+        background: #1D2357;
+        color: #FFFFFF;
+        box-shadow: 0 2px 8px rgba(29, 35, 87, 0.2);
+    }
+
+    /* 4 KPI Cards (2x2 tap-to-navigate) */
+    #dashboard-page > .stats-grid {
+        order: 4;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px;
+        margin-bottom: 0;
+    }
+
+    #dashboard-page .stat-card {
+        padding: 12px;
+        border-radius: 12px;
+        min-width: 0;
+        touch-action: manipulation;
+    }
+
+    #dashboard-page .stat-card-interactive:active {
+        transform: scale(0.985);
+    }
+
+    /* Horizontal Quick Shortcuts Strip */
+    #dashboard-page > .dash-quick-shortcuts {
+        order: 5;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 2px 0;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+
+    #dashboard-page > .dash-quick-shortcuts::-webkit-scrollbar {
+        display: none;
+    }
+
+    .dash-shortcut-pill {
+        flex: 0 0 auto;
+        min-height: 44px;
+        padding: 8px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        touch-action: manipulation;
+        box-shadow: 0 1px 3px rgba(17, 21, 66, 0.06);
+    }
+
+    .dash-shortcut-pill:active {
+        background: var(--primary-soft);
+        border-color: var(--accent);
+    }
+
+    #dashboard-page > .duty-grid {
+        order: 6;
+        margin-top: 0;
+        gap: 10px;
+    }
+
+    #dashboard-page > .hero-analytics-row {
+        order: 7;
+        margin-bottom: 0;
+        gap: 10px;
+        grid-template-columns: minmax(0, 1fr);
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #dashboard-page .sidebar-widgets-column {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #dashboard-page .widget-card,
+    #dashboard-page .trend-chart-card {
+        border-radius: 12px;
+        padding: 14px;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Sub-view Visibility Switch */
+    #dashboard-page[data-mobile-tab="today"] .trend-chart-card,
+    #dashboard-page[data-mobile-tab="today"] .mis-widget {
+        display: none !important;
+    }
+
+    #dashboard-page[data-mobile-tab="analytics"] > .stats-grid,
+    #dashboard-page[data-mobile-tab="analytics"] > .dash-quick-shortcuts,
+    #dashboard-page[data-mobile-tab="analytics"] > .duty-grid,
+    #dashboard-page[data-mobile-tab="analytics"] .bed-flow-widget {
+        display: none !important;
+    }
+
+    #dashboard-page[data-mobile-tab="analytics"] > .hero-analytics-row {
+        order: 4;
+    }
+
+    /* Trend Chart & MIS Mobile Tuning */
+    #dashboard-page .trend-kpi-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 10px;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    #dashboard-page .trend-chart-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #dashboard-page .trend-filter-pills {
+        align-self: stretch;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    #dashboard-page .trend-filter-btn {
+        min-height: 40px;
+        padding: 6px 8px;
+        text-align: center;
+    }
+
+    #dashboard-page .trend-chart-container {
         height: 230px;
+        overflow: visible;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    #dashboard-page .trend-chart-tooltip {
+        min-width: 0;
+        width: min(260px, calc(100% - 16px));
+        max-width: calc(100% - 16px);
+        padding: 10px 12px;
+    }
+
+    #dashboard-page .trend-chart-legend {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 8px 2px 2px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    #dashboard-page .trend-chart-legend::-webkit-scrollbar {
+        display: none;
+    }
+
+    #dashboard-page .trend-legend-item {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 44px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+    }
+
+    #dashboard-page .mis-content-wrap {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    #dashboard-page .mis-donut-section {
+        flex: none;
+        display: flex;
+        justify-content: center;
+    }
+
+    #dashboard-page .mis-donut-box {
+        width: 112px;
+        height: 112px;
+    }
+
+    /* Dark Mode (#0C1022 Zero-Teal) */
+    [data-theme="dark"] #dashboard-page > .dash-mobile-tabs {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.16);
+    }
+
+    [data-theme="dark"] #dashboard-page .dash-mobile-tab-btn.is-active {
+        background: #1878B4;
+        color: #FFFFFF;
+    }
+
+    [data-theme="dark"] #dashboard-page .dash-shortcut-pill {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.18);
+        color: #E2E8F0;
+    }
+
+    [data-theme="dark"] #dashboard-page .trend-legend-item {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.16);
+        color: #CBD5E1;
+    }
+
+    [data-theme="dark"] #dashboard-page .trend-chart-tooltip {
+        background: #0C1022;
+        border-color: rgba(178, 193, 253, 0.25);
+        color: #F8FAFC;
+    }
+}
+
+@media (max-width: 389px) {
+    #dashboard-page > .page-header .dash-date-label {
+        max-width: 132px;
     }
 }

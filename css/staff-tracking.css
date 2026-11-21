@@ -340,8 +340,532 @@
 .st-cell.st-today.st-status-business { background: #ede9fe !important; }
 .st-cell.st-today.st-status-dayoff { background: #dbeafe !important; }
 
+/* Mobile-only elements hidden on Desktop >= 769px */
+.st-hdr-ratio-pill,
+.st-mobile-hdr-tools,
+.st-mobile-mode-bar,
+.st-mobile-day-view {
+    display: none;
+}
+
+.st-absent-item-editable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.st-absent-item-editable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(29, 35, 87, 0.1);
+}
+
+.st-date-picker-only {
+    cursor: pointer;
+    caret-color: transparent;
+}
+
+.st-range-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.st-range-chip {
+    min-height: 36px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.15s ease;
+}
+
+.st-range-chip.is-active {
+    background: #1D2357;
+    color: #FFFFFF;
+    border-color: #1D2357;
+}
+
+.st-mobile-search-clear[hidden] {
+    display: none !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+    #staff-tracking-page.st-page {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    /* Unified Brand v1: 1-row Navy-Ocean Header */
+    #staff-tracking-page > .page-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 8px;
+        padding: 10px 12px;
+        margin-bottom: 0;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #1D2357 0%, #263174 58%, #1878B4 100%);
+        color: #FFFFFF;
+        box-shadow: 0 6px 18px rgba(29, 35, 87, 0.18);
+    }
+
+    .st-header-title-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #staff-tracking-page > .page-header .page-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    #staff-tracking-page > .page-header .page-subtitle {
+        display: none;
+    }
+
+    .st-hdr-ratio-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.18);
+        color: #FFFFFF;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        flex-shrink: 0;
+    }
+
+    .st-mobile-hdr-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .st-mobile-icon-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        background: rgba(255, 255, 255, 0.16);
+        color: #FFFFFF;
+        font-size: 1rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .st-mobile-icon-btn.is-active {
+        background: #FFFFFF;
+        color: #1D2357;
+    }
+
+    /* Mode Switcher: Theo ngày vs Lưới tuần/tháng */
+    .st-mobile-mode-bar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 4px;
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+    }
+
+    .st-mobile-mode-btn {
+        min-height: 44px;
+        padding: 8px 10px;
+        border: none;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 0.84rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        touch-action: manipulation;
+    }
+
+    .st-mobile-mode-btn.is-active {
+        background: #1D2357;
+        color: #FFFFFF;
+        box-shadow: 0 2px 8px rgba(29, 35, 87, 0.2);
+    }
+
+    #staff-tracking-page .st-summary-card {
+        margin-bottom: 0;
+        border-radius: 12px;
+        padding: 12px 14px;
+    }
+
+    .st-absent-item-editable {
+        min-height: 44px;
+    }
+
+    /* Toggle visibility between 'day' and 'grid' on Mobile */
+    #staff-tracking-page[data-mobile-view="day"] .st-controls,
+    #staff-tracking-page[data-mobile-view="day"] .st-filter-bar,
+    #staff-tracking-page[data-mobile-view="day"] .st-summary,
+    #staff-tracking-page[data-mobile-view="day"] .st-grid-card {
+        display: none;
+    }
+
+    #staff-tracking-page[data-mobile-view="day"] .st-mobile-day-view {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #staff-tracking-page[data-mobile-view="grid"] .st-mobile-day-view {
+        display: none;
+    }
+
+    /* Week Nav & Day-Pill Strip */
+    .st-mobile-week-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 6px 8px;
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+    }
+
+    .st-mobile-week-nav {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .st-mobile-week-label {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .st-mobile-today-btn {
+        min-height: 44px;
+        padding: 0 12px;
+        flex-shrink: 0;
+    }
+
+    .st-day-strip {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        padding: 2px 0;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+
+    .st-day-strip::-webkit-scrollbar {
+        display: none;
+    }
+
+    .st-day-pill {
+        flex: 0 0 auto;
+        min-width: 58px;
+        min-height: 58px;
+        padding: 6px 8px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-family: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .st-day-pill.is-today:not(.is-active) {
+        border-color: #1878B4;
+        box-shadow: inset 0 0 0 1px #1878B4;
+    }
+
+    .st-day-pill.is-active {
+        background: #1D2357;
+        color: #FFFFFF;
+        border-color: #1D2357;
+    }
+
+    .st-day-pill-name {
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .st-day-pill-date {
+        font-size: 0.7rem;
+        opacity: 0.82;
+    }
+
+    .st-day-pill-badge {
+        font-size: 0.66rem;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: rgba(22, 163, 74, 0.14);
+        color: #15803d;
+    }
+
+    .st-day-pill-badge.has-absent {
+        background: rgba(220, 38, 38, 0.14);
+        color: #dc2626;
+    }
+
+    .st-day-pill.is-active .st-day-pill-badge {
+        background: rgba(255, 255, 255, 0.22);
+        color: #FFFFFF;
+    }
+
+    /* Filter + Only Absent Chip Strip */
+    .st-mobile-filter-strip {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 6px;
+        padding: 2px 0;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+
+    .st-mobile-filter-strip::-webkit-scrollbar {
+        display: none;
+    }
+
+    .st-mobile-filter-strip .filter-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        touch-action: manipulation;
+    }
+
+    .st-mobile-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .st-mobile-search-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 44px;
+        font-size: 16px !important;
+    }
+
+    .st-mobile-search-clear {
+        min-height: 44px;
+        min-width: 52px;
+        flex-shrink: 0;
+    }
+
+    /* 1-column Mobile Staff Cards */
+    .st-mcard-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .st-mcard {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-left: 4px solid #16a34a;
+        border-radius: 12px;
+        padding: 11px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 60px;
+        min-width: 0;
+        box-shadow: 0 1px 4px rgba(17, 21, 66, 0.05);
+    }
+
+    .st-mcard.is-editable {
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .st-mcard.is-editable:active {
+        transform: scale(0.99);
+    }
+
+    .st-mcard-leave { border-left-color: #ca8a04; }
+    .st-mcard-sick { border-left-color: #dc2626; }
+    .st-mcard-business { border-left-color: #7c3aed; }
+    .st-mcard-dayoff { border-left-color: #2563eb; }
+
+    .st-mcard-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .st-mcard-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #FFFFFF;
+        background: #1D2357;
+    }
+
+    .st-mcard-info {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .st-mcard-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+    .st-mcard-role {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+    }
+
+    .st-mcard-note {
+        font-size: 0.74rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+        word-break: break-word;
+    }
+
+    .st-mcard-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 3px;
+        flex-shrink: 0;
+    }
+
+    .st-mcard-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .st-mcard-badge-active { background: #dcfce7; color: #15803d; }
+    .st-mcard-badge-leave { background: #fef9c3; color: #a16207; }
+    .st-mcard-badge-sick { background: #fee2e2; color: #b91c1c; }
+    .st-mcard-badge-business { background: #ede9fe; color: #6d28d9; }
+    .st-mcard-badge-dayoff { background: #dbeafe; color: #1d4ed8; }
+
+    .st-mcard-edit-hint {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--accent);
+    }
+
+    .st-mcard-empty {
+        padding: 20px 14px;
+        text-align: center;
+        border-radius: 12px;
+        border: 1px dashed var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-muted);
+        font-size: 0.86rem;
+    }
+
+    /* Bottom Sheet Status Modal (5 large buttons >= 48px + 4 range chips + 16px date) */
+    #st-day-status-form .st-quick-status-selector {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    #st-day-status-form .st-quick-status-btn {
+        min-height: 48px;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 10px 12px;
+        font-size: 0.86rem;
+        border-radius: 12px;
+    }
+
+    #st-day-status-form .st-quick-status-btn.st-btn-active {
+        grid-column: 1 / -1;
+        justify-content: center;
+    }
+
+    .st-range-chips {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .st-range-chip {
+        min-height: 44px;
+        padding: 8px 10px;
+        font-size: 0.82rem;
+        text-align: center;
+    }
+
+    #st-day-status-form input[type="date"],
+    #st-day-status-form input[name="note"] {
+        font-size: 16px !important;
+        min-height: 44px;
+    }
+
     .st-controls {
         flex-direction: column;
         align-items: stretch;
@@ -352,7 +876,7 @@
     .st-staff-header {
         min-width: 130px;
     }
-    .st-staff-avatar {
+    .st-table .st-staff-avatar {
         display: none;
     }
     .st-status-label {
@@ -526,4 +1050,45 @@
     background: rgba(96,165,250,0.15);
     color: #60a5fa;
     border-color: rgba(96,165,250,0.3);
+}
+
+/* Mobile & Quick Range Dark Mode (#0C1022 Zero-Teal) */
+[data-theme="dark"] .st-range-chip {
+    background: #131A35;
+    border-color: rgba(178, 193, 253, 0.22);
+    color: #E2E8F0;
+}
+[data-theme="dark"] .st-range-chip.is-active {
+    background: #1878B4;
+    border-color: #1878B4;
+    color: #FFFFFF;
+}
+@media (max-width: 768px) {
+    [data-theme="dark"] .st-mobile-mode-bar,
+    [data-theme="dark"] .st-mobile-week-bar,
+    [data-theme="dark"] .st-day-pill,
+    [data-theme="dark"] .st-mcard,
+    [data-theme="dark"] .st-mcard-empty {
+        background: #131A35;
+        border-color: rgba(178, 193, 253, 0.16);
+    }
+    [data-theme="dark"] .st-mobile-mode-btn.is-active,
+    [data-theme="dark"] .st-day-pill.is-active {
+        background: #1878B4;
+        border-color: #1878B4;
+        color: #FFFFFF;
+    }
+    [data-theme="dark"] .st-day-pill-badge {
+        background: rgba(34, 197, 94, 0.22);
+        color: #86efac;
+    }
+    [data-theme="dark"] .st-day-pill-badge.has-absent {
+        background: rgba(248, 113, 113, 0.22);
+        color: #fca5a5;
+    }
+    [data-theme="dark"] .st-mcard-badge-active { background: rgba(34, 197, 94, 0.22); color: #86efac; }
+    [data-theme="dark"] .st-mcard-badge-leave { background: rgba(251, 191, 36, 0.22); color: #fde68a; }
+    [data-theme="dark"] .st-mcard-badge-sick { background: rgba(248, 113, 113, 0.22); color: #fecaca; }
+    [data-theme="dark"] .st-mcard-badge-business { background: rgba(167, 139, 250, 0.22); color: #ddd6fe; }
+    [data-theme="dark"] .st-mcard-badge-dayoff { background: rgba(96, 165, 250, 0.22); color: #bfdbfe; }
 }
