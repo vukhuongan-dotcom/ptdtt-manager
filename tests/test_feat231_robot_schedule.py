@@ -74,7 +74,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
         cls.src_db = json.loads((REPO_ROOT / "data" / "db.json").read_text(encoding="utf-8"))
         cls.pw_hash = cls.sf._hash_password("RobotStrong2026")
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251807"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251839"
 
         cls.pw = sync_playwright().start()
         cls.browsers = {
@@ -812,6 +812,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
             try:
                 page.click("#nav-robot-schedule")
                 page.wait_for_selector("#robot-schedule-page #rbt-my-work-bar", timeout=8000)
+                self.assertIn("Việc của tôi", page.inner_text("#rbt-my-work-bar"))
 
                 # XSS check across all 5 subtabs + config
                 for sub_key in ("consult", "week", "ward", "declined_postponed", "completed"):
@@ -875,6 +876,29 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 self.assertTrue(page.evaluate("() => window.__printedA5 === true"))
             finally:
                 ctx_desk.close()
+
+            # 1b) SuperAdmin Sandbox auto-fill verification
+            ctx_sbx, spage = _open_logged_page("chromium", 1440, 900, "vkan")
+            try:
+                spage.click("#nav-robot-schedule")
+                spage.wait_for_selector("#rbt-open-sandbox-btn", timeout=8000)
+                spage.click("#rbt-open-sandbox-btn")
+                spage.wait_for_selector("#rbt-inp-sandbox", timeout=5000)
+                self.assertTrue(spage.is_checked("#rbt-inp-sandbox"))
+                self.assertIn("[TEST]", spage.input_value("#rbt-inp-name"))
+                self.assertTrue(len(spage.input_value("#rbt-inp-phone")) == 10)
+                self.assertTrue(bool(spage.input_value("#rbt-inp-ward-room")))
+                self.assertTrue(bool(spage.input_value("#rbt-inp-diag")))
+                self.assertTrue(spage.is_checked("#rbt-inp-labs-ready"))
+                # Rotate profile button changes patientName
+                first_name = spage.input_value("#rbt-inp-name")
+                spage.click("#rbt-btn-autofill-sandbox")
+                self.assertNotEqual(spage.input_value("#rbt-inp-name"), first_name)
+                spage.click('[data-rbt-action="submit_create"]')
+                spage.wait_for_timeout(500)
+                self.assertIn("RBSBX-", spage.inner_text("#robot-schedule-page"))
+            finally:
+                ctx_sbx.close()
 
             # 2) Mobile iPhone WebKit (440x956) ergonomics
             ctx_mob, mpage = _open_logged_page("webkit", 440, 956, "vnatuan")

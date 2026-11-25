@@ -480,8 +480,8 @@ const RobotTutorial = {
             },
             {
                 icon: '🔔',
-                title: 'Thanh Việc Cần Làm & 4 Thẻ Chỉ Số',
-                desc: 'Chạm các chip trên #rbt-my-work-bar hoặc 4 thẻ KPI (Chờ & Xếp TV, Đã xếp lịch mổ, XV chờ giữ slot, Đã phẫu thuật) để lọc nhanh đúng hàng đợi.',
+                title: 'Thanh Việc Của Tôi & 4 Thẻ Chỉ Số',
+                desc: 'Chạm các nút trên thanh Việc của tôi hoặc 4 thẻ chỉ số (Chờ & Xếp TV, Đã xếp lịch mổ, XV chờ giữ slot, Đã phẫu thuật) để lọc nhanh đúng hàng đợi.',
                 targets: ['#rbt-my-work-bar', '#robot-schedule-page .rbt-kpi-grid']
             },
             {

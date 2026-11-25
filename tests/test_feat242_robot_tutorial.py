@@ -170,7 +170,7 @@ class TestFeat242RobotTutorial(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251807"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251839"
 
         # Seed 1 Robot case with canary phone to verify Zero-Local-PHI
         client = cls.sf.app.test_client()
@@ -292,6 +292,10 @@ class TestFeat242RobotTutorial(unittest.TestCase):
             for step_num in range(1, 8):
                 badge_txt = page.locator("#robot-tutorial-overlay .rbt-tut-badge").inner_text()
                 self.assertIn(f"Bước {step_num}/7", badge_txt)
+                if step_num == 2:
+                    s2_desc = page.locator("#robot-tutorial-overlay .rbt-tut-desc").inner_text()
+                    self.assertIn("Việc của tôi", s2_desc)
+                    self.assertNotIn("#rbt-my-work-bar", s2_desc)
                 spot_visible = page.evaluate("() => getComputedStyle(document.getElementById('rbt-tut-spotlight')).display !== 'none'")
                 self.assertTrue(spot_visible, f"Spotlight hidden at step {step_num}")
                 if step_num < 7:

@@ -14999,6 +14999,70 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
         min-height: 68px;
     }
 }
+
+.rbt-my-work-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1D2357;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.rbt-btn-sandbox {
+    border-color: #D97706;
+    color: #B45309;
+    background: rgba(245, 158, 11, 0.1);
+    font-weight: 600;
+}
+
+.rbt-sandbox-box {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px dashed #D97706;
+    background: rgba(245, 158, 11, 0.09);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rbt-sandbox-box__label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: #0F172A;
+    margin: 0;
+}
+
+.rbt-sandbox-box__label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #D97706;
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .rbt-my-work-label {
+    color: #CBD5E1;
+}
+
+[data-theme="dark"] .rbt-btn-sandbox {
+    border-color: #F59E0B;
+    color: #FDE68A;
+    background: rgba(245, 158, 11, 0.16);
+}
+
+[data-theme="dark"] .rbt-sandbox-box {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: #F59E0B;
+}
+
+[data-theme="dark"] .rbt-sandbox-box__label {
+    color: #E2E8F0;
+}
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;

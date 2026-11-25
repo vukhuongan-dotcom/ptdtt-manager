@@ -74,7 +74,53 @@
     };
 
     const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
-    const CLIENT_BUILD = '2611251807';
+    const CLIENT_BUILD = '2611251839';
+    const SANDBOX_PROFILES = [
+        {
+            patientName: '[TEST] Nguyễn Văn Minh',
+            birthYear: '1964',
+            gender: 'Nam',
+            phone: '0901234561',
+            wardRoom: 'B708',
+            indicationType: 'robot_hoac_noisoi',
+            diagnosis: 'Ung thư trực tràng giữa cT3N1M0 (Ca giả lập)',
+            robotProcedure: 'Phẫu thuật Robot cắt trước thấp (LAR)',
+            note: 'Hồ sơ giả lập vận hành thử — đủ XN tiền phẫu, ổn định huyết động.'
+        },
+        {
+            patientName: '[TEST] Trần Thị Hoa',
+            birthYear: '1968',
+            gender: 'Nữ',
+            phone: '0901234562',
+            wardRoom: 'B710',
+            indicationType: 'uu_tien_robot',
+            diagnosis: 'U đại tràng Sigma cT3N0M0 (Ca giả lập)',
+            robotProcedure: 'Phẫu thuật Robot cắt đoạn đại tràng Sigma',
+            note: 'Hồ sơ giả lập — đã hội chẩn gây mê hồi sức đạt.'
+        },
+        {
+            patientName: '[TEST] Lê Hoàng Nam',
+            birthYear: '1959',
+            gender: 'Nam',
+            phone: '0901234563',
+            wardRoom: 'B712',
+            indicationType: 'uu_tien_noisoi',
+            diagnosis: 'Polyp lớn đại tràng phải nghịch sản nặng (Ca giả lập)',
+            robotProcedure: 'PT Nội soi cắt đại tràng phải',
+            note: 'Hồ sơ giả lập — ngưng kháng đông đủ 5 ngày.'
+        },
+        {
+            patientName: '[TEST] Phạm Minh Tuấn',
+            birthYear: '1971',
+            gender: 'Nam',
+            phone: '0901234564',
+            wardRoom: 'ngoai_tru',
+            indicationType: 'robot_hoac_noisoi',
+            diagnosis: 'K trực tràng cao cT2N0M0 (Ca giả lập)',
+            robotProcedure: 'Phẫu thuật Robot cắt trước',
+            note: 'Hồ sơ giả lập ngoại trú — chờ xếp lịch tư vấn TS. Hữu.'
+        }
+    ];
 
     const esc = (v) => (typeof Utils !== 'undefined' && typeof Utils.escapeHtml === 'function')
         ? Utils.escapeHtml(v == null ? '' : String(v))
@@ -660,6 +706,9 @@
                         slotHost.innerHTML = this._renderSlotPickerHtml(t.value, document.getElementById('rbt-inp-slot')?.value || 'Ca 1', '');
                     }
                     this._markModalDirty();
+                } else if (t.id === 'rbt-inp-sandbox') {
+                    if (t.checked) this._fillSandboxForm();
+                    this._markModalDirty();
                 } else if (t.id === 'rbt-inp-print-mode' || t.id === 'rbt-inp-print-scope' || t.id === 'rbt-inp-print-date' || t.id === 'rbt-inp-print-case') {
                     this._syncPrintPreviewFromModal();
                 } else {
@@ -751,6 +800,14 @@
             }
             if (action === 'open_create_consult') {
                 this.openCreateModal('create_consult');
+                return;
+            }
+            if (action === 'open_create_sandbox_consult') {
+                this.openCreateModal('create_consult', { sandbox: true });
+                return;
+            }
+            if (action === 'autofill_sandbox') {
+                this._fillSandboxForm();
                 return;
             }
             if (action === 'open_create_case') {
@@ -988,7 +1045,8 @@
                     </div>
                 </div>` : ''}
 
-                <section id="rbt-my-work-bar" class="rbt-my-work-bar" aria-label="Tóm tắt việc cần làm">
+                <section id="rbt-my-work-bar" class="rbt-my-work-bar" aria-label="Việc của tôi">
+                    <span class="rbt-my-work-label">Việc của tôi:</span>
                     <button type="button" class="rbt-work-chip rbt-work-chip--amber" data-rbt-action="jump_my_work" data-rbt-extra="consult_need">
                         <span class="rbt-work-chip__dot"></span>
                         <span>Cần xếp TV: <strong>${Number(myCounts.needScheduleConsult || 0)}</strong></span>
@@ -1149,6 +1207,7 @@
                         </select>
                         <button type="button" class="btn btn-secondary" data-rbt-action="copy_zalo_consult">📋 Copy lịch TV Zalo</button>
                         ${p.canCreateConsult ? `<button type="button" class="btn btn-primary" data-rbt-action="open_create_consult">➕ Gửi ca tư vấn</button>` : ''}
+                        ${(p.canCreateConsult && p.canAccessSandbox) ? `<button type="button" id="rbt-open-sandbox-btn" class="btn btn-secondary rbt-btn-sandbox" data-rbt-action="open_create_sandbox_consult">🧪 Ca giả lập</button>` : ''}
                         ${p.canDirectCreateCase ? `<button type="button" class="btn btn-secondary" data-rbt-action="open_create_case">⚡ Xếp thẳng ca Robot</button>` : ''}
                     </div>
                     ${this._renderSearchBarHtml()}
@@ -1710,16 +1769,62 @@
             </div>`;
         },
 
-        openCreateModal(mode = 'create_consult') {
+        _fillSandboxForm() {
+            const idx = (this._sandboxSampleIdx || 0) % SANDBOX_PROFILES.length;
+            this._sandboxSampleIdx = (idx + 1) % SANDBOX_PROFILES.length;
+            const sample = SANDBOX_PROFILES[idx];
+            const randSuffix = String(Math.floor(1000 + Math.random() * 9000));
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el || val == null) return;
+                el.value = String(val);
+            };
+            const sbxChk = document.getElementById('rbt-inp-sandbox');
+            if (sbxChk) sbxChk.checked = true;
+            setVal('rbt-inp-name', sample.patientName);
+            setVal('rbt-inp-birth', sample.birthYear);
+            setVal('rbt-inp-gender', sample.gender);
+            setVal('rbt-inp-phone', sample.phone);
+            setVal('rbt-inp-ward-room', sample.wardRoom);
+            setVal('rbt-inp-adm', `TEST-26${randSuffix}`);
+            setVal('rbt-inp-indication', sample.indicationType);
+            setVal('rbt-inp-diag', sample.diagnosis);
+            setVal('rbt-inp-proc', sample.robotProcedure);
+            setVal('rbt-inp-surgeon', '1');
+            setVal('rbt-inp-note', sample.note);
+            const labsChk = document.getElementById('rbt-inp-labs-ready');
+            if (labsChk) labsChk.checked = true;
+            const dateInp = document.getElementById('rbt-inp-date');
+            if (dateInp && !dateInp.value) {
+                dateInp.value = addDaysIso(this._todayIso(), 2);
+                dateInp.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            this._markModalDirty();
+            notifyToast('🧪 Đã tự điền đầy đủ dữ liệu ca giả lập [TEST] để vận hành thử!', 'info');
+        },
+
+        openCreateModal(mode = 'create_consult', opts = {}) {
             const p = this._perms();
             const todayIso = this._todayIso();
             const surgeons = this._surgeons();
             const rooms = this._wardRooms();
             const isDirect = mode === 'create_case';
-            const title = isDirect ? '⚡ Tạo trực tiếp ca Lịch mổ Robot' : '🩺 Bước 1 · Gửi bệnh nhân Tư vấn PT Nội soi / Robot';
+            const useSandbox = Boolean(opts && opts.sandbox && p.canAccessSandbox);
+            const title = isDirect
+                ? '⚡ Tạo trực tiếp ca Lịch mổ Robot'
+                : (useSandbox ? '🧪 Tạo ca giả lập vận hành thử [TEST]' : '🩺 Bước 1 · Gửi bệnh nhân Tư vấn PT Nội soi / Robot');
             const modalMode = isDirect ? 'create_case' : 'create_consult';
 
+            const sandboxBoxHtml = p.canAccessSandbox ? `<div class="rbt-sandbox-box">
+                <label class="rbt-sandbox-box__label">
+                    <input id="rbt-inp-sandbox" type="checkbox" ${useSandbox ? 'checked' : ''}>
+                    <span><strong>🧪 Tạo ca giả lập [TEST]</strong> · Tự điền đầy đủ thông tin để vận hành thử</span>
+                </label>
+                <button type="button" id="rbt-btn-autofill-sandbox" class="btn btn-secondary rbt-btn-xs" data-rbt-action="autofill_sandbox">⚡ Điền mẫu khác</button>
+            </div>` : '';
+
             const html = `${this._dirtyBannerHtml()}
+            ${sandboxBoxHtml}
             <div class="rbt-form-grid">
                 <div>
                     <label class="form-label" for="rbt-inp-name">Họ và tên bệnh nhân *</label>
@@ -1800,13 +1905,6 @@
                     <label class="form-label" for="rbt-inp-note">Ghi chú gửi Điều phối &amp; TS. Hữu</label>
                     <textarea id="rbt-inp-note" class="form-input" rows="2" placeholder="Tình trạng bệnh nền, kháng đông, thời gian dự kiến..."></textarea>
                 </div>
-
-                ${p.canAccessSandbox ? `<div class="rbt-form-grid--full">
-                    <label class="rbt-check-card">
-                        <input id="rbt-inp-sandbox" type="checkbox">
-                        <span>Tạo ca giả lập [TEST] (chỉ hiển thị với tài khoản quản trị Sandbox)</span>
-                    </label>
-                </div>` : ''}
             </div>
             <div id="rbt-modal-conflict-host"></div>`;
 
@@ -1815,6 +1913,9 @@
 
             this._markModalOpen(modalMode, null);
             openRobotModal(title, html, footer);
+            if (useSandbox) {
+                this._fillSandboxForm();
+            }
         },
 
         async _submitCreateModal(mode, btnEl) {
