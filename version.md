@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Tutorial hướng dẫn thao tác vĩnh viễn trực tiếp trên tab Điều phối Lịch mổ Robot (`[FEAT-242]`, build `v2611250843`).
+- Tutorial hướng dẫn thao tác vĩnh viễn trực tiếp trên tab Điều phối Lịch mổ Robot (`[FEAT-242]`, commit `31467ef`, build `v2611250843`).
 - Thiết kế lại giao diện Mobile (Android & iPhone, Sáng/Tối #0C1022) cho 6 tab: Lịch mổ tuần, Duyệt mổ, Nhân sự, Kế hoạch hoạt động, Báo cáo khoa học & Nghiên cứu khoa học (`[FEAT-241]`, commit `b95d47a`, build `v2611212135`).
 - Thiết kế lại giao diện Mobile (Android Chrome & iPhone WebKit, Sáng/Tối #0C1022) cho 4 tab Báo cáo, Lịch phân công tuần, Thống kê phẫu thuật và Sinh hoạt chuyên môn: Header Navy-Ocean <=80px, Bottom Sheet •••, form 1 tay 44px, sửa Day View + Lịch của tôi, bỏ nút Xuất hồ sơ BS trùng, Ranking/Logbook Cards + bộ lọc, SHCM spotlight + đổi trạng thái 1 chạm (FEAT-239) (`[FEAT-239]`, commit `b1305cc`, build `v2611211822`).
 - Thêm thông báo giới thiệu bộ 14 icon điều hướng mới kèm ý nghĩa (hiển thị tự động trong 1 tuần 21/11–28/11/2026 khi đăng nhập, user tự tắt từng lần hoặc vĩnh viễn theo tài khoản) (FEAT-238) (`[FEAT-238]`, commit `7717737`, build `v2611211733`).
