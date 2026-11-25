@@ -373,11 +373,11 @@ const IconGuideNotice = {
     }
 };
 
-// ===== PERMANENT ROBOT SCHEDULE TUTORIAL (FEAT-242 · ZERO-LOCAL-PHI UI FLAG ONLY) =====
+// ===== PERMANENT ROBOT SCHEDULE TUTORIAL (FEAT-243 v2 · ZERO-LOCAL-PHI UI FLAG ONLY) =====
 const RobotTutorial = {
-    STORAGE_KEY_GLOBAL: 'ptdtt_robot_tutorial_v1_dismissed',
-    STORAGE_KEY_PREFIX: 'ptdtt_robot_tutorial_v1_dismissed:',
-    SESSION_KEY_PREFIX: 'ptdtt_robot_tutorial_v1_session:',
+    STORAGE_KEY_GLOBAL: 'ptdtt_robot_tutorial_v2_dismissed',
+    STORAGE_KEY_PREFIX: 'ptdtt_robot_tutorial_v2_dismissed:',
+    SESSION_KEY_PREFIX: 'ptdtt_robot_tutorial_v2_session:',
     currentStep: 0,
     _isOpen: false,
     _autoTimer: null,
@@ -458,61 +458,61 @@ const RobotTutorial = {
     getSteps(perms) {
         const p = perms || (typeof RobotSchedulePage !== 'undefined' && RobotSchedulePage._bootstrap?.permissions) || {};
         const roleSummary = p.isBcn
-            ? 'Ban Chủ nhiệm (Toàn quyền: tạo lịch trực tiếp, duyệt B1→B3, cấu hình Điều phối, lưu trữ xóa & in A5)'
-            : (p.isCoordinator
-                ? 'Điều phối viên Robot (tạo lịch trực tiếp, gắn ca Lịch tuần, duyệt B1→B3, hoãn/XV chờ & in A5)'
-                : (p.canCreate
-                    ? 'Bác sĩ điều trị / ĐD Trưởng (tạo + Ca tư vấn, cập nhật Kết quả TV, sửa/hoãn ca phụ trách & in A5)'
-                    : 'Xem lịch (theo dõi lịch tuần & thống kê Robot; SĐT bệnh nhân tự động ẩn theo Zero-Local-PHI)'));
+            ? 'Ban Chủ nhiệm (Toàn quyền quy trình 5 bước, cấu hình Điều phối, lưu trữ ẩn & in A5)'
+            : (p.isChiefConsultDecider
+                ? 'TS. BSCKII. Nguyễn Phú Hữu (Chốt KQ tư vấn: Mổ Robot / Chuyển Nội soi / Cân nhắc / Không mổ)'
+                : (p.isCoordinator
+                    ? 'Điều phối viên Robot (BS Nguyện / BS Hoan: Xếp lịch TV, theo dõi lịch tuần, điều phối Robot/Nội soi & in A5)'
+                    : (p.canCreateConsult
+                        ? 'Bác sĩ khu vực (Gửi ca tư vấn đủ XN + Phòng, theo dõi KQ sau TV, cho Xuất viện chờ giữ slot & in A5)'
+                        : 'Chỉ xem & In P.CTXH (Theo dõi lịch mổ tuần và in giấy giới thiệu A5; SĐT bệnh nhân tự động ẩn)')));
 
-        const step4Desc = p.canDirectCreateCase
-            ? 'Bấm "+ Ca tư vấn" cho bệnh nhân mới cân nhắc, "+ Tạo lịch Robot" để đặt thẳng ngày/Ca, hoặc "🔗 Gắn ca từ Lịch tuần" (trên điện thoại dùng nút "+"). Chọn ngày bằng lịch, tối đa 3 ca/ngày (Ca 1–Ca 3).'
-            : (p.canCreate
-                ? 'Bấm "+ Ca tư vấn" (trên điện thoại dùng nút "+") để nhập ca mổ Robot dự kiến. Điều phối/BCN sẽ xếp lịch chính thức với giới hạn tối đa 3 ca/ngày (Ca 1–Ca 3).'
-                : 'Chỉ Bác sĩ điều trị, ĐD Trưởng, Điều phối và BCN được khởi tạo ca mới; tài khoản của bạn theo dõi trạng thái lịch theo thời gian thực.');
+        const step4Desc = p.canCreateConsult
+            ? 'Khi bệnh nhân đã đủ xét nghiệm tiền phẫu và có chỉ định PT Nội soi hoặc Robot, bấm "+ Gửi ca tư vấn" (hoặc "+" trên điện thoại), chọn đúng Phòng bệnh (B705–B719 / Ngoại trú) và tick Xác nhận đủ XN.'
+            : 'Chỉ Bác sĩ trong khoa mới gửi hồ sơ tư vấn mới; ĐD Trưởng và nhân sự khác theo dõi tiến độ & in giấy giới thiệu P.CTXH theo thời gian thực.';
 
         return [
             {
                 icon: '🤖',
-                title: 'Tổng quan & Phân quyền của bạn',
-                desc: `Quyền hiện tại: ${roleSummary}. Mọi lịch mổ ở đây liên thông nguyên tử 2 chiều với Lịch mổ tuần và tuân thủ Zero-Local-PHI (không lưu dữ liệu bệnh nhân tại trình duyệt).`,
+                title: 'Quy Trình 5 Bước & Phân Quyền Hiện Tại',
+                desc: `Vai trò của bạn: ${roleSummary}. Toàn bộ dữ liệu liên thông 2 chiều với Lịch mổ tuần và tuân thủ Zero-Local-PHI.`,
                 targets: ['#robot-schedule-page .rbt-header']
             },
             {
-                icon: '📊',
-                title: '4 Thẻ KPI Bấm Nhảy Nhanh',
-                desc: 'Chạm trực tiếp vào từng thẻ chỉ số (Chờ xếp lịch/Tiền phẫu, B3 Chờ mổ, Đã phẫu thuật Robot, Hoãn mổ/XV chờ) để nhảy ngay sang đúng hàng đợi.',
-                targets: ['#robot-schedule-page .rbt-kpi-grid']
+                icon: '🔔',
+                title: 'Thanh Việc Cần Làm & 4 Thẻ Chỉ Số',
+                desc: 'Chạm các chip trên #rbt-my-work-bar hoặc 4 thẻ KPI (Chờ & Xếp TV, Đã xếp lịch mổ, XV chờ giữ slot, Đã phẫu thuật) để lọc nhanh đúng hàng đợi.',
+                targets: ['#rbt-my-work-bar', '#robot-schedule-page .rbt-kpi-grid']
             },
             {
                 icon: '🗂️',
-                title: '6 Phân mục Quản Lý Vòng Đời Ca',
-                desc: `Dùng thanh tab để theo dõi trọn quy trình: 📅 Lịch tuần · 🩺 Tư vấn & Chờ xếp lịch · ⏸️ Hoãn mổ & XV chờ · ✅ Đã mổ & Thống kê · 🗑️ Thùng rác${p.canConfigureCoordinators ? ' · ⚙️ Cấu hình BCN' : ''}.`,
+                title: '5 Phân Mục Theo Đúng 5 Bước Lâm Sàng',
+                desc: `🩺 Lịch tư vấn & Chờ xếp (B1–B3) · 📅 Lịch mổ đã xếp Robot & Nội soi · 🏥 Theo dõi phòng & XV chờ (B4) · ⏸️ Không mổ / Hoãn / Rác · 📊 Đã mổ & Thống kê${p.canConfigureCoordinators ? ' · ⚙️ Cấu hình' : ''}.`,
                 targets: ['#robot-schedule-page .rbt-subtabs-wrap']
             },
             {
-                icon: '➕',
-                title: 'Khởi Tạo Ca Mới & Giới Hạn 3 Ca/Ngày',
+                icon: '📥',
+                title: 'Bước 1 · BS Khu Vực Gửi Ca Tư Vấn Đủ XN',
                 desc: step4Desc,
                 targets: ['#rbt-mobile-fab', '#robot-schedule-page .rbt-header__actions', '#robot-schedule-page .rbt-header']
             },
             {
-                icon: '⚡',
-                title: 'Quy Trình 3 Bước B1 → B2 → B3 Trên Thẻ Ca',
-                desc: 'Cập nhật Kết quả TV → 📅 Xếp lịch B1 (Ca 1–Ca 3) → ✓ B2 Tiền phẫu (nhắc duyệt lại nếu sửa lâm sàng sau B2) → ✓ B3 Chờ mổ (tự đồng bộ sang Lịch mổ tuần & hiện huy hiệu Duyệt mổ khoa).',
-                targets: ['#robot-schedule-page .rbt-week-grid', '#robot-schedule-page .rbt-mcard-list', '#robot-schedule-page .rbt-panel']
+                icon: '🩺',
+                title: 'Bước 2–3 · Xếp Lịch TV & TS. Hữu Chốt Kết Quả',
+                desc: 'BS Nguyện / BS Hoan xếp Ngày + Buổi (Sáng/Chiều) và bấm "Copy lịch TV Zalo". TS. Hữu (hoặc ĐP nhập thay) chốt: Mổ Robot (Ca 1–Ca 3, tối đa 3 ca/ngày) | Chuyển Nội soi (PTV chính, không tốn slot Robot) | Cân nhắc | Không đồng ý mổ.',
+                targets: ['#robot-schedule-page .rbt-subtab[data-rbt-subtab="consult"]', '#robot-schedule-page .rbt-consult-split', '#robot-schedule-page .rbt-panel']
             },
             {
-                icon: '⏸️',
-                title: 'Hoãn Mổ, Xuất Viện Chờ & Xếp Lịch Lại',
-                desc: 'Khi hoãn mổ (7 lý do chuẩn) hoặc cho Xuất viện chờ, slot Robot được tự trả lại cho ca khác. Khi BN sẵn sàng, mở tab "Hoãn mổ & XV chờ" và bấm "Xếp lịch lại" hoặc "Nhập lại & Xếp lịch".',
-                targets: ['#robot-schedule-page .rbt-subtab[data-rbt-code="postponed"]', '#robot-schedule-page .rbt-subtabs-wrap']
+                icon: '🏠',
+                title: 'Bước 4 · BS Phòng Theo Dõi & Xuất Viện Chờ Giữ Slot',
+                desc: 'Sau tư vấn, BS phòng xem KQ ngay tại tab "Theo dõi phòng & XV chờ". Nếu lịch mổ còn xa, chọn "Cho XV chờ & Hẹn nhập lại" (<= ngày mổ) — hệ thống VẪN GIỮ NGUYÊN slot trên Lịch mổ tuần và tự nhắc trước nhập lại 0–2 ngày.',
+                targets: ['#robot-schedule-page .rbt-subtab[data-rbt-subtab="ward"]', '#robot-schedule-page .rbt-subtabs-wrap']
             },
             {
                 icon: '🖨️',
-                title: 'In Phiếu A5 P.CTXH & Xem Lại Bất Kỳ Lúc Nào',
-                desc: 'Bấm "🖨️ In A5 P.CTXH" (hoặc menu "⋮" trên điện thoại) để in phiếu màu/trắng đen theo Tuần hoặc Ngày. Bấm nút "❓ Hướng dẫn" cố định ngay trên tab bất kỳ lúc nào để mở lại hướng dẫn này.',
-                targets: ['#robot-schedule-page [data-rbt-action="open_print_pctxh"]', '#robot-schedule-page [data-rbt-action="open_mobile_menu"]', '#robot-schedule-page .rbt-header']
+                title: 'Bước 5 · In Giấy Giới Thiệu P.CTXH (A5) & Mở Lại Hướng Dẫn',
+                desc: 'Bấm "🖨️ In P.CTXH" (hỗ trợ in 1 ca hoặc cả tuần/ngày, mẫu Màu & Laser Trắng Đen) hoặc "📋 Copy lịch TV Zalo". Bấm "❓ Hướng dẫn" cố định trên tab bất kỳ lúc nào để xem lại.',
+                targets: ['#robot-schedule-page [data-rbt-action="open_print_modal"]', '#robot-schedule-page [data-rbt-action="open_mobile_menu"]', '#robot-schedule-page .rbt-header']
             }
         ];
     },

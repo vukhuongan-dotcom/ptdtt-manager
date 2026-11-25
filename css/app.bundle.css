@@ -14070,7 +14070,9 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 }
 
 @media (max-width: 768px) {
-    .rbt-desktop-only {
+    .rbt-desktop-only,
+    .rbt-desktop-only-flex,
+    .rbt-desktop-only-grid {
         display: none !important;
     }
 
@@ -14673,6 +14675,328 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 
     [data-theme="dark"] .rbt-mobile-guide-btn span:last-child {
         color: #38BDF8;
+    }
+}
+
+/* =====================================================================
+   ROBOT COORDINATION v2 (FEAT-243) — 5-Step Clinical Workflow Styles
+   ===================================================================== */
+.rbt-case-card--cho_xep_tu_van { border-left-color: #D97706; }
+.rbt-case-card--da_xep_tu_van { border-left-color: #1878B4; }
+.rbt-case-card--can_nhac { border-left-color: #6366F1; }
+.rbt-case-card--da_xep_robot { border-left-color: #54A83C; }
+.rbt-case-card--da_xep_noisoi { border-left-color: #2563EB; }
+.rbt-case-card--khong_dong_y_mo,
+.rbt-case-card--da_xoa { border-left-color: #DC2626; }
+
+.rbt-my-work-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.rbt-work-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border, #E2E8F0);
+    background: var(--surface, #FFFFFF);
+    color: var(--text, #0F172A);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.14s ease, border-color 0.14s ease;
+}
+
+.rbt-work-chip:hover {
+    transform: translateY(-1px);
+    border-color: #1878B4;
+}
+
+.rbt-work-chip__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rbt-work-chip--amber .rbt-work-chip__dot { background: #D97706; }
+.rbt-work-chip--ocean .rbt-work-chip__dot { background: #1878B4; }
+.rbt-work-chip--green .rbt-work-chip__dot { background: #54A83C; }
+.rbt-work-chip--indigo .rbt-work-chip__dot { background: #4F46E5; }
+
+.rbt-consult-split {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.rbt-consult-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.rbt-section-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.rbt-section-hdr h3 {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 700;
+}
+
+.rbt-cards-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rbt-ward-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 12px;
+}
+
+.rbt-decision-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.rbt-decision-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border, #CBD5E1);
+    background: var(--surface, #FFFFFF);
+    color: var(--text, #0F172A);
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    min-height: 72px;
+}
+
+.rbt-decision-card__icon {
+    font-size: 1.2rem;
+}
+
+.rbt-decision-card small {
+    font-size: 0.76rem;
+    color: var(--text-secondary, #475569);
+}
+
+.rbt-decision-card.is-selected {
+    border-color: #1878B4;
+    background: rgba(24, 120, 180, 0.1);
+    box-shadow: 0 0 0 2px rgba(24, 120, 180, 0.18);
+}
+
+.rbt-decision-card--danger.is-selected {
+    border-color: #DC2626;
+    background: rgba(220, 38, 38, 0.08);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.16);
+}
+
+.rbt-branch-panel {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border, #E2E8F0);
+    background: var(--surface-alt, #F8FAFC);
+}
+
+.rbt-check-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #CBD5E1);
+    background: var(--surface-alt, #F8FAFC);
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+
+.rbt-check-card input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.rbt-info-banner {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(24, 120, 180, 0.1);
+    border: 1px solid rgba(24, 120, 180, 0.28);
+    color: #0F172A;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    line-height: 1.45;
+}
+
+.rbt-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.rbt-stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.rbt-stat-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface-alt, #F8FAFC);
+    border: 1px solid var(--border, #E2E8F0);
+}
+
+.rbt-stat-pill strong { font-size: 1.15rem; color: #1D2357; }
+.rbt-stat-pill span { font-size: 0.78rem; color: var(--text-secondary, #475569); }
+.rbt-stat-pill--green strong { color: #2E6B1E; }
+.rbt-stat-pill--ocean strong { color: #1878B4; }
+.rbt-stat-pill--red strong { color: #B91C1C; }
+
+.rbt-coord-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+.rbt-coord-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border, #E2E8F0);
+    cursor: pointer;
+}
+
+.rbt-unlinked-box {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    font-size: 0.85rem;
+}
+
+.rbt-unlinked-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.rbt-unlinked-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rbt-a5-referral-card {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 12px 14px;
+    border: 1.5px solid #1D2357;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 10px 0;
+}
+
+.rbt-a5-sheet--bw .rbt-a5-referral-card {
+    border-color: #000000;
+    color: #000000;
+}
+
+/* Dark Mode (#0C1022 / #141A30) overrides for v2 controls */
+[data-theme="dark"] .rbt-work-chip,
+[data-theme="dark"] .rbt-decision-card,
+[data-theme="dark"] .rbt-branch-panel,
+[data-theme="dark"] .rbt-check-card,
+[data-theme="dark"] .rbt-stat-pill,
+[data-theme="dark"] .rbt-coord-check {
+    background: #141A30;
+    border-color: rgba(148, 163, 184, 0.26);
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .rbt-decision-card small,
+[data-theme="dark"] .rbt-stat-pill span {
+    color: #94A3B8;
+}
+
+[data-theme="dark"] .rbt-decision-card.is-selected {
+    background: rgba(24, 120, 180, 0.24);
+    border-color: #38BDF8;
+}
+
+[data-theme="dark"] .rbt-info-banner {
+    background: rgba(56, 189, 248, 0.14);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .rbt-stat-pill strong { color: #E0E7FF; }
+[data-theme="dark"] .rbt-stat-pill--green strong { color: #86EFAC; }
+[data-theme="dark"] .rbt-stat-pill--ocean strong { color: #7DD3FC; }
+[data-theme="dark"] .rbt-stat-pill--red strong { color: #FCA5A5; }
+
+@media (max-width: 768px) {
+    .rbt-consult-split,
+    .rbt-decision-grid,
+    .rbt-ward-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rbt-my-work-bar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+
+    .rbt-my-work-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .rbt-work-chip {
+        flex: 0 0 auto;
+        min-height: 44px;
+    }
+
+    .rbt-decision-card {
+        min-height: 68px;
     }
 }
 /* ===== SURGERY STATISTICS ===== */

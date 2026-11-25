@@ -1101,10 +1101,12 @@ def _authorize_and_prepare_items(user, collection, old_items, candidate_items, a
         validated_added = []
 
         for new_n in cand_added:
-            if new_n.get('sourceType') == 'surgery_approval' or str(new_n.get('type') or '').startswith('surgery_'):
+            src_type = new_n.get('sourceType')
+            ntype = str(new_n.get('type') or '')
+            if src_type in ('surgery_approval', 'robot_coordination') or ntype.startswith(('surgery_', 'robot_')):
                 raise CollectionAuthError(
                     403,
-                    'Thông báo duyệt mổ chỉ được phát sinh tự động từ giao dịch máy chủ.',
+                    'Thông báo duyệt mổ / điều phối Robot chỉ được phát sinh tự động từ giao dịch máy chủ.',
                     {'errorCode': 'FORBIDDEN_APPROVAL_NOTIFICATION_FORGERY'}
                 )
             if not _is_admin(user):

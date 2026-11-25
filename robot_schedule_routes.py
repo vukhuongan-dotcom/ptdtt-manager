@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """
-Flask Route Handlers for Robotic Surgery Coordination Module (FEAT-231).
-2-way atomic integration with Weekly Surgery Schedule (`surgeries[]`) and Dual-WAL Engine.
-Zero-Local-PHI compliant: patient phone numbers are stored server-side and masked for
-non-authorized roles across all 2xx/4xx responses, idempotency replays, and audit logs.
+Flask Route Handlers for Robotic Surgery Coordination Module v2 (FEAT-243).
+Implements the 5-step clinical coordination workflow:
+  Step 1: Ward doctors submit lab-ready surgical consults with wardRoom + creator attribution.
+  Step 2: Coordinators (vcnguyen, lvhoan) schedule TS. Nguyễn Phú Hữu consult (Date + Sáng/Chiều).
+  Step 3: TS. Hữu (or authorized proxy) decides:
+          - Robot surgery (Date + Ca 1–Ca 3, max 3/day) -> atomic sync to Weekly Schedule + A5 P.CTXH
+          - Laparoscopic surgery (Date + attending surgeon + type) -> atomic 2-way sync (no Robot slot)
+          - Considering (re-schedule consult) / Declined surgery (with reason)
+  Step 4: Ward doctors track outcomes & record discharge-wait with planned readmission date
+          (preserving the booked surgical slot on Weekly Schedule) + 1-tap confirm readmit.
+  Step 5: Server-issued Zero-PHI Dual-WAL notifications & idempotent v2 data migration.
 """
 
 import copy
@@ -17,23 +24,29 @@ from flask import jsonify, request
 
 from surgery_approval_engine import (
     APPROVAL_METADATA_FIELDS_TO_STRIP,
+    CHIEF_STAFF_ID,
     DEFAULT_ROBOT_CONFIG,
     ROBOT_POSTPONE_REASONS,
+    ROBOT_REFUSAL_REASONS,
     ROBOT_SLOT_HOLDING_STATUSES,
     ROBOT_VALID_SLOTS,
+    ROBOT_WARD_ROOMS,
     TRAINEE_STAFF_IDS,
     ApprovalEngineError,
     allocate_next_surgery_id,
     apply_tier_a_and_schedule_invalidation,
+    build_robot_handoff_notifications,
     build_robot_surgery_payload,
     can_user_access_sandbox,
     check_robot_slot_conflicts_in_lock,
+    format_doctor_full_name,
     get_approval_config,
     get_robot_config,
     initialize_new_surgery_record,
     is_pos_int,
     is_strict_int,
     is_valid_iso_date,
+    load_procedure_catalog,
     mask_phone_vn,
     normalize_phone_vn,
     now_vn,
@@ -48,30 +61,32 @@ from surgery_approval_engine import (
 )
 
 ROBOT_ALL_STATUSES = {
-    "tu_van",
+    "cho_xep_tu_van",
+    "da_xep_tu_van",
     "can_nhac",
-    "tu_choi",
-    "cho_xep_lich",
-    "cho_duyet_tien_phau",
-    "cho_duyet_luu_vien",
-    "cho_mo",
-    "da_mo",
+    "da_xep_robot",
+    "da_xep_noisoi",
+    "khong_dong_y_mo",
     "hoan_mo",
-    "xuat_vien_cho",
+    "da_mo",
     "da_xoa",
     "archived_deleted",
 }
 
-ROBOT_CONSULT_STATUSES = {"tu_van", "can_nhac", "tu_choi", "cho_xep_lich"}
-ROBOT_CLINICAL_CORE_FIELDS = (
-    "patientName",
-    "birthYear",
-    "gender",
-    "admissionId",
-    "diagnosis",
-    "robotProcedure",
-    "mainSurgeonId",
-)
+ROBOT_LEGACY_STATUSES = {
+    "tu_van",
+    "cho_xep_lich",
+    "cho_duyet_tien_phau",
+    "cho_duyet_luu_vien",
+    "cho_mo",
+    "xuat_vien_cho",
+    "tu_choi",
+}
+
+ROBOT_ACTIVE_SCHEDULE_STATUSES = {"da_xep_robot", "da_xep_noisoi"}
+ROBOT_INPATIENT_STATES = {"noi_tru", "xuat_vien_cho", "da_nhap_lai"}
+ROBOT_VALID_CONSULT_SESSIONS = ("sang", "chieu")
+ROBOT_INDICATION_TYPES = ("robot_hoac_noisoi", "uu_tien_robot", "uu_tien_noisoi")
 
 _HHMM_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
@@ -90,6 +105,13 @@ def _today_vn_iso() -> str:
     return now_vn().strftime("%Y-%m-%d")
 
 
+def _fmt_vi_date(iso_str: str) -> str:
+    s = str(iso_str or "").strip()
+    if len(s) >= 10 and s[4] == "-" and s[7] == "-":
+        return f"{s[8:10]}/{s[5:7]}/{s[0:4]}"
+    return s or "—"
+
+
 def _is_robot_surgery(rec: dict) -> bool:
     return isinstance(rec, dict) and (rec.get("approachType") == "robot" or rec.get("surgeryType") == "robot")
 
@@ -98,6 +120,65 @@ def _robot_code_of(rcase: dict) -> str:
     if not isinstance(rcase, dict):
         return ""
     return str(rcase.get("robotCaseCode") or rcase.get("soNV") or "").strip()
+
+
+def _staff_display_name(db: dict, staff_id, fallback: str = "") -> str:
+    if is_pos_int(staff_id):
+        sid = int(staff_id)
+        for st in (db.get("staff") or []) + (db.get("departedStaff") or []):
+            if isinstance(st, dict) and st.get("id") == sid:
+                return format_doctor_full_name(st) or str(st.get("name") or "")
+    return str(fallback or "").strip()
+
+
+def _room_label(ward_room: str) -> str:
+    wr = str(ward_room or "").strip()
+    if not wr:
+        return "Chưa rõ phòng"
+    if wr == "ngoai_tru":
+        return "Ngoại trú"
+    return f"Phòng {wr}" if wr.startswith("B") else f"Phòng B{wr}"
+
+
+def _normalize_ward_room(raw_room, *, required: bool = False) -> str:
+    val = str(raw_room or "").strip()
+    if not val:
+        if required:
+            raise ApprovalEngineError(422, "WARD_ROOM_REQUIRED", "Vui lòng chọn Phòng bệnh (B705–B719) hoặc Ngoại trú.")
+        return ""
+    low = val.lower()
+    if low in ("ngoai_tru", "ngoại trú", "ngoai tru"):
+        return "ngoai_tru"
+    up = val.upper()
+    if up in ROBOT_WARD_ROOMS:
+        return up
+    if f"B{up}" in ROBOT_WARD_ROOMS:
+        return f"B{up}"
+    raise ApprovalEngineError(
+        422,
+        "INVALID_WARD_ROOM",
+        f"Phòng bệnh phải thuộc khoa ({', '.join(ROBOT_WARD_ROOMS)}).",
+    )
+
+
+def _coordinator_staff_ids(db: dict, sf_mod=None) -> list:
+    cfg = get_robot_config(db)
+    coord_unames = {str(x or "").strip().lower() for x in (cfg.get("coordinators") or []) if str(x or "").strip()}
+    out = []
+    if sf_mod is not None and hasattr(sf_mod, "_load_auth"):
+        users = (sf_mod._load_auth() or {}).get("users") or {}
+        for uname in sorted(coord_unames):
+            uobj = users.get(uname)
+            if isinstance(uobj, dict) and uobj.get("disabled") is not True and is_pos_int(uobj.get("staffId")):
+                sid = int(uobj["staffId"])
+                if sid not in out:
+                    out.append(sid)
+    # Fallback well-known coordinators (vcnguyen=6, lvhoan=11) if auth lookup unavailable
+    if not out:
+        for default_u, default_id in (("vcnguyen", 6), ("lvhoan", 11)):
+            if default_u in coord_unames and default_id not in out:
+                out.append(default_id)
+    return out
 
 
 def _extended_robot_permissions(real_user: dict, db: dict) -> dict:
@@ -273,7 +354,7 @@ def _validate_expected_timeframe(raw_val) -> str:
         raise ApprovalEngineError(
             422,
             "INVALID_EXPECTED_DATE",
-            "Thời gian dự kiến phải chọn ngày hợp lệ trên lịch, không nhập chữ tự do.",
+            "Ngày dự kiến phải chọn trên lịch hợp lệ (YYYY-MM-DD).",
         )
     return val
 
@@ -285,6 +366,7 @@ def _validate_schedule_fields(
     existing_case: dict = None,
     require_date_slot: bool = True,
     allow_past_date: bool = False,
+    approach: str = "robot",
 ) -> dict:
     cfg = get_robot_config(db)
     s_date = str(body["surgeryDate"] if "surgeryDate" in body else (existing_case or {}).get("surgeryDate") or "").strip()
@@ -295,16 +377,24 @@ def _validate_schedule_fields(
         else (existing_case or {}).get("operatingRoom") or cfg.get("defaultOperatingRoom") or "PM Robot"
     ).strip() or "PM Robot"
     s_time = str(body["surgeryTime"] if "surgeryTime" in body else (existing_case or {}).get("surgeryTime") or "").strip()
-    raw_dur = body["durationMinutes"] if "durationMinutes" in body else (existing_case or {}).get("durationMinutes") or cfg.get("defaultDurationMinutes") or 180
+    default_dur = 120 if approach == "noisoi" else (cfg.get("defaultDurationMinutes") or 180)
+    raw_dur = body["durationMinutes"] if "durationMinutes" in body else (existing_case or {}).get("durationMinutes") or default_dur
 
-    if require_date_slot and (not s_date or not s_slot):
-        raise ApprovalEngineError(422, "SCHEDULE_DATE_SLOT_REQUIRED", "Vui lòng chọn đầy đủ Ngày mổ dự kiến và Ca mổ (Ca 1–Ca 3, tối đa 3 ca/ngày).")
+    if approach == "robot":
+        if require_date_slot and (not s_date or not s_slot):
+            raise ApprovalEngineError(422, "SCHEDULE_DATE_SLOT_REQUIRED", "Vui lòng chọn đầy đủ Ngày mổ dự kiến và Ca mổ (Ca 1–Ca 3, tối đa 3 ca/ngày).")
+    else:
+        if not s_date:
+            raise ApprovalEngineError(422, "SURGERY_DATE_REQUIRED", "Vui lòng chọn Ngày mổ Nội soi dự kiến.")
+        s_slot = ""
+        s_room = ""
+
     if s_date:
         if not is_valid_iso_date(s_date):
             raise ApprovalEngineError(422, "INVALID_SURGERY_DATE", "Ngày mổ phải theo định dạng YYYY-MM-DD.")
         if not allow_past_date and s_date < _today_vn_iso():
             raise ApprovalEngineError(422, "SURGERY_DATE_IN_PAST", "Không thể xếp lịch mổ về ngày trong quá khứ.")
-    if s_slot and s_slot not in ROBOT_VALID_SLOTS:
+    if approach == "robot" and s_slot and s_slot not in ROBOT_VALID_SLOTS:
         raise ApprovalEngineError(422, "INVALID_CASE_SLOT", f"Ca mổ phải là một trong các giá trị: {', '.join(ROBOT_VALID_SLOTS)}.")
     if s_time and not _HHMM_RE.fullmatch(s_time):
         raise ApprovalEngineError(422, "INVALID_SURGERY_TIME", "Giờ mổ dự kiến phải đúng định dạng HH:MM (24 giờ).")
@@ -317,9 +407,10 @@ def _validate_schedule_fields(
     if dur_int < 15 or dur_int > 900:
         raise ApprovalEngineError(422, "INVALID_DURATION", "Thời lượng mổ dự kiến phải trong khoảng 15–900 phút.")
 
-    valid_rooms = list(cfg.get("robotRooms") or ["PM Robot"])
-    if s_room not in valid_rooms:
-        raise ApprovalEngineError(422, "INVALID_OPERATING_ROOM", f"Phòng mổ Robot hợp lệ gồm: {', '.join(valid_rooms)}.")
+    if approach == "robot":
+        valid_rooms = list(cfg.get("robotRooms") or ["PM Robot"])
+        if s_room not in valid_rooms:
+            raise ApprovalEngineError(422, "INVALID_OPERATING_ROOM", f"Phòng mổ Robot hợp lệ gồm: {', '.join(valid_rooms)}.")
 
     return {
         "surgeryDate": s_date,
@@ -421,7 +512,6 @@ def _ensure_single_active_surgery_invariant(db: dict, rcase: dict, active_sid: i
     trash = db.setdefault("surgeriesTrash", [])
     arch = db.setdefault("surgeriesArchivedInactive", [])
 
-    # Never allow a second active record with the same robotCaseId or different active record
     found_idx = -1
     for i, s in enumerate(surgeries):
         if isinstance(s, dict) and s.get("id") == active_sid:
@@ -430,7 +520,6 @@ def _ensure_single_active_surgery_invariant(db: dict, rcase: dict, active_sid: i
     if found_idx < 0:
         raise ApprovalEngineError(500, "LINKED_SURGERY_INVARIANT_ERROR", "Không tìm thấy ca hoạt động sau khi đồng bộ.")
 
-    # Move any accidental stray active duplicates with same robotCaseId to surgeriesArchivedInactive
     kept_surgeries = []
     for s in surgeries:
         if isinstance(s, dict) and s.get("id") != active_sid and str(s.get("robotCaseId") or "").strip() == code:
@@ -455,9 +544,8 @@ def _upsert_active_linked_surgery(
     event_label: str,
 ) -> tuple:
     """
-    Shared engine upsert when a Robot case enters or updates while in `cho_mo` (or active link).
+    Shared engine upsert when a case enters or updates while in `da_xep_robot` or `da_xep_noisoi`.
     NEVER grants `approval.status = 'approved'`.
-    Invokes `apply_tier_a_and_schedule_invalidation` so Tier-A changes revoke prior BCN approval.
     Returns (active_surgery_ref, linked_surgery_op_dict).
     """
     code = _robot_code_of(rcase)
@@ -498,7 +586,6 @@ def _upsert_active_linked_surgery(
                 merged.pop(k, None)
         else:
             apply_tier_a_and_schedule_invalidation(merged, old_snap, catalog, db, cfg)
-            # Invariant: B2/B3 or Robot restore from trash/archive NEVER carries stale 'approved'
             if origin != "surgeries" and (merged.get("approval") or {}).get("status") == "approved":
                 merged["approval"]["status"] = "reapproval_required"
                 merged["approval"]["approvedSnapshot"] = None
@@ -532,8 +619,7 @@ def _upsert_active_linked_surgery(
     rcase["canonicalSurgeryId"] = sid
     rcase["activeLinkedSurgeryId"] = sid
     rcase["linkState"] = "active"
-    hist = rcase.setdefault("linkedSurgeryHistory", [])
-    hist.append({
+    rcase.setdefault("linkedSurgeryHistory", []).append({
         "surgeryId": sid,
         "episodeId": int(rcase.get("episodeId", 1) or 1),
         "event": event_label,
@@ -678,6 +764,7 @@ def _build_wal_spec(
     config_rec: dict = None,
     summary_extra: dict = None,
     record_ref: dict = None,
+    committed_notifications: list = None,
 ) -> dict:
     code = _robot_code_of(rcase) if isinstance(rcase, dict) else None
     is_sbx = bool(rcase.get("isTestSandboxCase") is True) if isinstance(rcase, dict) else False
@@ -704,142 +791,169 @@ def _build_wal_spec(
     }
     if isinstance(record_ref, dict):
         out["recordRef"] = record_ref
+    if committed_notifications:
+        out["committedNotifications"] = copy.deepcopy(committed_notifications)
     return out
 
 
-def _apply_lazy_rollover_tx(*, db: dict, body: dict, real_user: dict, actor: dict, catalog: dict, cfg: dict):
-    today_str = str(body.get("todayVn") or _today_vn_iso())
-    now_iso = now_vn_iso()
-    now_utc = datetime.now(timezone.utc)
-    robot_cfg = get_robot_config(db)
-    archive_days = int(robot_cfg.get("trashAutoArchiveDays") or 14)
-
-    rolled_cases = []
+def migrate_robot_cases_v2(db: dict, catalog: dict = None, cfg: dict = None, sf_mod=None) -> dict:
+    """
+    Idempotent v2 migration (FEAT-243):
+      - Ensures default coordinators include vcnguyen and lvhoan (when present in auth/staff).
+      - Maps legacy robotCases statuses to v2 5-step statuses (`cho_xep_tu_van`, `da_xep_robot`, `khong_dong_y_mo`).
+      - Converts legacy `xuat_vien_cho` cases (`RB-2026-0001`, `RB-2026-0002`) into `da_xep_robot`
+        with `inpatientState='xuat_vien_cho'` AND restores their linked surgeries from surgeriesTrash
+        back to active `surgeries[]` so slots stay reserved & visible on Weekly Schedule.
+    Returns dict {changedCases, linkedOps, configRecord, configChanged}.
+    """
+    changed_cases = []
     linked_ops = []
-    changed_records = []
+    config_changed = False
+    now_iso = now_vn_iso()
 
-    rc_by_code = {}
-    for rc in (db.get("robotCases") or []):
-        if isinstance(rc, dict) and _robot_code_of(rc):
-            rc_by_code[_robot_code_of(rc)] = rc
+    raw_cfg = (db or {}).get("robotConfig")
+    rcfg = get_robot_config(db)
+    raw_ver = int(raw_cfg.get("robotConfigSchemaVersion") or 1) if isinstance(raw_cfg, dict) else 0
+    if raw_ver < 2:
+        auth_users = ((sf_mod._load_auth() or {}).get("users") or {}) if (sf_mod and hasattr(sf_mod, "_load_auth")) else {}
+        coords = list(rcfg.get("coordinators") or [])
+        for req_u in ("vcnguyen", "lvhoan"):
+            if req_u not in coords and (not auth_users or (isinstance(auth_users.get(req_u), dict) and auth_users[req_u].get("disabled") is not True)):
+                coords.append(req_u)
+        rcfg["coordinators"] = coords
+        rcfg["robotConfigSchemaVersion"] = 2
+        db["robotConfig"] = rcfg
+        config_changed = True
 
-    # 1. Auto-rollover cho_mo -> da_mo ONLY when surgeryDate < today_vn
     for rc in (db.get("robotCases") or []):
         if not isinstance(rc, dict):
             continue
-        if rc.get("status") == "cho_mo" and is_valid_iso_date(rc.get("surgeryDate")) and rc["surgeryDate"] < today_str:
-            rc["status"] = "da_mo"
-            rc["completionSource"] = "auto_date_rollover"
-            rc["rolledOverAt"] = now_iso
-            rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
-            rc["updatedAt"] = now_iso
-            rc["updatedBy"] = "system:auto_date_rollover"
-            rolled_cases.append(_robot_code_of(rc))
-            changed_records.append(copy.deepcopy(rc))
-
-    # 2. Archive expired surgeriesTrash with robotCaseId & da_xoa robotCases (> trashAutoArchiveDays)
-    trash = db.get("surgeriesTrash") or []
-    kept_trash = []
-    arch_list = db.setdefault("surgeriesArchivedInactive", [])
-    arch_ids = {a.get("id") for a in arch_list if isinstance(a, dict) and is_pos_int(a.get("id"))}
-    touched_trash = False
-    for item in trash:
-        if not isinstance(item, dict):
+        if rc.get("status") == "archived_deleted":
             continue
-        rc_code = str(item.get("robotCaseId") or "").strip()
-        if not rc_code:
-            kept_trash.append(item)
+        cur_st = str(rc.get("status") or "").strip()
+        needs_mig = int(rc.get("schemaVersion") or 1) < 2 or cur_st in ROBOT_LEGACY_STATUSES
+        if not needs_mig:
             continue
-        dt_del = parse_iso_dt(item.get("deletedAt"))
-        if dt_del is not None and (now_utc - dt_del).total_seconds() > archive_days * 86400:
-            arch_item = copy.deepcopy(item)
-            arch_item["archivedInactiveAt"] = now_iso
-            sid = arch_item.get("id")
-            if is_pos_int(sid) and sid not in arch_ids:
-                arch_list.append(arch_item)
-                arch_ids.add(sid)
-            linked_ops.append({"op": "archive_inactive", "record": arch_item})
-            rc = rc_by_code.get(rc_code)
-            if isinstance(rc, dict):
-                if rc.get("status") == "da_xoa":
-                    rc["status"] = "archived_deleted"
-                    rc["archivedAt"] = now_iso
-                if rc.get("canonicalSurgeryId") == sid:
-                    rc["linkState"] = "inactive_archived"
-                rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
-                changed_records.append(copy.deepcopy(rc))
-            touched_trash = True
-        else:
-            kept_trash.append(item)
 
-    if touched_trash:
-        db["surgeriesTrash"] = kept_trash
+        if cur_st in ("tu_van", "cho_xep_lich"):
+            rc["status"] = "cho_xep_tu_van"
+            rc["consultOutcome"] = "pending"
+            rc["inpatientState"] = "noi_tru"
+            rc["scheduledApproach"] = ""
+        elif cur_st == "tu_choi":
+            rc["status"] = "khong_dong_y_mo"
+            rc["consultOutcome"] = "khong_mo"
+            rc["refusalReason"] = rc.get("refusalReason") or "ly_do_khac"
+            rc["inpatientState"] = "noi_tru"
+            rc["scheduledApproach"] = ""
+        elif cur_st in ("cho_duyet_tien_phau", "cho_duyet_luu_vien", "cho_mo"):
+            rc["status"] = "da_xep_robot"
+            rc["consultOutcome"] = "robot"
+            rc["scheduledApproach"] = "robot"
+            rc["scheduledSurgeryType"] = "robot"
+            if rc.get("inpatientState") not in ROBOT_INPATIENT_STATES:
+                rc["inpatientState"] = "noi_tru"
+            if catalog is not None and cfg is not None and is_valid_iso_date(rc.get("surgeryDate")):
+                _, s_op = _upsert_active_linked_surgery(
+                    db,
+                    rc,
+                    catalog=catalog,
+                    cfg=cfg,
+                    actor_username="system:migrate_v2",
+                    event_label="robot_migrate_v2_active",
+                )
+                linked_ops.append(s_op)
+        elif cur_st == "xuat_vien_cho":
+            rc["status"] = "da_xep_robot"
+            rc["consultOutcome"] = "robot"
+            rc["scheduledApproach"] = "robot"
+            rc["scheduledSurgeryType"] = "robot"
+            rc["inpatientState"] = "xuat_vien_cho"
+            rc.setdefault("plannedReadmitDate", "")
+            if catalog is not None and cfg is not None and is_valid_iso_date(rc.get("surgeryDate")):
+                _, s_op = _upsert_active_linked_surgery(
+                    db,
+                    rc,
+                    catalog=catalog,
+                    cfg=cfg,
+                    actor_username="system:migrate_v2",
+                    event_label="robot_migrate_v2_restore_wait",
+                )
+                linked_ops.append(s_op)
+        elif cur_st == "hoan_mo":
+            rc.setdefault("consultOutcome", "robot")
+            rc.setdefault("scheduledApproach", "robot")
+            rc["inpatientState"] = "noi_tru"
+        elif cur_st == "da_mo":
+            rc.setdefault("consultOutcome", "robot")
+            rc.setdefault("scheduledApproach", "robot")
+            rc.setdefault("inpatientState", "noi_tru")
+        elif cur_st == "can_nhac":
+            rc["consultOutcome"] = "can_nhac"
+            rc.setdefault("inpatientState", "noi_tru")
 
-    # Also archive standalone da_xoa robotCases older than archive_days without trash item
-    for rc in (db.get("robotCases") or []):
-        if isinstance(rc, dict) and rc.get("status") == "da_xoa":
-            dt_del = parse_iso_dt(rc.get("deletedAt"))
-            if dt_del is not None and (now_utc - dt_del).total_seconds() > archive_days * 86400:
-                rc["status"] = "archived_deleted"
-                rc["archivedAt"] = now_iso
-                rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
-                changed_records.append(copy.deepcopy(rc))
-
-    if not changed_records and not linked_ops:
-        return {
-            "httpStatus": 200,
-            "skipDbWrite": True,
-            "response": {"ok": True, "rolledOverCodes": [], "archivedCount": len(linked_ops)},
-            "wal": None,
-        }
+        if not rc.get("createdByName"):
+            rc["createdByName"] = _staff_display_name(db, rc.get("createdByStaffId"), rc.get("createdByUsername") or "")
+        rc.setdefault("labsReadyConfirmed", True)
+        rc.setdefault("indicationType", "robot_hoac_noisoi")
+        rc.setdefault("consultedByStaffId", CHIEF_STAFF_ID)
+        rc.setdefault("consultedByName", _staff_display_name(db, CHIEF_STAFF_ID, "TS. BSCKII. Nguyễn Phú Hữu"))
+        rc.setdefault("consultRound", 1)
+        rc.setdefault("inpatientState", "noi_tru")
+        rc["schemaVersion"] = 2
+        rc["migratedV2At"] = now_iso
+        rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
+        rc["updatedAt"] = now_iso
+        changed_cases.append(copy.deepcopy(rc))
 
     revs = db.setdefault("_revisions", {})
-    revs["robotCases"] = int(revs.get("robotCases", 1)) + 1
-    if touched_trash:
-        revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
-
-    # Deduplicate changed_records by code
-    dedup_rc = {}
-    for rc in changed_records:
-        dedup_rc[_robot_code_of(rc)] = rc
-    rc_list = list(dedup_rc.values())
+    if config_changed:
+        revs["robotConfig"] = int(revs.get("robotConfig", 1)) + 1
+    if changed_cases:
+        revs["robotCases"] = int(revs.get("robotCases", 1)) + 1
 
     return {
-        "httpStatus": 200,
-        "response": {
-            "ok": True,
-            "rolledOverCodes": rolled_cases,
-            "archivedCount": len(linked_ops),
-        },
-        "wal": {
-            "action": "robot_auto_rollover",
-            "surgeryId": None,
-            "caseRevBefore": None,
-            "caseRevAfter": None,
-            "summary": {
-                "rolledOverCodes": rolled_cases,
-                "archivedCount": len(linked_ops),
-                "isTestSandboxCase": False,
-            },
-            "committedStatePatch": {
-                "patchKind": "robot_tx",
-                "robotCaseRecords": rc_list,
-                "linkedSurgeryOps": linked_ops,
-            },
-        },
+        "changedCases": changed_cases,
+        "linkedOps": linked_ops,
+        "configRecord": copy.deepcopy(db.get("robotConfig")) if config_changed else None,
+        "configChanged": config_changed,
     }
 
 
 def _needs_lazy_rollover(db: dict, today_str: str) -> bool:
+    raw_cfg = (db or {}).get("robotConfig")
     robot_cfg = get_robot_config(db)
+    if not isinstance(raw_cfg, dict) or int(raw_cfg.get("robotConfigSchemaVersion") or 1) < 2:
+        return True
     archive_days = int(robot_cfg.get("trashAutoArchiveDays") or 14)
     now_utc = datetime.now(timezone.utc)
+    today_dt = datetime.strptime(today_str, "%Y-%m-%d").date() if is_valid_iso_date(today_str) else None
+    existing_dedups = {
+        n.get("dedupKey")
+        for n in (db.get("notifications") or [])
+        if isinstance(n, dict) and n.get("dedupKey")
+    }
+
     for rc in (db.get("robotCases") or []):
         if not isinstance(rc, dict):
             continue
-        if rc.get("status") == "cho_mo" and is_valid_iso_date(rc.get("surgeryDate")) and rc["surgeryDate"] < today_str:
+        st = rc.get("status")
+        if st != "archived_deleted" and (int(rc.get("schemaVersion") or 1) < 2 or st in ROBOT_LEGACY_STATUSES):
             return True
-        if rc.get("status") == "da_xoa":
+        if st in ROBOT_ACTIVE_SCHEDULE_STATUSES and is_valid_iso_date(rc.get("surgeryDate")) and rc["surgeryDate"] < today_str:
+            return True
+        if (
+            today_dt is not None
+            and st in ROBOT_ACTIVE_SCHEDULE_STATUSES
+            and rc.get("inpatientState") == "xuat_vien_cho"
+            and is_valid_iso_date(rc.get("plannedReadmitDate"))
+        ):
+            r_dt = datetime.strptime(rc["plannedReadmitDate"], "%Y-%m-%d").date()
+            diff_d = (r_dt - today_dt).days
+            code = _robot_code_of(rc)
+            if 0 <= diff_d <= 2 and f"readmit:{code}:{rc['plannedReadmitDate']}" not in existing_dedups:
+                return True
+        if st == "da_xoa":
             dt_del = parse_iso_dt(rc.get("deletedAt"))
             if dt_del is not None and (now_utc - dt_del).total_seconds() > archive_days * 86400:
                 return True
@@ -849,6 +963,176 @@ def _needs_lazy_rollover(db: dict, today_str: str) -> bool:
             if dt_del is not None and (now_utc - dt_del).total_seconds() > archive_days * 86400:
                 return True
     return False
+
+
+def _build_lazy_rollover_tx(sf_mod):
+    def _apply_lazy_rollover_tx(*, db: dict, body: dict, real_user: dict, actor: dict, catalog: dict, cfg: dict):
+        today_str = str(body.get("todayVn") or _today_vn_iso())
+        now_iso = now_vn_iso()
+        now_utc = datetime.now(timezone.utc)
+        robot_cfg = get_robot_config(db)
+        archive_days = int(robot_cfg.get("trashAutoArchiveDays") or 14)
+
+        mig = migrate_robot_cases_v2(db, catalog=catalog, cfg=cfg, sf_mod=sf_mod)
+        rolled_cases = []
+        linked_ops = list(mig["linkedOps"])
+        changed_records = list(mig["changedCases"])
+        emitted_notifs = []
+
+        rc_by_code = {}
+        for rc in (db.get("robotCases") or []):
+            if isinstance(rc, dict) and _robot_code_of(rc):
+                rc_by_code[_robot_code_of(rc)] = rc
+
+        # 1. Auto-rollover scheduled Robot/Laparoscopic cases -> da_mo ONLY when surgeryDate < today_vn
+        for rc in (db.get("robotCases") or []):
+            if not isinstance(rc, dict):
+                continue
+            if rc.get("status") in ROBOT_ACTIVE_SCHEDULE_STATUSES and is_valid_iso_date(rc.get("surgeryDate")) and rc["surgeryDate"] < today_str:
+                rc["status"] = "da_mo"
+                rc["completionSource"] = "auto_date_rollover"
+                rc["rolledOverAt"] = now_iso
+                rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
+                rc["updatedAt"] = now_iso
+                rc["updatedBy"] = "system:auto_date_rollover"
+                rolled_cases.append(_robot_code_of(rc))
+                changed_records.append(copy.deepcopy(rc))
+
+        # 2. Idempotent readmission reminders (0..2 days before plannedReadmitDate)
+        today_dt = datetime.strptime(today_str, "%Y-%m-%d").date() if is_valid_iso_date(today_str) else None
+        if today_dt is not None:
+            coord_ids = _coordinator_staff_ids(db, sf_mod)
+            for rc in (db.get("robotCases") or []):
+                if not isinstance(rc, dict):
+                    continue
+                if rc.get("status") not in ROBOT_ACTIVE_SCHEDULE_STATUSES:
+                    continue
+                if rc.get("inpatientState") != "xuat_vien_cho":
+                    continue
+                p_date = str(rc.get("plannedReadmitDate") or "").strip()
+                if not is_valid_iso_date(p_date):
+                    continue
+                r_dt = datetime.strptime(p_date, "%Y-%m-%d").date()
+                diff_d = (r_dt - today_dt).days
+                if 0 <= diff_d <= 2:
+                    code = _robot_code_of(rc)
+                    dkey = f"readmit:{code}:{p_date}"
+                    targets = ([rc.get("createdByStaffId")] if is_pos_int(rc.get("createdByStaffId")) else []) + coord_ids
+                    msg = f"Nhắc hẹn nhập viện lại ({_fmt_vi_date(p_date)}) chuẩn bị mổ {_fmt_vi_date(rc.get('surgeryDate'))} · {_room_label(rc.get('wardRoom'))} ({code})."
+                    notes = build_robot_handoff_notifications(
+                        db,
+                        rc,
+                        actor_staff_id=0,
+                        event_id=dkey,
+                        notif_type="robot_readmit_reminder",
+                        message=msg,
+                        recipient_staff_ids=targets,
+                        dedup_key=dkey,
+                        include_actor=True,
+                    )
+                    if notes:
+                        emitted_notifs.extend(notes)
+
+        if emitted_notifs:
+            db.setdefault("notifications", []).extend(copy.deepcopy(emitted_notifs))
+            revs_n = db.setdefault("_revisions", {})
+            revs_n["notifications"] = int(revs_n.get("notifications", 1)) + 1
+
+        # 3. Archive expired surgeriesTrash with robotCaseId & da_xoa robotCases (> trashAutoArchiveDays)
+        trash = db.get("surgeriesTrash") or []
+        kept_trash = []
+        arch_list = db.setdefault("surgeriesArchivedInactive", [])
+        arch_ids = {a.get("id") for a in arch_list if isinstance(a, dict) and is_pos_int(a.get("id"))}
+        touched_trash = False
+        for item in trash:
+            if not isinstance(item, dict):
+                continue
+            rc_code = str(item.get("robotCaseId") or "").strip()
+            if not rc_code:
+                kept_trash.append(item)
+                continue
+            dt_del = parse_iso_dt(item.get("deletedAt"))
+            if dt_del is not None and (now_utc - dt_del).total_seconds() > archive_days * 86400:
+                arch_item = copy.deepcopy(item)
+                arch_item["archivedInactiveAt"] = now_iso
+                sid = arch_item.get("id")
+                if is_pos_int(sid) and sid not in arch_ids:
+                    arch_list.append(arch_item)
+                    arch_ids.add(sid)
+                linked_ops.append({"op": "archive_inactive", "record": arch_item})
+                rc = rc_by_code.get(rc_code)
+                if isinstance(rc, dict):
+                    if rc.get("status") == "da_xoa":
+                        rc["status"] = "archived_deleted"
+                        rc["archivedAt"] = now_iso
+                    if rc.get("canonicalSurgeryId") == sid:
+                        rc["linkState"] = "inactive_archived"
+                    rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
+                    changed_records.append(copy.deepcopy(rc))
+                touched_trash = True
+            else:
+                kept_trash.append(item)
+
+        if touched_trash:
+            db["surgeriesTrash"] = kept_trash
+
+        for rc in (db.get("robotCases") or []):
+            if isinstance(rc, dict) and rc.get("status") == "da_xoa":
+                dt_del = parse_iso_dt(rc.get("deletedAt"))
+                if dt_del is not None and (now_utc - dt_del).total_seconds() > archive_days * 86400:
+                    rc["status"] = "archived_deleted"
+                    rc["archivedAt"] = now_iso
+                    rc["caseRevision"] = int(rc.get("caseRevision", 1) or 1) + 1
+                    changed_records.append(copy.deepcopy(rc))
+
+        if not changed_records and not linked_ops and not mig["configChanged"] and not emitted_notifs:
+            return {
+                "httpStatus": 200,
+                "skipDbWrite": True,
+                "response": {"ok": True, "rolledOverCodes": [], "archivedCount": 0, "migratedCount": 0},
+                "wal": None,
+            }
+
+        revs = db.setdefault("_revisions", {})
+        if changed_records:
+            revs["robotCases"] = int(revs.get("robotCases", 1)) + 1
+        if touched_trash:
+            revs["surgeriesTrash"] = int(revs.get("surgeriesTrash", 1)) + 1
+
+        dedup_rc = {}
+        for rc in changed_records:
+            dedup_rc[_robot_code_of(rc)] = rc
+        rc_list = list(dedup_rc.values())
+
+        return {
+            "httpStatus": 200,
+            "response": {
+                "ok": True,
+                "rolledOverCodes": rolled_cases,
+                "archivedCount": len([x for x in linked_ops if x.get("op") == "archive_inactive"]),
+                "migratedCount": len(mig["changedCases"]),
+            },
+            "wal": {
+                "action": "robot_auto_rollover",
+                "surgeryId": None,
+                "caseRevBefore": None,
+                "caseRevAfter": None,
+                "summary": {
+                    "rolledOverCodes": rolled_cases,
+                    "migratedCount": len(mig["changedCases"]),
+                    "reminderCount": len(emitted_notifs),
+                    "isTestSandboxCase": False,
+                },
+                "committedStatePatch": {
+                    "patchKind": "robot_tx",
+                    "robotCaseRecords": rc_list,
+                    "linkedSurgeryOps": linked_ops,
+                    **({"robotConfigRecord": mig["configRecord"]} if mig["configRecord"] else {}),
+                },
+                **({"committedNotifications": copy.deepcopy(emitted_notifs)} if emitted_notifs else {}),
+            },
+        }
+    return _apply_lazy_rollover_tx
 
 
 def _validate_coordinator_usernames(sf_mod, db: dict, coordinators: list) -> tuple:
@@ -877,8 +1161,8 @@ def _validate_coordinator_usernames(sf_mod, db: dict, coordinators: list) -> tup
 
 def ensure_robot_bootstrapped(sf_mod) -> dict:
     """
-    Safely initializes robotConfig, robotCases, surgeriesArchivedInactive, and _revisions.robotCases
-    under _DB_LOCK_FILE without mutating or printing any real PHI records.
+    Safely initializes robotConfig, robotCases, surgeriesArchivedInactive, _revisions.robotCases,
+    and runs idempotent v2 migration under _DB_LOCK_FILE without printing PHI.
     """
     os.makedirs(sf_mod.DATA_DIR, exist_ok=True)
     if not os.path.exists(sf_mod.DATA_FILE):
@@ -911,11 +1195,17 @@ def ensure_robot_bootstrapped(sf_mod) -> dict:
             revs["robotCases"] = 1
             changed = True
 
+        catalog = load_procedure_catalog(sf_mod.DATA_DIR, sf_mod.BASE_DIR)
+        ap_cfg = get_approval_config(db)
+        mig = migrate_robot_cases_v2(db, catalog=catalog, cfg=ap_cfg, sf_mod=sf_mod)
+        if mig["changedCases"] or mig["linkedOps"] or mig["configChanged"]:
+            changed = True
+
         if changed:
             db["_lastModified"] = datetime.now().isoformat()
             _atomic_write_json(sf_mod.DATA_FILE, db)
 
-        return {"bootstrapped": changed, "robotCasesCount": len(db.get("robotCases") or [])}
+        return {"bootstrapped": changed, "robotCasesCount": len(db.get("robotCases") or []), "migratedV2": len(mig["changedCases"])}
     finally:
         fcntl.flock(lock_fd, fcntl.LOCK_UN)
         lock_fd.close()
@@ -929,6 +1219,8 @@ def register_robot_schedule_routes(app, sf_mod):
         kwargs.setdefault("enforce_canary_gate", False)
         return runner(**kwargs)
 
+    lazy_rollover_handler = _build_lazy_rollover_tx(sf_mod)
+
     # ───────────────────────── Bootstrap & Read ─────────────────────────
 
     @app.route("/api/robot/bootstrap", methods=["GET"])
@@ -939,7 +1231,6 @@ def register_robot_schedule_routes(app, sf_mod):
 
         today_str = _today_vn_iso()
 
-        # Pass 1: Fail-closed auth + detect if lazy rollover needs WAL commit
         lock_fd = open(sf_mod._DB_LOCK_FILE, "a+")
         need_rollover = False
         try:
@@ -969,10 +1260,9 @@ def register_robot_schedule_routes(app, sf_mod):
                 enforce_canary_gate=False,
                 require_build_header=False,
                 body_override={"todayVn": today_str},
-                handler_fn=_apply_lazy_rollover_tx,
+                handler_fn=lazy_rollover_handler,
             )
 
-        # Pass 2: Read authoritative snapshot under lock and serialize per user
         lock_fd = open(sf_mod._DB_LOCK_FILE, "a+")
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_EX)
@@ -1016,7 +1306,6 @@ def register_robot_schedule_routes(app, sf_mod):
             for s in (db.get("surgeries") or []):
                 if not _is_robot_surgery(s):
                     continue
-                # Baseline KPIs and historical list ALWAYS exclude sandbox records for ALL users including SuperAdmin
                 if s.get("isTestSandboxCase") is True:
                     continue
                 sid = s.get("id")
@@ -1093,16 +1382,29 @@ def register_robot_schedule_routes(app, sf_mod):
                             "staffId": uinfo.get("staffId") or 0,
                         })
 
+            my_uname = perms["username"]
+            my_cases = [c for c in visible_cases if c.get("createdByUsername") == my_uname and not c.get("isTestSandboxCase")]
+            real_vis = [c for c in visible_cases if not c.get("isTestSandboxCase")]
+            my_action_counts = {
+                "needScheduleConsult": sum(1 for c in real_vis if c.get("status") in ("cho_xep_tu_van", "can_nhac")),
+                "needDecideConsult": sum(1 for c in real_vis if c.get("status") == "da_xep_tu_van"),
+                "myCasesDecided": sum(1 for c in my_cases if c.get("status") in ("da_xep_robot", "da_xep_noisoi", "khong_dong_y_mo", "can_nhac")),
+                "upcomingReadmit": sum(1 for c in real_vis if c.get("status") in ROBOT_ACTIVE_SCHEDULE_STATUSES and c.get("inpatientState") == "xuat_vien_cho"),
+            }
+
             return jsonify({
                 "ok": True,
                 "todayVn": today_str,
                 "permissions": perms,
                 "robotConfig": get_robot_config(db),
                 "cases": visible_cases,
+                "myActionCounts": my_action_counts,
                 "historicalRobotSurgeries": historical_robot,
                 "unlinkedFutureRobotSurgeries": unlinked_future_robot,
                 "surgeons": surgeons,
                 "staffAccounts": staff_accounts,
+                "wardRooms": list(ROBOT_WARD_ROOMS),
+                "refusalReasons": ROBOT_REFUSAL_REASONS,
                 "postponeReasons": ROBOT_POSTPONE_REASONS,
                 "validSlots": list(ROBOT_VALID_SLOTS),
                 "robotCasesRevision": int((db.get("_revisions") or {}).get("robotCases", 1)),
@@ -1141,10 +1443,11 @@ def register_robot_schedule_routes(app, sf_mod):
                 "robotProcedure",
                 "mainSurgeonId",
                 "assistSurgeon1",
-                "expectedTimeframe",
-                "consultResult",
-                "consultNote",
                 "wardRoom",
+                "labsReadyConfirmed",
+                "indicationType",
+                "expectedTimeframe",
+                "consultNote",
                 "note",
                 "isTestSandboxCase",
             }
@@ -1154,18 +1457,17 @@ def register_robot_schedule_routes(app, sf_mod):
                 "operatingRoom",
                 "surgeryTime",
                 "durationMinutes",
-                "skipStep1",
                 "confirmConflict",
                 "conflictOverrideReason",
                 "expectedConflictFingerprint",
             }
             if action == "create_consult":
                 if not perms["canCreateConsult"]:
-                    raise ApprovalEngineError(403, "ROBOT_CONSULT_FORBIDDEN", "Tài khoản không có quyền tạo ca tư vấn phẫu thuật Robot.")
+                    raise ApprovalEngineError(403, "ROBOT_CONSULT_FORBIDDEN", "Chỉ Bác sĩ trong khoa mới có quyền gửi bệnh nhân tư vấn phẫu thuật.")
                 _validate_allowed_fields(body, common_fields)
             else:
                 if not perms["canDirectCreateCase"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới được phép tạo trực tiếp ca xếp lịch Robot.")
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới được tạo trực tiếp ca lịch mổ Robot.")
                 _validate_allowed_fields(body, common_fields | sched_fields)
 
             patient_name = str(body.get("patientName") or "").strip()
@@ -1174,44 +1476,80 @@ def register_robot_schedule_routes(app, sf_mod):
             if is_sbx and "[test]" not in patient_name.lower():
                 patient_name = f"[TEST] {patient_name}"
 
+            ward_room = _normalize_ward_room(body.get("wardRoom"), required=(action == "create_consult"))
+            labs_ok = body.get("labsReadyConfirmed")
+            if action == "create_consult" and labs_ok is not True:
+                raise ApprovalEngineError(422, "LABS_CONFIRMATION_REQUIRED", "Vui lòng xác nhận bệnh nhân đã đủ xét nghiệm tiền phẫu & có chỉ định PT Nội soi/Robot.")
+
+            ind_type = str(body.get("indicationType") or "robot_hoac_noisoi").strip()
+            if ind_type not in ROBOT_INDICATION_TYPES:
+                ind_type = "robot_hoac_noisoi"
+
             birth_year = _validate_birth_year(body.get("birthYear"))
             gender = _validate_gender(body.get("gender"))
             phone = normalize_phone_vn(body.get("phone"), required=(action == "create_consult"))
             admission_id = str(body.get("admissionId") or "").strip()
             diagnosis = str(body.get("diagnosis") or "").strip()
             robot_proc = str(body.get("robotProcedure") or "").strip()
-            surgeon_id, surgeon_name = _validate_surgeon_id(db, body.get("mainSurgeonId"), required=True)
+            if action == "create_consult" and not diagnosis:
+                raise ApprovalEngineError(422, "DIAGNOSIS_REQUIRED", "Vui lòng nhập chẩn đoán bệnh nhân.")
+
+            raw_sid = body.get("mainSurgeonId")
+            if action == "create_consult" and raw_sid in ("", None):
+                raw_sid = CHIEF_STAFF_ID
+            surgeon_id, surgeon_name = _validate_surgeon_id(db, raw_sid, required=True)
             assist1 = _validate_assist_surgeon(db, body.get("assistSurgeon1"))
 
             code = _next_robot_code(db, is_sandbox=is_sbx)
             now_iso = now_vn_iso()
             uname = perms["username"]
+            creator_display = format_doctor_full_name(actor) or _staff_display_name(db, perms["staffId"], uname)
+            chief_display = _staff_display_name(db, CHIEF_STAFF_ID, "TS. BSCKII. Nguyễn Phú Hữu")
 
             rcase = {
+                "schemaVersion": 2,
                 "robotCaseCode": code,
                 "soNV": code,
-                "status": "tu_van",
+                "status": "cho_xep_tu_van",
                 "patientName": patient_name,
                 "birthYear": birth_year,
                 "gender": gender,
                 "phone": phone,
                 "admissionId": admission_id,
+                "wardRoom": ward_room,
+                "labsReadyConfirmed": bool(labs_ok is not False),
+                "indicationType": ind_type,
                 "diagnosis": diagnosis,
                 "robotProcedure": robot_proc,
                 "mainSurgeonId": surgeon_id,
                 "mainSurgeonName": surgeon_name,
                 "assistSurgeon1": assist1,
                 "expectedTimeframe": _validate_expected_timeframe(body.get("expectedTimeframe")),
-                "consultResult": str(body.get("consultResult") or "cho").strip() or "cho",
+                "consultDate": "",
+                "consultSession": "",
+                "consultScheduledAt": None,
+                "consultScheduledBy": None,
+                "consultScheduledByName": "",
+                "consultScheduleNote": "",
+                "consultRound": 1,
+                "consultOutcome": "pending",
+                "consultedByStaffId": CHIEF_STAFF_ID,
+                "consultedByName": chief_display,
+                "consultDecidedAt": None,
+                "consultDecidedByUsername": None,
+                "consultDecidedByName": "",
+                "refusalReason": "",
                 "consultNote": str(body.get("consultNote") or "").strip(),
+                "scheduledApproach": "",
+                "scheduledSurgeryType": "",
                 "surgeryDate": "",
                 "caseSlot": "",
                 "operatingRoom": get_robot_config(db).get("defaultOperatingRoom") or "PM Robot",
                 "surgeryTime": "",
                 "durationMinutes": int(get_robot_config(db).get("defaultDurationMinutes") or 180),
-                "wardRoom": str(body.get("wardRoom") or "").strip(),
+                "inpatientState": "noi_tru",
+                "plannedReadmitDate": "",
                 "note": str(body.get("note") or "").strip(),
-                "postB2ClinicalDirty": False,
                 "canonicalSurgeryId": None,
                 "activeLinkedSurgeryId": None,
                 "episodeId": 1,
@@ -1222,44 +1560,64 @@ def register_robot_schedule_routes(app, sf_mod):
                 "createdAt": now_iso,
                 "createdByUsername": uname,
                 "createdByStaffId": perms["staffId"],
+                "createdByName": creator_display,
                 "updatedAt": now_iso,
                 "updatedBy": uname,
             }
 
             override_audit = None
-            if action == "create_consult":
-                cr = rcase["consultResult"]
-                if cr not in ("cho", "dong_y", "can_nhac", "tu_choi"):
-                    raise ApprovalEngineError(422, "INVALID_CONSULT_RESULT", "Kết quả tư vấn không hợp lệ.")
-                # Security invariant: consult dong_y ALWAYS lands in cho_xep_lich, NEVER skips to B2
-                rcase["status"] = {"cho": "tu_van", "dong_y": "cho_xep_lich", "can_nhac": "can_nhac", "tu_choi": "tu_choi"}[cr]
-                wal_act = "robot_case_created"
-            else:
-                has_slot_input = bool(str(body.get("surgeryDate") or "").strip() or str(body.get("caseSlot") or "").strip())
-                skip_step1 = bool(body.get("skipStep1") is True)
-                if skip_step1 or has_slot_input:
-                    sched = _validate_schedule_fields(body, db, require_date_slot=True, allow_past_date=False)
-                    rcase.update(sched)
-                    override_audit = _check_conflict_or_override(
-                        db,
-                        candidate=rcase,
-                        exclude_robot_code=code,
-                        exclude_surgery_id=None,
-                        body=body,
-                        perms=perms,
-                    )
-                    if override_audit:
-                        rcase["conflictOverrideHistory"] = [override_audit]
-                    rcase["status"] = "cho_duyet_tien_phau"
-                    rcase["step1ScheduledAt"] = now_iso
-                    rcase["step1ScheduledBy"] = uname
-                else:
-                    rcase["status"] = "cho_xep_lich"
-                if rcase["consultResult"] == "cho":
-                    rcase["consultResult"] = "dong_y"
-                wal_act = "robot_case_created"
+            linked_ops = []
+            rec_ref = None
+            committed_notifs = []
 
-            db.setdefault("robotCases", []).append(rcase)
+            if action == "create_consult":
+                coord_ids = _coordinator_staff_ids(db, sf_mod)
+                msg = f"BN mới tại {_room_label(ward_room)} chờ xếp lịch tư vấn ({code}) — Người gửi: {creator_display}."
+                committed_notifs = build_robot_handoff_notifications(
+                    db,
+                    rcase,
+                    actor_staff_id=perms["staffId"],
+                    event_id=f"rbt_req:{code}:v1",
+                    notif_type="robot_consult_requested",
+                    message=msg,
+                    recipient_staff_ids=coord_ids,
+                )
+                if committed_notifs:
+                    db.setdefault("notifications", []).extend(copy.deepcopy(committed_notifs))
+                    db.setdefault("_revisions", {})["notifications"] = int(db.get("_revisions", {}).get("notifications", 1)) + 1
+            else:
+                sched = _validate_schedule_fields(body, db, require_date_slot=True, allow_past_date=False, approach="robot")
+                rcase.update(sched)
+                override_audit = _check_conflict_or_override(
+                    db,
+                    candidate=rcase,
+                    exclude_robot_code=code,
+                    exclude_surgery_id=None,
+                    body=body,
+                    perms=perms,
+                )
+                if override_audit:
+                    rcase["conflictOverrideHistory"] = [override_audit]
+                rcase["status"] = "da_xep_robot"
+                rcase["consultOutcome"] = "robot"
+                rcase["scheduledApproach"] = "robot"
+                rcase["scheduledSurgeryType"] = "robot"
+                rcase["consultDecidedAt"] = now_iso
+                rcase["consultDecidedByUsername"] = uname
+                rcase["consultDecidedByName"] = creator_display
+                db.setdefault("robotCases", []).append(rcase)
+                rec_ref, s_op = _upsert_active_linked_surgery(
+                    db,
+                    rcase,
+                    catalog=catalog,
+                    cfg=cfg,
+                    actor_username=uname,
+                    event_label="robot_direct_create",
+                )
+                linked_ops.append(s_op)
+
+            if action == "create_consult":
+                db.setdefault("robotCases", []).append(rcase)
             revs = db.setdefault("_revisions", {})
             revs["robotCases"] = int(revs.get("robotCases", 1)) + 1
 
@@ -1271,11 +1629,14 @@ def register_robot_schedule_routes(app, sf_mod):
                     "overrideAudit": override_audit,
                 },
                 "wal": _build_wal_spec(
-                    action=wal_act,
+                    action="robot_case_created",
                     rcase=rcase,
                     rev_before=0,
                     rev_after=1,
+                    linked_ops=linked_ops,
                     summary_extra={"createAction": action},
+                    record_ref=rec_ref,
+                    committed_notifications=committed_notifs,
                 ),
             }
 
@@ -1292,7 +1653,7 @@ def register_robot_schedule_routes(app, sf_mod):
             if not perms["canLinkExistingSurgery"]:
                 raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền liên kết ca mổ sẵn có.")
 
-            _validate_allowed_fields(body, {"action", "surgeryId", "phone", "caseSlot", "operatingRoom", "note", "expectedSurgeryRevision"})
+            _validate_allowed_fields(body, {"action", "surgeryId", "phone", "caseSlot", "operatingRoom", "wardRoom", "note", "expectedSurgeryRevision"})
             act = str(body.get("action") or "link_existing_surgery").strip()
             if act != "link_existing_surgery":
                 raise ApprovalEngineError(422, "INVALID_ACTION", "Action phải là link_existing_surgery.")
@@ -1330,40 +1691,52 @@ def register_robot_schedule_routes(app, sf_mod):
             if slot not in ROBOT_VALID_SLOTS:
                 raise ApprovalEngineError(422, "INVALID_CASE_SLOT", "Ca mổ không hợp lệ (Ca 1–Ca 3, tối đa 3 ca/ngày).")
             room = str(body.get("operatingRoom") or get_robot_config(db).get("defaultOperatingRoom") or "PM Robot").strip()
+            ward_room = _normalize_ward_room(body.get("wardRoom"), required=False)
 
             is_sbx = bool(surg.get("isTestSandboxCase") is True)
             code = _next_robot_code(db, is_sandbox=is_sbx)
             now_iso = now_vn_iso()
             uname = perms["username"]
+            actor_name = format_doctor_full_name(actor) or _staff_display_name(db, perms["staffId"], uname)
             s_date = str(surg.get("date") or "").strip()
             today_str = _today_vn_iso()
             is_hist = bool(is_valid_iso_date(s_date) and s_date < today_str)
 
             rcase = {
+                "schemaVersion": 2,
                 "robotCaseCode": code,
                 "soNV": code,
-                "status": "da_mo" if is_hist else "cho_mo",
+                "status": "da_mo" if is_hist else "da_xep_robot",
                 "completionSource": "linked_historical" if is_hist else None,
                 "patientName": str(surg.get("patientName") or "").strip(),
                 "birthYear": surg.get("birthYear") if is_pos_int(surg.get("birthYear")) else "",
                 "gender": str(surg.get("gender") or ""),
                 "phone": phone,
                 "admissionId": str(surg.get("admissionId") or "").strip(),
+                "wardRoom": ward_room,
+                "labsReadyConfirmed": True,
+                "indicationType": "uu_tien_robot",
                 "diagnosis": str(surg.get("diagnosis") or "").strip(),
                 "robotProcedure": str(surg.get("method") or "").strip(),
                 "mainSurgeonId": surg.get("mainSurgeon"),
                 "mainSurgeonName": resolve_staff_name_by_id(db, surg.get("mainSurgeon")),
                 "assistSurgeon1": surg.get("assistSurgeon1") if is_pos_int(surg.get("assistSurgeon1")) else None,
-                "consultResult": "dong_y",
+                "consultOutcome": "robot",
+                "consultedByStaffId": CHIEF_STAFF_ID,
+                "consultedByName": _staff_display_name(db, CHIEF_STAFF_ID, "TS. BSCKII. Nguyễn Phú Hữu"),
+                "consultDecidedAt": now_iso,
+                "consultDecidedByUsername": uname,
+                "consultDecidedByName": actor_name,
+                "scheduledApproach": "robot",
+                "scheduledSurgeryType": "robot",
                 "surgeryDate": s_date,
                 "caseSlot": slot,
                 "operatingRoom": room,
                 "surgeryTime": str(surg.get("surgeryTime") or "").strip(),
                 "durationMinutes": int(surg.get("duration") or 180),
+                "inpatientState": "noi_tru",
+                "plannedReadmitDate": "",
                 "note": str(body.get("note") or "").strip(),
-                "postB2ClinicalDirty": False,
-                "inpatientConfirmedAt": now_iso if not is_hist else None,
-                "inpatientConfirmedBy": uname if not is_hist else None,
                 "canonicalSurgeryId": sid,
                 "activeLinkedSurgeryId": sid,
                 "episodeId": 1,
@@ -1380,15 +1753,21 @@ def register_robot_schedule_routes(app, sf_mod):
                 "createdAt": now_iso,
                 "createdByUsername": uname,
                 "createdByStaffId": perms["staffId"],
+                "createdByName": actor_name,
                 "updatedAt": now_iso,
                 "updatedBy": uname,
             }
 
-            # Attach reverse pointer WITHOUT altering surg["approval"]
             surg["robotCaseId"] = code
             surg["robotSyncMeta"] = {
+                "scheduledApproach": "robot",
                 "operatingRoom": room,
                 "caseSlot": slot,
+                "wardRoom": ward_room,
+                "inpatientState": "noi_tru",
+                "plannedReadmitDate": "",
+                "consultOutcome": "robot",
+                "createdByName": actor_name,
                 "robotCaseRevision": 1,
                 "syncedAt": now_iso,
             }
@@ -1443,133 +1822,234 @@ def register_robot_schedule_routes(app, sf_mod):
             cur_status = rcase.get("status")
             now_iso = now_vn_iso()
             uname = perms["username"]
+            actor_name = format_doctor_full_name(actor) or _staff_display_name(db, perms["staffId"], uname)
             code = _robot_code_of(rcase)
             linked_ops = []
             rec_ref = None
             override_audit = None
+            committed_notifs = []
 
-            if action == "consult_result":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "consultResult", "consultNote", "expectedTimeframe"})
-                is_owner = (
-                    (rcase.get("createdByUsername") == uname and uname)
-                    or (is_pos_int(perms["staffId"]) and rcase.get("mainSurgeonId") == perms["staffId"])
+            if action == "schedule_consult":
+                _validate_allowed_fields(body, {"action", "expectedRevision", "consultDate", "consultSession", "consultScheduleNote"})
+                if not perms["canScheduleConsult"]:
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ BS Nguyện, BS Hoan hoặc Ban Chủ nhiệm mới được xếp lịch tư vấn phẫu thuật.")
+                if cur_status not in ("cho_xep_tu_van", "da_xep_tu_van", "can_nhac"):
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể xếp lịch tư vấn từ trạng thái {cur_status}.")
+                c_date = str(body.get("consultDate") or "").strip()
+                if not is_valid_iso_date(c_date):
+                    raise ApprovalEngineError(422, "INVALID_CONSULT_DATE", "Vui lòng chọn Ngày tư vấn hợp lệ trên lịch (YYYY-MM-DD).")
+                if c_date < _today_vn_iso() and not perms["isSuperAdmin"]:
+                    raise ApprovalEngineError(422, "CONSULT_DATE_IN_PAST", "Không thể xếp lịch tư vấn về ngày trong quá khứ.")
+                c_sess = str(body.get("consultSession") or "").strip().lower()
+                if c_sess not in ROBOT_VALID_CONSULT_SESSIONS:
+                    raise ApprovalEngineError(422, "INVALID_CONSULT_SESSION", "Vui lòng chọn Buổi tư vấn: Sáng hoặc Chiều.")
+
+                if cur_status == "can_nhac":
+                    rcase["consultRound"] = int(rcase.get("consultRound") or 1) + 1
+                rcase["consultDate"] = c_date
+                rcase["consultSession"] = c_sess
+                rcase["consultScheduledAt"] = now_iso
+                rcase["consultScheduledBy"] = uname
+                rcase["consultScheduledByName"] = actor_name
+                if "consultScheduleNote" in body:
+                    rcase["consultScheduleNote"] = str(body.get("consultScheduleNote") or "").strip()
+                rcase["status"] = "da_xep_tu_van"
+                rcase["consultOutcome"] = "pending"
+
+                sess_lbl = "Sáng" if c_sess == "sang" else "Chiều"
+                targets = [CHIEF_STAFF_ID]
+                if is_pos_int(rcase.get("createdByStaffId")):
+                    targets.append(int(rcase["createdByStaffId"]))
+                msg = f"Lịch tư vấn {sess_lbl} {_fmt_vi_date(c_date)} với TS. Hữu · {_room_label(rcase.get('wardRoom'))} ({code})."
+                committed_notifs = build_robot_handoff_notifications(
+                    db,
+                    rcase,
+                    actor_staff_id=perms["staffId"],
+                    event_id=f"rbt_csch:{code}:v{rev_before + 1}",
+                    notif_type="robot_consult_scheduled",
+                    message=msg,
+                    recipient_staff_ids=targets,
                 )
-                if not (perms["canManageRobot"] or is_owner):
-                    raise ApprovalEngineError(403, "ROBOT_CONSULT_FORBIDDEN", "Chỉ BS phụ trách ca, người tạo hoặc Điều phối viên mới được cập nhật kết quả tư vấn.")
-                if cur_status not in ("tu_van", "can_nhac", "tu_choi"):
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể cập nhật kết quả tư vấn khi ca đang ở trạng thái {cur_status}.")
-                cr = str(body.get("consultResult") or "").strip()
-                if cr not in ("dong_y", "can_nhac", "tu_choi"):
-                    raise ApprovalEngineError(422, "INVALID_CONSULT_RESULT", "Kết quả tư vấn phải là dong_y, can_nhac hoặc tu_choi.")
-                rcase["consultResult"] = cr
-                if "consultNote" in body:
-                    rcase["consultNote"] = str(body.get("consultNote") or "").strip()
-                if "expectedTimeframe" in body:
-                    rcase["expectedTimeframe"] = _validate_expected_timeframe(body.get("expectedTimeframe"))
-                # Security invariant: dong_y always routes to cho_xep_lich (Step 1 queue), never Step 2
-                rcase["status"] = {"dong_y": "cho_xep_lich", "can_nhac": "can_nhac", "tu_choi": "tu_choi"}[cr]
-                wal_action = "robot_consult_updated"
+                wal_action = "robot_consult_scheduled"
 
-            elif action == "schedule_step1":
+            elif action == "decide_consult":
                 _validate_allowed_fields(
                     body,
-                    {"action", "expectedRevision", "surgeryDate", "caseSlot", "operatingRoom", "surgeryTime", "durationMinutes", "mainSurgeonId", "assistSurgeon1", "note", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"},
+                    {
+                        "action",
+                        "expectedRevision",
+                        "decision",
+                        "surgeryDate",
+                        "caseSlot",
+                        "operatingRoom",
+                        "surgeryTime",
+                        "durationMinutes",
+                        "mainSurgeonId",
+                        "assistSurgeon1",
+                        "scheduledSurgeryType",
+                        "robotProcedure",
+                        "refusalReason",
+                        "consultNote",
+                        "confirmConflict",
+                        "conflictOverrideReason",
+                        "expectedConflictFingerprint",
+                    },
                 )
-                if not perms["canEditSchedule"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền xếp lịch Bước 1.")
-                if cur_status not in ("tu_van", "can_nhac", "cho_xep_lich"):
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể xếp lịch B1 từ trạng thái {cur_status}.")
-                if "mainSurgeonId" in body:
-                    sid, sname = _validate_surgeon_id(db, body.get("mainSurgeonId"), required=True)
-                    rcase["mainSurgeonId"] = sid
-                    rcase["mainSurgeonName"] = sname
-                if "assistSurgeon1" in body:
-                    rcase["assistSurgeon1"] = _validate_assist_surgeon(db, body.get("assistSurgeon1"))
-                sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=True, allow_past_date=False)
-                override_audit = _check_conflict_or_override(
-                    db,
-                    candidate={**rcase, **sched},
-                    exclude_robot_code=code,
-                    exclude_surgery_id=rcase.get("canonicalSurgeryId"),
-                    body=body,
-                    perms=perms,
-                )
-                rcase.update(sched)
-                if "note" in body:
-                    rcase["note"] = str(body.get("note") or "").strip()
-                if override_audit:
-                    rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
-                rcase["status"] = "cho_duyet_tien_phau"
-                rcase["consultResult"] = "dong_y"
-                rcase["postB2ClinicalDirty"] = False
-                rcase["step1ScheduledAt"] = now_iso
-                rcase["step1ScheduledBy"] = uname
-                wal_action = "robot_step1_scheduled"
+                if not perms["canDecideConsult"]:
+                    raise ApprovalEngineError(403, "ROBOT_DECIDE_FORBIDDEN", "Chỉ TS. BSCKII. Nguyễn Phú Hữu hoặc Điều phối viên / BCN mới được chốt kết quả tư vấn.")
+                if cur_status not in ("cho_xep_tu_van", "da_xep_tu_van", "can_nhac", "khong_dong_y_mo", "hoan_mo"):
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể chốt kết quả tư vấn khi ca đang ở trạng thái {cur_status}.")
 
-            elif action == "preop_step2":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "note"})
-                if not perms["canApproveSteps"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền xác nhận Tiền phẫu (B2).")
-                if cur_status != "cho_duyet_tien_phau":
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Ca phải đang ở bước Chờ duyệt tiền phẫu để thực hiện B2 (hiện tại: {cur_status}).")
-                if not is_valid_iso_date(rcase.get("surgeryDate")) or not rcase.get("caseSlot"):
-                    raise ApprovalEngineError(422, "SCHEDULE_DATE_SLOT_REQUIRED", "Ca chưa có đầy đủ ngày mổ và ca mổ.")
-                if "note" in body:
-                    rcase["note"] = str(body.get("note") or "").strip()
-                rcase["preopApprovedAt"] = now_iso
-                rcase["preopApprovedBy"] = uname
-                rcase["postB2ClinicalDirty"] = False
-                rcase["status"] = "cho_duyet_luu_vien"
-                wal_action = "robot_step2_preop"
+                decision = str(body.get("decision") or "").strip()
+                if decision not in ("robot", "noisoi", "khong_mo", "can_nhac"):
+                    raise ApprovalEngineError(422, "INVALID_CONSULT_DECISION", "Kết quả tư vấn phải là robot, noisoi, can_nhac hoặc khong_mo.")
 
-            elif action == "inpatient_step3":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "admissionId", "wardRoom", "note", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"})
-                if not perms["canApproveSteps"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền xác nhận Ở lại chờ mổ (B3).")
-                if cur_status != "cho_duyet_luu_vien":
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Ca phải đang ở bước Chờ duyệt lưu viện để lên B3 (hiện tại: {cur_status}).")
-                if rcase.get("postB2ClinicalDirty") is True:
-                    raise ApprovalEngineError(409, "PREOP_REAPPROVAL_REQUIRED", "Thông tin lâm sàng đã sửa sau bước B2 — cần duyệt lại Tiền phẫu (B2) trước khi lên B3.")
-                if "admissionId" in body:
-                    rcase["admissionId"] = str(body.get("admissionId") or "").strip()
-                if "wardRoom" in body:
-                    rcase["wardRoom"] = str(body.get("wardRoom") or "").strip()
-                if "note" in body:
-                    rcase["note"] = str(body.get("note") or "").strip()
+                if "consultNote" in body:
+                    rcase["consultNote"] = str(body.get("consultNote") or "").strip()
+                if "robotProcedure" in body and str(body.get("robotProcedure") or "").strip():
+                    rcase["robotProcedure"] = str(body.get("robotProcedure") or "").strip()
 
-                override_audit = _check_conflict_or_override(
-                    db,
-                    candidate=rcase,
-                    exclude_robot_code=code,
-                    exclude_surgery_id=rcase.get("canonicalSurgeryId"),
-                    body=body,
-                    perms=perms,
-                )
-                if override_audit:
-                    rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
-
-                rcase["status"] = "cho_mo"
-                rcase["inpatientConfirmedAt"] = now_iso
-                rcase["inpatientConfirmedBy"] = uname
+                rcase["consultedByStaffId"] = CHIEF_STAFF_ID
+                rcase["consultedByName"] = _staff_display_name(db, CHIEF_STAFF_ID, "TS. BSCKII. Nguyễn Phú Hữu")
+                rcase["consultDecidedAt"] = now_iso
+                rcase["consultDecidedByUsername"] = uname
+                rcase["consultDecidedByName"] = actor_name
+                rcase["consultOutcome"] = decision
                 rcase["caseRevision"] = rev_before + 1
                 rcase["updatedAt"] = now_iso
                 rcase["updatedBy"] = uname
 
-                rec_ref, s_op = _upsert_active_linked_surgery(
+                targets = []
+                if is_pos_int(rcase.get("createdByStaffId")):
+                    targets.append(int(rcase["createdByStaffId"]))
+                room_lbl = _room_label(rcase.get("wardRoom"))
+
+                if decision == "robot":
+                    raw_sid = body.get("mainSurgeonId") if body.get("mainSurgeonId") not in ("", None) else (rcase.get("mainSurgeonId") or CHIEF_STAFF_ID)
+                    sid, sname = _validate_surgeon_id(db, raw_sid, required=True)
+                    rcase["mainSurgeonId"] = sid
+                    rcase["mainSurgeonName"] = sname
+                    if "assistSurgeon1" in body:
+                        rcase["assistSurgeon1"] = _validate_assist_surgeon(db, body.get("assistSurgeon1"))
+
+                    sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=True, allow_past_date=False, approach="robot")
+                    override_audit = _check_conflict_or_override(
+                        db,
+                        candidate={**rcase, **sched},
+                        exclude_robot_code=code,
+                        exclude_surgery_id=rcase.get("canonicalSurgeryId"),
+                        body=body,
+                        perms=perms,
+                    )
+                    rcase.update(sched)
+                    if override_audit:
+                        rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
+                    rcase["status"] = "da_xep_robot"
+                    rcase["scheduledApproach"] = "robot"
+                    rcase["scheduledSurgeryType"] = "robot"
+                    rcase["refusalReason"] = ""
+                    if rcase.get("inpatientState") not in ROBOT_INPATIENT_STATES:
+                        rcase["inpatientState"] = "noi_tru"
+
+                    rec_ref, s_op = _upsert_active_linked_surgery(
+                        db,
+                        rcase,
+                        catalog=catalog,
+                        cfg=cfg,
+                        actor_username=uname,
+                        event_label="robot_decided_robot",
+                    )
+                    linked_ops.append(s_op)
+                    msg = f"TS. Hữu chốt Mổ Robot {_fmt_vi_date(rcase['surgeryDate'])} ({rcase['caseSlot']}) · {room_lbl} ({code})."
+
+                elif decision == "noisoi":
+                    raw_sid = body.get("mainSurgeonId")
+                    sid, sname = _validate_surgeon_id(db, raw_sid, required=True)
+                    rcase["mainSurgeonId"] = sid
+                    rcase["mainSurgeonName"] = sname
+                    if "assistSurgeon1" in body:
+                        rcase["assistSurgeon1"] = _validate_assist_surgeon(db, body.get("assistSurgeon1"))
+                    s_type = str(body.get("scheduledSurgeryType") or "chuongtrinh").strip()
+                    if s_type not in ("chuongtrinh", "yeucau", "bankhan"):
+                        raise ApprovalEngineError(422, "INVALID_SURGERY_TYPE", "Loại phẫu thuật Nội soi phải là chuongtrinh, yeucau hoặc bankhan.")
+
+                    sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=False, allow_past_date=False, approach="noisoi")
+                    rcase.update(sched)
+                    rcase["status"] = "da_xep_noisoi"
+                    rcase["scheduledApproach"] = "noisoi"
+                    rcase["scheduledSurgeryType"] = s_type
+                    rcase["refusalReason"] = ""
+                    if rcase.get("inpatientState") not in ROBOT_INPATIENT_STATES:
+                        rcase["inpatientState"] = "noi_tru"
+
+                    rec_ref, s_op = _upsert_active_linked_surgery(
+                        db,
+                        rcase,
+                        catalog=catalog,
+                        cfg=cfg,
+                        actor_username=uname,
+                        event_label="robot_decided_laparoscopic",
+                    )
+                    linked_ops.append(s_op)
+                    if sid not in targets:
+                        targets.append(sid)
+                    msg = f"TS. Hữu chốt Chuyển mổ Nội soi {_fmt_vi_date(rcase['surgeryDate'])} (PTV: {sname}) · {room_lbl} ({code})."
+
+                elif decision == "khong_mo":
+                    r_code = str(body.get("refusalReason") or "").strip()
+                    if r_code not in ROBOT_REFUSAL_REASONS:
+                        raise ApprovalEngineError(422, "REFUSAL_REASON_REQUIRED", "Vui lòng chọn lý do bệnh nhân không đồng ý mổ.")
+                    rcase["status"] = "khong_dong_y_mo"
+                    rcase["refusalReason"] = r_code
+                    rcase["scheduledApproach"] = ""
+                    rcase["scheduledSurgeryType"] = ""
+                    rcase["surgeryDate"] = ""
+                    rcase["caseSlot"] = ""
+                    rcase["inpatientState"] = "noi_tru"
+                    rcase["plannedReadmitDate"] = ""
+                    t_op = _move_active_surgery_to_trash(
+                        db,
+                        rcase,
+                        actor_username=uname,
+                        deleted_reason=f"robot_declined:{r_code}",
+                        event_label="robot_decided_declined",
+                    )
+                    if t_op:
+                        linked_ops.append(t_op)
+                    msg = f"KQ tư vấn: Không đồng ý mổ ({ROBOT_REFUSAL_REASONS[r_code]}) · {room_lbl} ({code})."
+
+                else:  # can_nhac
+                    rcase["status"] = "can_nhac"
+                    rcase["scheduledApproach"] = ""
+                    rcase["scheduledSurgeryType"] = ""
+                    rcase["inpatientState"] = "noi_tru"
+                    t_op = _move_active_surgery_to_trash(
+                        db,
+                        rcase,
+                        actor_username=uname,
+                        deleted_reason="robot_considering_reconsult",
+                        event_label="robot_decided_considering",
+                    )
+                    if t_op:
+                        linked_ops.append(t_op)
+                    targets.extend(_coordinator_staff_ids(db, sf_mod))
+                    msg = f"KQ tư vấn: BN đang cân nhắc, cần xếp lịch tư vấn lại · {room_lbl} ({code})."
+
+                committed_notifs = build_robot_handoff_notifications(
                     db,
                     rcase,
-                    catalog=catalog,
-                    cfg=cfg,
-                    actor_username=uname,
-                    event_label="robot_step3_inpatient",
+                    actor_staff_id=perms["staffId"],
+                    event_id=f"rbt_dec:{code}:v{rev_before + 1}",
+                    notif_type="robot_consult_decided",
+                    message=msg,
+                    recipient_staff_ids=targets,
                 )
-                linked_ops.append(s_op)
-                wal_action = "robot_step3_inpatient"
+                wal_action = f"robot_consult_decided_{decision}"
 
             elif action == "edit_info":
                 _validate_allowed_fields(
                     body,
-                    {"action", "expectedRevision", "patientName", "birthYear", "gender", "phone", "admissionId", "diagnosis", "robotProcedure", "mainSurgeonId", "assistSurgeon1", "wardRoom", "note", "expectedTimeframe", "consultNote"},
+                    {"action", "expectedRevision", "patientName", "birthYear", "gender", "phone", "admissionId", "wardRoom", "indicationType", "labsReadyConfirmed", "diagnosis", "robotProcedure", "mainSurgeonId", "assistSurgeon1", "note", "expectedTimeframe", "consultNote"},
                 )
                 is_owner = (
                     (rcase.get("createdByUsername") == uname and uname)
@@ -1578,17 +2058,16 @@ def register_robot_schedule_routes(app, sf_mod):
                 if cur_status == "da_mo":
                     if not perms["canManageRobot"]:
                         raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Ca đã mổ chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới được chỉnh sửa.")
-                elif cur_status in ("cho_mo", "hoan_mo", "xuat_vien_cho"):
+                elif cur_status in ("da_xep_robot", "da_xep_noisoi", "hoan_mo", "khong_dong_y_mo"):
                     if not (perms["canManageRobot"] or is_owner):
-                        raise ApprovalEngineError(403, "ROBOT_EDIT_FORBIDDEN", "Chỉ BS phụ trách ca hoặc Điều phối viên Robot mới được sửa thông tin ở trạng thái này.")
+                        raise ApprovalEngineError(403, "ROBOT_EDIT_FORBIDDEN", "Chỉ BS phụ trách ca, người gửi hoặc Điều phối viên mới được sửa thông tin ca ở trạng thái này.")
                 else:
-                    if not perms["canEditInfo"]:
-                        raise ApprovalEngineError(403, "ROBOT_EDIT_FORBIDDEN", "Tài khoản không có quyền chỉnh sửa thông tin ca Robot.")
+                    if not (perms["canManageRobot"] or is_owner or perms["canEditInfo"]):
+                        raise ApprovalEngineError(403, "ROBOT_EDIT_FORBIDDEN", "Tài khoản không có quyền chỉnh sửa thông tin ca này.")
 
-                if "mainSurgeonId" in body and not perms["canEditSchedule"] and body.get("mainSurgeonId") != rcase.get("mainSurgeonId") and cur_status in ("cho_mo", "cho_duyet_tien_phau", "cho_duyet_luu_vien"):
-                    raise ApprovalEngineError(403, "ROBOT_SCHEDULE_COORDINATOR_REQUIRED", "Chỉ Điều phối viên Robot hoặc Ban Chủ nhiệm mới được đổi PTV chính sau khi đã xếp lịch.")
+                if "mainSurgeonId" in body and not perms["canEditSchedule"] and body.get("mainSurgeonId") != rcase.get("mainSurgeonId") and cur_status in ROBOT_ACTIVE_SCHEDULE_STATUSES:
+                    raise ApprovalEngineError(403, "ROBOT_SCHEDULE_COORDINATOR_REQUIRED", "Chỉ Điều phối viên hoặc Ban Chủ nhiệm mới được đổi PTV chính sau khi đã xếp lịch mổ.")
 
-                old_core = {f: rcase.get(f) for f in ROBOT_CLINICAL_CORE_FIELDS}
                 if "patientName" in body:
                     pname = str(body.get("patientName") or "").strip()
                     if not pname:
@@ -1604,6 +2083,12 @@ def register_robot_schedule_routes(app, sf_mod):
                     rcase["phone"] = normalize_phone_vn(body.get("phone"), required=False)
                 if "admissionId" in body:
                     rcase["admissionId"] = str(body.get("admissionId") or "").strip()
+                if "wardRoom" in body:
+                    rcase["wardRoom"] = _normalize_ward_room(body.get("wardRoom"), required=False)
+                if "indicationType" in body and str(body.get("indicationType") or "").strip() in ROBOT_INDICATION_TYPES:
+                    rcase["indicationType"] = str(body.get("indicationType")).strip()
+                if "labsReadyConfirmed" in body:
+                    rcase["labsReadyConfirmed"] = bool(body.get("labsReadyConfirmed"))
                 if "diagnosis" in body:
                     rcase["diagnosis"] = str(body.get("diagnosis") or "").strip()
                 if "robotProcedure" in body:
@@ -1614,8 +2099,6 @@ def register_robot_schedule_routes(app, sf_mod):
                     rcase["mainSurgeonName"] = sname
                 if "assistSurgeon1" in body:
                     rcase["assistSurgeon1"] = _validate_assist_surgeon(db, body.get("assistSurgeon1"))
-                if "wardRoom" in body:
-                    rcase["wardRoom"] = str(body.get("wardRoom") or "").strip()
                 if "note" in body:
                     rcase["note"] = str(body.get("note") or "").strip()
                 if "expectedTimeframe" in body:
@@ -1623,18 +2106,11 @@ def register_robot_schedule_routes(app, sf_mod):
                 if "consultNote" in body:
                     rcase["consultNote"] = str(body.get("consultNote") or "").strip()
 
-                clinical_changed = [f for f in ROBOT_CLINICAL_CORE_FIELDS if (old_core.get(f) or None) != (rcase.get(f) or None)]
-                if clinical_changed and cur_status == "cho_duyet_luu_vien":
-                    rcase["status"] = "cho_duyet_tien_phau"
-                    rcase["postB2ClinicalDirty"] = True
-                    rcase["preopApprovedAt"] = None
-                    rcase["preopApprovedBy"] = None
-
                 rcase["caseRevision"] = rev_before + 1
                 rcase["updatedAt"] = now_iso
                 rcase["updatedBy"] = uname
 
-                if rcase.get("status") == "cho_mo" and is_pos_int(rcase.get("activeLinkedSurgeryId")):
+                if rcase.get("status") in ROBOT_ACTIVE_SCHEDULE_STATUSES and is_pos_int(rcase.get("activeLinkedSurgeryId")):
                     rec_ref, s_op = _upsert_active_linked_surgery(
                         db,
                         rcase,
@@ -1649,138 +2125,137 @@ def register_robot_schedule_routes(app, sf_mod):
             elif action == "edit_schedule":
                 _validate_allowed_fields(
                     body,
-                    {"action", "expectedRevision", "surgeryDate", "caseSlot", "operatingRoom", "surgeryTime", "durationMinutes", "mainSurgeonId", "assistSurgeon1", "note", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"},
+                    {"action", "expectedRevision", "surgeryDate", "caseSlot", "operatingRoom", "surgeryTime", "durationMinutes", "mainSurgeonId", "assistSurgeon1", "scheduledSurgeryType", "note", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"},
                 )
                 if not perms["canEditSchedule"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền điều chỉnh lịch mổ Robot.")
-                if cur_status not in ("cho_duyet_tien_phau", "cho_duyet_luu_vien", "cho_mo"):
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Chỉ chỉnh lịch trực tiếp cho ca đang chờ mổ/duyệt (hiện tại: {cur_status}).")
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên mới có quyền điều chỉnh lịch mổ.")
+                if cur_status not in ROBOT_ACTIVE_SCHEDULE_STATUSES:
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Chỉ chỉnh lịch cho ca đã xếp lịch mổ (hiện tại: {cur_status}).")
 
+                approach = "noisoi" if cur_status == "da_xep_noisoi" else "robot"
                 if "mainSurgeonId" in body:
                     sid, sname = _validate_surgeon_id(db, body.get("mainSurgeonId"), required=True)
                     rcase["mainSurgeonId"] = sid
                     rcase["mainSurgeonName"] = sname
                 if "assistSurgeon1" in body:
                     rcase["assistSurgeon1"] = _validate_assist_surgeon(db, body.get("assistSurgeon1"))
+                if approach == "noisoi" and "scheduledSurgeryType" in body:
+                    st_val = str(body.get("scheduledSurgeryType") or "").strip()
+                    if st_val not in ("chuongtrinh", "yeucau", "bankhan"):
+                        raise ApprovalEngineError(422, "INVALID_SURGERY_TYPE", "Loại phẫu thuật Nội soi không hợp lệ.")
+                    rcase["scheduledSurgeryType"] = st_val
 
-                sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=True, allow_past_date=False)
-                override_audit = _check_conflict_or_override(
-                    db,
-                    candidate={**rcase, **sched, "mainSurgeonId": rcase.get("mainSurgeonId")},
-                    exclude_robot_code=code,
-                    exclude_surgery_id=rcase.get("canonicalSurgeryId"),
-                    body=body,
-                    perms=perms,
-                )
+                sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=(approach == "robot"), allow_past_date=False, approach=approach)
+                if approach == "robot":
+                    override_audit = _check_conflict_or_override(
+                        db,
+                        candidate={**rcase, **sched, "mainSurgeonId": rcase.get("mainSurgeonId")},
+                        exclude_robot_code=code,
+                        exclude_surgery_id=rcase.get("canonicalSurgeryId"),
+                        body=body,
+                        perms=perms,
+                    )
+                    if override_audit:
+                        rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
                 rcase.update(sched)
+                if rcase.get("inpatientState") == "xuat_vien_cho" and is_valid_iso_date(rcase.get("plannedReadmitDate")) and rcase["plannedReadmitDate"] > rcase["surgeryDate"]:
+                    rcase["plannedReadmitDate"] = rcase["surgeryDate"]
                 if "note" in body:
                     rcase["note"] = str(body.get("note") or "").strip()
-                if override_audit:
-                    rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
 
                 rcase["caseRevision"] = rev_before + 1
                 rcase["updatedAt"] = now_iso
                 rcase["updatedBy"] = uname
 
-                if cur_status == "cho_mo" or is_pos_int(rcase.get("activeLinkedSurgeryId")):
-                    rec_ref, s_op = _upsert_active_linked_surgery(
-                        db,
-                        rcase,
-                        catalog=catalog,
-                        cfg=cfg,
-                        actor_username=uname,
-                        event_label="robot_schedule_updated",
-                    )
-                    linked_ops.append(s_op)
+                rec_ref, s_op = _upsert_active_linked_surgery(
+                    db,
+                    rcase,
+                    catalog=catalog,
+                    cfg=cfg,
+                    actor_username=uname,
+                    event_label="robot_schedule_updated",
+                )
+                linked_ops.append(s_op)
                 wal_action = "robot_schedule_updated"
 
-            elif action == "inline_note":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "note", "wardRoom"})
-                if not perms["canInlineNote"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền ghi chú nhanh trên lưới lịch.")
-                if "note" in body:
-                    rcase["note"] = str(body.get("note") or "").strip()
-                if "wardRoom" in body:
-                    rcase["wardRoom"] = str(body.get("wardRoom") or "").strip()
-                wal_action = "robot_note_updated"
-
             elif action == "discharge_wait":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "dischargeReason", "note"})
-                if not perms["canPostponeOrDischarge"]:
-                    raise ApprovalEngineError(403, "ROBOT_DISCHARGE_FORBIDDEN", "Tài khoản không có quyền chuyển ca sang Xuất viện chờ.")
-                if cur_status not in ("cho_duyet_tien_phau", "cho_duyet_luu_vien", "cho_mo"):
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể xuất viện chờ từ trạng thái {cur_status}.")
-                reason = str(body.get("dischargeReason") or "").strip()
-                if len(reason) < 3:
-                    raise ApprovalEngineError(422, "DISCHARGE_REASON_REQUIRED", "Vui lòng nhập lý do cho xuất viện chờ (tối thiểu 3 ký tự).")
-                rcase["status"] = "xuat_vien_cho"
+                _validate_allowed_fields(body, {"action", "expectedRevision", "plannedReadmitDate", "dischargeReason", "note"})
+                if not perms["canManageInpatientWait"]:
+                    raise ApprovalEngineError(403, "ROBOT_DISCHARGE_FORBIDDEN", "Chỉ Bác sĩ mới có quyền ghi nhận Xuất viện chờ & Hẹn ngày nhập lại.")
+                if cur_status not in ROBOT_ACTIVE_SCHEDULE_STATUSES:
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Chỉ thực hiện Xuất viện chờ cho ca đã xếp lịch mổ (hiện tại: {cur_status}).")
+                p_readmit = str(body.get("plannedReadmitDate") or "").strip()
+                if not is_valid_iso_date(p_readmit):
+                    raise ApprovalEngineError(422, "READMIT_DATE_REQUIRED", "Vui lòng chọn Ngày nhập viện trở lại trên lịch (YYYY-MM-DD).")
+                if p_readmit < _today_vn_iso() and not perms["isSuperAdmin"]:
+                    raise ApprovalEngineError(422, "READMIT_DATE_IN_PAST", "Ngày nhập viện trở lại không thể ở quá khứ.")
+                s_date = str(rcase.get("surgeryDate") or "").strip()
+                if is_valid_iso_date(s_date) and p_readmit > s_date:
+                    raise ApprovalEngineError(422, "READMIT_AFTER_SURGERY_DATE", f"Ngày nhập viện trở lại ({_fmt_vi_date(p_readmit)}) phải trước hoặc bằng ngày mổ ({_fmt_vi_date(s_date)}).")
+
+                reason = str(body.get("dischargeReason") or "").strip() or "Lịch mổ còn xa — cho xuất viện chờ hẹn nhập lại"
+                rcase["inpatientState"] = "xuat_vien_cho"
+                rcase["plannedReadmitDate"] = p_readmit
                 rcase["dischargeReason"] = reason
                 rcase["dischargedWaitAt"] = now_iso
                 rcase["dischargedWaitBy"] = uname
-                rcase["previousScheduleSnapshot"] = {
-                    "surgeryDate": rcase.get("surgeryDate"),
-                    "caseSlot": rcase.get("caseSlot"),
-                    "operatingRoom": rcase.get("operatingRoom"),
-                    "statusBefore": cur_status,
-                }
+                rcase["dischargedWaitByName"] = actor_name
                 if "note" in body:
                     rcase["note"] = str(body.get("note") or "").strip()
-                t_op = _move_active_surgery_to_trash(
+
+                rcase["caseRevision"] = rev_before + 1
+                rcase["updatedAt"] = now_iso
+                rcase["updatedBy"] = uname
+
+                # Slot preservation: keep active record in surgeries[] with updated robotSyncMeta
+                rec_ref, s_op = _upsert_active_linked_surgery(
                     db,
                     rcase,
+                    catalog=catalog,
+                    cfg=cfg,
                     actor_username=uname,
-                    deleted_reason=f"robot_discharge_wait:{reason}",
-                    event_label="robot_discharged_wait",
+                    event_label="robot_discharged_wait_slot_kept",
                 )
-                if t_op:
-                    linked_ops.append(t_op)
+                linked_ops.append(s_op)
                 wal_action = "robot_discharged_wait"
 
-            elif action == "readmit":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "surgeryDate", "caseSlot", "operatingRoom", "surgeryTime", "durationMinutes", "newEpisode", "note", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"})
-                if not perms["canEditSchedule"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền nhập lại bệnh nhân chờ.")
-                if cur_status != "xuat_vien_cho":
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", "Chỉ thực hiện nhập lại từ trạng thái Xuất viện chờ.")
-                sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=True, allow_past_date=False)
-                new_episode = bool(body.get("newEpisode") is True)
-                if new_episode and is_pos_int(rcase.get("canonicalSurgeryId")):
-                    arch_op = _archive_linked_surgery_inactive(
-                        db,
-                        rcase,
-                        actor_username=uname,
-                        reason="robot_readmit_new_episode",
-                        superseded=True,
-                    )
-                    if arch_op:
-                        linked_ops.append(arch_op)
-                override_audit = _check_conflict_or_override(
-                    db,
-                    candidate={**rcase, **sched},
-                    exclude_robot_code=code,
-                    exclude_surgery_id=rcase.get("canonicalSurgeryId"),
-                    body=body,
-                    perms=perms,
-                )
-                rcase.update(sched)
-                if override_audit:
-                    rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
+            elif action == "confirm_readmit":
+                _validate_allowed_fields(body, {"action", "expectedRevision", "wardRoom", "note"})
+                if not perms["canManageInpatientWait"]:
+                    raise ApprovalEngineError(403, "ROBOT_READMIT_FORBIDDEN", "Chỉ Bác sĩ mới có quyền xác nhận bệnh nhân đã nhập viện lại.")
+                if cur_status not in ROBOT_ACTIVE_SCHEDULE_STATUSES or rcase.get("inpatientState") != "xuat_vien_cho":
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", "Chỉ xác nhận nhập lại khi ca đang ở trạng thái Xuất viện chờ.")
+                if "wardRoom" in body and str(body.get("wardRoom") or "").strip():
+                    rcase["wardRoom"] = _normalize_ward_room(body.get("wardRoom"), required=False)
                 if "note" in body:
                     rcase["note"] = str(body.get("note") or "").strip()
-                rcase["status"] = "cho_duyet_tien_phau"
-                rcase["preopApprovedAt"] = None
-                rcase["preopApprovedBy"] = None
-                rcase["inpatientConfirmedAt"] = None
-                rcase["inpatientConfirmedBy"] = None
-                rcase["postB2ClinicalDirty"] = False
-                wal_action = "robot_readmitted"
+
+                rcase["inpatientState"] = "da_nhap_lai"
+                rcase["readmittedAt"] = now_iso
+                rcase["readmittedBy"] = uname
+                rcase["readmittedByName"] = actor_name
+                rcase["caseRevision"] = rev_before + 1
+                rcase["updatedAt"] = now_iso
+                rcase["updatedBy"] = uname
+
+                rec_ref, s_op = _upsert_active_linked_surgery(
+                    db,
+                    rcase,
+                    catalog=catalog,
+                    cfg=cfg,
+                    actor_username=uname,
+                    event_label="robot_confirmed_readmit",
+                )
+                linked_ops.append(s_op)
+                wal_action = "robot_confirmed_readmit"
 
             elif action == "postpone":
                 _validate_allowed_fields(body, {"action", "expectedRevision", "postponeReasonCode", "postponeReasonNote", "forceLookbackOverride", "note"})
                 is_surgeon_owner = is_pos_int(perms["staffId"]) and rcase.get("mainSurgeonId") == perms["staffId"]
-                if not (perms["canManageRobot"] or is_surgeon_owner or perms["canPostponeOrDischarge"]):
-                    raise ApprovalEngineError(403, "ROBOT_POSTPONE_FORBIDDEN", "Tài khoản không có quyền hoãn ca phẫu thuật Robot.")
-                if cur_status not in ("cho_duyet_tien_phau", "cho_duyet_luu_vien", "cho_mo", "da_mo"):
+                is_creator_owner = bool(uname and rcase.get("createdByUsername") == uname)
+                if not (perms["canManageRobot"] or is_surgeon_owner or is_creator_owner or perms["canPostponeOrDischarge"]):
+                    raise ApprovalEngineError(403, "ROBOT_POSTPONE_FORBIDDEN", "Tài khoản không có quyền hoãn ca phẫu thuật này.")
+                if cur_status not in ("da_xep_robot", "da_xep_noisoi", "da_mo"):
                     raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể hoãn mổ từ trạng thái {cur_status}.")
 
                 rcode = str(body.get("postponeReasonCode") or "").strip()
@@ -1812,9 +2287,11 @@ def register_robot_schedule_routes(app, sf_mod):
                     "surgeryDate": rcase.get("surgeryDate"),
                     "caseSlot": rcase.get("caseSlot"),
                     "operatingRoom": rcase.get("operatingRoom"),
+                    "scheduledApproach": rcase.get("scheduledApproach") or ("noisoi" if cur_status == "da_xep_noisoi" else "robot"),
                     "statusBefore": cur_status,
                 }
                 rcase["status"] = "hoan_mo"
+                rcase["inpatientState"] = "noi_tru"
                 rcase["postponedAt"] = now_iso
                 rcase["postponedBy"] = uname
                 rcase["postponedFromStatus"] = cur_status
@@ -1846,79 +2323,37 @@ def register_robot_schedule_routes(app, sf_mod):
                     linked_ops.append(t_op)
                 wal_action = "robot_postponed"
 
-            elif action == "restore_to_schedule":
-                _validate_allowed_fields(
-                    body,
-                    {"action", "expectedRevision", "surgeryDate", "caseSlot", "operatingRoom", "surgeryTime", "durationMinutes", "targetStep", "newEpisode", "note", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"},
-                )
+            elif action == "mark_completed":
+                _validate_allowed_fields(body, {"action", "expectedRevision", "note"})
                 if not perms["canEditSchedule"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền xếp lịch lại cho ca hoãn/chờ.")
-                if cur_status not in ("hoan_mo", "xuat_vien_cho"):
-                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Chỉ xếp lịch lại từ trạng thái Hoãn mổ hoặc Xuất viện chờ (hiện tại: {cur_status}).")
-
-                target_step = str(body.get("targetStep") or "cho_duyet_tien_phau").strip()
-                if target_step not in ("cho_duyet_tien_phau", "cho_mo"):
-                    raise ApprovalEngineError(422, "INVALID_TARGET_STEP", "Bước đích chỉ hỗ trợ cho_duyet_tien_phau hoặc cho_mo.")
-                new_episode = bool(body.get("newEpisode") is True)
-                if new_episode and target_step == "cho_mo":
-                    raise ApprovalEngineError(422, "NEW_EPISODE_MUST_RECHECK_PREOP", "Khi tạo đợt điều trị mới (newEpisode=true), ca bệnh bắt buộc đi qua bước Khám tiền phẫu B2.")
-
-                sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=True, allow_past_date=False)
-                if new_episode and is_pos_int(rcase.get("canonicalSurgeryId")):
-                    arch_op = _archive_linked_surgery_inactive(
-                        db,
-                        rcase,
-                        actor_username=uname,
-                        reason="robot_restore_new_episode",
-                        superseded=True,
-                    )
-                    if arch_op:
-                        linked_ops.append(arch_op)
-
-                override_audit = _check_conflict_or_override(
-                    db,
-                    candidate={**rcase, **sched},
-                    exclude_robot_code=code,
-                    exclude_surgery_id=rcase.get("canonicalSurgeryId"),
-                    body=body,
-                    perms=perms,
-                )
-                rcase.update(sched)
-                if override_audit:
-                    rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên mới được xác nhận ca đã phẫu thuật.")
+                if cur_status not in ROBOT_ACTIVE_SCHEDULE_STATUSES:
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Chỉ đánh dấu đã mổ từ trạng thái đang xếp lịch (hiện tại: {cur_status}).")
                 if "note" in body:
                     rcase["note"] = str(body.get("note") or "").strip()
+                rcase["status"] = "da_mo"
+                rcase["completionSource"] = "manual_confirm"
+                rcase["completedAt"] = now_iso
+                rcase["completedBy"] = uname
+                wal_action = "robot_marked_completed"
 
-                rcase["status"] = target_step
-                rcase["caseRevision"] = rev_before + 1
-                rcase["updatedAt"] = now_iso
-                rcase["updatedBy"] = uname
-
-                if target_step == "cho_mo":
-                    rcase["inpatientConfirmedAt"] = now_iso
-                    rcase["inpatientConfirmedBy"] = uname
-                    rec_ref, s_op = _upsert_active_linked_surgery(
-                        db,
-                        rcase,
-                        catalog=catalog,
-                        cfg=cfg,
-                        actor_username=uname,
-                        event_label="robot_restored_to_schedule",
-                    )
-                    linked_ops.append(s_op)
-                else:
-                    rcase["preopApprovedAt"] = None
-                    rcase["preopApprovedBy"] = None
-                    rcase["inpatientConfirmedAt"] = None
-                    rcase["inpatientConfirmedBy"] = None
-                    rcase["postB2ClinicalDirty"] = False
-
-                wal_action = "robot_restored_to_schedule"
+            elif action == "reopen_consult":
+                _validate_allowed_fields(body, {"action", "expectedRevision", "note"})
+                if not (perms["canScheduleConsult"] or perms["canDecideConsult"]):
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Điều phối viên hoặc Ban Chủ nhiệm mới được mở lại bước tư vấn.")
+                if cur_status not in ("khong_dong_y_mo", "hoan_mo", "can_nhac"):
+                    raise ApprovalEngineError(409, "INVALID_STATE_TRANSITION", f"Không thể mở lại tư vấn từ trạng thái {cur_status}.")
+                if "note" in body:
+                    rcase["note"] = str(body.get("note") or "").strip()
+                rcase["status"] = "cho_xep_tu_van"
+                rcase["consultOutcome"] = "pending"
+                rcase["inpatientState"] = "noi_tru"
+                wal_action = "robot_reopened_consult"
 
             elif action == "soft_delete":
                 _validate_allowed_fields(body, {"action", "expectedRevision", "deleteReason"})
                 if not perms["canSoftDelete"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền đưa ca vào Thùng rác.")
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên mới có quyền đưa ca vào Thùng rác.")
                 if cur_status == "da_xoa":
                     raise ApprovalEngineError(409, "ALREADY_IN_TRASH", "Ca này đã nằm trong Thùng rác.")
                 rcase["preDeleteStatus"] = cur_status
@@ -1938,36 +2373,21 @@ def register_robot_schedule_routes(app, sf_mod):
                 wal_action = "robot_soft_deleted"
 
             elif action == "restore_trash":
-                _validate_allowed_fields(body, {"action", "expectedRevision", "surgeryDate", "caseSlot", "operatingRoom", "confirmConflict", "conflictOverrideReason", "expectedConflictFingerprint"})
+                _validate_allowed_fields(body, {"action", "expectedRevision"})
                 if not perms["canSoftDelete"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền khôi phục ca từ Thùng rác.")
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên mới có quyền khôi phục ca từ Thùng rác.")
                 if cur_status != "da_xoa":
                     raise ApprovalEngineError(409, "NOT_IN_TRASH", "Ca bệnh không ở trạng thái Thùng rác.")
 
-                prev_st = rcase.get("preDeleteStatus") or "cho_xep_lich"
-                if "surgeryDate" in body or "caseSlot" in body:
-                    sched = _validate_schedule_fields(body, db, existing_case=rcase, require_date_slot=True, allow_past_date=False)
-                    override_audit = _check_conflict_or_override(
-                        db,
-                        candidate={**rcase, **sched},
-                        exclude_robot_code=code,
-                        exclude_surgery_id=rcase.get("canonicalSurgeryId"),
-                        body=body,
-                        perms=perms,
-                    )
-                    rcase.update(sched)
-                    if override_audit:
-                        rcase.setdefault("conflictOverrideHistory", []).append(override_audit)
-                    rcase["status"] = "cho_duyet_tien_phau"
-                elif prev_st in ("tu_van", "can_nhac", "tu_choi", "cho_xep_lich", "hoan_mo", "xuat_vien_cho"):
+                prev_st = rcase.get("preDeleteStatus") or "cho_xep_tu_van"
+                if prev_st in ("cho_xep_tu_van", "da_xep_tu_van", "can_nhac", "khong_dong_y_mo", "hoan_mo"):
                     rcase["status"] = prev_st
                 else:
-                    # Safe anti-collision restore: slot-holding active states return to cho_xep_lich rather than auto-reoccupying a slot or surgeries[]
-                    rcase["status"] = "cho_xep_lich"
-                rcase["preopApprovedAt"] = None
-                rcase["preopApprovedBy"] = None
-                rcase["inpatientConfirmedAt"] = None
-                rcase["inpatientConfirmedBy"] = None
+                    # Anti-collision restore: return previously scheduled cases to consult scheduling rather than silently occupying a slot
+                    rcase["status"] = "da_xep_tu_van" if rcase.get("consultDate") else "cho_xep_tu_van"
+                    rcase["consultOutcome"] = "pending"
+                    rcase["scheduledApproach"] = ""
+                    rcase["inpatientState"] = "noi_tru"
                 rcase["deletedAt"] = None
                 rcase["deletedBy"] = None
                 rcase["deleteReason"] = None
@@ -1975,6 +2395,10 @@ def register_robot_schedule_routes(app, sf_mod):
 
             else:
                 raise ApprovalEngineError(422, "INVALID_ACTION", f"Hành động cập nhật không hợp lệ: {action}.")
+
+            if committed_notifs:
+                db.setdefault("notifications", []).extend(copy.deepcopy(committed_notifs))
+                db.setdefault("_revisions", {})["notifications"] = int(db.get("_revisions", {}).get("notifications", 1)) + 1
 
             rcase["caseRevision"] = rev_before + 1
             rcase["updatedAt"] = now_iso
@@ -1997,6 +2421,7 @@ def register_robot_schedule_routes(app, sf_mod):
                     linked_ops=linked_ops,
                     summary_extra={"patchAction": action},
                     record_ref=rec_ref,
+                    committed_notifications=committed_notifs,
                 ),
             }
 
@@ -2020,7 +2445,7 @@ def register_robot_schedule_routes(app, sf_mod):
         def _tx(*, db, body, real_user, actor, catalog, cfg):
             perms = _extended_robot_permissions(real_user, db)
             if not perms["canArchiveDeleted"]:
-                raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền lưu trữ ẩn hồ sơ từ Thùng rác.")
+                raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên mới có quyền lưu trữ ẩn hồ sơ từ Thùng rác.")
             _validate_allowed_fields(body, {"action", "expectedRevision"})
             rcase = _find_robot_case(db, robot_code)
             if rcase is None:
@@ -2034,7 +2459,6 @@ def register_robot_schedule_routes(app, sf_mod):
             now_iso = now_vn_iso()
             uname = perms["username"]
 
-            # Zero-RM invariant: NEVER remove from db["robotCases"]; transition to archived_deleted & archive any trash surgery
             rcase["status"] = "archived_deleted"
             rcase["archivedAt"] = now_iso
             rcase["archivedBy"] = uname
@@ -2086,7 +2510,7 @@ def register_robot_schedule_routes(app, sf_mod):
         def _tx(*, db, body, real_user, actor, catalog, cfg):
             perms = _extended_robot_permissions(real_user, db)
             if not perms["canConfigureCoordinators"]:
-                raise ApprovalEngineError(403, "ROBOT_BCN_REQUIRED", "Chỉ Ban Chủ nhiệm khoa hoặc Super Admin mới có quyền cấu hình Điều phối viên Robot.")
+                raise ApprovalEngineError(403, "ROBOT_BCN_REQUIRED", "Chỉ Ban Chủ nhiệm khoa hoặc Super Admin mới có quyền cấu hình Điều phối viên.")
 
             _validate_allowed_fields(
                 body,
@@ -2138,6 +2562,7 @@ def register_robot_schedule_routes(app, sf_mod):
                     raise ApprovalEngineError(422, "INVALID_ARCHIVE_DAYS", "Số ngày tự động lưu trữ thùng rác phải từ 7–90 ngày.")
                 rcfg["trashAutoArchiveDays"] = ad
 
+            rcfg["robotConfigSchemaVersion"] = 2
             db["robotConfig"] = rcfg
             revs["robotConfig"] = cur_cfg_rev + 1
 

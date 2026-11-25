@@ -561,7 +561,12 @@ const SurgeryPage = {
                                     <span class="surgery-card-yob">${s.birthYear ? `(${s.birthYear})` : ''}</span>
                                     ${SurgeryPage._renderPatientWeeklyBadge(s, surgeries)}
                                 </div>
-                                ${s.robotCaseId ? `<div><button type="button" class="rbt-weekly-link-badge" onclick="event.stopPropagation();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')" title="Mở hồ sơ Điều phối Robot liên kết">🤖 Điều phối Robot (${Utils.escapeHtml(s.robotCaseId)})</button></div>` : ''}
+                                ${s.robotCaseId ? (() => {
+                                    const isNsSync = (s.robotSyncMeta && s.robotSyncMeta.scheduledApproach === 'noisoi') || s.approachType === 'noisoi';
+                                    const isXvWait = s.robotSyncMeta && s.robotSyncMeta.inpatientState === 'xuat_vien_cho';
+                                    const rd = (s.robotSyncMeta && s.robotSyncMeta.plannedReadmitDate) ? `${s.robotSyncMeta.plannedReadmitDate.slice(8, 10)}/${s.robotSyncMeta.plannedReadmitDate.slice(5, 7)}` : '';
+                                    return `<div><button type="button" class="rbt-weekly-link-badge" onclick="event.stopPropagation();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')" title="Mở hồ sơ Điều phối Robot liên kết">${isNsSync ? '🔬 ĐP Nội soi' : '🤖 Điều phối Robot'} (${Utils.escapeHtml(s.robotCaseId)})</button>${isXvWait ? ` <span class="rbt-badge rbt-badge--amber">🏠 XV chờ${rd ? ` · Nhập ${rd}` : ''}</span>` : ''}</div>`;
+                                })() : ''}
                                 ${showCaseApproval ? `<div class="surgery-card-compact-approval">${s.isTestSandboxCase ? '<span class="sap-tag sap-tag--sandbox">TEST</span> ' : ''}${SurgeryApprovalPage.renderScheduleBadge(s)}</div>` : ''}
                                 <div class="surgery-card-detail">
                                     <div class="surgery-card-meta-row">
@@ -747,10 +752,15 @@ const SurgeryPage = {
                     <div class="surgery-detail-label">Đường mổ</div>
                     <div class="surgery-detail-value">${({ mo: 'Mổ mở', noisoi: 'Nội soi', nsth: 'Nội soi tiêu hoá', robot: 'Robot' })[s.approachType] || '—'}</div>
                 </div>
-                ${s.robotCaseId ? `<div class="surgery-detail-row">
-                    <div class="surgery-detail-label">Điều phối Robot</div>
-                    <div class="surgery-detail-value"><button type="button" class="rbt-weekly-link-badge" onclick="Modal.close();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')">🤖 ${Utils.escapeHtml(s.robotCaseId)}${s.robotSyncMeta?.caseSlot ? ` · ${Utils.escapeHtml(s.robotSyncMeta.caseSlot)}` : ''}</button></div>
-                </div>` : ''}
+                ${s.robotCaseId ? (() => {
+                    const isNsSync = (s.robotSyncMeta && s.robotSyncMeta.scheduledApproach === 'noisoi') || s.approachType === 'noisoi';
+                    const isXvWait = s.robotSyncMeta && s.robotSyncMeta.inpatientState === 'xuat_vien_cho';
+                    const rd = (s.robotSyncMeta && s.robotSyncMeta.plannedReadmitDate) ? `${s.robotSyncMeta.plannedReadmitDate.slice(8, 10)}/${s.robotSyncMeta.plannedReadmitDate.slice(5, 7)}` : '';
+                    return `<div class="surgery-detail-row">
+                    <div class="surgery-detail-label">Điều phối Robot / Nội soi</div>
+                    <div class="surgery-detail-value"><button type="button" class="rbt-weekly-link-badge" onclick="Modal.close();RobotSchedulePage.openFromWeeklySchedule('${Utils.escapeHtml(s.robotCaseId)}')">${isNsSync ? '🔬 ĐP Nội soi' : '🤖'} ${Utils.escapeHtml(s.robotCaseId)}${s.robotSyncMeta?.caseSlot ? ` · ${Utils.escapeHtml(s.robotSyncMeta.caseSlot)}` : ''}</button>${isXvWait ? ` <span class="rbt-badge rbt-badge--amber">🏠 XV chờ${rd ? ` · Nhập ${rd}` : ''}</span>` : ''}</div>
+                </div>`;
+                })() : ''}
                 ${(typeof SurgeryApprovalPage !== 'undefined' && SurgeryApprovalPage.isCaseApprovalEnabled(s)) ? `<div class="surgery-detail-row">
                     <div class="surgery-detail-label">Duyệt mổ tại khoa</div>
                     <div class="surgery-detail-value">${SurgeryApprovalPage.renderBadge(s) || 'Miễn trừ dữ liệu lịch sử'}</div>
@@ -834,10 +844,16 @@ const SurgeryPage = {
             </div>
         ` : '');
 
+        const lockedApproach = s?.robotCaseId ? (s?.robotSyncMeta?.scheduledApproach || s?.approachType || 'robot') : '';
+        const lockedBannerText = s?.robotCaseId
+            ? (lockedApproach === 'noisoi'
+                ? `🔬 Ca chuyển mổ Nội soi từ Điều phối Robot (<strong>${Utils.escapeHtml(s.robotCaseId)}</strong>) — Đường mổ cố định Nội soi. Mọi thay đổi được đồng bộ 2 chiều.`
+                : `🤖 Ca đang liên thông Điều phối Robot (<strong>${Utils.escapeHtml(s.robotCaseId)}</strong>) — Đường mổ cố định Robot. Mọi thay đổi được đồng bộ 2 chiều.`)
+            : '';
         Modal.open(modalTitle, `
             <form onsubmit="SurgeryPage.save(event, ${id || 0})" data-autosave-key="${formKey}">
                 ${sandboxBannerHtml}
-                ${s?.robotCaseId ? `<div class="rbt-dirty-banner" style="margin-bottom:12px;">🤖 Ca đang liên thông Điều phối Robot (<strong>${Utils.escapeHtml(s.robotCaseId)}</strong>) — Đường mổ cố định Robot. Mọi thay đổi được đồng bộ 2 chiều.</div>` : ''}
+                ${s?.robotCaseId ? `<div class="rbt-dirty-banner" style="margin-bottom:12px;">${lockedBannerText}</div>` : ''}
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Họ tên bệnh nhân</label>
@@ -857,7 +873,7 @@ const SurgeryPage = {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại phẫu thuật</label>
-                        <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)" ${s?.robotCaseId ? 'disabled' : ''}>
+                        <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)" ${lockedApproach === 'robot' ? 'disabled' : ''}>
                             ${Object.entries(SURGERY_TYPES).map(([key, t]) =>
             `<option value="${key}" ${(s?.surgeryType || 'chuongtrinh') === key ? 'selected' : ''}>${t.label}</option>`
         ).join('')}
@@ -867,12 +883,12 @@ const SurgeryPage = {
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Đường mổ <span class="form-required">*</span></label>
-                        <select class="form-select" name="approachType" id="surgery-approach" required ${(s?.robotCaseId || (s?.surgeryType || 'chuongtrinh') === 'robot') ? 'disabled' : ''}>
+                        <select class="form-select" name="approachType" id="surgery-approach" required ${(Boolean(lockedApproach) || (s?.surgeryType || 'chuongtrinh') === 'robot') ? 'disabled' : ''}>
                             <option value="">— Chọn —</option>
                             <option value="mo" ${s?.approachType === 'mo' ? 'selected' : ''}>Mổ mở</option>
-                            <option value="noisoi" ${s?.approachType === 'noisoi' ? 'selected' : ''}>Nội soi</option>
+                            <option value="noisoi" ${s?.approachType === 'noisoi' || lockedApproach === 'noisoi' ? 'selected' : ''}>Nội soi</option>
                             <option value="nsth" ${s?.approachType === 'nsth' ? 'selected' : ''}>Nội soi tiêu hoá</option>
-                            <option value="robot" ${s?.approachType === 'robot' || s?.robotCaseId || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
+                            <option value="robot" ${s?.approachType === 'robot' || lockedApproach === 'robot' || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
                         </select>
                     </div>
                 </div>
@@ -1647,10 +1663,12 @@ const SurgeryPage = {
             const all = this.getAllSurgeries();
             const existingRec = id ? all.find(x => String(x.id) === String(id)) : null;
 
-            // approachType: if surgeryType is robot or linked to Robot coordination, keep 'robot'
-            const isLinkedRobot = Boolean(existingRec && existingRec.robotCaseId);
-            const surgeryType = isLinkedRobot ? 'robot' : f.get('surgeryType');
-            const approachType = (isLinkedRobot || surgeryType === 'robot') ? 'robot' : f.get('approachType');
+            // approachType: respect linked Robot vs Laparoscopic approach
+            const linkedApproach = existingRec && existingRec.robotCaseId
+                ? ((existingRec.robotSyncMeta && existingRec.robotSyncMeta.scheduledApproach) || existingRec.approachType || 'robot')
+                : '';
+            const surgeryType = linkedApproach === 'robot' ? 'robot' : f.get('surgeryType');
+            const approachType = linkedApproach || (surgeryType === 'robot' ? 'robot' : f.get('approachType'));
             if (!approachType) {
                 Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
                 restoreBtn();

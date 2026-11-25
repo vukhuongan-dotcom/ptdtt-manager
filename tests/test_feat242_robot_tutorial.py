@@ -170,7 +170,7 @@ class TestFeat242RobotTutorial(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611250843"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251807"
 
         # Seed 1 Robot case with canary phone to verify Zero-Local-PHI
         client = cls.sf.app.test_client()
@@ -179,12 +179,12 @@ class TestFeat242RobotTutorial(unittest.TestCase):
             "/api/robot/cases",
             headers={"Authorization": f"Bearer {token}", "X-Client-Build": cls.sw_build_ver, "Content-Type": "application/json"},
             json={
-                "action": "create_case",
+                "action": "create_consult",
                 "patientName": "BN Tutorial Seed Canary",
                 "phone": "0987654321",
+                "wardRoom": "B708",
+                "labsReadyConfirmed": True,
                 "mainSurgeonId": 2,
-                "surgeryDate": today_iso,
-                "caseSlot": "Ca 1",
                 "diagnosis": "U trực tràng",
                 "robotProcedure": "Cắt trước thấp Robot",
             },
@@ -304,7 +304,7 @@ class TestFeat242RobotTutorial(unittest.TestCase):
 
             # After completing, overlay is removed and dismissal persisted for user
             self.assertEqual(page.locator("#robot-tutorial-overlay").count(), 0)
-            persisted = page.evaluate("() => localStorage.getItem('ptdtt_robot_tutorial_v1_dismissed:vkan')")
+            persisted = page.evaluate("() => localStorage.getItem('ptdtt_robot_tutorial_v2_dismissed:vkan')")
             self.assertEqual(persisted, "1")
 
             # Permanent manual button still opens tutorial anytime
@@ -324,8 +324,8 @@ class TestFeat242RobotTutorial(unittest.TestCase):
             # Click session-only close ("Đóng")
             page.click("#rbt-tut-close-btn")
             self.assertEqual(page.locator("#robot-tutorial-overlay").count(), 0)
-            self.assertEqual(page.evaluate("() => sessionStorage.getItem('ptdtt_robot_tutorial_v1_session:vnatuan')"), "1")
-            self.assertIsNone(page.evaluate("() => localStorage.getItem('ptdtt_robot_tutorial_v1_dismissed:vnatuan')"))
+            self.assertEqual(page.evaluate("() => sessionStorage.getItem('ptdtt_robot_tutorial_v2_session:vnatuan')"), "1")
+            self.assertIsNone(page.evaluate("() => localStorage.getItem('ptdtt_robot_tutorial_v2_dismissed:vnatuan')"))
 
             # Navigating away and back inside same session does NOT re-auto-open
             page.evaluate("() => App.navigate('dashboard')")
@@ -342,7 +342,7 @@ class TestFeat242RobotTutorial(unittest.TestCase):
             # Clicking permanent dismiss saves per-user key
             page.click("#rbt-tut-dismiss-btn")
             self.assertEqual(page.locator("#robot-tutorial-overlay").count(), 0)
-            self.assertEqual(page.evaluate("() => localStorage.getItem('ptdtt_robot_tutorial_v1_dismissed:vnatuan')"), "1")
+            self.assertEqual(page.evaluate("() => localStorage.getItem('ptdtt_robot_tutorial_v2_dismissed:vnatuan')"), "1")
             self.assertEqual(cerr, [], f"Console errors: {cerr}")
             self.assertEqual(perr, [], f"Page errors: {perr}")
         finally:
@@ -354,7 +354,7 @@ class TestFeat242RobotTutorial(unittest.TestCase):
             1440,
             900,
             username="vkan",
-            storage_preset="localStorage.setItem('ptdtt_robot_tutorial_v1_dismissed:vnatuan', '1');",
+            storage_preset="localStorage.setItem('ptdtt_robot_tutorial_v2_dismissed:vnatuan', '1');",
         )
         try:
             page2.click("#nav-robot-schedule")
@@ -436,11 +436,11 @@ class TestFeat242RobotTutorial(unittest.TestCase):
         tut_section = onb_js.split("const RobotTutorial =", 1)[1]
         self.assertNotIn("EXPIRES_AT", tut_section)
 
-        # 3. Verify RBAC copy adapts to Viewer vs BS ĐT vs BCN and zero canary PHI leaks
+        # 3. Verify RBAC copy adapts to Viewer vs BS Khu vực vs BCN and zero canary PHI leaks
         for uname, expected_phrase in (
             ("vkan", "Ban Chủ nhiệm"),
-            ("vnatuan", "Bác sĩ điều trị"),
-            ("dieu_duong_xem", "Xem lịch"),
+            ("vnatuan", "Bác sĩ khu vực"),
+            ("dieu_duong_xem", "Chỉ xem & In P.CTXH"),
         ):
             ctx, page, cerr, perr = self._open_page("chromium", 1440, 900, username=uname)
             try:

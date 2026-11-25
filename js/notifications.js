@@ -267,6 +267,7 @@ const Notifications = {
         const timeAgo = this.timeAgo(n.createdAt);
         const isAssigned = n.type === 'task_assigned';
         const isApproval = n.sourceType === 'surgery_approval';
+        const isRobot = n.sourceType === 'robot_coordination';
         let icon = isAssigned ? '📋' : n.type === 'task_completed' ? '🎉' : '✅';
         if (isApproval) {
             const map = {
@@ -281,10 +282,18 @@ const Notifications = {
                 surgery_submitted: '🚀'
             };
             icon = map[n.type] || '📋';
+        } else if (isRobot) {
+            const rbtMap = {
+                robot_consult_requested: '📥',
+                robot_consult_scheduled: '📅',
+                robot_consult_decided: '🩺',
+                robot_readmit_reminder: '🏠'
+            };
+            icon = rbtMap[n.type] || '🤖';
         }
         const unreadClass = n.read ? '' : 'unread';
-        const safeMsg = isApproval ? Utils.escapeHtml(n.message || '') : n.message;
-        const safeCat = isApproval ? Utils.escapeHtml(n.category || '') : n.category;
+        const safeMsg = (isApproval || isRobot) ? Utils.escapeHtml(n.message || '') : n.message;
+        const safeCat = (isApproval || isRobot) ? Utils.escapeHtml(n.category || '') : n.category;
 
         return `
         <div class="notif-item ${unreadClass}" onclick="Notifications.openNotif(${n.id})">
@@ -294,7 +303,7 @@ const Notifications = {
                 ${safeCat ? `<span class="notif-item-cat">${safeCat}</span>` : ''}
                 <div class="notif-item-time">${timeAgo}</div>
             </div>
-            ${!n.read && (isAssigned || isApproval) ? '<div class="notif-item-dot"></div>' : ''}
+            ${!n.read && (isAssigned || isApproval || isRobot) ? '<div class="notif-item-dot"></div>' : ''}
         </div>`;
     },
 
@@ -306,6 +315,16 @@ const Notifications = {
         const panel = document.getElementById('notif-panel');
         if (panel) panel.remove();
         this._panelOpen = false;
+
+        if (notif.sourceType === 'robot_coordination') {
+            this.markRead(notifId);
+            if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage.openFromWeeklySchedule === 'function') {
+                RobotSchedulePage.openFromWeeklySchedule(notif.robotCaseCode || '');
+            } else if (typeof App !== 'undefined' && typeof App.navigate === 'function') {
+                App.navigate('robot-schedule');
+            }
+            return;
+        }
 
         if (notif.sourceType === 'surgery_approval') {
             this.markRead(notifId);

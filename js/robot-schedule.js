@@ -1,35 +1,66 @@
-// ===== ROBOTIC SURGERY COORDINATION MODULE (FEAT-231) =====
-// Zero-Local-PHI compliant: RAM-only state, no localStorage/sessionStorage/IndexedDB/autosave.
-// Strict XSS escaping via Utils.escapeHtml and delegated event handlers.
-
+// =====================================================================
+// ROBOTIC SURGERY COORDINATION MODULE v2 (FEAT-243)
+// 5-Step Clinical Workflow:
+//   Step 1: BS khu vực gửi ca tư vấn (đủ XN tiền phẫu + Phòng bệnh)
+//   Step 2: Điều phối viên (vcnguyen, lvhoan) xếp lịch TV cho TS. Nguyễn Phú Hữu
+//   Step 3: TS. Hữu chốt KQ: Mổ Robot | Chuyển Nội soi | Cân nhắc | Không đồng ý mổ
+//   Step 4: BS phòng theo dõi KQ, cho Xuất viện chờ (giữ slot) & Xác nhận nhập lại
+//   Step 5: My-Work chips, Copy lịch TV Zalo (Zero-PHI), In P.CTXH A5, Thùng rác Zero-RM
+// STRICT ZERO-LOCAL-PHI POLICY: NO client storage persistence of PHI.
+// =====================================================================
 (function (global) {
     'use strict';
 
-    const SUBTABS = [
-        { key: 'week', label: '📅 Lịch tuần Robot' },
-        { key: 'consult', label: '🩺 Tư vấn & Chờ xếp lịch' },
-        { key: 'postponed', label: '⏸️ Hoãn mổ & Xuất viện chờ' },
-        { key: 'completed', label: '✅ Đã mổ & Thống kê' },
-        { key: 'trash', label: '🗑️ Thùng rác' },
-        { key: 'config', label: '⚙️ Cấu hình Điều phối', bcnOnly: true }
+    const DEFAULT_WARD_ROOMS = [
+        'B705', 'B706', 'B707', 'B708', 'B709', 'B710',
+        'B711', 'B712', 'B712A', 'B718', 'B719', 'ngoai_tru'
     ];
 
-    const STATUS_META = {
-        tu_van: { label: 'Chờ tư vấn', badge: 'rbt-badge--indigo' },
-        can_nhac: { label: 'Đang cân nhắc', badge: 'rbt-badge--amber' },
-        tu_choi: { label: 'Từ chối mổ Robot', badge: 'rbt-badge--red' },
-        cho_xep_lich: { label: 'Chờ xếp lịch (B1)', badge: 'rbt-badge--ocean' },
-        cho_duyet_tien_phau: { label: 'B1→B2: Chờ tiền phẫu', badge: 'rbt-badge--amber' },
-        cho_duyet_luu_vien: { label: 'B2→B3: Chờ lưu viện', badge: 'rbt-badge--ocean' },
-        cho_mo: { label: 'B3: Chờ mổ (Lịch tuần)', badge: 'rbt-badge--green' },
-        da_mo: { label: 'Đã phẫu thuật Robot', badge: 'rbt-badge--navy' },
-        hoan_mo: { label: 'Hoãn mổ', badge: 'rbt-badge--red' },
-        xuat_vien_cho: { label: 'Xuất viện chờ', badge: 'rbt-badge--indigo' },
-        da_xoa: { label: 'Thùng rác', badge: 'rbt-badge--red' },
-        archived_deleted: { label: 'Đã lưu trữ ẩn', badge: 'rbt-badge--navy' }
+    const DEFAULT_REFUSAL_REASONS = {
+        chi_phi: 'Chưa thu xếp chi phí phẫu thuật',
+        suy_nghi_them: 'Bệnh nhân / gia đình xin về suy nghĩ thêm',
+        dieu_tri_noi: 'Chuyển hướng điều trị nội khoa / theo dõi',
+        chuyen_vien: 'Xin chuyển viện / điều trị nơi khác',
+        ly_do_khac: 'Lý do khác'
     };
 
-    const SAP_STATUS_SHORT = {
+    const DEFAULT_POSTPONE_REASONS = {
+        chua_ngung_khang_dong: 'Chưa ngưng đủ ngày thuốc kháng đông',
+        benh_nen_chua_on_dinh: 'Bệnh lý nền nội khoa chưa ổn định',
+        cho_cls_hoi_chan: 'Chờ bổ sung kết quả cận lâm sàng / hội chẩn',
+        thieu_vat_tu_robot: 'Thiếu vật tư / dụng cụ phẫu thuật Robot',
+        ket_phong_mo_cap_cuu: 'Kẹt phòng mổ / trùng lịch ưu tiên cấp cứu',
+        benh_nhan_xin_hoan: 'Bệnh nhân xin hoãn / chưa thu xếp chi phí',
+        ly_do_khac: 'Lý do khác'
+    };
+
+    const STATUS_META = {
+        cho_xep_tu_van: { label: 'Chờ xếp lịch TV', badge: 'rbt-badge--amber', short: 'Chờ xếp TV' },
+        da_xep_tu_van: { label: 'Đã xếp lịch TV', badge: 'rbt-badge--ocean', short: 'Đã xếp TV' },
+        can_nhac: { label: 'Đang cân nhắc', badge: 'rbt-badge--indigo', short: 'Cân nhắc' },
+        da_xep_robot: { label: 'Đã xếp lịch Robot', badge: 'rbt-badge--green', short: 'Mổ Robot' },
+        da_xep_noisoi: { label: 'Chuyển mổ Nội soi', badge: 'rbt-badge--ocean', short: 'Mổ Nội soi' },
+        khong_dong_y_mo: { label: 'Không đồng ý mổ', badge: 'rbt-badge--red', short: 'Không mổ' },
+        hoan_mo: { label: 'Hoãn mổ', badge: 'rbt-badge--red', short: 'Hoãn mổ' },
+        da_mo: { label: 'Đã phẫu thuật', badge: 'rbt-badge--navy', short: 'Đã mổ' },
+        da_xoa: { label: 'Thùng rác', badge: 'rbt-badge--red', short: 'Thùng rác' },
+        archived_deleted: { label: 'Đã lưu trữ ẩn', badge: 'rbt-badge--navy', short: 'Lưu trữ ẩn' }
+    };
+
+    const INDICATION_LABELS = {
+        robot_hoac_noisoi: 'Chỉ định PT Nội soi hoặc Robot',
+        uu_tien_robot: 'Ưu tiên phẫu thuật Robot',
+        uu_tien_noisoi: 'Ưu tiên phẫu thuật Nội soi'
+    };
+
+    const SURGERY_TYPE_LABELS = {
+        robot: 'Mổ Robot',
+        chuongtrinh: 'Chương trình',
+        yeucau: 'Yêu cầu',
+        bankhan: 'Bán khẩn'
+    };
+
+    const APPROVAL_LABELS = {
         draft_unsubmitted: 'Duyệt khoa: Chưa trình',
         submitted: 'Duyệt khoa: Chờ duyệt',
         preapproved: 'Duyệt khoa: Phó khoa tiền duyệt',
@@ -42,7 +73,10 @@
         legacy_exempt: 'Duyệt khoa: Miễn trừ lịch sử'
     };
 
-    const esc = (v) => (typeof Utils !== 'undefined' && Utils.escapeHtml)
+    const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
+    const CLIENT_BUILD = '2611251807';
+
+    const esc = (v) => (typeof Utils !== 'undefined' && typeof Utils.escapeHtml === 'function')
         ? Utils.escapeHtml(v == null ? '' : String(v))
         : String(v == null ? '' : v)
             .replace(/&/g, '&amp;')
@@ -51,80 +85,144 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
 
-    const _getClientBuild = () => String(
-        (typeof window !== 'undefined' && (window.SW_BUILD_VER || window.REQUIRED_VER)) ||
-        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611250843')
-    );
-
-    const _parseIsoLocal = (isoStr) => {
+    function parseIsoDate(isoStr) {
         if (!isoStr || typeof isoStr !== 'string') return null;
         const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoStr.trim());
         if (!m) return null;
-        const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-        return isNaN(dt.getTime()) ? null : dt;
-    };
+        return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+    }
 
-    const _fmtIsoLocal = (dt) => {
+    function toIsoDate(dt) {
         if (!(dt instanceof Date) || isNaN(dt.getTime())) return '';
         const y = dt.getFullYear();
         const m = String(dt.getMonth() + 1).padStart(2, '0');
         const d = String(dt.getDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
-    };
+    }
 
-    const _fmtViDate = (isoStr) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(isoStr || '').trim());
-        return m ? `${m[3]}/${m[2]}/${m[1]}` : (isoStr || '—');
-    };
+    function addDaysIso(isoStr, days) {
+        const dt = parseIsoDate(isoStr);
+        if (!dt) return '';
+        dt.setDate(dt.getDate() + Number(days || 0));
+        return toIsoDate(dt);
+    }
 
-    const _mondayOf = (isoStr) => {
-        const dt = _parseIsoLocal(isoStr) || new Date();
-        const day = dt.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        const res = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + diff);
-        return res;
-    };
+    function getMondayIso(isoStr) {
+        const dt = parseIsoDate(isoStr) || new Date();
+        const dow = dt.getDay();
+        const diff = dow === 0 ? -6 : 1 - dow;
+        dt.setDate(dt.getDate() + diff);
+        return toIsoDate(dt);
+    }
 
-    const _daysBetweenIso = (olderIso, newerIso) => {
-        const d1 = _parseIsoLocal(olderIso);
-        const d2 = _parseIsoLocal(newerIso);
+    function fmtViDate(isoStr) {
+        const dt = parseIsoDate(isoStr);
+        if (!dt) return '—';
+        const d = String(dt.getDate()).padStart(2, '0');
+        const m = String(dt.getMonth() + 1).padStart(2, '0');
+        return `${d}/${m}/${dt.getFullYear()}`;
+    }
+
+    function fmtViShortDate(isoStr) {
+        const dt = parseIsoDate(isoStr);
+        if (!dt) return '—';
+        const d = String(dt.getDate()).padStart(2, '0');
+        const m = String(dt.getMonth() + 1).padStart(2, '0');
+        return `${d}/${m}`;
+    }
+
+    function fmtWeekdayVi(isoStr) {
+        const dt = parseIsoDate(isoStr);
+        if (!dt) return '';
+        const names = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+        return names[dt.getDay()] || '';
+    }
+
+    function daysBetweenIso(fromIso, toIso) {
+        const d1 = parseIsoDate(fromIso);
+        const d2 = parseIsoDate(toIso);
         if (!d1 || !d2) return null;
         return Math.round((d2.getTime() - d1.getTime()) / 86400000);
-    };
+    }
 
-    const _addDaysIso = (baseIso, deltaDays) => {
-        const dt = _parseIsoLocal(baseIso) || new Date();
-        dt.setDate(dt.getDate() + Number(deltaDays || 0));
-        return _fmtIsoLocal(dt);
-    };
+    function roomLabel(wardRoom) {
+        const wr = String(wardRoom || '').trim();
+        if (!wr) return 'Chưa rõ phòng';
+        if (wr === 'ngoai_tru') return 'Ngoại trú';
+        return wr.startsWith('B') ? `Phòng ${wr}` : `Phòng B${wr}`;
+    }
 
-    const _safeTelHref = (rc) => {
+    function slotToStartTime(slot) {
+        if (slot === 'Ca 1') return '07:30';
+        if (slot === 'Ca 2') return '10:30';
+        if (slot === 'Ca 3') return '13:30';
+        return '';
+    }
+
+    function cleanTelHref(rc) {
         if (!rc || rc.phoneMasked === true) return '';
         const raw = String(rc.phone || '').trim();
         if (!raw || raw.includes('*')) return '';
-        const digits = raw.replace(/[^\d+]/g, '');
-        const pureDigits = digits.replace(/\D/g, '');
-        return pureDigits.length >= 9 ? `tel:${digits}` : '';
-    };
+        const digits = raw.replace(/\D/g, '');
+        return digits.length >= 9 ? `tel:${digits}` : '';
+    }
 
-    const _newUuid = () => {
+    function newIdempotencyKey() {
         if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
             return crypto.randomUUID();
         }
-        return `rbt_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-    };
+        return `rbt_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function notifyToast(msg, level = 'info') {
+        if (typeof Toast !== 'undefined') {
+            const fn = typeof Toast[level] === 'function' ? Toast[level] : Toast.info;
+            if (typeof fn === 'function') {
+                fn.call(Toast, msg);
+                return;
+            }
+        }
+        if (typeof Utils !== 'undefined' && typeof Utils.toast === 'function') {
+            Utils.toast(msg, level);
+        }
+    }
+
+    function openRobotModal(title, bodyHtml, footerHtml) {
+        const footerWrap = footerHtml
+            ? `<div class="modal-footer" style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border,#E2E8F0);">${footerHtml}</div>`
+            : '';
+        if (typeof Modal !== 'undefined' && typeof Modal.open === 'function') {
+            Modal.open(title, `${bodyHtml}${footerWrap}`);
+        }
+    }
+
+    function datePresetsHtml(inputId, todayIso, presets) {
+        const list = presets || [
+            { label: 'Hôm nay', iso: todayIso },
+            { label: 'Ngày mai', iso: addDaysIso(todayIso, 1) },
+            { label: '+2 ngày', iso: addDaysIso(todayIso, 2) },
+            { label: '+7 ngày', iso: addDaysIso(todayIso, 7) }
+        ];
+        return `<div class="rbt-date-presets">
+            ${list.filter(p => p.iso).map(p => `<button type="button" class="rbt-date-preset-btn" data-rbt-date-target="${esc(inputId)}" data-rbt-date-val="${esc(p.iso)}">${esc(p.label)} (${fmtViShortDate(p.iso)})</button>`).join('')}
+        </div>`;
+    }
 
     const RobotSchedulePage = {
         _bootstrap: null,
         _loading: false,
         _loadPromise: null,
         _error: null,
-        _subtab: 'week',
+        _subtab: null,
         _weekStartIso: null,
         _mobileDayIso: null,
         _mobileWeekAllDays: false,
         _mobileSearchOpen: false,
-        _mobileSurgeonFilter: 'all',
+        _weekApproachFilter: 'all',
+        _wardRoomFilter: 'all',
+        _wardQuickFilter: 'all',
+        _consultFilterMode: 'all',
+        _declinedGroupFilter: 'all',
         _completedVisibleLimit: 20,
         _searchQuery: '',
         _postponeFilterReason: 'all',
@@ -144,6 +242,7 @@
             mode: 'color',
             scope: 'week',
             date: '',
+            caseCode: '',
             schedulerName: ''
         },
 
@@ -152,11 +251,22 @@
             this._loading = false;
             this._loadPromise = null;
             this._error = null;
+            this._subtab = null;
+            this._weekStartIso = null;
             this._mobileDayIso = null;
             this._mobileWeekAllDays = false;
             this._mobileSearchOpen = false;
-            this._mobileSurgeonFilter = 'all';
+            this._weekApproachFilter = 'all';
+            this._wardRoomFilter = 'all';
+            this._wardQuickFilter = 'all';
+            this._consultFilterMode = 'all';
+            this._declinedGroupFilter = 'all';
             this._completedVisibleLimit = 20;
+            this._searchQuery = '';
+            this._postponeFilterReason = 'all';
+            this._statsYear = 'all';
+            this._statsMonth = 'all';
+            this._statsSurgeon = 'all';
             this._modalDirty = false;
             this._modalDirtyWarnShown = false;
             this._modalActive = false;
@@ -164,7 +274,6 @@
             this._openCaseCode = null;
             this._conflictState = null;
             this._inflightIdem = null;
-            this._printState = { mode: 'color', scope: 'week', date: '', schedulerName: '' };
             const printRoot = document.getElementById('robot-pctxh-print-root');
             if (printRoot) printRoot.innerHTML = '';
             if (document.body) document.body.classList.remove('printing-robot-pctxh');
@@ -175,13 +284,12 @@
             if (force || !this._modalActive || !this._modalDirty) return true;
             if (this._modalDirtyWarnShown) return true;
             this._modalDirtyWarnShown = true;
-            const box = document.getElementById('rbt-modal-dirty-guard');
+            const box = document.getElementById('rbt-dirty-guard-banner');
             if (box) {
                 box.hidden = false;
-                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else if (typeof Toast !== 'undefined') {
-                Toast.warning('Bạn có thay đổi chưa lưu — bấm Đóng lần nữa để hủy thay đổi.');
+                box.scrollIntoView({ block: 'nearest' });
             }
+            notifyToast('Dữ liệu biểu mẫu chưa lưu. Bấm Đóng/Hủy thêm lần nữa để thoát.', 'warning');
             return false;
         },
 
@@ -190,2040 +298,2440 @@
             this._modalDirty = false;
             this._modalDirtyWarnShown = false;
             this._openModalMode = null;
-            this._openCaseCode = null;
             this._conflictState = null;
             this._inflightIdem = null;
             const fab = document.getElementById('rbt-mobile-fab');
-            if (fab) fab.hidden = false;
+            if (fab && this._perms().canCreateConsult) fab.hidden = false;
             const printRoot = document.getElementById('robot-pctxh-print-root');
             if (printRoot) printRoot.innerHTML = '';
             if (document.body) document.body.classList.remove('printing-robot-pctxh');
         },
 
-        _bindEvents() {
-            const main = document.getElementById('main-content');
-            if (main && !this._delegatedBound) {
-                this._delegatedBound = true;
-                main.addEventListener('click', (e) => {
-                    const btn = e.target.closest('[data-rbt-action]');
-                    if (!btn || !main.contains(btn)) return;
-                    const act = btn.getAttribute('data-rbt-action');
-                    const code = btn.getAttribute('data-rbt-code') || '';
-                    const sid = btn.getAttribute('data-rbt-sid') || '';
-                    this._handleUiAction(act, code, sid, btn);
-                });
-                main.addEventListener('change', (e) => {
-                    const el = e.target;
-                    if (!el.closest('.rbt-page')) return;
-                    if (el.id === 'rbt-filter-reason') {
-                        this._postponeFilterReason = el.value || 'all';
-                        this._rerenderInPlace();
-                    } else if (el.id === 'rbt-stats-year') {
-                        this._statsYear = el.value || 'all';
-                        this._completedVisibleLimit = 20;
-                        this._rerenderInPlace();
-                    } else if (el.id === 'rbt-stats-month') {
-                        this._statsMonth = el.value || 'all';
-                        this._completedVisibleLimit = 20;
-                        this._rerenderInPlace();
-                    } else if (el.id === 'rbt-stats-surgeon') {
-                        this._statsSurgeon = el.value || 'all';
-                        this._completedVisibleLimit = 20;
-                        this._rerenderInPlace();
-                    } else if (el.id === 'rbt-mobile-surgeon-filter') {
-                        this._mobileSurgeonFilter = el.value || 'all';
-                        this._rerenderInPlace();
-                    }
-                });
-                main.addEventListener('input', (e) => {
-                    const el = e.target;
-                    if (el && (el.id === 'rbt-search-input' || el.id === 'rbt-mobile-search-input')) {
-                        this._searchQuery = el.value || '';
-                        this._rerenderInPlace({ keepFocusId: el.id, selectionStart: el.selectionStart, selectionEnd: el.selectionEnd });
-                    }
-                });
-            }
-
-            if (!this._printCleanupBound && typeof window !== 'undefined') {
-                this._printCleanupBound = true;
-                window.addEventListener('afterprint', () => {
-                    const printRoot = document.getElementById('robot-pctxh-print-root');
-                    if (printRoot) printRoot.innerHTML = '';
-                    if (document.body) document.body.classList.remove('printing-robot-pctxh');
-                });
-            }
-        },
-
-        async _apiJson(url, opts = {}) {
-            const token = typeof Auth !== 'undefined' ? Auth.getToken() : '';
-            const method = (opts.method || 'GET').toUpperCase();
-            const headers = {
-                'Authorization': `Bearer ${token || ''}`,
-                'X-Client-Build': _getClientBuild(),
-                ...(opts.headers || {})
-            };
-            let bodyStr = undefined;
-            if (opts.body !== undefined) {
-                headers['Content-Type'] = 'application/json';
-                bodyStr = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
-            }
-            if (method !== 'GET' && !headers['Idempotency-Key']) {
-                const sig = `${method}:${url}:${bodyStr || ''}`;
-                if (this._inflightIdem && this._inflightIdem.sig === sig) {
-                    headers['Idempotency-Key'] = this._inflightIdem.key;
-                } else {
-                    const key = _newUuid();
-                    this._inflightIdem = { sig, key };
-                    headers['Idempotency-Key'] = key;
-                }
-            }
-            const resp = await fetch(url, {
-                method,
-                headers,
-                body: bodyStr,
-                signal: (typeof Auth !== 'undefined' && Auth.getActiveSignal) ? Auth.getActiveSignal() : undefined
-            });
-            let data = {};
-            try { data = await resp.json(); } catch (_) {}
-            if (!resp.ok) {
-                if (resp.status === 401 && typeof Auth !== 'undefined') {
-                    this.purgeMemoryState();
-                }
-                const err = new Error(data.error || data.message || `HTTP ${resp.status}`);
-                err.status = resp.status;
-                err.code = data.code || data.errorCode || '';
-                err.data = data;
-                throw err;
-            }
-            this._inflightIdem = null;
-            return data;
-        },
-
-        async loadBootstrap(force = false) {
-            if (this._loading && this._loadPromise && !force) {
-                return this._loadPromise;
-            }
-            this._loading = true;
-            this._error = null;
-            const p = this._apiJson('/api/robot/bootstrap')
-                .then((data) => {
-                    this._bootstrap = data;
-                    if (!this._weekStartIso) {
-                        this._weekStartIso = _fmtIsoLocal(_mondayOf(data.todayVn || _fmtIsoLocal(new Date())));
-                    }
-                    if (!this._printState.schedulerName) {
-                        this._printState.schedulerName = (data.robotConfig && data.robotConfig.defaultSchedulerName) || 'Quang';
-                    }
-                    if (!this._printState.date) {
-                        this._printState.date = data.todayVn || _fmtIsoLocal(new Date());
-                    }
-                    this._loading = false;
-                    return data;
-                })
-                .catch((err) => {
-                    this._loading = false;
-                    this._error = err.message || 'Không thể tải dữ liệu Điều phối Robot.';
-                    throw err;
-                });
-            this._loadPromise = p;
-            return p;
-        },
-
-        async _refreshBoth(syncWeeklyStore = true) {
-            await this.loadBootstrap(true);
-            if (syncWeeklyStore && typeof Store !== 'undefined' && typeof Store._syncFromServer === 'function') {
-                Store._lastEtag = null;
-                try { await Store._syncFromServer(true); } catch (_) {}
-            }
-            if (typeof App !== 'undefined' && (App.currentPage === 'robot-schedule' || App.currentPage === 'surgery' || App.currentPage === 'surgery-approval')) {
-                this._rerenderInPlace();
-            }
-        },
-
-        _syncActiveScrollStrips() {
-            try {
-                document.querySelector('#robot-schedule-page .rbt-subtab.is-active')?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-                document.querySelector('#robot-schedule-page .rbt-day-pill.is-active')?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-            } catch (_) {}
-        },
-
-        _rerenderInPlace(focusOpts = null) {
-            if (typeof App !== 'undefined' && App.currentPage !== 'robot-schedule') return;
-            const main = document.getElementById('main-content');
-            if (!main) return;
-            main.innerHTML = this.render();
-            this._syncActiveScrollStrips();
-            if (focusOpts && focusOpts.keepFocusId) {
-                const inp = document.getElementById(focusOpts.keepFocusId);
-                if (inp) {
-                    inp.focus();
-                    if (typeof focusOpts.selectionStart === 'number') {
-                        try { inp.setSelectionRange(focusOpts.selectionStart, focusOpts.selectionEnd); } catch (_) {}
-                    }
-                }
-            }
-            if (this._bootstrap && typeof RobotTutorial !== 'undefined') {
-                RobotTutorial.maybeAutoStart();
-            }
-        },
-
-        render() {
-            const bs = this._bootstrap;
-            if (!bs) {
-                return `
-                    <div class="rbt-page">
-                        <div class="rbt-header">
-                            <div class="rbt-header__title-wrap">
-                                <h1 class="rbt-header__title">🤖 Điều phối Lịch mổ Robot</h1>
-                                <p class="rbt-header__sub">Liên thông nguyên tử 2 chiều với Lịch mổ tuần Khoa PTĐTT · Zero-Local-PHI</p>
-                            </div>
-                        </div>
-                        <div class="rbt-panel">
-                            ${this._error
-                                ? `<div class="rbt-conflict-box">⚠️ ${esc(this._error)} <button type="button" class="btn btn-secondary btn-sm" data-rbt-action="reload" style="margin-left:8px;">Tải lại</button></div>`
-                                : `<div class="rbt-empty">⏳ Đang đồng bộ dữ liệu Điều phối Robot từ máy chủ...</div>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }
-
-            const perms = bs.permissions || {};
-            const cases = Array.isArray(bs.cases) ? bs.cases : [];
-            const hist = Array.isArray(bs.historicalRobotSurgeries) ? bs.historicalRobotSurgeries : [];
-            const activeWeekCases = cases.filter(c => ['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo'].includes(c.status));
-            const consultCases = cases.filter(c => ['tu_van', 'can_nhac', 'tu_choi', 'cho_xep_lich'].includes(c.status));
-            const postponedCases = cases.filter(c => ['hoan_mo', 'xuat_vien_cho'].includes(c.status));
-            const completedRealCases = cases.filter(c => c.status === 'da_mo' && !c.isTestSandboxCase);
-            const trashCases = cases.filter(c => c.status === 'da_xoa');
-
-            const realCompletedIds = new Set(completedRealCases.map(c => Number(c.canonicalSurgeryId)).filter(Boolean));
-            const uniqueHistorical = hist.filter(h => !realCompletedIds.has(Number(h.id)));
-            const totalCompletedReal = completedRealCases.length + uniqueHistorical.length;
-            const postponedRealCount = cases.filter(c => c.status === 'hoan_mo' && !c.isTestSandboxCase).length;
-            const denom = totalCompletedReal + postponedRealCount;
-            const postponeRatePct = denom > 0 ? ((postponedRealCount / denom) * 100).toFixed(1) : '0.0';
-
-            const roleLabel = perms.isBcn
-                ? 'Ban Chủ nhiệm (Toàn quyền)'
-                : (perms.isCoordinator ? 'Điều phối viên Robot' : (perms.canCreate ? 'Bác sĩ điều trị / ĐD Trưởng' : 'Xem lịch (SĐT ẩn)'));
-            const shortRoleLabel = perms.isBcn
-                ? 'BCN'
-                : (perms.isCoordinator ? 'Điều phối' : (perms.canCreate ? 'BS ĐT' : 'Chỉ xem'));
-
-            const subtabCounts = {
-                week: activeWeekCases.length,
-                consult: consultCases.length,
-                postponed: postponedCases.length,
-                completed: totalCompletedReal,
-                trash: trashCases.length
-            };
-
-            const tabsHtml = SUBTABS
-                .filter(t => !t.bcnOnly || perms.canConfigureCoordinators)
-                .map(t => `
-                    <button type="button"
-                        class="rbt-subtab ${this._subtab === t.key ? 'is-active' : ''}"
-                        data-rbt-action="subtab"
-                        data-rbt-code="${esc(t.key)}">
-                        <span>${esc(t.label)}</span>
-                        ${subtabCounts[t.key] != null ? `<span class="rbt-subtab-badge">${subtabCounts[t.key]}</span>` : ''}
-                    </button>
-                `).join('');
-
-            const unlinkedCount = (bs.unlinkedFutureRobotSurgeries || []).length;
-            const canShowFab = Boolean(
-                perms.canCreateConsult
-                || perms.canDirectCreateCase
-                || (perms.canLinkExistingSurgery && unlinkedCount > 0)
-            );
-            const surgeonsList = Array.isArray(bs.surgeons) ? bs.surgeons : [];
-
-            let bodyHtml = '';
-            if (this._subtab === 'week') bodyHtml = this._renderWeekTab(cases);
-            else if (this._subtab === 'consult') bodyHtml = this._renderConsultTab(consultCases, perms);
-            else if (this._subtab === 'postponed') bodyHtml = this._renderPostponedTab(postponedCases, perms);
-            else if (this._subtab === 'completed') bodyHtml = this._renderCompletedTab(cases, uniqueHistorical, perms);
-            else if (this._subtab === 'trash') bodyHtml = this._renderTrashTab(trashCases, perms);
-            else if (this._subtab === 'config' && perms.canConfigureCoordinators) bodyHtml = this._renderConfigTab();
-
-            return `
-                <div class="rbt-page" id="robot-schedule-page">
-                    <div class="rbt-header">
-                        <div class="rbt-header__title-wrap">
-                            <h1 class="rbt-header__title">
-                                <span class="rbt-desktop-only">🤖 Điều phối Lịch mổ Robot</span>
-                                <span class="rbt-mobile-only">🤖 Mổ Robot</span>
-                                <span class="rbt-role-pill rbt-desktop-only">${esc(roleLabel)}</span>
-                                <span class="rbt-role-pill rbt-mobile-only">${esc(shortRoleLabel)}</span>
-                            </h1>
-                            <p class="rbt-header__sub">B1 Tư vấn/Xếp lịch → B2 Duyệt tiền phẫu → B3 Lưu viện &amp; Đồng bộ Lịch mổ tuần · Không lưu PHI tại trình duyệt</p>
-                        </div>
-                        <div class="rbt-header__actions rbt-desktop-only">
-                            ${perms.canCreateConsult ? `<button type="button" class="btn btn-sm rbt-btn-light" data-rbt-action="open_create_consult">+ Ca tư vấn</button>` : ''}
-                            ${perms.canDirectCreateCase ? `<button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_create_case">+ Tạo lịch Robot</button>` : ''}
-                            ${perms.canLinkExistingSurgery && unlinkedCount > 0 ? `<button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_link_surgery">🔗 Gắn ca từ Lịch tuần (${unlinkedCount})</button>` : ''}
-                            <button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_print_pctxh">🖨️ In A5 P.CTXH</button>
-                            <button type="button" id="rbt-tutorial-btn" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_tutorial" title="Xem hướng dẫn thao tác từng bước">❓ Hướng dẫn</button>
-                            <button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="reload" title="Đồng bộ lại">↻</button>
-                        </div>
-                        <div class="rbt-mobile-hdr-tools rbt-mobile-only-flex">
-                            ${canShowFab ? `<button type="button" id="rbt-mobile-fab" class="rbt-mobile-icon-btn rbt-mobile-fab-hdr rbt-fab rbt-mobile-only-flex" data-rbt-action="open_fab_sheet" aria-label="Tạo hồ sơ Robot mới" title="Tạo hồ sơ Robot mới">+</button>` : ''}
-                            <button type="button" class="rbt-mobile-icon-btn ${this._mobileSearchOpen ? 'is-active' : ''}" data-rbt-action="toggle_mobile_search" aria-label="Tìm kiếm và lọc ca" title="Tìm kiếm &amp; Lọc">${this._mobileSearchOpen ? '✕' : '🔍'}</button>
-                            <button type="button" class="rbt-mobile-icon-btn" data-rbt-action="open_mobile_menu" aria-label="Menu tiện ích Robot" title="In A5 &amp; Đồng bộ">⋮</button>
-                        </div>
-                    </div>
-
-                    ${this._mobileSearchOpen ? `
-                        <div class="rbt-mobile-search-bar rbt-mobile-only">
-                            <div class="rbt-mobile-search-row">
-                                <input type="search" id="rbt-mobile-search-input" class="form-input" value="${esc(this._searchQuery)}" placeholder="Tìm tên BN, mã RB, BS, số NV..." aria-label="Tìm ca Robot">
-                                ${(this._searchQuery || this._mobileSurgeonFilter !== 'all') ? `<button type="button" class="btn btn-secondary btn-sm" data-rbt-action="clear_mobile_filters" style="min-height:44px;flex-shrink:0;">Xóa</button>` : ''}
-                            </div>
-                            <select id="rbt-mobile-surgeon-filter" class="form-select" aria-label="Lọc theo PTV chính">
-                                <option value="all" ${this._mobileSurgeonFilter === 'all' ? 'selected' : ''}>Tất cả PTV chính</option>
-                                ${surgeonsList.map(st => `<option value="${esc(st.id)}" ${String(this._mobileSurgeonFilter) === String(st.id) ? 'selected' : ''}>${esc(st.title ? `${st.title} ${st.name}` : st.name)}</option>`).join('')}
-                            </select>
-                        </div>
-                    ` : ''}
-
-                    <div class="rbt-kpi-grid">
-                        <div class="rbt-kpi-card rbt-kpi-card--amber" data-rbt-action="kpi_jump" data-rbt-code="consult" role="button" tabindex="0">
-                            <div class="rbt-kpi-label">Chờ xếp lịch / Tiền phẫu</div>
-                            <div class="rbt-kpi-value">${cases.filter(c => ['cho_xep_lich', 'cho_duyet_tien_phau', 'cho_duyet_luu_vien'].includes(c.status)).length}</div>
-                            <div class="rbt-kpi-meta">${consultCases.length} ca đang tư vấn / cân nhắc</div>
-                        </div>
-                        <div class="rbt-kpi-card rbt-kpi-card--green" data-rbt-action="kpi_jump" data-rbt-code="week" role="button" tabindex="0">
-                            <div class="rbt-kpi-label">B3 Chờ mổ (Lịch tuần)</div>
-                            <div class="rbt-kpi-value">${cases.filter(c => c.status === 'cho_mo').length}</div>
-                            <div class="rbt-kpi-meta">Đồng bộ 2 chiều Lịch mổ tuần</div>
-                        </div>
-                        <div class="rbt-kpi-card rbt-kpi-card--navy" data-rbt-action="kpi_jump" data-rbt-code="completed" role="button" tabindex="0">
-                            <div class="rbt-kpi-label">Đã phẫu thuật Robot</div>
-                            <div class="rbt-kpi-value">${totalCompletedReal}</div>
-                            <div class="rbt-kpi-meta">Lịch sử (${uniqueHistorical.length}) + Điều phối (${completedRealCases.length})</div>
-                        </div>
-                        <div class="rbt-kpi-card rbt-kpi-card--indigo" data-rbt-action="kpi_jump" data-rbt-code="postponed" role="button" tabindex="0">
-                            <div class="rbt-kpi-label">Hoãn mổ / Xuất viện chờ</div>
-                            <div class="rbt-kpi-value">${postponedCases.length}</div>
-                            <div class="rbt-kpi-meta">Tỷ lệ hoãn thực: ${postponeRatePct}%</div>
-                        </div>
-                    </div>
-
-                    <div class="rbt-mobile-guide-strip rbt-mobile-only-flex">
-                        <button type="button" id="rbt-mobile-tutorial-pill" class="rbt-mobile-guide-btn" data-rbt-action="open_tutorial">
-                            <span>❓ Hướng dẫn thao tác Robot</span>
-                            <span>Xem 7 bước ›</span>
-                        </button>
-                    </div>
-
-                    <div class="rbt-subtabs-wrap" role="tablist" aria-label="Phân mục Điều phối Robot">
-                        ${tabsHtml}
-                    </div>
-
-                    ${bodyHtml}
-                </div>
-            `;
-        },
-
-        afterRender() {
-            this._bindEvents();
-            this._syncActiveScrollStrips();
-            if (!this._bootstrap && !this._loading) {
-                this.loadBootstrap(false)
-                    .then(() => this._rerenderInPlace())
-                    .catch(() => this._rerenderInPlace());
-            } else if (this._bootstrap && typeof RobotTutorial !== 'undefined') {
-                RobotTutorial.maybeAutoStart();
-            }
-        },
-
-        _getLinkedSurgeryById(sid) {
-            if (!sid || typeof Store === 'undefined') return null;
-            return (Store.getAll('surgeries') || []).find(s => Number(s.id) === Number(sid)) || null;
-        },
-
-        _formatApprovalBadgeHtml(rc) {
-            if (!rc || !rc.activeLinkedSurgeryId) return '';
-            const s = this._getLinkedSurgeryById(rc.activeLinkedSurgeryId);
-            const st = s && s.approval ? s.approval.status : '';
-            if (!st) return '';
-            const cls = (st === 'approved' || st === 'approved_with_exception') ? 'rbt-badge--green'
-                : (st === 'reapproval_required' || st === 'resubmit_required' || st === 'post_approval_hold' ? 'rbt-badge--red' : 'rbt-badge--amber');
-            return `<span class="rbt-badge ${cls}">${esc(SAP_STATUS_SHORT[st] || `Duyệt khoa: ${st}`)}</span>`;
-        },
-
-        _renderCaseCard(rc, perms) {
-            const code = rc.robotCaseCode || rc.soNV || '';
-            const stMeta = STATUS_META[rc.status] || { label: rc.status, badge: 'rbt-badge--navy' };
-            const phoneDisplay = rc.phone
-                ? `${esc(rc.phone)}${rc.phoneMasked ? ' (ẩn)' : ''}`
-                : '—';
-
-            const actions = [];
-            if (rc.status === 'cho_duyet_tien_phau' && perms.canApproveSteps) {
-                actions.push(`<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="step2_preop" data-rbt-code="${esc(code)}">✓ B2 Tiền phẫu</button>`);
-            }
-            if (rc.status === 'cho_duyet_luu_vien' && perms.canApproveSteps) {
-                if (rc.postB2ClinicalDirty) {
-                    actions.push(`<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">Xem lại hồ sơ</button>`);
-                } else {
-                    actions.push(`<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="step3_inpatient" data-rbt-code="${esc(code)}">✓ B3 Chờ mổ</button>`);
-                }
-            }
-            if (perms.canEditSchedule && ['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo'].includes(rc.status)) {
-                actions.push(`<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_edit_schedule" data-rbt-code="${esc(code)}">🗓️ Đổi lịch</button>`);
-            }
-            if ((perms.canPostponeOrDischarge || (perms.staffId && Number(perms.staffId) === Number(rc.mainSurgeonId))) && ['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo'].includes(rc.status)) {
-                actions.push(`<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_postpone" data-rbt-code="${esc(code)}">⏸️ Hoãn</button>`);
-            }
-            if (perms.canPostponeOrDischarge && ['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo'].includes(rc.status)) {
-                actions.push(`<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_discharge" data-rbt-code="${esc(code)}">🏠 XV chờ</button>`);
-            }
-            if (perms.canEditInfo) {
-                actions.push(`<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">✏️ Sửa</button>`);
-            }
-            if (perms.canSoftDelete) {
-                actions.push(`<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="soft_delete" data-rbt-code="${esc(code)}">🗑️</button>`);
-            }
-
-            return `
-                <article class="rbt-case-card rbt-case-card--${esc(rc.status)}" data-robot-code="${esc(code)}">
-                    <div class="rbt-case-top">
-                        <span class="rbt-case-code">${esc(code)}</span>
-                        <span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>
-                    </div>
-                    ${rc.isTestSandboxCase ? `<div><span class="rbt-badge rbt-badge--sandbox">🧪 TEST SANDBOX</span></div>` : ''}
-                    <div class="rbt-case-name">${esc(rc.patientName)} ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''}</div>
-                    <div class="rbt-case-meta">
-                        <div>📋 ${esc(rc.diagnosis || 'Chưa ghi chẩn đoán')}</div>
-                        <div>🤖 ${esc(rc.robotProcedure || 'Chưa ghi PPPT')}</div>
-                        <div>🔪 ${esc(rc.mainSurgeonName || 'Chưa chọn PTV')} · ${esc(rc.caseSlot || '—')} (${esc(rc.operatingRoom || 'PM Robot')})</div>
-                        <div>📞 SĐT: <strong>${phoneDisplay}</strong> ${rc.admissionId ? `· NV: <code>${esc(rc.admissionId)}</code>` : ''}</div>
-                        ${rc.note ? `<div>📝 ${esc(rc.note)}</div>` : ''}
-                    </div>
-                    ${rc.postB2ClinicalDirty ? `<div class="rbt-dirty-banner">⚠️ Đã sửa lâm sàng sau B2 — cần duyệt lại B2 tiền phẫu</div>` : ''}
-                    ${this._formatApprovalBadgeHtml(rc)}
-                    ${actions.length ? `<div class="rbt-card-actions">${actions.join('')}</div>` : ''}
-                </article>
-            `;
-        },
-
-        _primaryCardActionHtml(rc, perms, opts = {}) {
-            const code = rc.robotCaseCode || rc.soNV || '';
-            const isOwner = Boolean(
-                (perms.username && rc.createdByUsername === perms.username)
-                || (perms.staffId && Number(rc.mainSurgeonId) === Number(perms.staffId))
-            );
-            if (rc.status === 'cho_duyet_tien_phau' && perms.canApproveSteps) {
-                return `<button type="button" class="btn btn-primary rbt-mcard__primary" data-rbt-action="step2_preop" data-rbt-code="${esc(code)}">✓ Duyệt B2 Tiền phẫu</button>`;
-            }
-            if (rc.status === 'cho_duyet_luu_vien' && perms.canApproveSteps) {
-                if (rc.postB2ClinicalDirty) {
-                    return `<button type="button" class="btn btn-secondary rbt-mcard__primary" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">⚠️ Xem lại hồ sơ</button>`;
-                }
-                return `<button type="button" class="btn btn-primary rbt-mcard__primary" data-rbt-action="step3_inpatient" data-rbt-code="${esc(code)}">✓ Duyệt B3 Chờ mổ</button>`;
-            }
-            if (rc.status === 'cho_xep_lich' && perms.canEditSchedule) {
-                return `<button type="button" class="btn btn-primary rbt-mcard__primary" data-rbt-action="open_schedule_step1" data-rbt-code="${esc(code)}">📅 Xếp lịch B1</button>`;
-            }
-            if (['tu_van', 'can_nhac', 'tu_choi'].includes(rc.status) && (perms.canManageRobot || isOwner)) {
-                return `<button type="button" class="btn btn-primary rbt-mcard__primary" data-rbt-action="open_consult_result" data-rbt-code="${esc(code)}">🩺 Kết quả TV</button>`;
-            }
-            if (rc.status === 'hoan_mo' && perms.canEditSchedule) {
-                return `<button type="button" class="btn btn-primary rbt-mcard__primary" data-rbt-action="open_restore_schedule" data-rbt-code="${esc(code)}">📅 Xếp lịch lại</button>`;
-            }
-            if (rc.status === 'xuat_vien_cho' && perms.canEditSchedule) {
-                return `<button type="button" class="btn btn-primary rbt-mcard__primary" data-rbt-action="open_readmit" data-rbt-code="${esc(code)}">🏥 Nhập lại &amp; Xếp lịch</button>`;
-            }
-            if (rc.status === 'da_xoa' && perms.canSoftDelete) {
-                return `<button type="button" class="btn btn-secondary rbt-mcard__primary" data-rbt-action="restore_trash" data-rbt-code="${esc(code)}">↺ Khôi phục</button>`;
-            }
-            if (rc.status === 'da_mo' && opts.canPostponeRetro) {
-                return `<button type="button" class="btn btn-secondary rbt-mcard__primary" data-rbt-action="open_postpone" data-rbt-code="${esc(code)}">⏸️ Hoãn hậu kiểm</button>`;
-            }
-            if (rc.status === 'cho_mo' && perms.canEditSchedule) {
-                return `<button type="button" class="btn btn-secondary rbt-mcard__primary" data-rbt-action="open_edit_schedule" data-rbt-code="${esc(code)}">🗓️ Đổi lịch</button>`;
-            }
-            return `<button type="button" class="btn btn-secondary rbt-mcard__primary" data-rbt-action="open_case_sheet" data-rbt-code="${esc(code)}">👁️ Chi tiết ca</button>`;
-        },
-
-        _renderMobileCaseCard(rc, perms, opts = {}) {
-            const code = rc.robotCaseCode || rc.soNV || '';
-            const stMeta = STATUS_META[rc.status] || { label: rc.status, badge: 'rbt-badge--navy' };
-            const telHref = _safeTelHref(rc);
-            const phoneDisplay = rc.phone ? `${esc(rc.phone)}${rc.phoneMasked ? ' (ẩn)' : ''}` : '—';
-            const rightTag = opts.rightMeta || (rc.caseSlot ? esc(rc.caseSlot) : (rc.surgeryDate ? _fmtViDate(rc.surgeryDate) : ''));
-
-            return `
-                <article class="rbt-mcard rbt-mcard--${esc(rc.status)}" data-robot-code="${esc(code)}">
-                    <div class="rbt-mcard__top">
-                        <span class="rbt-case-code">${esc(code)}${rightTag ? ` · ${rightTag}` : ''}</span>
-                        <span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>
-                    </div>
-                    ${rc.isTestSandboxCase ? `<div><span class="rbt-badge rbt-badge--sandbox">🧪 TEST SANDBOX</span></div>` : ''}
-                    <div class="rbt-mcard__name">${esc(rc.patientName)} ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''} ${rc.admissionId ? `<span class="text-secondary" style="font-size:0.78rem;font-weight:600;">· NV: ${esc(rc.admissionId)}</span>` : ''}</div>
-                    <div class="rbt-mcard__meta">
-                        <div class="rbt-mcard__diag">📋 ${esc(rc.diagnosis || 'Chưa ghi chẩn đoán')}</div>
-                        <div class="rbt-mcard__diag">🤖 ${esc(rc.robotProcedure || 'Chưa ghi PPPT')}</div>
-                        <div>🔪 <strong>${esc(rc.mainSurgeonName || 'Chưa chọn PTV')}</strong>${rc.operatingRoom && rc.caseSlot ? ` · ${esc(rc.caseSlot)} (${esc(rc.operatingRoom)})` : ''}</div>
-                        ${rc.expectedTimeframe ? `<div>📅 Dự kiến: <strong>${esc(_fmtViDate(rc.expectedTimeframe))}</strong></div>` : ''}
-                        ${opts.extraLineHtml || ''}
-                        <div>📞 SĐT: <strong>${phoneDisplay}</strong></div>
-                    </div>
-                    ${rc.postB2ClinicalDirty ? `<div class="rbt-dirty-banner">⚠️ Đã sửa lâm sàng sau B2 — cần duyệt lại B2</div>` : ''}
-                    ${this._formatApprovalBadgeHtml(rc)}
-                    <div class="rbt-mcard__footer">
-                        ${this._primaryCardActionHtml(rc, perms, opts)}
-                        ${telHref ? `<a href="${esc(telHref)}" class="rbt-btn-call" aria-label="Gọi bệnh nhân ${esc(rc.patientName)}">📞 Gọi</a>` : ''}
-                        <button type="button" class="btn btn-secondary rbt-btn-more" data-rbt-action="open_case_sheet" data-rbt-code="${esc(code)}" aria-label="Thao tác khác cho ca ${esc(code)}">•••</button>
-                    </div>
-                </article>
-            `;
-        },
-
-        _renderWeekTab(cases) {
-            const bs = this._bootstrap || {};
-            const perms = bs.permissions || {};
-            const todayIso = bs.todayVn || _fmtIsoLocal(new Date());
-            const weekStart = _mondayOf(this._weekStartIso || todayIso);
-            const weekDates = [];
-            for (let i = 0; i < 6; i++) {
-                const d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
-                weekDates.push({ iso: _fmtIsoLocal(d), dt: d });
-            }
-            const weekStatuses = new Set(['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo', 'da_mo']);
-            const sunDt = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
-            const sunIso = _fmtIsoLocal(sunDt);
-            const hasSundayCases = cases.some(c => weekStatuses.has(c.status) && c.surgeryDate === sunIso);
-            if (hasSundayCases) weekDates.push({ iso: sunIso, dt: sunDt });
-            const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-            const shortDayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-            const q = this._searchQuery.trim().toLowerCase();
-            const sFilter = this._mobileSurgeonFilter;
-            const visibleCases = cases.filter(c => {
-                if (!weekStatuses.has(c.status)) return false;
-                if (sFilter && sFilter !== 'all' && String(c.mainSurgeonId || '') !== String(sFilter)) return false;
-                if (!q) return true;
-                return [c.patientName, c.robotCaseCode, c.diagnosis, c.robotProcedure, c.mainSurgeonName, c.admissionId]
-                    .some(v => String(v || '').toLowerCase().includes(q));
-            });
-
-            const colsHtml = weekDates.map(({ iso, dt }) => {
-                const dayCases = visibleCases.filter(c => c.surgeryDate === iso);
-                const ca1 = dayCases.filter(c => c.caseSlot === 'Ca 1');
-                const ca2 = dayCases.filter(c => c.caseSlot === 'Ca 2');
-                const ca3 = dayCases.filter(c => c.caseSlot !== 'Ca 1' && c.caseSlot !== 'Ca 2');
-                const label = `${dayNames[dt.getDay()]} · ${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`;
-                const renderGroup = (title, list) => list.length ? `
-                    <div class="rbt-slot-section">
-                        <div class="rbt-slot-heading">${esc(title)} (${list.length})</div>
-                        ${list.map(rc => this._renderCaseCard(rc, perms)).join('')}
-                    </div>
-                ` : '';
-
-                return `
-                    <section class="rbt-day-col ${iso === todayIso ? 'is-today' : ''}">
-                        <header class="rbt-day-head">
-                            <span>${esc(label)}</span>
-                            <span class="rbt-badge rbt-badge--navy">${dayCases.length} ca</span>
-                        </header>
-                        <div class="rbt-day-body">
-                            ${dayCases.length ? `
-                                ${renderGroup('Ca 1 (08:00–11:30)', ca1)}
-                                ${renderGroup('Ca 2 (13:00–16:00)', ca2)}
-                                ${renderGroup('Ca 3 (Dự phòng / Trong ngày)', ca3)}
-                            ` : `<div class="rbt-empty">Chưa có ca Robot</div>`}
-                        </div>
-                    </section>
-                `;
-            }).join('');
-
-            // Smart active day on mobile Day-Pill Strip
-            let activeMobIso = this._mobileDayIso;
-            if (!weekDates.some(d => d.iso === activeMobIso)) {
-                if (weekDates.some(d => d.iso === todayIso)) {
-                    activeMobIso = todayIso;
-                } else {
-                    const firstNonEmpty = weekDates.find(d => visibleCases.some(c => c.surgeryDate === d.iso));
-                    activeMobIso = firstNonEmpty ? firstNonEmpty.iso : (weekDates[0]?.iso || todayIso);
-                }
-                this._mobileDayIso = activeMobIso;
-            }
-
-            const dayPillsHtml = weekDates.map(({ iso, dt }) => {
-                const cnt = visibleCases.filter(c => c.surgeryDate === iso).length;
-                const isActive = !this._mobileWeekAllDays && iso === activeMobIso;
-                const dShort = shortDayNames[dt.getDay()];
-                const ddmm = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`;
-                return `
-                    <button type="button"
-                        class="rbt-day-pill ${isActive ? 'is-active' : ''} ${iso === todayIso ? 'is-today' : ''} ${cnt >= 3 ? 'is-full' : ''}"
-                        data-rbt-action="select_mobile_day"
-                        data-rbt-code="${esc(iso)}">
-                        <span>${esc(dShort)}</span>
-                        <span class="rbt-day-pill__date">${esc(ddmm)}</span>
-                        <span class="rbt-day-pill__count">${cnt}/3</span>
-                    </button>
-                `;
-            }).join('');
-
-            const slotRank = (sl) => (sl === 'Ca 1' ? 1 : (sl === 'Ca 2' ? 2 : (sl === 'Ca 3' ? 3 : 4)));
-            let mobileContentHtml = '';
-            if (this._mobileWeekAllDays) {
-                const nonEmptyDays = weekDates
-                    .map(({ iso, dt }) => ({
-                        iso,
-                        dt,
-                        list: visibleCases.filter(c => c.surgeryDate === iso).sort((a, b) => slotRank(a.caseSlot) - slotRank(b.caseSlot))
-                    }))
-                    .filter(d => d.list.length > 0);
-                const hiddenDays = weekDates.length - nonEmptyDays.length;
-                mobileContentHtml = nonEmptyDays.length ? `
-                    <div class="text-secondary" style="font-size:0.78rem;padding:0 2px;">Hiển thị ${nonEmptyDays.length} ngày có ca · Đã ẩn ${hiddenDays} ngày trống</div>
-                    ${nonEmptyDays.map(({ iso, dt, list }) => `
-                        <div class="rbt-mobile-day-group">
-                            <div class="rbt-mobile-day-title">
-                                <span>${esc(dayNames[dt.getDay()])} · ${_fmtViDate(iso)}${iso === todayIso ? ' (Hôm nay)' : ''}</span>
-                                <span class="rbt-badge rbt-badge--navy">${list.length}/3 ca</span>
-                            </div>
-                            <div class="rbt-mcard-list rbt-mobile-only-flex">
-                                ${list.map(rc => this._renderMobileCaseCard(rc, perms)).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                ` : `<div class="rbt-empty">Không có ca Robot nào trong tuần này.</div>`;
-            } else {
-                const selObj = weekDates.find(d => d.iso === activeMobIso) || weekDates[0];
-                const dayCases = visibleCases
-                    .filter(c => c.surgeryDate === (selObj ? selObj.iso : ''))
-                    .sort((a, b) => slotRank(a.caseSlot) - slotRank(b.caseSlot));
-                const selTitle = selObj ? `${dayNames[selObj.dt.getDay()]} · ${_fmtViDate(selObj.iso)}${selObj.iso === todayIso ? ' (Hôm nay)' : ''}` : '';
-                mobileContentHtml = `
-                    <div class="rbt-mobile-day-title">
-                        <span>${esc(selTitle)}</span>
-                        <span class="rbt-badge ${dayCases.length >= 3 ? 'rbt-badge--red' : 'rbt-badge--navy'}">${dayCases.length}/3 ca</span>
-                    </div>
-                    ${dayCases.length ? `
-                        <div class="rbt-mcard-list rbt-mobile-only-flex">
-                            ${dayCases.map(rc => this._renderMobileCaseCard(rc, perms)).join('')}
-                        </div>
-                    ` : `<div class="rbt-empty">Chưa có ca Robot ngày ${_fmtViDate(selObj?.iso || '')}</div>`}
-                `;
-            }
-
-            return `
-                <div class="rbt-desktop-only">
-                    <div class="rbt-toolbar">
-                        <div class="rbt-toolbar__group">
-                            <button type="button" class="btn btn-secondary btn-sm" data-rbt-action="prev_week">◀ Tuần trước</button>
-                            <button type="button" class="btn btn-secondary btn-sm" data-rbt-action="this_week">Tuần này</button>
-                            <button type="button" class="btn btn-secondary btn-sm" data-rbt-action="next_week">Tuần sau ▶</button>
-                            <span class="rbt-week-label">${_fmtViDate(weekDates[0].iso)} – ${_fmtViDate(weekDates[weekDates.length - 1].iso)}</span>
-                        </div>
-                        <div class="rbt-toolbar__group">
-                            <input type="search" id="rbt-search-input" class="form-input" value="${esc(this._searchQuery)}" placeholder="Tìm tên BN, mã RB, BS, số NV..." aria-label="Tìm ca Robot" style="min-width:220px;">
-                        </div>
-                    </div>
-                    <div class="rbt-week-grid">${colsHtml}</div>
-                </div>
-                <div class="rbt-mobile-week rbt-mobile-only">
-                    <div class="rbt-mobile-week-bar">
-                        <button type="button" class="btn btn-secondary rbt-mobile-week-navbtn" data-rbt-action="prev_week" aria-label="Tuần trước">◀</button>
-                        <span class="rbt-week-label">${_fmtViDate(weekDates[0].iso)} – ${_fmtViDate(weekDates[weekDates.length - 1].iso)}</span>
-                        <button type="button" class="btn btn-secondary rbt-mobile-week-navbtn" data-rbt-action="this_week">Hôm nay</button>
-                        <button type="button" class="btn btn-secondary rbt-mobile-week-navbtn" data-rbt-action="next_week" aria-label="Tuần sau">▶</button>
-                    </div>
-                    <div class="rbt-day-strip" role="tablist" aria-label="Chọn ngày trong tuần">
-                        ${dayPillsHtml}
-                        <button type="button"
-                            class="rbt-day-pill rbt-day-pill--all ${this._mobileWeekAllDays ? 'is-active' : ''}"
-                            data-rbt-action="toggle_week_all">
-                            <span>Cả tuần</span>
-                            <span class="rbt-day-pill__count">${visibleCases.length} ca</span>
-                        </button>
-                    </div>
-                    ${mobileContentHtml}
-                </div>
-            `;
-        },
-
-        _renderConsultTab(consultCases, perms) {
-            const q = this._searchQuery.trim().toLowerCase();
-            const sFilter = this._mobileSurgeonFilter;
-            const visible = consultCases.filter(c => {
-                if (sFilter && sFilter !== 'all' && String(c.mainSurgeonId || '') !== String(sFilter)) return false;
-                if (!q) return true;
-                return [c.patientName, c.robotCaseCode, c.diagnosis, c.robotProcedure, c.mainSurgeonName, c.admissionId]
-                    .some(v => String(v || '').toLowerCase().includes(q));
-            });
-            if (!visible.length) {
-                return `<div class="rbt-panel"><div class="rbt-empty">Hiện không có ca nào trong hàng đợi Tư vấn / Chờ xếp lịch.</div></div>`;
-            }
-            const rows = visible.map(rc => {
-                const code = rc.robotCaseCode || '';
-                const stMeta = STATUS_META[rc.status] || { label: rc.status, badge: 'rbt-badge--indigo' };
-                const isOwner = (perms.username && rc.createdByUsername === perms.username) || (perms.staffId && Number(rc.mainSurgeonId) === Number(perms.staffId));
-                return `
-                    <tr>
-                        <td class="rbt-col-code"><strong>${esc(code)}</strong>${rc.isTestSandboxCase ? '<br><span class="rbt-badge rbt-badge--sandbox">TEST</span>' : ''}</td>
-                        <td class="rbt-col-patient">
-                            <div class="rbt-col-patient-line"><strong>${esc(rc.patientName)}</strong> ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''}</div>
-                            <div class="text-secondary rbt-col-patient-line">SĐT: ${esc(rc.phone || '—')} ${rc.admissionId ? `· NV: ${esc(rc.admissionId)}` : ''}</div>
-                        </td>
-                        <td class="rbt-col-clinical">
-                            <div>${esc(rc.diagnosis || '—')}</div>
-                            <div class="text-secondary">${esc(rc.robotProcedure || '—')}</div>
-                        </td>
-                        <td class="rbt-col-surgeon">${esc(rc.mainSurgeonName || '—')}${rc.expectedTimeframe ? `<div class="text-secondary">Dự kiến: ${esc(_fmtViDate(rc.expectedTimeframe))}</div>` : ''}</td>
-                        <td class="rbt-col-status"><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>${rc.consultNote ? `<div class="text-secondary">${esc(rc.consultNote)}</div>` : ''}</td>
-                        <td class="rbt-col-actions">
-                            <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
-                                ${(rc.status !== 'cho_xep_lich' && (perms.canManageRobot || isOwner)) ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_consult_result" data-rbt-code="${esc(code)}">Kết quả TV</button>` : ''}
-                                ${perms.canEditSchedule ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="open_schedule_step1" data-rbt-code="${esc(code)}">📅 Xếp lịch B1</button>` : ''}
-                                ${perms.canEditInfo ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">✏️</button>` : ''}
-                                ${perms.canSoftDelete ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="soft_delete" data-rbt-code="${esc(code)}">🗑️</button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            const mobileCardsHtml = visible.map(rc => this._renderMobileCaseCard(rc, perms, {
-                extraLineHtml: rc.consultNote ? `<div>📝 ${esc(rc.consultNote)}</div>` : ''
-            })).join('');
-
-            return `
-                <div class="rbt-panel">
-                    <div class="rbt-desktop-only">
-                        <div class="rbt-table-wrap">
-                            <table class="rbt-table">
-                                <thead>
-                                    <tr>
-                                        <th class="rbt-col-code">Mã ca</th>
-                                        <th class="rbt-col-patient">Bệnh nhân &amp; Liên hệ</th>
-                                        <th class="rbt-col-clinical">Chẩn đoán &amp; PPPT</th>
-                                        <th class="rbt-col-surgeon">PTV &amp; Dự kiến</th>
-                                        <th class="rbt-col-status">Trạng thái tư vấn</th>
-                                        <th class="rbt-col-actions">Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${rows}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="rbt-mcard-list rbt-mobile-only-flex">${mobileCardsHtml}</div>
-                </div>
-            `;
-        },
-
-        _renderPostponedTab(postponedCases, perms) {
-            const reasonsMap = (this._bootstrap && this._bootstrap.postponeReasons) || {};
-            const q = this._searchQuery.trim().toLowerCase();
-            const sFilter = this._mobileSurgeonFilter;
-            const filtered = postponedCases.filter(c => {
-                if (this._postponeFilterReason === '__discharge__' && c.status !== 'xuat_vien_cho') return false;
-                if (this._postponeFilterReason !== 'all' && this._postponeFilterReason !== '__discharge__' && (c.status !== 'hoan_mo' || c.postponeReasonCode !== this._postponeFilterReason)) return false;
-                if (sFilter && sFilter !== 'all' && String(c.mainSurgeonId || '') !== String(sFilter)) return false;
-                if (!q) return true;
-                return [c.patientName, c.robotCaseCode, c.diagnosis, c.robotProcedure, c.mainSurgeonName, c.admissionId]
-                    .some(v => String(v || '').toLowerCase().includes(q));
-            });
-
-            const rows = filtered.map(rc => {
-                const code = rc.robotCaseCode || '';
-                const stMeta = STATUS_META[rc.status] || { label: rc.status, badge: 'rbt-badge--red' };
-                const reasonText = rc.status === 'xuat_vien_cho'
-                    ? (rc.dischargeReason || 'Xuất viện chờ lịch mới')
-                    : `${rc.postponeReasonLabel || rc.postponeReasonCode || '—'}${rc.postponeReasonNote ? ` — ${rc.postponeReasonNote}` : ''}`;
-                return `
-                    <tr>
-                        <td class="rbt-col-code"><strong>${esc(code)}</strong></td>
-                        <td class="rbt-col-patient">
-                            <div class="rbt-col-patient-line"><strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')})</div>
-                            <div class="text-secondary rbt-col-patient-line">SĐT: ${esc(rc.phone || '—')}</div>
-                        </td>
-                        <td class="rbt-col-status"><span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span><div class="text-secondary">Từ ngày: ${_fmtViDate(rc.surgeryDate)} · ${esc(rc.caseSlot || '—')}</div></td>
-                        <td class="rbt-col-clinical">${esc(reasonText)}</td>
-                        <td class="rbt-col-surgeon">${esc(rc.mainSurgeonName || '—')}</td>
-                        <td class="rbt-col-actions">
-                            <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
-                                ${perms.canEditSchedule ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="${rc.status === 'xuat_vien_cho' ? 'open_readmit' : 'open_restore_schedule'}" data-rbt-code="${esc(code)}">${rc.status === 'xuat_vien_cho' ? '🏥 Nhập lại &amp; Xếp lịch' : '📅 Xếp lịch lại'}</button>` : ''}
-                                ${perms.canSoftDelete ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="soft_delete" data-rbt-code="${esc(code)}">🗑️</button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            const mobileCardsHtml = filtered.map(rc => {
-                const reasonText = rc.status === 'xuat_vien_cho'
-                    ? (rc.dischargeReason || 'Xuất viện chờ lịch mới')
-                    : `${rc.postponeReasonLabel || rc.postponeReasonCode || '—'}${rc.postponeReasonNote ? ` — ${rc.postponeReasonNote}` : ''}`;
-                return this._renderMobileCaseCard(rc, perms, {
-                    rightMeta: rc.surgeryDate ? `Lịch cũ: ${_fmtViDate(rc.surgeryDate)}` : '',
-                    extraLineHtml: `<div>⏸️ Lý do: <strong>${esc(reasonText)}</strong></div>`
-                });
-            }).join('');
-
-            return `
-                <div class="rbt-panel">
-                    <div class="rbt-toolbar" style="padding:0;border:none;">
-                        <strong>Danh sách ca Hoãn mổ &amp; Xuất viện chờ</strong>
-                        <select id="rbt-filter-reason" class="form-select" style="width:auto;min-width:220px;" aria-label="Lọc lý do hoãn">
-                            <option value="all" ${this._postponeFilterReason === 'all' ? 'selected' : ''}>Tất cả lý do</option>
-                            <option value="__discharge__" ${this._postponeFilterReason === '__discharge__' ? 'selected' : ''}>Xuất viện chờ</option>
-                            ${Object.entries(reasonsMap).map(([k, lbl]) => `<option value="${esc(k)}" ${this._postponeFilterReason === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}
-                        </select>
-                    </div>
-                    ${filtered.length ? `
-                        <div class="rbt-desktop-only">
-                            <div class="rbt-table-wrap">
-                                <table class="rbt-table">
-                                    <thead>
-                                        <tr>
-                                            <th class="rbt-col-code">Mã ca</th>
-                                            <th class="rbt-col-patient">Bệnh nhân</th>
-                                            <th class="rbt-col-status">Trạng thái &amp; Lịch cũ</th>
-                                            <th class="rbt-col-clinical">Lý do hoãn / Xuất viện chờ</th>
-                                            <th class="rbt-col-surgeon">PTV</th>
-                                            <th class="rbt-col-actions">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${rows}</tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="rbt-mcard-list rbt-mobile-only-flex">${mobileCardsHtml}</div>
-                    ` : `<div class="rbt-empty">Không có ca hoãn hoặc xuất viện chờ phù hợp bộ lọc.</div>`}
-                </div>
-            `;
-        },
-
-        _renderCompletedTab(allCases, uniqueHistorical, perms) {
-            const bs = this._bootstrap || {};
-            const todayIso = bs.todayVn || _fmtIsoLocal(new Date());
-            const lookbackDays = Number((bs.robotConfig && bs.robotConfig.postponeLookbackDays) || 7);
-            const completedCases = allCases.filter(c => c.status === 'da_mo');
-
-            const combined = [
-                ...completedCases.map(c => ({
-                    source: 'robot',
-                    robotCaseCode: c.robotCaseCode,
-                    patientName: c.patientName,
-                    birthYear: c.birthYear,
-                    admissionId: c.admissionId,
-                    diagnosis: c.diagnosis,
-                    method: c.robotProcedure,
-                    mainSurgeonId: c.mainSurgeonId,
-                    mainSurgeonName: c.mainSurgeonName,
-                    date: c.surgeryDate,
-                    completionSource: c.completionSource,
-                    isTestSandboxCase: Boolean(c.isTestSandboxCase)
-                })),
-                ...uniqueHistorical.map(h => ({
-                    source: 'historical',
-                    robotCaseCode: '',
-                    surgeryId: h.id,
-                    patientName: h.patientName,
-                    birthYear: h.birthYear,
-                    admissionId: h.admissionId,
-                    diagnosis: h.diagnosis,
-                    method: h.method,
-                    mainSurgeonId: h.mainSurgeon,
-                    mainSurgeonName: h.mainSurgeonName || (typeof Utils !== 'undefined' ? Utils.getStaffName(h.mainSurgeon) : ''),
-                    date: h.date,
-                    completionSource: 'historical_schedule',
-                    isTestSandboxCase: false
-                }))
-            ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-
-            const years = [...new Set(combined.map(x => String(x.date || '').slice(0, 4)).filter(Boolean))].sort().reverse();
-            const filtered = combined.filter(x => {
-                const d = String(x.date || '');
-                if (this._statsYear !== 'all' && d.slice(0, 4) !== this._statsYear) return false;
-                if (this._statsMonth !== 'all' && d.slice(5, 7) !== this._statsMonth) return false;
-                if (this._statsSurgeon !== 'all' && String(x.mainSurgeonId || '') !== String(this._statsSurgeon)) return false;
-                return true;
-            });
-
-            const reasonsMap = bs.postponeReasons || {};
-            const postponeBreakdown = {};
-            allCases.filter(c => c.status === 'hoan_mo' && !c.isTestSandboxCase).forEach(c => {
-                const k = c.postponeReasonCode || 'ly_do_khac';
-                postponeBreakdown[k] = (postponeBreakdown[k] || 0) + 1;
-            });
-
-            const rows = filtered.map(item => {
-                const diff = _daysBetweenIso(item.date, todayIso);
-                const canPostponeRetro = item.source === 'robot' &&
-                    (perms.canPostponeOrDischarge || (perms.staffId && Number(perms.staffId) === Number(item.mainSurgeonId))) &&
-                    ((diff !== null && diff >= 0 && diff <= lookbackDays) || perms.isSuperAdmin);
-                return `
-                    <tr>
-                        <td class="rbt-col-date"><strong>${_fmtViDate(item.date)}</strong></td>
-                        <td class="rbt-col-patient">
-                            <div class="rbt-col-patient-line"><strong>${esc(item.patientName)}</strong> ${item.birthYear ? `(${esc(item.birthYear)})` : ''}</div>
-                            <div class="text-secondary rbt-col-patient-line">${item.robotCaseCode ? `<code>${esc(item.robotCaseCode)}</code>` : `Lịch tuần #${esc(item.surgeryId)}`} ${item.admissionId ? `· NV: ${esc(item.admissionId)}` : ''}</div>
-                        </td>
-                        <td class="rbt-col-clinical">
-                            <div>${esc(item.diagnosis || '—')}</div>
-                            <div class="text-secondary">${esc(item.method || '—')}</div>
-                        </td>
-                        <td class="rbt-col-surgeon">${esc(item.mainSurgeonName || '—')}</td>
-                        <td class="rbt-col-status">${item.completionSource === 'auto_date_rollover' ? '<span class="rbt-badge rbt-badge--ocean">Chuyển tự động qua ngày</span>' : '<span class="rbt-badge rbt-badge--navy">Dữ liệu lịch sử</span>'}</td>
-                        <td class="rbt-col-actions">
-                            ${canPostponeRetro ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_postpone" data-rbt-code="${esc(item.robotCaseCode)}">⏸️ Hoãn hậu kiểm</button>` : '—'}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            const mobileSlice = filtered.slice(0, this._completedVisibleLimit);
-            const remainingCompleted = Math.max(0, filtered.length - mobileSlice.length);
-            const mobileCompletedCards = mobileSlice.map(item => {
-                const diff = _daysBetweenIso(item.date, todayIso);
-                const canPostponeRetro = item.source === 'robot' &&
-                    (perms.canPostponeOrDischarge || (perms.staffId && Number(perms.staffId) === Number(item.mainSurgeonId))) &&
-                    ((diff !== null && diff >= 0 && diff <= lookbackDays) || perms.isSuperAdmin);
-                if (item.source === 'robot' && item.robotCaseCode) {
-                    const rcObj = this._findCase(item.robotCaseCode);
-                    if (rcObj) {
-                        return this._renderMobileCaseCard(rcObj, perms, {
-                            rightMeta: `Ngày mổ: ${_fmtViDate(item.date)}`,
-                            canPostponeRetro
-                        });
-                    }
-                }
-                return `
-                    <article class="rbt-mcard rbt-mcard--da_mo">
-                        <div class="rbt-mcard__top">
-                            <span class="rbt-case-code">${_fmtViDate(item.date)} · ${item.robotCaseCode ? esc(item.robotCaseCode) : `Lịch tuần #${esc(item.surgeryId)}`}</span>
-                            <span class="rbt-badge ${item.completionSource === 'auto_date_rollover' ? 'rbt-badge--ocean' : 'rbt-badge--navy'}">${item.completionSource === 'auto_date_rollover' ? 'Tự động qua ngày' : 'Dữ liệu lịch sử'}</span>
-                        </div>
-                        <div class="rbt-mcard__name">${esc(item.patientName)} ${item.birthYear ? `(${esc(item.birthYear)})` : ''} ${item.admissionId ? `<span class="text-secondary" style="font-size:0.78rem;font-weight:600;">· NV: ${esc(item.admissionId)}</span>` : ''}</div>
-                        <div class="rbt-mcard__meta">
-                            <div class="rbt-mcard__diag">📋 ${esc(item.diagnosis || '—')}</div>
-                            <div class="rbt-mcard__diag">🤖 ${esc(item.method || '—')}</div>
-                            <div>🔪 <strong>${esc(item.mainSurgeonName || '—')}</strong></div>
-                        </div>
-                    </article>
-                `;
-            }).join('');
-
-            return `
-                <div class="rbt-panel">
-                    <div class="rbt-toolbar" style="padding:0;border:none;">
-                        <strong>Tổng hợp ca Đã phẫu thuật Robot (${filtered.length}/${combined.length})</strong>
-                        <div class="rbt-toolbar__group">
-                            <select id="rbt-stats-year" class="form-select" style="width:auto;" aria-label="Lọc năm">
-                                <option value="all">Tất cả năm</option>
-                                ${years.map(y => `<option value="${esc(y)}" ${this._statsYear === y ? 'selected' : ''}>Năm ${esc(y)}</option>`).join('')}
-                            </select>
-                            <select id="rbt-stats-month" class="form-select" style="width:auto;" aria-label="Lọc tháng">
-                                <option value="all">Tất cả tháng</option>
-                                ${Array.from({ length: 12 }, (_, idx) => {
-                                    const mm = String(idx + 1).padStart(2, '0');
-                                    return `<option value="${mm}" ${this._statsMonth === mm ? 'selected' : ''}>Tháng ${idx + 1}</option>`;
-                                }).join('')}
-                            </select>
-                            <select id="rbt-stats-surgeon" class="form-select" style="width:auto;" aria-label="Lọc PTV">
-                                <option value="all">Tất cả PTV</option>
-                                ${(bs.surgeons || []).map(st => `<option value="${esc(st.id)}" ${String(this._statsSurgeon) === String(st.id) ? 'selected' : ''}>${esc(st.title)} ${esc(st.name)}</option>`).join('')}
-                            </select>
-                        </div>
-                    </div>
-                    ${Object.keys(postponeBreakdown).length ? `
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                            ${Object.entries(postponeBreakdown).map(([k, cnt]) => `<span class="rbt-badge rbt-badge--amber">${esc(reasonsMap[k] || k)}: ${cnt} ca</span>`).join('')}
-                        </div>
-                    ` : ''}
-                    ${filtered.length ? `
-                        <div class="rbt-desktop-only">
-                            <div class="rbt-table-wrap">
-                                <table class="rbt-table">
-                                    <thead>
-                                        <tr>
-                                            <th class="rbt-col-date">Ngày mổ</th>
-                                            <th class="rbt-col-patient">Bệnh nhân &amp; Mã</th>
-                                            <th class="rbt-col-clinical">Chẩn đoán &amp; PPPT</th>
-                                            <th class="rbt-col-surgeon">PTV chính</th>
-                                            <th class="rbt-col-status">Nguồn ghi nhận</th>
-                                            <th class="rbt-col-actions">Hậu kiểm (≤${lookbackDays} ngày)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${rows}</tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="rbt-mcard-list rbt-mobile-only-flex">
-                            ${mobileCompletedCards}
-                            ${remainingCompleted > 0 ? `
-                                <button type="button" class="btn btn-secondary rbt-mobile-load-more" data-rbt-action="load_more_completed">
-                                    Xem thêm (${Math.min(20, remainingCompleted)} / còn ${remainingCompleted} ca)
-                                </button>
-                            ` : ''}
-                        </div>
-                    ` : `<div class="rbt-empty">Không có dữ liệu phù hợp bộ lọc.</div>`}
-                </div>
-            `;
-        },
-
-        _renderTrashTab(trashCases, perms) {
-            if (!trashCases.length) {
-                return `<div class="rbt-panel"><div class="rbt-empty">Thùng rác Điều phối Robot đang trống.</div></div>`;
-            }
-            const archiveDays = Number((this._bootstrap?.robotConfig?.trashAutoArchiveDays) || 14);
-            const rows = trashCases.map(rc => {
-                const code = rc.robotCaseCode || '';
-                return `
-                    <tr>
-                        <td class="rbt-col-code"><strong>${esc(code)}</strong></td>
-                        <td class="rbt-col-patient rbt-col-nowrap"><strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')})</td>
-                        <td class="rbt-col-clinical">${esc(rc.deleteReason || '—')}</td>
-                        <td class="rbt-col-nowrap">${_fmtViDate(String(rc.deletedAt || '').slice(0, 10))} · ${esc(rc.deletedBy || '—')}</td>
-                        <td class="rbt-col-actions">
-                            <div class="rbt-card-actions" style="border-top:none;padding-top:0;">
-                                ${perms.canSoftDelete ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="restore_trash" data-rbt-code="${esc(code)}">↺ Khôi phục</button>` : ''}
-                                ${perms.canArchiveDeleted ? `<button type="button" class="btn btn-danger rbt-btn-xs" data-rbt-action="archive_delete" data-rbt-code="${esc(code)}">🗄️ Lưu trữ ẩn</button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            const mobileCardsHtml = trashCases.map(rc => this._renderMobileCaseCard(rc, perms, {
-                rightMeta: _fmtViDate(String(rc.deletedAt || '').slice(0, 10)),
-                extraLineHtml: `<div>🗑️ Lý do: <strong>${esc(rc.deleteReason || '—')}</strong> · ${esc(rc.deletedBy || '—')}</div>`
-            })).join('');
-
-            return `
-                <div class="rbt-panel">
-                    <div class="text-secondary" style="font-size:0.84rem;">
-                        Bảo vệ dữ liệu Zero-RM: Ca mổ Robot được giữ trong Thùng rác tối thiểu <strong>${archiveDays} ngày</strong> trước khi chuyển sang kho lưu trữ lịch sử, không xóa vĩnh viễn mất mã liên kết.
-                    </div>
-                    <div class="rbt-desktop-only">
-                        <div class="rbt-table-wrap">
-                            <table class="rbt-table">
-                                <thead>
-                                    <tr>
-                                        <th class="rbt-col-code">Mã ca</th>
-                                        <th class="rbt-col-patient rbt-col-nowrap">Bệnh nhân</th>
-                                        <th class="rbt-col-clinical">Lý do đưa vào thùng rác</th>
-                                        <th class="rbt-col-nowrap">Thời gian &amp; Người thực hiện</th>
-                                        <th class="rbt-col-actions">Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${rows}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="rbt-mcard-list rbt-mobile-only-flex">${mobileCardsHtml}</div>
-                </div>
-            `;
-        },
-
-        _renderConfigTab() {
-            const bs = this._bootstrap || {};
-            const cfg = bs.robotConfig || {};
-            const coords = new Set((cfg.coordinators || []).map(x => String(x || '').trim().toLowerCase()));
-            const accounts = Array.isArray(bs.staffAccounts) ? bs.staffAccounts : [];
-            return `
-                <div class="rbt-panel">
-                    <h3 style="margin:0;">⚙️ Cấu hình Phân quyền Điều phối Robot &amp; In A5 P.CTXH</h3>
-                    <form id="rbt-config-form">
-                        <div class="rbt-form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Tên người nhận mặc định tại Phòng CTXH (Mẫu A5)</label>
-                                <input class="form-input" name="defaultSchedulerName" value="${esc(cfg.defaultSchedulerName || 'Quang')}" required maxlength="60">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Giới hạn ngày hoãn hậu kiểm (ngày)</label>
-                                <input class="form-input" type="number" min="1" max="30" name="postponeLookbackDays" value="${esc(cfg.postponeLookbackDays || 7)}" required>
-                            </div>
-                            <div class="form-group rbt-form-grid--full">
-                                <label class="form-label">Điều phối viên được ủy quyền (trạng thái thực từ tài khoản active)</label>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;padding:10px;border:1px solid var(--border-default);border-radius:10px;">
-                                    ${accounts.map(acc => `
-                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.86rem;">
-                                            <input type="checkbox" name="coordinators" value="${esc(acc.username)}" ${coords.has(String(acc.username || '').toLowerCase()) ? 'checked' : ''}>
-                                            <span><strong>${esc(acc.title ? `${acc.title} ${acc.name}` : acc.name)}</strong> <span class="text-secondary">(@${esc(acc.username)})</span></span>
-                                        </label>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        </div>
-                        <div style="margin-top:12px;">
-                            <button type="button" class="btn btn-primary" data-rbt-action="save_config">Lưu cấu hình Điều phối</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-        },
-
-        async _handleUiAction(act, code, sid, btn) {
-            if (act === 'reload') {
-                await this._refreshBoth(true);
-                return;
-            }
-            if (act === 'subtab' || act === 'kpi_jump') {
-                this._subtab = code || 'week';
-                this._rerenderInPlace();
-                return;
-            }
-            if (act === 'toggle_mobile_search') {
-                this._mobileSearchOpen = !this._mobileSearchOpen;
-                this._rerenderInPlace();
-                if (this._mobileSearchOpen) {
-                    setTimeout(() => document.getElementById('rbt-mobile-search-input')?.focus(), 40);
-                }
-                return;
-            }
-            if (act === 'clear_mobile_filters') {
-                this._searchQuery = '';
-                this._mobileSurgeonFilter = 'all';
-                this._rerenderInPlace();
-                return;
-            }
-            if (act === 'select_mobile_day') {
-                this._mobileWeekAllDays = false;
-                this._mobileDayIso = code || this._mobileDayIso;
-                this._rerenderInPlace();
-                return;
-            }
-            if (act === 'toggle_week_all') {
-                this._mobileWeekAllDays = !this._mobileWeekAllDays;
-                this._rerenderInPlace();
-                return;
-            }
-            if (act === 'load_more_completed') {
-                this._completedVisibleLimit += 20;
-                this._rerenderInPlace();
-                return;
-            }
-            if (act === 'open_mobile_menu') return this.openMobileHeaderMenuSheet();
-            if (act === 'open_tutorial') {
-                if (typeof RobotTutorial !== 'undefined') RobotTutorial.start({ force: true });
-                return;
-            }
-            if (act === 'open_fab_sheet') return this.openFabCreateSheet();
-            if (act === 'open_case_sheet') return this.openCaseActionSheet(code);
-            if (act === 'prev_week' || act === 'next_week' || act === 'this_week') {
-                const todayIso = (this._bootstrap && this._bootstrap.todayVn) || _fmtIsoLocal(new Date());
-                if (act === 'this_week') {
-                    this._weekStartIso = _fmtIsoLocal(_mondayOf(todayIso));
-                } else {
-                    const cur = _parseIsoLocal(this._weekStartIso || todayIso) || new Date();
-                    cur.setDate(cur.getDate() + (act === 'next_week' ? 7 : -7));
-                    this._weekStartIso = _fmtIsoLocal(cur);
-                }
-                this._mobileDayIso = null;
-                this._rerenderInPlace();
-                return;
-            }
-            if (act === 'open_create_consult') return this.openCaseFormModal('create_consult');
-            if (act === 'open_create_case') return this.openCaseFormModal('create_case');
-            if (act === 'open_link_surgery') return this.openLinkSurgeryModal(sid);
-            if (act === 'open_print_pctxh') return this.openPrintPctxhModal();
-            if (act === 'open_edit_info') return this.openCaseFormModal('edit_info', code);
-            if (act === 'open_edit_schedule') return this.openCaseFormModal('edit_schedule', code);
-            if (act === 'open_schedule_step1') return this.openCaseFormModal('schedule_step1', code);
-            if (act === 'open_consult_result') return this.openConsultResultModal(code);
-            if (act === 'open_postpone') return this.openPostponeModal(code);
-            if (act === 'open_discharge') return this.openDischargeModal(code);
-            if (act === 'open_restore_schedule') return this.openRestoreScheduleModal(code, 'restore_to_schedule');
-            if (act === 'open_readmit') return this.openRestoreScheduleModal(code, 'readmit');
-            if (act === 'step2_preop') return this._runQuickPatch(code, 'preop_step2', {}, false);
-            if (act === 'step3_inpatient') return this._runQuickPatch(code, 'inpatient_step3', {}, true);
-            if (act === 'soft_delete') return this._runQuickPatch(code, 'soft_delete', {}, true);
-            if (act === 'restore_trash') return this._runQuickPatch(code, 'restore_trash', {}, false);
-            if (act === 'archive_delete') return this._runArchiveDelete(code);
-            if (act === 'save_config') return this._saveConfigFromTab();
-        },
-
-        _findCase(code) {
-            const list = (this._bootstrap && this._bootstrap.cases) || [];
-            return list.find(c => (c.robotCaseCode || c.soNV) === code) || null;
-        },
-
-        _openRobotModal(title, html, mode, code = null) {
+        _markModalOpen(mode, caseCode = null) {
             this._modalActive = true;
             this._modalDirty = false;
             this._modalDirtyWarnShown = false;
             this._openModalMode = mode;
-            this._openCaseCode = code;
+            this._openCaseCode = caseCode;
             this._conflictState = null;
-
+            this._inflightIdem = null;
             const fab = document.getElementById('rbt-mobile-fab');
             if (fab) fab.hidden = true;
+        },
 
-            const guardBanner = `<div id="rbt-modal-dirty-guard" class="rbt-dirty-banner" hidden style="margin-bottom:10px;">⚠️ Bạn có dữ liệu chưa lưu. <button type="button" class="btn btn-secondary rbt-btn-xs" style="margin-left:8px;" onclick="Modal.close(true)">Đóng &amp; bỏ thay đổi</button></div>`;
-            Modal.open(title, guardBanner + html);
+        _markModalDirty() {
+            this._modalDirty = true;
+            this._modalDirtyWarnShown = false;
+            const box = document.getElementById('rbt-dirty-guard-banner');
+            if (box) box.hidden = true;
+        },
 
-            const body = document.getElementById('modal-body');
-            if (!body) return;
-            const markDirty = () => {
-                this._modalDirty = true;
-                this._modalDirtyWarnShown = false;
+        _getHeaders(extra = {}) {
+            const token = typeof Auth !== 'undefined' && Auth.getToken ? Auth.getToken() : '';
+            const hdrs = {
+                'Content-Type': 'application/json',
+                'X-Client-Build': String(CLIENT_BUILD),
+                ...extra
             };
-            body.querySelectorAll('input, select, textarea').forEach(el => {
-                if (el.getAttribute('data-rbt-no-dirty') === '1') return;
-                el.addEventListener('input', markDirty);
-                el.addEventListener('change', markDirty);
+            if (token) hdrs['Authorization'] = `Bearer ${token}`;
+            return hdrs;
+        },
+
+        async _apiJson(url, opts = {}) {
+            const method = (opts.method || 'GET').toUpperCase();
+            let idemKey = opts.idempotencyKey;
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && !idemKey) {
+                idemKey = newIdempotencyKey();
+            }
+            const extraHdrs = { ...(opts.headers || {}) };
+            if (idemKey) extraHdrs['X-Idempotency-Key'] = idemKey;
+            const resp = await fetch(url, {
+                method,
+                headers: this._getHeaders(extraHdrs),
+                body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
             });
-            this._bindDatePickerNoTyping(body);
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                const err = new Error(data.error || `HTTP ${resp.status}`);
+                err.status = resp.status;
+                err.code = data.code || '';
+                err.data = data;
+                throw err;
+            }
+            return data;
         },
 
-        _bindDatePickerNoTyping(container) {
-            if (!container) return;
-            const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
-            const plat = (typeof navigator !== 'undefined' && navigator.platform) ? navigator.platform : '';
-            const isIosWebKit = /iP(hone|ad|od)/.test(ua) || (plat === 'MacIntel' && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1);
-            container.querySelectorAll('input[type="date"].rbt-date-picker-only').forEach(el => {
-                if (el.dataset.rbtPickerBound === '1') return;
-                el.dataset.rbtPickerBound = '1';
-                const openNativePicker = () => {
-                    if (isIosWebKit) return;
-                    try {
-                        if (typeof el.showPicker === 'function') el.showPicker();
-                    } catch (_) { /* Browser fallback */ }
-                };
-                el.addEventListener('click', openNativePicker);
-                el.addEventListener('keydown', (ev) => {
-                    if (ev.key === 'Tab' || ev.key === 'Escape') return;
-                    ev.preventDefault();
-                    if (!isIosWebKit && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')) {
-                        openNativePicker();
-                    }
-                });
-                el.addEventListener('beforeinput', (ev) => {
-                    if (!ev.inputType || ev.inputType === 'insertText' || ev.inputType === 'insertCompositionText') {
-                        ev.preventDefault();
-                    }
-                });
-                el.addEventListener('paste', (ev) => ev.preventDefault());
-                el.addEventListener('drop', (ev) => ev.preventDefault());
-            });
-            container.querySelectorAll('[data-rbt-clear-date]').forEach(btn => {
-                if (btn.dataset.rbtClearBound === '1') return;
-                btn.dataset.rbtClearBound = '1';
-                btn.addEventListener('click', () => {
-                    const targetName = btn.getAttribute('data-rbt-clear-date');
-                    const input = container.querySelector(`input[name="${CSS.escape(targetName || '')}"]`);
-                    if (!input) return;
-                    input.value = '';
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                });
-            });
-            container.querySelectorAll('[data-rbt-date-preset]').forEach(btn => {
-                if (btn.dataset.rbtPresetBound === '1') return;
-                btn.dataset.rbtPresetBound = '1';
-                btn.addEventListener('click', () => {
-                    const targetName = btn.getAttribute('data-rbt-date-target') || '';
-                    const delta = Number(btn.getAttribute('data-rbt-date-preset') || '0');
-                    const input = container.querySelector(`input[name="${CSS.escape(targetName)}"]`);
-                    if (!input) return;
-                    const todayIso = (this._bootstrap && this._bootstrap.todayVn) || _fmtIsoLocal(new Date());
-                    input.value = _addDaysIso(todayIso, delta);
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                });
-            });
+        _todayIso() {
+            return (this._bootstrap && this._bootstrap.todayVn) || toIsoDate(new Date());
         },
 
-        _buildDatePresetsHtml(targetName) {
-            return `
-                <div class="rbt-date-presets">
-                    <button type="button" class="rbt-date-preset-btn" data-rbt-date-preset="1" data-rbt-date-target="${esc(targetName)}">Ngày mai</button>
-                    <button type="button" class="rbt-date-preset-btn" data-rbt-date-preset="3" data-rbt-date-target="${esc(targetName)}">+3 ngày</button>
-                    <button type="button" class="rbt-date-preset-btn" data-rbt-date-preset="7" data-rbt-date-target="${esc(targetName)}">Tuần sau</button>
-                </div>
-            `;
+        _cases() {
+            return (this._bootstrap && Array.isArray(this._bootstrap.cases)) ? this._bootstrap.cases : [];
         },
 
-        _buildSlotPillsHtml(slots, selectedSlot) {
-            return `
-                <div class="rbt-slot-pills rbt-mobile-only-grid" role="group" aria-label="Chọn nhanh Ca mổ Robot">
-                    ${slots.map(sl => `
-                        <button type="button" class="rbt-slot-pill ${selectedSlot === sl ? 'is-selected' : ''}" data-rbt-slot-pill="${esc(sl)}">
-                            <span>${esc(sl)}</span>
-                            <span class="rbt-slot-pill__sub" data-rbt-slot-sub="${esc(sl)}">Trống</span>
-                        </button>
-                    `).join('')}
-                </div>
-                <div id="rbt-day-capacity-hint" class="rbt-day-cap-hint"></div>
-            `;
+        _perms() {
+            return (this._bootstrap && this._bootstrap.permissions) ? this._bootstrap.permissions : {};
         },
 
-        _bindSlotPillsAndCapacity(form, excludeCode = '') {
-            if (!form) return;
-            const slotSel = form.querySelector('select[name="caseSlot"]');
-            const dateInp = form.querySelector('input[name="surgeryDate"]');
-            const sbxInp = form.querySelector('input[name="isTestSandboxCase"]');
-            const hintEl = form.querySelector('#rbt-day-capacity-hint');
-            if (!slotSel) return;
-
-            const holdingStatuses = new Set(['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo', 'xuat_vien_cho']);
-            const refreshCapacity = () => {
-                const curSlot = String(slotSel.value || '').trim();
-                const sDate = String(dateInp?.value || '').trim();
-                const isSbx = Boolean(sbxInp?.checked);
-                const bsCases = (this._bootstrap && Array.isArray(this._bootstrap.cases)) ? this._bootstrap.cases : [];
-                const sameDay = sDate ? bsCases.filter(c => {
-                    const cCode = String(c.robotCaseCode || c.soNV || '').trim();
-                    if (excludeCode && cCode === excludeCode) return false;
-                    if (Boolean(c.isTestSandboxCase) !== isSbx) return false;
-                    if (!holdingStatuses.has(c.status)) return false;
-                    return String(c.surgeryDate || '').trim() === sDate && Boolean(c.caseSlot);
-                }) : [];
-
-                const slotCounts = {};
-                sameDay.forEach(c => {
-                    slotCounts[c.caseSlot] = (slotCounts[c.caseSlot] || 0) + 1;
-                });
-
-                form.querySelectorAll('[data-rbt-slot-pill]').forEach(btn => {
-                    const sl = btn.getAttribute('data-rbt-slot-pill') || '';
-                    const count = slotCounts[sl] || 0;
-                    btn.classList.toggle('is-selected', curSlot === sl);
-                    btn.classList.toggle('is-busy', count > 0);
-                    const sub = btn.querySelector('[data-rbt-slot-sub]');
-                    if (sub) sub.textContent = count > 0 ? `Đã có ${count} ca` : 'Trống';
-                });
-
-                if (hintEl) {
-                    if (!sDate) {
-                        hintEl.classList.remove('is-full');
-                        hintEl.textContent = 'Chọn ngày mổ để xem công suất Robot trong ngày.';
-                    } else if (sameDay.length >= 3) {
-                        hintEl.classList.add('is-full');
-                        hintEl.textContent = `⛔ Ngày ${_fmtViDate(sDate)} đã đủ ${sameDay.length}/3 ca — vui lòng chọn ngày khác.`;
-                    } else {
-                        hintEl.classList.remove('is-full');
-                        const free = ['Ca 1', 'Ca 2', 'Ca 3'].filter(sl => !(slotCounts[sl] > 0));
-                        hintEl.textContent = `Ngày ${_fmtViDate(sDate)}: đã xếp ${sameDay.length}/3 ca${free.length ? ` (còn trống ${free.join(', ')})` : ''}.`;
-                    }
-                }
-            };
-
-            form.querySelectorAll('[data-rbt-slot-pill]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const sl = btn.getAttribute('data-rbt-slot-pill') || '';
-                    slotSel.value = sl;
-                    slotSel.dispatchEvent(new Event('change', { bubbles: true }));
-                    refreshCapacity();
-                });
-            });
-
-            slotSel.addEventListener('change', refreshCapacity);
-            dateInp?.addEventListener('input', refreshCapacity);
-            dateInp?.addEventListener('change', refreshCapacity);
-            sbxInp?.addEventListener('change', refreshCapacity);
-            refreshCapacity();
+        _cfg() {
+            return (this._bootstrap && this._bootstrap.robotConfig) ? this._bootstrap.robotConfig : {};
         },
 
-        _bindSheetActions(containerEl) {
-            if (!containerEl) return;
-            containerEl.addEventListener('click', (e) => {
-                const btn = e.target.closest('[data-rbt-action]');
-                if (!btn || !containerEl.contains(btn)) return;
-                const act = btn.getAttribute('data-rbt-action') || '';
-                const code = btn.getAttribute('data-rbt-code') || '';
-                const sid = btn.getAttribute('data-rbt-sid') || '';
-                Modal.close(true);
-                this._handleUiAction(act, code, sid, btn);
-            });
+        _wardRooms() {
+            return (this._bootstrap && Array.isArray(this._bootstrap.wardRooms) && this._bootstrap.wardRooms.length)
+                ? this._bootstrap.wardRooms
+                : DEFAULT_WARD_ROOMS;
         },
 
-        openMobileHeaderMenuSheet() {
-            const bs = this._bootstrap || {};
-            const perms = bs.permissions || {};
-            const html = `
-                <div id="rbt-header-menu-sheet" class="rbt-sheet-list">
-                    <button type="button" class="rbt-sheet-item rbt-sheet-item--guide" id="rbt-mobile-menu-tutorial-btn" data-rbt-action="open_tutorial">❓ Hướng dẫn thao tác Robot (7 bước)</button>
-                    <button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_print_pctxh">🖨️ Xem trước &amp; In Phiếu A5 P.CTXH</button>
-                    <button type="button" class="rbt-sheet-item" data-rbt-action="reload">↻ Đồng bộ lại dữ liệu máy chủ</button>
-                    ${perms.canConfigureCoordinators ? `<button type="button" class="rbt-sheet-item" data-rbt-action="subtab" data-rbt-code="config">⚙️ Cấu hình Phân quyền Điều phối</button>` : ''}
-                    <button type="button" class="btn btn-secondary" onclick="Modal.close(true)" style="min-height:46px;">Đóng</button>
-                </div>
-            `;
-            this._openRobotModal('⋮ Tiện ích Điều phối Robot', html, 'mobile_header_menu');
-            this._bindSheetActions(document.getElementById('rbt-header-menu-sheet'));
+        _refusalReasons() {
+            return (this._bootstrap && this._bootstrap.refusalReasons) || DEFAULT_REFUSAL_REASONS;
         },
 
-        openFabCreateSheet() {
-            const bs = this._bootstrap || {};
-            const perms = bs.permissions || {};
-            const unlinkedCount = (bs.unlinkedFutureRobotSurgeries || []).length;
-            const html = `
-                <div id="rbt-fab-sheet" class="rbt-sheet-list">
-                    ${perms.canCreateConsult ? `<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_create_consult">🩺 + Tạo ca tư vấn Robot</button>` : ''}
-                    ${perms.canDirectCreateCase ? `<button type="button" class="rbt-sheet-item" data-rbt-action="open_create_case">🤖 + Tạo trực tiếp lịch mổ Robot</button>` : ''}
-                    ${perms.canLinkExistingSurgery && unlinkedCount > 0 ? `<button type="button" class="rbt-sheet-item" data-rbt-action="open_link_surgery">🔗 Gắn ca sẵn có từ Lịch tuần (${unlinkedCount})</button>` : ''}
-                    <button type="button" class="btn btn-secondary" onclick="Modal.close(true)" style="min-height:46px;">Đóng</button>
-                </div>
-            `;
-            this._openRobotModal('＋ Tạo mới hồ sơ Robot', html, 'fab_create');
-            this._bindSheetActions(document.getElementById('rbt-fab-sheet'));
+        _postponeReasons() {
+            return (this._bootstrap && this._bootstrap.postponeReasons) || DEFAULT_POSTPONE_REASONS;
         },
 
-        openCaseActionSheet(code) {
-            const rc = this._findCase(code);
-            if (!rc) {
-                Toast.error('Không tìm thấy hồ sơ Robot — vui lòng tải lại.');
-                return;
-            }
-            const bs = this._bootstrap || {};
-            const perms = bs.permissions || {};
-            const stMeta = STATUS_META[rc.status] || { label: rc.status, badge: 'rbt-badge--navy' };
-            const telHref = _safeTelHref(rc);
-            const phoneDisplay = rc.phone ? `${esc(rc.phone)}${rc.phoneMasked ? ' (ẩn)' : ''}` : '—';
-            const isOwner = Boolean(
-                (perms.username && rc.createdByUsername === perms.username)
-                || (perms.staffId && Number(rc.mainSurgeonId) === Number(perms.staffId))
-            );
-            const isActiveSched = ['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo'].includes(rc.status);
-            const todayIso = bs.todayVn || _fmtIsoLocal(new Date());
-            const lookbackDays = Number((bs.robotConfig && bs.robotConfig.postponeLookbackDays) || 7);
-            const diffDays = _daysBetweenIso(rc.surgeryDate, todayIso);
-            const canRetroPostpone = rc.status === 'da_mo'
-                && (perms.canPostponeOrDischarge || (perms.staffId && Number(perms.staffId) === Number(rc.mainSurgeonId)))
-                && ((diffDays !== null && diffDays >= 0 && diffDays <= lookbackDays) || perms.isSuperAdmin);
-
-            const sheetBtns = [];
-            if (rc.status === 'cho_duyet_tien_phau' && perms.canApproveSteps) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="step2_preop" data-rbt-code="${esc(code)}">✓ Duyệt Bước 2 (Tiền phẫu)</button>`);
-            }
-            if (rc.status === 'cho_duyet_luu_vien' && perms.canApproveSteps && !rc.postB2ClinicalDirty) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="step3_inpatient" data-rbt-code="${esc(code)}">✓ Duyệt Bước 3 (Ở lại chờ mổ)</button>`);
-            }
-            if (rc.status === 'cho_xep_lich' && perms.canEditSchedule) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_schedule_step1" data-rbt-code="${esc(code)}">📅 Xếp lịch Bước 1</button>`);
-            }
-            if (['tu_van', 'can_nhac', 'tu_choi'].includes(rc.status) && (perms.canManageRobot || isOwner)) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_consult_result" data-rbt-code="${esc(code)}">🩺 Cập nhật kết quả tư vấn</button>`);
-            }
-            if (rc.status === 'hoan_mo' && perms.canEditSchedule) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_restore_schedule" data-rbt-code="${esc(code)}">📅 Xếp lịch mổ lại</button>`);
-            }
-            if (rc.status === 'xuat_vien_cho' && perms.canEditSchedule) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_readmit" data-rbt-code="${esc(code)}">🏥 Nhập lại &amp; Xếp lịch mới</button>`);
-            }
-            if (perms.canEditSchedule && isActiveSched) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item" data-rbt-action="open_edit_schedule" data-rbt-code="${esc(code)}">🗓️ Đổi ngày / Ca mổ</button>`);
-            }
-            if ((perms.canPostponeOrDischarge || (perms.staffId && Number(perms.staffId) === Number(rc.mainSurgeonId))) && (isActiveSched || canRetroPostpone)) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item" data-rbt-action="open_postpone" data-rbt-code="${esc(code)}">⏸️ Hoãn mổ + Chọn lý do</button>`);
-            }
-            if (perms.canPostponeOrDischarge && isActiveSched) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item" data-rbt-action="open_discharge" data-rbt-code="${esc(code)}">🏠 Xuất viện chờ lịch mới</button>`);
-            }
-            if (perms.canEditInfo && rc.status !== 'da_xoa' && (rc.status !== 'da_mo' || perms.canManageRobot)) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">✏️ Sửa thông tin bệnh nhân</button>`);
-            }
-            if (rc.status === 'da_xoa' && perms.canSoftDelete) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="restore_trash" data-rbt-code="${esc(code)}">↺ Khôi phục khỏi Thùng rác</button>`);
-            }
-            if (rc.status === 'da_xoa' && perms.canArchiveDeleted) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--danger" data-rbt-action="archive_delete" data-rbt-code="${esc(code)}">🗄️ Chuyển lưu trữ ẩn</button>`);
-            }
-            if (rc.status !== 'da_xoa' && perms.canSoftDelete) {
-                sheetBtns.push(`<button type="button" class="rbt-sheet-item rbt-sheet-item--danger" data-rbt-action="soft_delete" data-rbt-code="${esc(code)}">🗑️ Đưa vào thùng rác</button>`);
-            }
-
-            const html = `
-                <div id="rbt-case-action-sheet">
-                    <div class="rbt-sheet-summary">
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                            <span class="rbt-case-code">${esc(code)}</span>
-                            <span class="rbt-badge ${stMeta.badge}">${esc(stMeta.label)}</span>
-                        </div>
-                        <div><strong>${esc(rc.patientName)}</strong> ${rc.birthYear ? `(${esc(rc.birthYear)}${rc.gender ? ` · ${esc(rc.gender)}` : ''})` : ''} ${rc.admissionId ? `· NV: <code>${esc(rc.admissionId)}</code>` : ''}</div>
-                        <div>📋 Chẩn đoán: ${esc(rc.diagnosis || '—')}</div>
-                        <div>🤖 PPPT Robot: ${esc(rc.robotProcedure || '—')}</div>
-                        <div>🔪 PTV chính: <strong>${esc(rc.mainSurgeonName || '—')}</strong>${rc.surgeryDate ? ` · ${_fmtViDate(rc.surgeryDate)} (${esc(rc.caseSlot || '—')})` : ''}</div>
-                        ${rc.expectedTimeframe ? `<div>📅 Dự kiến: <strong>${esc(_fmtViDate(rc.expectedTimeframe))}</strong></div>` : ''}
-                        <div>📞 SĐT: <strong>${phoneDisplay}</strong></div>
-                        ${rc.note ? `<div>📝 Ghi chú: ${esc(rc.note)}</div>` : ''}
-                        ${this._formatApprovalBadgeHtml(rc)}
-                    </div>
-                    <div class="rbt-sheet-list">
-                        ${telHref ? `<a href="${esc(telHref)}" class="rbt-sheet-item rbt-sheet-item--call">📞 Gọi trực tiếp cho bệnh nhân</a>` : ''}
-                        ${sheetBtns.join('')}
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close(true)" style="min-height:46px;">Đóng</button>
-                    </div>
-                </div>
-            `;
-            this._openRobotModal(`📋 Hồ sơ Robot — ${code}`, html, 'case_action_sheet', code);
-            this._bindSheetActions(document.getElementById('rbt-case-action-sheet'));
+        _surgeons() {
+            return (this._bootstrap && Array.isArray(this._bootstrap.surgeons)) ? this._bootstrap.surgeons : [];
         },
 
-        _renderConflictBoxHtml() {
-            const st = this._conflictState;
-            if (!st || !Array.isArray(st.conflicts) || !st.conflicts.length) return '';
-            const perms = (this._bootstrap && this._bootstrap.permissions) || {};
-            const isCapExceeded = st.canOverrideConflict === false || st.conflicts.some(c => c.conflictType === 'ROBOT_DAILY_CAPACITY_EXCEEDED');
-            const allowOverride = Boolean(perms.canOverrideConflict && st.canOverrideConflict !== false && !isCapExceeded);
-            const items = st.conflicts.map(c => {
-                const refCode = c.robotCaseCode ? `${c.robotCaseCode}` : `Lịch tuần #${c.surgeryId}`;
-                return `<li><strong>${esc(refCode)}</strong> — ${esc(c.patientName || '')} (${esc(_fmtViDate(c.surgeryDate))}${c.caseSlot ? ` · ${esc(c.caseSlot)}` : ''})</li>`;
-            }).join('');
-            return `
-                <div class="rbt-conflict-box" id="rbt-modal-conflict-box">
-                    <div><strong>${isCapExceeded ? '⛔ Hệ thống Robot đã đạt công suất tối đa 3 ca/ngày (Ca 1–Ca 3):' : '⚠️ Phát hiện trùng slot Robot / Phẫu thuật viên chính:'}</strong></div>
-                    <ul class="rbt-conflict-list">${items}</ul>
-                    ${allowOverride ? `
-                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;">
-                            <input type="checkbox" id="rbt-confirm-conflict-cb">
-                            <span><strong>Xác nhận cố ý xếp trùng lịch (Ban Chủ nhiệm / Điều phối viên)</strong></span>
-                        </label>
-                        <textarea class="form-textarea" id="rbt-conflict-reason" rows="2" placeholder="Nhập lý do xếp trùng lịch tối thiểu 5 ký tự..."></textarea>
-                    ` : `<div class="text-secondary">${isCapExceeded ? 'Công suất của 1 hệ thống Robot tối đa 3 ca/ngày — không thể xếp đè, vui lòng chọn ngày khác.' : 'Bạn không có quyền ghi đè slot trùng — vui lòng liên hệ Điều phối viên Robot hoặc Ban Chủ nhiệm.'}</div>`}
-                </div>
-            `;
+        _currentUsername() {
+            const p = this._perms();
+            if (p.username) return String(p.username).trim().toLowerCase();
+            if (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') {
+                const s = Auth.getSession();
+                if (s && s.username) return String(s.username).trim().toLowerCase();
+            }
+            return '';
         },
 
-        openCaseFormModal(mode, code = null) {
-            const bs = this._bootstrap || {};
-            const perms = bs.permissions || {};
-            const cfg = bs.robotConfig || {};
-            const surgeons = bs.surgeons || [];
-            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3'];
-            const rooms = cfg.robotRooms || ['PM Robot'];
-            const rc = code ? this._findCase(code) : null;
-            if (code && !rc) {
-                Toast.error('Không tìm thấy hồ sơ Robot — vui lòng tải lại.');
-                return;
+        _currentUserDisplay() {
+            if (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') {
+                const u = Auth.getSession();
+                if (u) return [u.title, u.name].filter(Boolean).join(' ') || u.name || u.username || 'Bác sĩ';
             }
-
-            const showClinical = ['create_consult', 'create_case', 'edit_info'].includes(mode);
-            const showSchedule = ['create_case', 'schedule_step1', 'edit_schedule'].includes(mode);
-            const showSurgeonInSchedule = ['schedule_step1', 'edit_schedule'].includes(mode);
-            const initExpDate = /^\d{4}-\d{2}-\d{2}$/.test(String(rc?.expectedTimeframe || '').trim()) ? String(rc.expectedTimeframe).trim() : '';
-            const expMin = (bs.todayVn && (!initExpDate || initExpDate >= bs.todayVn)) ? bs.todayVn : '';
-            const prefillSchedDate = rc?.surgeryDate
-                || ((mode === 'schedule_step1' && initExpDate && (!bs.todayVn || initExpDate >= bs.todayVn)) ? initExpDate : '')
-                || bs.todayVn
-                || '';
-            const titleMap = {
-                create_consult: '🩺 Tạo ca tư vấn phẫu thuật Robot',
-                create_case: '🤖 Tạo trực tiếp ca lịch mổ Robot',
-                edit_info: `✏️ Cập nhật thông tin ca ${rc?.robotCaseCode || ''}`,
-                edit_schedule: `🗓️ Điều chỉnh lịch mổ ${rc?.robotCaseCode || ''}`,
-                schedule_step1: `📅 Xếp lịch Bước 1 — ${rc?.robotCaseCode || ''}`
-            };
-
-            const surgeonOptions = `<option value="">— Chọn PTV chính —</option>` + surgeons.map(st =>
-                `<option value="${esc(st.id)}" ${Number(rc?.mainSurgeonId) === Number(st.id) ? 'selected' : ''}>${esc(st.title ? `${st.title} ${st.name}` : st.name)}</option>`
-            ).join('');
-
-            const sandboxToggleHtml = ((mode === 'create_consult' || mode === 'create_case') && perms.canAccessSandbox) ? `
-                <div class="form-group rbt-form-grid--full">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" name="isTestSandboxCase" value="1">
-                        <span>🧪 Tạo ca giả lập đào tạo <code>[TEST]</code> (ẩn khỏi ca thật &amp; KPI)</span>
-                    </label>
-                </div>
-            ` : '';
-
-            const html = `
-                <form id="rbt-case-form" data-rbt-modal="1">
-                    <div id="rbt-conflict-slot"></div>
-                    <div class="rbt-form-grid">
-                        ${sandboxToggleHtml}
-                        ${showClinical ? `
-                            <div class="form-group">
-                                <label class="form-label">Họ tên bệnh nhân *</label>
-                                <input class="form-input" name="patientName" value="${esc(rc?.patientName || '')}" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Năm sinh</label>
-                                <input class="form-input" type="number" min="1900" max="2035" name="birthYear" value="${esc(rc?.birthYear || '')}">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Giới tính</label>
-                                <select class="form-select" name="gender">
-                                    <option value="">— Chọn —</option>
-                                    <option value="Nam" ${rc?.gender === 'Nam' ? 'selected' : ''}>Nam</option>
-                                    <option value="Nữ" ${rc?.gender === 'Nữ' ? 'selected' : ''}>Nữ</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Số điện thoại liên hệ ${mode === 'create_consult' ? '*' : ''}</label>
-                                <input class="form-input" name="phone" value="${esc(rc && !rc.phoneMasked ? (rc.phone || '') : '')}" placeholder="${rc && rc.phoneMasked ? esc(rc.phone) : '0901234567'}" ${mode === 'create_consult' ? 'required' : ''}>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Số nhập viện (nếu đã nhập viện)</label>
-                                <input class="form-input" name="admissionId" value="${esc(rc?.admissionId || '')}" placeholder="26014285">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">PTV chính *</label>
-                                <select class="form-select" name="mainSurgeonId" required>${surgeonOptions}</select>
-                            </div>
-                            <div class="form-group rbt-form-grid--full">
-                                <label class="form-label">Chẩn đoán</label>
-                                <input class="form-input" name="diagnosis" value="${esc(rc?.diagnosis || '')}">
-                            </div>
-                            <div class="form-group rbt-form-grid--full">
-                                <label class="form-label">Phương pháp phẫu thuật Robot</label>
-                                <input class="form-input" name="robotProcedure" value="${esc(rc?.robotProcedure || '')}">
-                            </div>
-                        ` : ''}
-                        ${mode === 'create_consult' ? `
-                            <div class="form-group">
-                                <label class="form-label">Kết quả tư vấn ban đầu</label>
-                                <select class="form-select" name="consultResult">
-                                    <option value="cho" ${(!rc || rc.consultResult === 'cho') ? 'selected' : ''}>Chờ bệnh nhân quyết định</option>
-                                    <option value="dong_y" ${rc?.consultResult === 'dong_y' ? 'selected' : ''}>Đồng ý mổ Robot (vào hàng chờ B1)</option>
-                                    <option value="can_nhac" ${rc?.consultResult === 'can_nhac' ? 'selected' : ''}>Đang cân nhắc</option>
-                                    <option value="tu_choi" ${rc?.consultResult === 'tu_choi' ? 'selected' : ''}>Từ chối mổ Robot</option>
-                                </select>
-                            </div>
-                        ` : ''}
-                        ${mode === 'create_consult' || mode === 'edit_info' ? `
-                            <div class="form-group">
-                                <label class="form-label">Thời gian dự kiến (chọn lịch)</label>
-                                <div class="rbt-date-wrap">
-                                    <input class="form-input rbt-date-picker-only" type="date" name="expectedTimeframe" value="${esc(initExpDate)}" ${expMin ? `min="${esc(expMin)}"` : ''}>
-                                    <button type="button" class="rbt-date-clear-btn" data-rbt-clear-date="expectedTimeframe" title="Xóa ngày dự kiến" aria-label="Xóa ngày dự kiến">✕</button>
-                                </div>
-                                ${this._buildDatePresetsHtml('expectedTimeframe')}
-                            </div>
-                        ` : ''}
-                        ${showSchedule ? `
-                            ${showSurgeonInSchedule ? `
-                                <div class="form-group rbt-form-grid--full">
-                                    <label class="form-label">PTV chính *</label>
-                                    <select class="form-select" name="mainSurgeonId" required>${surgeonOptions}</select>
-                                </div>
-                            ` : ''}
-                            <div class="form-group">
-                                <label class="form-label">Ngày mổ dự kiến ${mode === 'schedule_step1' || mode === 'edit_schedule' ? '*' : ''}</label>
-                                <input class="form-input rbt-date-picker-only" type="date" name="surgeryDate" value="${esc(prefillSchedDate)}" ${mode === 'schedule_step1' || mode === 'edit_schedule' ? 'required' : ''}>
-                                ${this._buildDatePresetsHtml('surgeryDate')}
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Ca mổ ${mode === 'schedule_step1' || mode === 'edit_schedule' ? '*' : ''}</label>
-                                <select class="form-select rbt-sr-select-mobile" name="caseSlot" ${mode === 'schedule_step1' || mode === 'edit_schedule' ? 'required' : ''}>
-                                    <option value="">— Chọn ca —</option>
-                                    ${slots.map(sl => `<option value="${esc(sl)}" ${rc?.caseSlot === sl ? 'selected' : ''}>${esc(sl)}</option>`).join('')}
-                                </select>
-                                ${this._buildSlotPillsHtml(slots, rc?.caseSlot || '')}
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Phòng mổ Robot</label>
-                                <select class="form-select" name="operatingRoom">
-                                    ${rooms.map(rm => `<option value="${esc(rm)}" ${(rc?.operatingRoom || rooms[0]) === rm ? 'selected' : ''}>${esc(rm)}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Thời lượng dự kiến (phút)</label>
-                                <input class="form-input" type="number" min="15" max="900" name="durationMinutes" value="${esc(rc?.durationMinutes || cfg.defaultDurationMinutes || 180)}">
-                            </div>
-                        ` : ''}
-                        <div class="form-group rbt-form-grid--full">
-                            <label class="form-label">Ghi chú điều phối</label>
-                            <textarea class="form-textarea" name="note" rows="2">${esc(rc?.note || '')}</textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer" style="margin-top:14px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                        <button type="submit" class="btn btn-primary" id="rbt-form-submit-btn">Lưu thông tin</button>
-                    </div>
-                </form>
-            `;
-            this._openRobotModal(titleMap[mode] || 'Hồ sơ Robot', html, mode, code);
-
-            const form = document.getElementById('rbt-case-form');
-            if (!form) return;
-            if (showSchedule) {
-                this._bindSlotPillsAndCapacity(form, rc?.robotCaseCode || '');
-            }
-            form.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                await this._submitCaseForm(form, mode, rc);
-            });
+            return this._perms().displayName || this._currentUsername() || 'Bác sĩ';
         },
 
-        async _submitCaseForm(form, mode, rc) {
-            const fd = new FormData(form);
-            const payload = {};
-            const str = (k) => (fd.get(k) != null ? String(fd.get(k)).trim() : '');
+        _surgeonDisplay(rc) {
+            if (!rc) return 'TS. BSCKII. Nguyễn Phú Hữu';
+            if (rc.mainSurgeonName) return rc.mainSurgeonName;
+            const found = this._surgeons().find(s => Number(s.id) === Number(rc.mainSurgeonId));
+            if (found) return [found.title, found.name].filter(Boolean).join(' ').trim();
+            return 'TS. BSCKII. Nguyễn Phú Hữu';
+        },
 
-            if (mode === 'create_consult' || mode === 'create_case') {
-                payload.action = mode;
-                payload.patientName = str('patientName');
-                payload.birthYear = str('birthYear');
-                payload.gender = str('gender');
-                payload.phone = str('phone');
-                payload.admissionId = str('admissionId');
-                payload.diagnosis = str('diagnosis');
-                payload.robotProcedure = str('robotProcedure');
-                payload.mainSurgeonId = Number(str('mainSurgeonId')) || null;
-                payload.note = str('note');
-                if (fd.get('isTestSandboxCase')) payload.isTestSandboxCase = true;
-                if (mode === 'create_consult') {
-                    payload.consultResult = str('consultResult') || 'cho';
-                    payload.expectedTimeframe = str('expectedTimeframe');
-                } else {
-                    if (str('surgeryDate') && str('caseSlot')) {
-                        payload.surgeryDate = str('surgeryDate');
-                        payload.caseSlot = str('caseSlot');
-                        payload.operatingRoom = str('operatingRoom') || 'PM Robot';
-                        payload.durationMinutes = Number(str('durationMinutes')) || 180;
-                    }
-                }
+        _findCase(code) {
+            return this._cases().find(c => (c.robotCaseCode || c.soNV) === code) || null;
+        },
+
+        _upsertCaseInMemory(rcase) {
+            if (!this._bootstrap || !rcase) return;
+            const code = rcase.robotCaseCode || rcase.soNV;
+            const list = this._cases();
+            const idx = list.findIndex(c => (c.robotCaseCode || c.soNV) === code);
+            if (idx >= 0) {
+                list[idx] = rcase;
             } else {
-                payload.action = mode;
-                payload.expectedRevision = Number(rc.caseRevision || 1);
-                if (mode === 'edit_info') {
-                    payload.patientName = str('patientName');
-                    payload.birthYear = str('birthYear');
-                    payload.gender = str('gender');
-                    if (str('phone') && !str('phone').includes('****')) {
-                        payload.phone = str('phone');
-                    }
-                    payload.admissionId = str('admissionId');
-                    payload.diagnosis = str('diagnosis');
-                    payload.robotProcedure = str('robotProcedure');
-                    payload.mainSurgeonId = Number(str('mainSurgeonId')) || null;
-                    payload.expectedTimeframe = str('expectedTimeframe');
-                    payload.note = str('note');
-                } else {
-                    payload.mainSurgeonId = Number(str('mainSurgeonId')) || rc.mainSurgeonId;
-                    payload.surgeryDate = str('surgeryDate');
-                    payload.caseSlot = str('caseSlot');
-                    payload.operatingRoom = str('operatingRoom') || 'PM Robot';
-                    payload.durationMinutes = Number(str('durationMinutes')) || 180;
-                    payload.note = str('note');
-                }
+                list.push(rcase);
             }
-
-            if (this._conflictState && document.getElementById('rbt-confirm-conflict-cb')?.checked) {
-                payload.confirmConflict = true;
-                payload.conflictOverrideReason = String(document.getElementById('rbt-conflict-reason')?.value || '').trim();
-                payload.expectedConflictFingerprint = this._conflictState.conflictFingerprint;
-            }
-
-            const btn = document.getElementById('rbt-form-submit-btn');
-            if (btn) btn.disabled = true;
-            try {
-                if (mode === 'create_consult' || mode === 'create_case') {
-                    await this._apiJson('/api/robot/cases', { method: 'POST', body: payload });
-                } else {
-                    await this._apiJson(`/api/robot/cases/${encodeURIComponent(rc.robotCaseCode)}`, { method: 'PATCH', body: payload });
-                }
-                this._modalDirty = false;
-                Modal.close();
-                Toast.success('Đã lưu hồ sơ Điều phối Robot thành công.');
-                await this._refreshBoth(true);
-            } catch (err) {
-                if (err.status === 409 && ['SCHEDULE_SLOT_CONFLICT', 'CONFLICT_FINGERPRINT_MISMATCH', 'ROBOT_DAILY_CAPACITY_EXCEEDED'].includes(err.code)) {
-                    this._conflictState = err.data || {};
-                    const slotEl = document.getElementById('rbt-conflict-slot');
-                    if (slotEl) slotEl.innerHTML = this._renderConflictBoxHtml();
-                    Toast.warning(err.message);
-                } else if (err.status === 409 && err.code === 'CASE_REVISION_MISMATCH') {
-                    Toast.warning(err.message);
-                    await this._refreshBoth(true);
-                } else {
-                    Toast.error(err.message || 'Không thể lưu hồ sơ.');
-                }
-            } finally {
-                if (btn) btn.disabled = false;
+            if (typeof SurgeryPage !== 'undefined' && typeof Store !== 'undefined' && Store.loadFromServer) {
+                Store.loadFromServer(true).catch(() => {});
             }
         },
 
-        openConsultResultModal(code) {
-            const rc = this._findCase(code);
-            if (!rc) return;
-            const bs = this._bootstrap || {};
-            const initExpDate = /^\d{4}-\d{2}-\d{2}$/.test(String(rc.expectedTimeframe || '').trim()) ? String(rc.expectedTimeframe).trim() : '';
-            const expMin = (bs.todayVn && (!initExpDate || initExpDate >= bs.todayVn)) ? bs.todayVn : '';
-            const html = `
-                <form id="rbt-consult-form" data-rbt-modal="1">
-                    <div class="form-group">
-                        <label class="form-label">Kết quả tư vấn của BN ${esc(rc.patientName)}</label>
-                        <select class="form-select" name="consultResult" required>
-                            <option value="dong_y">Đồng ý mổ Robot (vào Chờ xếp lịch B1)</option>
-                            <option value="can_nhac" ${rc.consultResult === 'can_nhac' ? 'selected' : ''}>Đang cân nhắc</option>
-                            <option value="tu_choi" ${rc.consultResult === 'tu_choi' ? 'selected' : ''}>Từ chối mổ Robot</option>
+        async ensureLoaded(force = false) {
+            if (!force && this._bootstrap) return this._bootstrap;
+            if (this._loadPromise && !force) return this._loadPromise;
+            this._loading = true;
+            this._error = null;
+            this._loadPromise = this._apiJson('/api/robot/bootstrap')
+                .then(data => {
+                    this._bootstrap = data;
+                    if (!this._weekStartIso) {
+                        this._weekStartIso = getMondayIso(data.todayVn || toIsoDate(new Date()));
+                    }
+                    if (!this._subtab) {
+                        const p = data.permissions || {};
+                        this._subtab = (p.canScheduleConsult || p.canDecideConsult) ? 'consult' : 'ward';
+                    }
+                    if (!this._printState.date) {
+                        this._printState.date = data.todayVn || toIsoDate(new Date());
+                    }
+                    if (!this._printState.schedulerName) {
+                        this._printState.schedulerName = (data.robotConfig && data.robotConfig.defaultSchedulerName) || 'BSCKII. Võ Chí Nguyện';
+                    }
+                    return data;
+                })
+                .catch(err => {
+                    this._error = err.message || 'Không tải được dữ liệu Điều phối Robot.';
+                    throw err;
+                })
+                .finally(() => {
+                    this._loading = false;
+                    this._loadPromise = null;
+                });
+            return this._loadPromise;
+        },
+
+        async openFromWeeklySchedule(robotCaseCode) {
+            if (typeof App !== 'undefined' && typeof App.navigate === 'function') {
+                App.navigate('robot-schedule');
+            }
+            try {
+                await this.ensureLoaded(true);
+                const rc = robotCaseCode ? this._findCase(robotCaseCode) : null;
+                if (rc) {
+                    if (['cho_xep_tu_van', 'da_xep_tu_van', 'can_nhac'].includes(rc.status)) {
+                        this._subtab = 'consult';
+                    } else if (['da_xep_robot', 'da_xep_noisoi'].includes(rc.status)) {
+                        this._subtab = rc.inpatientState === 'xuat_vien_cho' ? 'ward' : 'week';
+                        if (rc.surgeryDate) this._weekStartIso = getMondayIso(rc.surgeryDate);
+                    } else if (rc.status === 'da_mo') {
+                        this._subtab = 'completed';
+                    } else {
+                        this._subtab = 'declined_postponed';
+                    }
+                    this._rerenderPage();
+                    this.openDetailModal(rc.robotCaseCode);
+                } else {
+                    this._rerenderPage();
+                }
+            } catch (_) {
+                this._rerenderPage();
+            }
+        },
+
+        _bindEvents() {
+            if (!this._printCleanupBound) {
+                this._printCleanupBound = true;
+                global.addEventListener('afterprint', () => {
+                    if (document.body) document.body.classList.remove('printing-robot-pctxh');
+                });
+            }
+            if (this._delegatedBound) return;
+            this._delegatedBound = true;
+
+            document.addEventListener('click', (e) => {
+                const page = document.getElementById('robot-schedule-page');
+                const modalOverlay = document.getElementById('modal-overlay');
+                const target = e.target;
+                const inPage = page && page.contains(target);
+                const inModal = modalOverlay && modalOverlay.contains(target) && this._modalActive;
+                if (!inPage && !inModal) return;
+
+                const subtabBtn = target.closest('[data-rbt-subtab]');
+                if (subtabBtn) {
+                    this._subtab = subtabBtn.dataset.rbtSubtab;
+                    this._rerenderPage();
+                    return;
+                }
+
+                const dayPill = target.closest('[data-rbt-mobile-day]');
+                if (dayPill) {
+                    this._mobileDayIso = dayPill.dataset.rbtMobileDay || 'all';
+                    this._rerenderPage();
+                    return;
+                }
+
+                const datePresetBtn = target.closest('[data-rbt-date-target]');
+                if (datePresetBtn) {
+                    const tid = datePresetBtn.dataset.rbtDateTarget;
+                    const tval = datePresetBtn.dataset.rbtDateVal;
+                    const inp = document.getElementById(tid);
+                    if (inp) {
+                        inp.value = tval;
+                        inp.dispatchEvent(new Event('change', { bubbles: true }));
+                        this._markModalDirty();
+                    }
+                    return;
+                }
+
+                const slotBtn = target.closest('[data-rbt-pick-slot]');
+                if (slotBtn) {
+                    const slotVal = slotBtn.dataset.rbtPickSlot;
+                    const hiddenSlot = document.getElementById('rbt-inp-slot');
+                    if (hiddenSlot) hiddenSlot.value = slotVal;
+                    const timeInp = document.getElementById('rbt-inp-time');
+                    if (timeInp && (!timeInp.value || ['07:30', '10:30', '13:30'].includes(timeInp.value))) {
+                        timeInp.value = slotToStartTime(slotVal);
+                    }
+                    document.querySelectorAll('[data-rbt-pick-slot]').forEach(el => {
+                        el.classList.toggle('is-selected', el.dataset.rbtPickSlot === slotVal);
+                    });
+                    this._markModalDirty();
+                    return;
+                }
+
+                const sessBtn = target.closest('[data-rbt-pick-session]');
+                if (sessBtn) {
+                    const val = sessBtn.dataset.rbtPickSession;
+                    const hidden = document.getElementById('rbt-inp-consult-session');
+                    if (hidden) hidden.value = val;
+                    document.querySelectorAll('[data-rbt-pick-session]').forEach(el => {
+                        el.classList.toggle('is-selected', el.dataset.rbtPickSession === val);
+                    });
+                    this._markModalDirty();
+                    return;
+                }
+
+                const branchBtn = target.closest('[data-rbt-pick-decision]');
+                if (branchBtn) {
+                    const dec = branchBtn.dataset.rbtPickDecision;
+                    const hidden = document.getElementById('rbt-inp-decision');
+                    if (hidden) hidden.value = dec;
+                    document.querySelectorAll('[data-rbt-pick-decision]').forEach(el => {
+                        el.classList.toggle('is-selected', el.dataset.rbtPickDecision === dec);
+                    });
+                    document.querySelectorAll('[data-rbt-branch-panel]').forEach(p => {
+                        p.hidden = p.dataset.rbtBranchPanel !== dec;
+                    });
+                    this._markModalDirty();
+                    return;
+                }
+
+                const actionEl = target.closest('[data-rbt-action]');
+                if (!actionEl) return;
+                const action = actionEl.dataset.rbtAction;
+                const code = actionEl.dataset.rbtCode || '';
+                const extra = actionEl.dataset.rbtExtra || '';
+                this._handleAction(action, code, extra, actionEl);
+            });
+
+            document.addEventListener('input', (e) => {
+                const t = e.target;
+                if (!t) return;
+                if (t.id === 'rbt-search-input' || t.id === 'rbt-mobile-search-input') {
+                    this._searchQuery = t.value || '';
+                    this._rerenderPage();
+                    return;
+                }
+                const modalOverlay = document.getElementById('modal-overlay');
+                if (this._modalActive && modalOverlay && modalOverlay.contains(t)) {
+                    this._markModalDirty();
+                }
+            });
+
+            document.addEventListener('change', (e) => {
+                const t = e.target;
+                if (!t) return;
+                if (t.id === 'rbt-week-approach-filter') {
+                    this._weekApproachFilter = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-ward-room-filter') {
+                    this._wardRoomFilter = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-ward-quick-filter') {
+                    this._wardQuickFilter = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-consult-filter-mode') {
+                    this._consultFilterMode = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-declined-group-filter') {
+                    this._declinedGroupFilter = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-postpone-filter') {
+                    this._postponeFilterReason = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-stats-year') {
+                    this._statsYear = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-stats-month') {
+                    this._statsMonth = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-stats-surgeon') {
+                    this._statsSurgeon = t.value || 'all';
+                    this._rerenderPage();
+                } else if (t.id === 'rbt-inp-date' && this._openModalMode === 'decide_consult') {
+                    const slotHost = document.getElementById('rbt-decide-slot-wrap');
+                    if (slotHost) {
+                        slotHost.innerHTML = this._renderSlotPickerHtml(t.value, document.getElementById('rbt-inp-slot')?.value || 'Ca 1', this._openCaseCode);
+                    }
+                    this._markModalDirty();
+                } else if (t.id === 'rbt-inp-date' && this._openModalMode === 'edit_schedule') {
+                    const slotHost = document.getElementById('rbt-edit-sched-slot-wrap');
+                    if (slotHost) {
+                        slotHost.innerHTML = this._renderSlotPickerHtml(t.value, document.getElementById('rbt-inp-slot')?.value || 'Ca 1', this._openCaseCode);
+                    }
+                    this._markModalDirty();
+                } else if (t.id === 'rbt-inp-date' && this._openModalMode === 'create_case') {
+                    const slotHost = document.getElementById('rbt-create-slot-wrap');
+                    if (slotHost) {
+                        slotHost.innerHTML = this._renderSlotPickerHtml(t.value, document.getElementById('rbt-inp-slot')?.value || 'Ca 1', '');
+                    }
+                    this._markModalDirty();
+                } else if (t.id === 'rbt-inp-print-mode' || t.id === 'rbt-inp-print-scope' || t.id === 'rbt-inp-print-date' || t.id === 'rbt-inp-print-case') {
+                    this._syncPrintPreviewFromModal();
+                } else {
+                    const modalOverlay = document.getElementById('modal-overlay');
+                    if (this._modalActive && modalOverlay && modalOverlay.contains(t)) {
+                        this._markModalDirty();
+                    }
+                }
+            });
+        },
+
+        async _handleAction(action, code, extra, el) {
+            if (action === 'refresh') {
+                await this.ensureLoaded(true).catch(() => {});
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'jump_my_work') {
+                if (extra === 'consult_need') {
+                    this._subtab = 'consult';
+                    this._consultFilterMode = 'need';
+                } else if (extra === 'consult_scheduled') {
+                    this._subtab = 'consult';
+                    this._consultFilterMode = 'scheduled';
+                } else if (extra === 'ward_mine') {
+                    this._subtab = 'ward';
+                    this._wardQuickFilter = 'mine';
+                } else if (extra === 'ward_wait') {
+                    this._subtab = 'ward';
+                    this._wardQuickFilter = 'xuat_vien_cho';
+                }
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'week_prev') {
+                this._weekStartIso = addDaysIso(this._weekStartIso, -7);
+                this._mobileDayIso = this._weekStartIso;
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'week_next') {
+                this._weekStartIso = addDaysIso(this._weekStartIso, 7);
+                this._mobileDayIso = this._weekStartIso;
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'week_today') {
+                this._weekStartIso = getMondayIso(this._todayIso());
+                this._mobileDayIso = this._todayIso();
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'toggle_mobile_week_all') {
+                this._mobileWeekAllDays = !this._mobileWeekAllDays;
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'toggle_mobile_search') {
+                this._mobileSearchOpen = !this._mobileSearchOpen;
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'clear_search') {
+                this._searchQuery = '';
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'load_more_completed') {
+                this._completedVisibleLimit += 20;
+                this._rerenderPage();
+                return;
+            }
+            if (action === 'copy_zalo_consult') {
+                this.copyZaloConsultSchedule();
+                return;
+            }
+            if (action === 'open_tutorial') {
+                if (typeof Modal !== 'undefined' && this._modalActive && Modal.close) Modal.close(true);
+                if (typeof RobotTutorial !== 'undefined') RobotTutorial.start({ force: true });
+                return;
+            }
+            if (action === 'open_mobile_menu') {
+                this.openMobileMenuModal();
+                return;
+            }
+            if (action === 'open_case_sheet') {
+                this.openCaseSheetModal(code);
+                return;
+            }
+            if (action === 'open_create_consult') {
+                this.openCreateModal('create_consult');
+                return;
+            }
+            if (action === 'open_create_case') {
+                this.openCreateModal('create_case');
+                return;
+            }
+            if (action === 'open_detail') {
+                this.openDetailModal(code);
+                return;
+            }
+            if (action === 'open_schedule_consult') {
+                this.openScheduleConsultModal(code);
+                return;
+            }
+            if (action === 'open_decide_consult') {
+                this.openDecideConsultModal(code, extra);
+                return;
+            }
+            if (action === 'open_edit_info') {
+                this.openEditInfoModal(code);
+                return;
+            }
+            if (action === 'open_edit_schedule') {
+                this.openEditScheduleModal(code);
+                return;
+            }
+            if (action === 'open_discharge_wait') {
+                this.openDischargeWaitModal(code);
+                return;
+            }
+            if (action === 'confirm_readmit') {
+                await this._submitSimplePatch(code, 'confirm_readmit', {}, 'Đã xác nhận bệnh nhân nhập viện trở lại.');
+                return;
+            }
+            if (action === 'open_postpone') {
+                this.openPostponeModal(code);
+                return;
+            }
+            if (action === 'mark_completed') {
+                await this._submitSimplePatch(code, 'mark_completed', {}, 'Đã xác nhận ca bệnh đã phẫu thuật.');
+                return;
+            }
+            if (action === 'reopen_consult') {
+                await this._submitSimplePatch(code, 'reopen_consult', {}, 'Đã mở lại bước chờ xếp lịch tư vấn.');
+                return;
+            }
+            if (action === 'soft_delete') {
+                await this._submitSimplePatch(code, 'soft_delete', { deleteReason: 'Đưa vào thùng rác từ Điều phối Robot' }, 'Đã chuyển hồ sơ vào Thùng rác.');
+                return;
+            }
+            if (action === 'restore_trash') {
+                await this._submitSimplePatch(code, 'restore_trash', {}, 'Đã khôi phục hồ sơ từ Thùng rác.');
+                return;
+            }
+            if (action === 'archive_delete') {
+                await this._submitArchiveDelete(code);
+                return;
+            }
+            if (action === 'open_link_surgery') {
+                this.openLinkSurgeryModal(extra || code);
+                return;
+            }
+            if (action === 'open_print_modal') {
+                this.openPrintPctxhModal(code || '');
+                return;
+            }
+            if (action === 'open_print_single') {
+                this.openPrintPctxhModal(code);
+                return;
+            }
+            if (action === 'execute_print_pctxh') {
+                this._executePrint();
+                return;
+            }
+            if (action === 'submit_create') {
+                await this._submitCreateModal(extra || 'create_consult', el);
+                return;
+            }
+            if (action === 'submit_schedule_consult') {
+                await this._submitScheduleConsult(code, el);
+                return;
+            }
+            if (action === 'submit_decide_consult') {
+                await this._submitDecideConsult(code, el);
+                return;
+            }
+            if (action === 'submit_edit_info') {
+                await this._submitEditInfo(code, el);
+                return;
+            }
+            if (action === 'submit_edit_schedule') {
+                await this._submitEditSchedule(code, el);
+                return;
+            }
+            if (action === 'submit_discharge_wait') {
+                await this._submitDischargeWait(code, el);
+                return;
+            }
+            if (action === 'submit_postpone') {
+                await this._submitPostpone(code, el);
+                return;
+            }
+            if (action === 'submit_link_surgery') {
+                await this._submitLinkSurgery(extra || code, el);
+                return;
+            }
+            if (action === 'save_config') {
+                await this._submitConfigSave(el);
+                return;
+            }
+        },
+
+        _rerenderPage() {
+            const activeEl = document.activeElement;
+            const activeId = activeEl ? activeEl.id : '';
+            const selStart = (activeEl && typeof activeEl.selectionStart === 'number') ? activeEl.selectionStart : null;
+            const main = document.getElementById('main-content');
+            if (!main) return;
+            main.innerHTML = this.render();
+            this.afterRender();
+            if (activeId === 'rbt-search-input' || activeId === 'rbt-mobile-search-input') {
+                const reEl = document.getElementById(activeId);
+                if (reEl) {
+                    reEl.focus();
+                    if (selStart !== null && typeof reEl.setSelectionRange === 'function') {
+                        try { reEl.setSelectionRange(selStart, selStart); } catch (_) {}
+                    }
+                }
+            }
+        },
+
+        afterRender() {
+            this._bindEvents();
+            if (!this._bootstrap && !this._loading && !this._error) {
+                this.ensureLoaded(false)
+                    .then(() => this._rerenderPage())
+                    .catch(() => this._rerenderPage());
+                return;
+            }
+            if (this._bootstrap && typeof RobotTutorial !== 'undefined' && typeof RobotTutorial.maybeAutoStart === 'function') {
+                RobotTutorial.maybeAutoStart(this._perms());
+            }
+        },
+
+        render() {
+            this._bindEvents();
+
+            if (!this._bootstrap && !this._error) {
+                return `<div id="robot-schedule-page" class="rbt-page"><div class="rbt-panel">Đang tải dữ liệu Điều phối Lịch mổ Robot...</div></div>`;
+            }
+
+            if (this._error && !this._bootstrap) {
+                return `<div id="robot-schedule-page" class="rbt-page">
+                    <div class="rbt-panel">
+                        <h3>Không tải được phân hệ Điều phối Robot</h3>
+                        <p>${esc(this._error)}</p>
+                        <button type="button" class="btn btn-primary" data-rbt-action="refresh">Thử tải lại</button>
+                    </div>
+                </div>`;
+            }
+
+            const p = this._perms();
+            const cases = this._cases().filter(c => c.status !== 'archived_deleted');
+            const myCounts = (this._bootstrap && this._bootstrap.myActionCounts) || {};
+            const todayIso = this._todayIso();
+
+            const countConsult = cases.filter(c => ['cho_xep_tu_van', 'can_nhac', 'da_xep_tu_van'].includes(c.status)).length;
+            const countWeek = cases.filter(c => ['da_xep_robot', 'da_xep_noisoi'].includes(c.status)).length;
+            const countWard = cases.filter(c => ['da_xep_robot', 'da_xep_noisoi', 'da_xep_tu_van', 'cho_xep_tu_van', 'can_nhac', 'khong_dong_y_mo'].includes(c.status)).length;
+            const countDeclined = cases.filter(c => ['khong_dong_y_mo', 'hoan_mo', 'da_xoa'].includes(c.status)).length;
+            const countCompleted = cases.filter(c => c.status === 'da_mo').length;
+            const countWait = cases.filter(c => ['da_xep_robot', 'da_xep_noisoi'].includes(c.status) && c.inpatientState === 'xuat_vien_cho').length;
+
+            let roleLabel = 'Chỉ xem & In P.CTXH';
+            if (p.isBcn) roleLabel = 'BCN · Toàn quyền';
+            else if (p.isChiefConsultDecider) roleLabel = 'TS. Hữu · Chốt KQ Tư vấn';
+            else if (p.isCoordinator) roleLabel = 'Điều phối viên Robot';
+            else if (p.canCreateConsult) roleLabel = 'BS Khu vực';
+
+            const subtabs = [
+                { id: 'consult', label: 'Lịch tư vấn & Chờ xếp', icon: '🩺', count: countConsult },
+                { id: 'week', label: 'Lịch mổ đã xếp', icon: '📅', count: countWeek },
+                { id: 'ward', label: 'Theo dõi phòng & XV chờ', icon: '🏥', count: countWait || countWard },
+                { id: 'declined_postponed', label: 'Không mổ / Hoãn / Rác', icon: '⏸️', count: countDeclined },
+                { id: 'completed', label: 'Đã mổ & Thống kê', icon: '📊', count: countCompleted }
+            ];
+            if (p.canConfigureCoordinators) {
+                subtabs.push({ id: 'config', label: 'Cấu hình', icon: '⚙️', count: '' });
+            }
+
+            if (!subtabs.some(st => st.id === this._subtab)) {
+                this._subtab = 'consult';
+            }
+
+            const q = this._searchQuery.trim().toLowerCase();
+            const matchesSearch = (c) => {
+                if (!q) return true;
+                const hay = [
+                    c.robotCaseCode, c.patientName, c.admissionId, c.diagnosis,
+                    c.robotProcedure, c.wardRoom, c.mainSurgeonName, c.createdByName
+                ].join(' ').toLowerCase();
+                return hay.includes(q);
+            };
+
+            const bodyHtml = this._renderActiveSubtab(cases.filter(matchesSearch), todayIso);
+
+            return `<div id="robot-schedule-page" class="rbt-page">
+                <header class="rbt-header">
+                    <div class="rbt-header__title-wrap">
+                        <h2 class="rbt-header__title">
+                            <span>🤖 Điều phối Lịch mổ Robot</span>
+                            <span class="rbt-role-pill">${esc(roleLabel)}</span>
+                        </h2>
+                        <p class="rbt-header__sub">Quy trình 5 bước: BS Khu vực gửi TV → ĐP xếp lịch TS. Hữu → Chốt Robot / Nội soi / Không mổ → BS phòng theo dõi &amp; XV chờ giữ slot.</p>
+                    </div>
+                    <div class="rbt-header__actions rbt-desktop-only-flex">
+                        <button type="button" id="rbt-tutorial-btn" class="btn rbt-btn-outline-light" data-rbt-action="open_tutorial" title="Xem hướng dẫn 7 bước">❓ Hướng dẫn</button>
+                        <button type="button" class="btn rbt-btn-outline-light" data-rbt-action="copy_zalo_consult">📋 Copy lịch TV Zalo</button>
+                        <button type="button" class="btn rbt-btn-outline-light" data-rbt-action="open_print_modal">🖨️ In P.CTXH (A5)</button>
+                        ${p.canCreateConsult ? `<button type="button" class="btn rbt-btn-light" data-rbt-action="open_create_consult">➕ Gửi ca tư vấn</button>` : ''}
+                        <button type="button" class="btn rbt-btn-outline-light" data-rbt-action="refresh" title="Tải lại">🔄</button>
+                    </div>
+                    <div class="rbt-mobile-hdr-tools rbt-mobile-only-flex">
+                        <button type="button" id="rbt-mobile-tutorial-pill" class="rbt-mobile-icon-btn" data-rbt-action="open_tutorial" aria-label="Hướng dẫn">?</button>
+                        <button type="button" class="rbt-mobile-icon-btn ${this._mobileSearchOpen ? 'is-active' : ''}" data-rbt-action="toggle_mobile_search" aria-label="Tìm kiếm">🔍</button>
+                        <button type="button" id="rbt-mobile-fab" class="rbt-fab rbt-mobile-only-flex rbt-mobile-fab-hdr" data-rbt-action="open_create_consult" aria-label="Gửi ca tư vấn" ${p.canCreateConsult ? '' : 'hidden'}>+</button>
+                        <button type="button" class="rbt-mobile-icon-btn rbt-mobile-more" data-rbt-action="open_mobile_menu" aria-label="Menu mở rộng">⋮</button>
+                    </div>
+                </header>
+
+                ${this._mobileSearchOpen ? `<div class="rbt-mobile-search-bar rbt-mobile-only">
+                    <div class="rbt-mobile-search-row">
+                        <input id="rbt-mobile-search-input" type="search" class="form-input" placeholder="Tìm tên BN, mã RB, phòng B7xx..." value="${esc(this._searchQuery)}">
+                        ${this._searchQuery ? `<button type="button" class="btn btn-secondary" data-rbt-action="clear_search">Xóa</button>` : ''}
+                    </div>
+                </div>` : ''}
+
+                <section id="rbt-my-work-bar" class="rbt-my-work-bar" aria-label="Tóm tắt việc cần làm">
+                    <button type="button" class="rbt-work-chip rbt-work-chip--amber" data-rbt-action="jump_my_work" data-rbt-extra="consult_need">
+                        <span class="rbt-work-chip__dot"></span>
+                        <span>Cần xếp TV: <strong>${Number(myCounts.needScheduleConsult || 0)}</strong></span>
+                    </button>
+                    <button type="button" class="rbt-work-chip rbt-work-chip--ocean" data-rbt-action="jump_my_work" data-rbt-extra="consult_scheduled">
+                        <span class="rbt-work-chip__dot"></span>
+                        <span>Chờ TS. Hữu KQ: <strong>${Number(myCounts.needDecideConsult || 0)}</strong></span>
+                    </button>
+                    <button type="button" class="rbt-work-chip rbt-work-chip--green" data-rbt-action="jump_my_work" data-rbt-extra="ward_mine">
+                        <span class="rbt-work-chip__dot"></span>
+                        <span>Ca tôi gửi có KQ: <strong>${Number(myCounts.myCasesDecided || 0)}</strong></span>
+                    </button>
+                    <button type="button" class="rbt-work-chip rbt-work-chip--indigo" data-rbt-action="jump_my_work" data-rbt-extra="ward_wait">
+                        <span class="rbt-work-chip__dot"></span>
+                        <span>XV chờ nhập lại: <strong>${Number(myCounts.upcomingReadmit || countWait || 0)}</strong></span>
+                    </button>
+                </section>
+
+                <div class="rbt-kpi-grid">
+                    <div class="rbt-kpi-card rbt-kpi-card--amber" data-rbt-subtab="consult">
+                        <div>
+                            <div class="rbt-kpi-label">Chờ &amp; Xếp TV</div>
+                            <div class="rbt-kpi-value">${countConsult}</div>
+                        </div>
+                        <div class="rbt-kpi-meta">Bước 1–2</div>
+                    </div>
+                    <div class="rbt-kpi-card rbt-kpi-card--green" data-rbt-subtab="week">
+                        <div>
+                            <div class="rbt-kpi-label">Đã xếp lịch mổ</div>
+                            <div class="rbt-kpi-value">${countWeek}</div>
+                        </div>
+                        <div class="rbt-kpi-meta">Robot &amp; Nội soi</div>
+                    </div>
+                    <div class="rbt-kpi-card rbt-kpi-card--indigo" data-rbt-subtab="ward">
+                        <div>
+                            <div class="rbt-kpi-label">XV chờ giữ slot</div>
+                            <div class="rbt-kpi-value">${countWait}</div>
+                        </div>
+                        <div class="rbt-kpi-meta">Bước 4 phòng</div>
+                    </div>
+                    <div class="rbt-kpi-card rbt-kpi-card--navy" data-rbt-subtab="completed">
+                        <div>
+                            <div class="rbt-kpi-label">Đã phẫu thuật</div>
+                            <div class="rbt-kpi-value">${countCompleted}</div>
+                        </div>
+                        <div class="rbt-kpi-meta">Bước 5 KPI</div>
+                    </div>
+                </div>
+
+                <nav class="rbt-subtabs-wrap" aria-label="Phân mục Điều phối Robot">
+                    ${subtabs.map(st => `<button type="button" class="rbt-subtab ${this._subtab === st.id ? 'is-active' : ''}" data-rbt-subtab="${esc(st.id)}">
+                        <span>${st.icon} ${esc(st.label)}</span>
+                        ${st.count !== '' ? `<span class="rbt-subtab-badge">${st.count}</span>` : ''}
+                    </button>`).join('')}
+                </nav>
+
+                ${bodyHtml}
+            </div>`;
+        },
+
+        _renderActiveSubtab(filteredCases, todayIso) {
+            switch (this._subtab) {
+                case 'consult':
+                    return this._renderConsultSubtab(filteredCases, todayIso);
+                case 'week':
+                    return this._renderWeekSubtab(filteredCases, todayIso);
+                case 'ward':
+                    return this._renderWardSubtab(filteredCases, todayIso);
+                case 'declined_postponed':
+                    return this._renderDeclinedSubtab(filteredCases, todayIso);
+                case 'completed':
+                    return this._renderCompletedSubtab(filteredCases);
+                case 'config':
+                    return this._renderConfigSubtab();
+                default:
+                    return this._renderConsultSubtab(filteredCases, todayIso);
+            }
+        },
+
+        _renderSearchBarHtml() {
+            return `<div class="rbt-toolbar__group rbt-desktop-only-flex">
+                <input id="rbt-search-input" type="search" class="form-input rbt-search-box" placeholder="Tìm tên BN, mã RB, phòng B7xx..." value="${esc(this._searchQuery)}">
+                ${this._searchQuery ? `<button type="button" class="btn btn-secondary" data-rbt-action="clear_search">Xóa lọc</button>` : ''}
+            </div>`;
+        },
+
+        _renderConsultSubtab(cases, todayIso) {
+            const p = this._perms();
+            const needList = cases
+                .filter(c => c.status === 'cho_xep_tu_van' || c.status === 'can_nhac')
+                .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+            const schedList = cases
+                .filter(c => c.status === 'da_xep_tu_van')
+                .sort((a, b) => {
+                    const da = String(a.consultDate || '9999-99-99');
+                    const db = String(b.consultDate || '9999-99-99');
+                    if (da !== db) return da.localeCompare(db);
+                    const sa = a.consultSession === 'sang' ? 0 : 1;
+                    const sb = b.consultSession === 'sang' ? 0 : 1;
+                    return sa - sb;
+                });
+
+            const showNeed = this._consultFilterMode === 'all' || this._consultFilterMode === 'need';
+            const showSched = this._consultFilterMode === 'all' || this._consultFilterMode === 'scheduled';
+
+            const renderConsultCard = (c) => {
+                const sm = STATUS_META[c.status] || { label: c.status, badge: 'rbt-badge--navy' };
+                const code = c.robotCaseCode || c.soNV;
+                const tel = cleanTelHref(c);
+                const sessTxt = c.consultDate
+                    ? `${c.consultSession === 'sang' ? '🌅 Sáng' : '🌇 Chiều'} ${fmtViDate(c.consultDate)} (${fmtWeekdayVi(c.consultDate)})`
+                    : 'Chưa xếp ngày TV';
+                const roundTag = (c.consultRound && Number(c.consultRound) > 1)
+                    ? `<span class="rbt-badge rbt-badge--indigo">Lần TV #${Number(c.consultRound)}</span>`
+                    : '';
+
+                return `<article class="rbt-case-card rbt-case-card--${esc(c.status)}">
+                    <div class="rbt-case-top">
+                        <div>
+                            <span class="rbt-case-code">${esc(code)}</span>
+                            ${c.isTestSandboxCase ? `<span class="rbt-badge rbt-badge--sandbox">SANDBOX</span>` : ''}
+                            <span class="rbt-badge ${sm.badge}">${esc(sm.label)}</span>
+                            ${roundTag}
+                        </div>
+                        <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(c.wardRoom))}</span>
+                    </div>
+                    <div class="rbt-case-name">${esc(c.patientName)} ${c.birthYear ? `(${esc(c.birthYear)})` : ''} ${c.gender ? `· ${esc(c.gender)}` : ''}</div>
+                    <div class="rbt-case-meta">
+                        <div><strong>CĐ:</strong> ${esc(c.diagnosis || '—')}</div>
+                        ${c.robotProcedure ? `<div><strong>Dự kiến PP:</strong> ${esc(c.robotProcedure)}</div>` : ''}
+                        <div><strong>Người gửi:</strong> ${esc(c.createdByName || c.createdByUsername || '—')} · ${c.labsReadyConfirmed ? '✅ Đủ XN tiền phẫu' : '⚠️ Chưa tick XN'}</div>
+                        <div><strong>Lịch TV TS. Hữu:</strong> ${esc(sessTxt)}${c.consultScheduleNote ? ` · <em>${esc(c.consultScheduleNote)}</em>` : ''}</div>
+                        ${c.consultNote ? `<div><strong>Ghi chú TV:</strong> ${esc(c.consultNote)}</div>` : ''}
+                    </div>
+                    <div class="rbt-card-actions">
+                        ${(c.status === 'cho_xep_tu_van' || c.status === 'can_nhac') && p.canScheduleConsult
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="open_schedule_consult" data-rbt-code="${esc(code)}">📅 Xếp lịch TV</button>`
+                            : ''}
+                        ${c.status === 'da_xep_tu_van' && p.canScheduleConsult
+                            ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_schedule_consult" data-rbt-code="${esc(code)}">📅 Đổi lịch TV</button>`
+                            : ''}
+                        ${p.canDecideConsult
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="open_decide_consult" data-rbt-code="${esc(code)}">🩺 Nhập KQ tư vấn</button>`
+                            : ''}
+                        ${tel ? `<a href="${esc(tel)}" class="rbt-btn-call" title="Gọi BN">📞 Gọi</a>` : ''}
+                        <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                    </div>
+                </article>`;
+            };
+
+            return `<div class="rbt-panel">
+                <div class="rbt-toolbar">
+                    <div class="rbt-toolbar__group">
+                        <select id="rbt-consult-filter-mode" class="form-input">
+                            <option value="all" ${this._consultFilterMode === 'all' ? 'selected' : ''}>Tất cả ca tư vấn (${needList.length + schedList.length})</option>
+                            <option value="need" ${this._consultFilterMode === 'need' ? 'selected' : ''}>Chờ ĐP xếp lịch TV (${needList.length})</option>
+                            <option value="scheduled" ${this._consultFilterMode === 'scheduled' ? 'selected' : ''}>Đã xếp lịch TV TS. Hữu (${schedList.length})</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" data-rbt-action="copy_zalo_consult">📋 Copy lịch TV Zalo</button>
+                        ${p.canCreateConsult ? `<button type="button" class="btn btn-primary" data-rbt-action="open_create_consult">➕ Gửi ca tư vấn</button>` : ''}
+                        ${p.canDirectCreateCase ? `<button type="button" class="btn btn-secondary" data-rbt-action="open_create_case">⚡ Xếp thẳng ca Robot</button>` : ''}
+                    </div>
+                    ${this._renderSearchBarHtml()}
+                </div>
+
+                <div class="rbt-consult-split">
+                    ${showSched ? `<section class="rbt-consult-col">
+                        <div class="rbt-section-hdr">
+                            <h3>📅 Đã xếp lịch Tư vấn — TS. BSCKII. Nguyễn Phú Hữu</h3>
+                            <span class="rbt-badge rbt-badge--ocean">${schedList.length} ca</span>
+                        </div>
+                        ${schedList.length
+                            ? `<div class="rbt-cards-stack">${schedList.map(renderConsultCard).join('')}</div>`
+                            : `<div class="rbt-empty">Chưa có ca nào được xếp lịch tư vấn. Điều phối viên (BS Nguyện / BS Hoan) bấm "Xếp lịch TV" để chọn ngày &amp; buổi Sáng/Chiều.</div>`}
+                    </section>` : ''}
+
+                    ${showNeed ? `<section class="rbt-consult-col">
+                        <div class="rbt-section-hdr">
+                            <h3>📥 Chờ Điều phối xếp lịch TV &amp; Cân nhắc lại</h3>
+                            <span class="rbt-badge rbt-badge--amber">${needList.length} ca</span>
+                        </div>
+                        ${needList.length
+                            ? `<div class="rbt-cards-stack">${needList.map(renderConsultCard).join('')}</div>`
+                            : `<div class="rbt-empty">Không có hồ sơ chờ xếp lịch tư vấn. BS khu vực bấm "➕ Gửi ca tư vấn" khi BN đủ XN tiền phẫu.</div>`}
+                    </section>` : ''}
+                </div>
+            </div>`;
+        },
+
+        _renderWeekSubtab(cases, todayIso) {
+            const p = this._perms();
+            const active = cases.filter(c => {
+                if (c.status !== 'da_xep_robot' && c.status !== 'da_xep_noisoi') return false;
+                if (this._weekApproachFilter === 'robot' && c.status !== 'da_xep_robot') return false;
+                if (this._weekApproachFilter === 'noisoi' && c.status !== 'da_xep_noisoi') return false;
+                if (this._weekApproachFilter === 'wait' && c.inpatientState !== 'xuat_vien_cho') return false;
+                return true;
+            });
+
+            const weekStart = this._weekStartIso || getMondayIso(todayIso);
+            const weekDays = Array.from({ length: 7 }, (_, i) => addDaysIso(weekStart, i));
+            const weekEnd = weekDays[6];
+            if (!this._mobileDayIso || (!weekDays.includes(this._mobileDayIso) && this._mobileDayIso !== 'all')) {
+                this._mobileDayIso = weekDays.includes(todayIso) ? todayIso : weekDays[0];
+            }
+
+            const renderSchedCard = (c, compact = false) => {
+                const code = c.robotCaseCode || c.soNV;
+                const isRobot = c.status === 'da_xep_robot';
+                const waitBadge = c.inpatientState === 'xuat_vien_cho'
+                    ? `<span class="rbt-badge rbt-badge--amber">🏠 XV chờ${c.plannedReadmitDate ? ` · Nhập ${fmtViShortDate(c.plannedReadmitDate)}` : ''}</span>`
+                    : (c.inpatientState === 'da_nhap_lai' ? `<span class="rbt-badge rbt-badge--green">✅ Đã nhập lại</span>` : '');
+                const apBadge = c.approvalStatus
+                    ? `<span class="rbt-badge rbt-badge--navy">${esc(APPROVAL_LABELS[c.approvalStatus] || c.approvalStatus)}</span>`
+                    : '';
+                const approachBadge = isRobot
+                    ? `<span class="rbt-badge rbt-badge--green">🤖 Robot · ${esc(c.caseSlot || 'Ca ?')}</span>`
+                    : `<span class="rbt-badge rbt-badge--ocean">🔬 Nội soi · ${esc(SURGERY_TYPE_LABELS[c.scheduledSurgeryType] || 'CT')}</span>`;
+
+                return `<article class="rbt-case-card rbt-case-card--${esc(c.status)}">
+                    <div class="rbt-case-top">
+                        <div>
+                            <span class="rbt-case-code">${esc(code)}</span>
+                            ${c.isTestSandboxCase ? `<span class="rbt-badge rbt-badge--sandbox">SANDBOX</span>` : ''}
+                        </div>
+                        <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(c.wardRoom))}</span>
+                    </div>
+                    <div class="rbt-case-top" style="margin-top:4px;">
+                        ${approachBadge}
+                        ${waitBadge}
+                    </div>
+                    <div class="rbt-case-name">${esc(c.patientName)} ${c.birthYear ? `(${esc(c.birthYear)})` : ''}</div>
+                    <div class="rbt-case-meta">
+                        <div><strong>PTV:</strong> ${esc(this._surgeonDisplay(c))}</div>
+                        <div><strong>PP:</strong> ${esc(c.robotProcedure || c.diagnosis || '—')}</div>
+                        ${!compact && apBadge ? `<div>${apBadge}</div>` : ''}
+                    </div>
+                    <div class="rbt-card-actions">
+                        <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                        ${isRobot ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_print_single" data-rbt-code="${esc(code)}">🖨️ In A5</button>` : ''}
+                        ${p.canEditSchedule ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_edit_schedule" data-rbt-code="${esc(code)}">Sửa lịch</button>` : ''}
+                        ${p.canManageInpatientWait && c.inpatientState !== 'xuat_vien_cho'
+                            ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_discharge_wait" data-rbt-code="${esc(code)}">🏠 XV chờ</button>`
+                            : ''}
+                        ${p.canManageInpatientWait && c.inpatientState === 'xuat_vien_cho'
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="confirm_readmit" data-rbt-code="${esc(code)}">✅ Nhập lại</button>`
+                            : ''}
+                    </div>
+                </article>`;
+            };
+
+            const desktopCols = weekDays.map(dayIso => {
+                const dayCases = active.filter(c => c.surgeryDate === dayIso);
+                const robotCount = dayCases.filter(c => c.status === 'da_xep_robot' && !c.isTestSandboxCase).length;
+                const capCls = robotCount >= 3 ? 'is-full' : '';
+                const slotsHtml = VALID_SLOTS.map(slotName => {
+                    const slotCases = dayCases.filter(c => c.status === 'da_xep_robot' && (c.caseSlot || 'Ca 1') === slotName);
+                    return `<div class="rbt-slot-section">
+                        <div class="rbt-slot-heading"><span>${slotName} (${slotToStartTime(slotName)})</span><span>${slotCases.length} ca</span></div>
+                        ${slotCases.map(c => renderSchedCard(c, true)).join('')}
+                    </div>`;
+                }).join('');
+                const nsCases = dayCases.filter(c => c.status === 'da_xep_noisoi');
+                const nsHtml = nsCases.length
+                    ? `<div class="rbt-slot-section rbt-slot-section--ns">
+                        <div class="rbt-slot-heading"><span>🔬 Chuyển mổ Nội soi</span><span>${nsCases.length} ca</span></div>
+                        ${nsCases.map(c => renderSchedCard(c, true)).join('')}
+                    </div>`
+                    : '';
+                return `<div class="rbt-day-col ${dayIso === todayIso ? 'is-today' : ''}">
+                    <div class="rbt-day-head">
+                        <span>${fmtWeekdayVi(dayIso)} ${fmtViShortDate(dayIso)}</span>
+                        <span class="rbt-day-cap-hint ${capCls}">${robotCount}/3 Robot</span>
+                    </div>
+                    <div class="rbt-day-body">
+                        ${slotsHtml}
+                        ${nsHtml}
+                    </div>
+                </div>`;
+            }).join('');
+
+            const mobileDaysToShow = this._mobileWeekAllDays
+                ? weekDays
+                : (this._mobileDayIso === 'all' ? weekDays : [this._mobileDayIso]);
+
+            const mobileHtml = `<div class="rbt-mobile-week rbt-mobile-only">
+                <div class="rbt-mobile-week-bar">
+                    <button type="button" class="btn btn-secondary rbt-mobile-week-navbtn" data-rbt-action="week_prev">‹</button>
+                    <div class="rbt-week-label">${fmtViShortDate(weekStart)} – ${fmtViShortDate(weekEnd)}</div>
+                    <button type="button" class="btn btn-secondary rbt-mobile-week-navbtn" data-rbt-action="week_next">›</button>
+                    <button type="button" class="btn btn-secondary" data-rbt-action="toggle_mobile_week_all">${this._mobileWeekAllDays ? '1 ngày' : 'Cả tuần'}</button>
+                </div>
+                <div class="rbt-day-pills">
+                    ${weekDays.map(d => {
+                        const cnt = active.filter(c => c.surgeryDate === d).length;
+                        return `<button type="button" class="rbt-day-pill ${!this._mobileWeekAllDays && this._mobileDayIso === d ? 'is-active' : ''}" data-rbt-mobile-day="${d}">
+                            <span>${fmtWeekdayVi(d)} ${fmtViShortDate(d)}</span>
+                            <span class="rbt-day-pill__count">${cnt}</span>
+                        </button>`;
+                    }).join('')}
+                </div>
+                ${mobileDaysToShow.map(d => {
+                    const list = active.filter(c => c.surgeryDate === d);
+                    return `<div class="rbt-mobile-day-group">
+                        <div class="rbt-mobile-day-title">${fmtWeekdayVi(d)} · ${fmtViDate(d)} (${list.length} ca)</div>
+                        ${list.length
+                            ? list.map(c => `<div class="rbt-mcard">${renderSchedCard(c, false)}</div>`).join('')
+                            : `<div class="rbt-empty">Chưa có ca phẫu thuật trong ngày.</div>`}
+                    </div>`;
+                }).join('')}
+            </div>`;
+
+            const unlinked = (this._bootstrap && Array.isArray(this._bootstrap.unlinkedFutureRobotSurgeries))
+                ? this._bootstrap.unlinkedFutureRobotSurgeries
+                : [];
+            const unlinkedHtml = (p.canLinkExistingSurgery && unlinked.length)
+                ? `<div class="rbt-unlinked-box">
+                    <strong>🔗 Có ${unlinked.length} ca Robot trên Lịch mổ tuần chưa liên kết hồ sơ Điều phối Robot:</strong>
+                    <div class="rbt-unlinked-list">
+                        ${unlinked.map(s => `<div class="rbt-unlinked-item">
+                            <span>${fmtViDate(s.date)} · <strong>${esc(s.patientName)}</strong> (${esc(s.mainSurgeonName)})</span>
+                            <button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="open_link_surgery" data-rbt-extra="${s.id}">Liên kết ngay</button>
+                        </div>`).join('')}
+                    </div>
+                </div>`
+                : '';
+
+            return `<div class="rbt-panel">
+                <div class="rbt-toolbar">
+                    <div class="rbt-toolbar__group">
+                        <button type="button" class="btn btn-secondary rbt-desktop-only-flex" data-rbt-action="week_prev">‹ Tuần trước</button>
+                        <button type="button" class="btn btn-secondary" data-rbt-action="week_today">Tuần này</button>
+                        <button type="button" class="btn btn-secondary rbt-desktop-only-flex" data-rbt-action="week_next">Tuần sau ›</button>
+                        <span class="rbt-week-label rbt-desktop-only-flex">${fmtViDate(weekStart)} – ${fmtViDate(weekEnd)}</span>
+                        <select id="rbt-week-approach-filter" class="form-input">
+                            <option value="all" ${this._weekApproachFilter === 'all' ? 'selected' : ''}>Tất cả (${active.length})</option>
+                            <option value="robot" ${this._weekApproachFilter === 'robot' ? 'selected' : ''}>🤖 Chỉ mổ Robot</option>
+                            <option value="noisoi" ${this._weekApproachFilter === 'noisoi' ? 'selected' : ''}>🔬 Chuyển mổ Nội soi</option>
+                            <option value="wait" ${this._weekApproachFilter === 'wait' ? 'selected' : ''}>🏠 Đang XV chờ giữ slot</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" data-rbt-action="open_print_modal">🖨️ In P.CTXH</button>
+                    </div>
+                    ${this._renderSearchBarHtml()}
+                </div>
+                ${unlinkedHtml}
+                <div class="rbt-week-grid rbt-desktop-only-grid">${desktopCols}</div>
+                ${mobileHtml}
+            </div>`;
+        },
+
+        _renderWardSubtab(cases, todayIso) {
+            const p = this._perms();
+            const me = this._currentUsername();
+            const mySid = Number(p.staffId || 0);
+            const relevant = cases.filter(c => c.status !== 'da_xoa' && c.status !== 'da_mo');
+
+            const filtered = relevant.filter(c => {
+                if (this._wardRoomFilter !== 'all' && (c.wardRoom || '') !== this._wardRoomFilter) return false;
+                if (this._wardQuickFilter === 'xuat_vien_cho' && c.inpatientState !== 'xuat_vien_cho') return false;
+                if (this._wardQuickFilter === 'decided' && !['da_xep_robot', 'da_xep_noisoi', 'khong_dong_y_mo', 'can_nhac'].includes(c.status)) return false;
+                if (this._wardQuickFilter === 'mine') {
+                    const isMine = (c.createdByUsername || '').toLowerCase() === me || (mySid > 0 && Number(c.mainSurgeonId) === mySid);
+                    if (!isMine) return false;
+                }
+                return true;
+            }).sort((a, b) => {
+                const wA = a.inpatientState === 'xuat_vien_cho' ? 0 : 1;
+                const wB = b.inpatientState === 'xuat_vien_cho' ? 0 : 1;
+                if (wA !== wB) return wA - wB;
+                return String(a.surgeryDate || '9999-99-99').localeCompare(String(b.surgeryDate || '9999-99-99'));
+            });
+
+            const rowsHtml = filtered.map(c => {
+                const code = c.robotCaseCode || c.soNV;
+                const sm = STATUS_META[c.status] || { label: c.status, badge: 'rbt-badge--navy' };
+                const isSched = c.status === 'da_xep_robot' || c.status === 'da_xep_noisoi';
+                const waitDays = (c.inpatientState === 'xuat_vien_cho' && c.plannedReadmitDate)
+                    ? daysBetweenIso(todayIso, c.plannedReadmitDate)
+                    : null;
+                const dueTag = (waitDays !== null && waitDays <= 2)
+                    ? `<span class="rbt-badge rbt-badge--red">${waitDays < 0 ? 'Quá hạn nhập lại' : waitDays === 0 ? 'Hôm nay nhập lại' : `Còn ${waitDays} ngày nhập lại`}</span>`
+                    : '';
+                const outcomeSummary = c.status === 'da_xep_robot'
+                    ? `🤖 Mổ Robot ${fmtViDate(c.surgeryDate)} (${c.caseSlot || ''})`
+                    : c.status === 'da_xep_noisoi'
+                        ? `🔬 Chuyển mổ Nội soi ${fmtViDate(c.surgeryDate)} · PTV: ${this._surgeonDisplay(c)}`
+                        : c.status === 'khong_dong_y_mo'
+                            ? `❌ Không đồng ý mổ (${this._refusalReasons()[c.refusalReason] || ''})`
+                            : c.status === 'da_xep_tu_van'
+                                ? `📅 Chờ TV ${c.consultSession === 'sang' ? 'Sáng' : 'Chiều'} ${fmtViDate(c.consultDate)}`
+                                : sm.label;
+
+                return `<article class="rbt-ward-card rbt-case-card rbt-case-card--${esc(c.status)}">
+                    <div class="rbt-case-top">
+                        <div>
+                            <span class="rbt-case-code">${esc(code)}</span>
+                            <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(c.wardRoom))}</span>
+                            <span class="rbt-badge ${sm.badge}">${esc(sm.label)}</span>
+                            ${c.inpatientState === 'xuat_vien_cho' ? `<span class="rbt-badge rbt-badge--amber">🏠 XV chờ · Nhập lại ${fmtViDate(c.plannedReadmitDate)}</span>` : ''}
+                            ${c.inpatientState === 'da_nhap_lai' ? `<span class="rbt-badge rbt-badge--green">✅ Đã nhập lại</span>` : ''}
+                            ${dueTag}
+                        </div>
+                    </div>
+                    <div class="rbt-case-name">${esc(c.patientName)} ${c.birthYear ? `(${esc(c.birthYear)})` : ''}</div>
+                    <div class="rbt-case-meta">
+                        <div><strong>Kết quả tư vấn TS. Hữu:</strong> ${esc(outcomeSummary)}</div>
+                        <div><strong>CĐ / PP:</strong> ${esc(c.diagnosis || '—')} ${c.robotProcedure ? `· ${esc(c.robotProcedure)}` : ''}</div>
+                        <div><strong>BS gửi:</strong> ${esc(c.createdByName || c.createdByUsername || '—')}</div>
+                        ${c.inpatientState === 'xuat_vien_cho' && c.dischargeReason ? `<div><strong>Lý do XV chờ:</strong> ${esc(c.dischargeReason)}</div>` : ''}
+                    </div>
+                    <div class="rbt-card-actions">
+                        <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                        ${c.status === 'da_xep_robot' ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_print_single" data-rbt-code="${esc(code)}">🖨️ In A5 CTXH</button>` : ''}
+                        ${isSched && p.canManageInpatientWait && c.inpatientState !== 'xuat_vien_cho'
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="open_discharge_wait" data-rbt-code="${esc(code)}">🏠 Cho XV chờ &amp; Hẹn nhập lại</button>`
+                            : ''}
+                        ${isSched && p.canManageInpatientWait && c.inpatientState === 'xuat_vien_cho'
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="confirm_readmit" data-rbt-code="${esc(code)}">✅ Xác nhận đã nhập lại</button>`
+                            : ''}
+                    </div>
+                </article>`;
+            }).join('');
+
+            return `<div class="rbt-panel">
+                <div class="rbt-toolbar">
+                    <div class="rbt-toolbar__group">
+                        <select id="rbt-ward-room-filter" class="form-input">
+                            <option value="all" ${this._wardRoomFilter === 'all' ? 'selected' : ''}>Tất cả phòng (${relevant.length})</option>
+                            ${this._wardRooms().map(rm => `<option value="${esc(rm)}" ${this._wardRoomFilter === rm ? 'selected' : ''}>${esc(roomLabel(rm))}</option>`).join('')}
+                        </select>
+                        <select id="rbt-ward-quick-filter" class="form-input">
+                            <option value="all" ${this._wardQuickFilter === 'all' ? 'selected' : ''}>Tất cả trạng thái</option>
+                            <option value="decided" ${this._wardQuickFilter === 'decided' ? 'selected' : ''}>Đã có KQ tư vấn TS. Hữu</option>
+                            <option value="xuat_vien_cho" ${this._wardQuickFilter === 'xuat_vien_cho' ? 'selected' : ''}>Đang XV chờ &amp; giữ slot</option>
+                            <option value="mine" ${this._wardQuickFilter === 'mine' ? 'selected' : ''}>Ca tôi gửi / phụ trách</option>
+                        </select>
+                        ${p.canCreateConsult ? `<button type="button" class="btn btn-primary" data-rbt-action="open_create_consult">➕ Gửi ca tư vấn mới</button>` : ''}
+                    </div>
+                    ${this._renderSearchBarHtml()}
+                </div>
+                ${filtered.length
+                    ? `<div class="rbt-ward-grid">${rowsHtml}</div>`
+                    : `<div class="rbt-empty">Không có hồ sơ phù hợp bộ lọc phòng/trạng thái.</div>`}
+            </div>`;
+        },
+
+        _renderDeclinedSubtab(cases, todayIso) {
+            const p = this._perms();
+            const refusedMap = this._refusalReasons();
+            const postMap = this._postponeReasons();
+            const archiveDays = Number(this._cfg().trashAutoArchiveDays || 14);
+
+            const filtered = cases.filter(c => {
+                if (!['khong_dong_y_mo', 'hoan_mo', 'da_xoa'].includes(c.status)) return false;
+                if (this._declinedGroupFilter !== 'all' && c.status !== this._declinedGroupFilter) return false;
+                if (this._postponeFilterReason !== 'all' && c.status === 'hoan_mo' && c.postponeReasonCode !== this._postponeFilterReason) return false;
+                return true;
+            });
+
+            const cardsHtml = filtered.map(c => {
+                const code = c.robotCaseCode || c.soNV;
+                const sm = STATUS_META[c.status] || { label: c.status, badge: 'rbt-badge--red' };
+                let detailLine = '';
+                if (c.status === 'khong_dong_y_mo') {
+                    detailLine = `Lý do: ${refusedMap[c.refusalReason] || 'Chưa ghi rõ'}${c.consultNote ? ` · ${c.consultNote}` : ''}`;
+                } else if (c.status === 'hoan_mo') {
+                    const snap = c.previousScheduleSnapshot || {};
+                    detailLine = `Lý do hoãn: ${c.postponeReasonLabel || postMap[c.postponeReasonCode] || '—'}${c.postponeReasonNote ? ` (${c.postponeReasonNote})` : ''}${snap.surgeryDate ? ` · Lịch cũ: ${fmtViDate(snap.surgeryDate)} ${snap.caseSlot || ''}` : ''}`;
+                } else if (c.status === 'da_xoa') {
+                    const delDays = c.deletedAt ? Math.max(0, archiveDays - (daysBetweenIso(String(c.deletedAt).slice(0, 10), todayIso) || 0)) : archiveDays;
+                    detailLine = `${c.deleteReason || 'Đã đưa vào Thùng rác'} · Tự lưu trữ ẩn sau ~${delDays} ngày`;
+                }
+
+                return `<article class="rbt-case-card rbt-case-card--${esc(c.status)}">
+                    <div class="rbt-case-top">
+                        <div>
+                            <span class="rbt-case-code">${esc(code)}</span>
+                            <span class="rbt-badge ${sm.badge}">${esc(sm.label)}</span>
+                            <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(c.wardRoom))}</span>
+                        </div>
+                    </div>
+                    <div class="rbt-case-name">${esc(c.patientName)} ${c.birthYear ? `(${esc(c.birthYear)})` : ''}</div>
+                    <div class="rbt-case-meta">
+                        <div><strong>CĐ:</strong> ${esc(c.diagnosis || '—')}</div>
+                        <div>${esc(detailLine)}</div>
+                    </div>
+                    <div class="rbt-card-actions">
+                        <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                        ${(c.status === 'khong_dong_y_mo' || c.status === 'hoan_mo') && (p.canScheduleConsult || p.canDecideConsult)
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="reopen_consult" data-rbt-code="${esc(code)}">🔄 Mở lại tư vấn</button>`
+                            : ''}
+                        ${c.status !== 'da_xoa' && p.canSoftDelete
+                            ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="soft_delete" data-rbt-code="${esc(code)}">🗑️ Thùng rác</button>`
+                            : ''}
+                        ${c.status === 'da_xoa' && p.canSoftDelete
+                            ? `<button type="button" class="btn btn-primary rbt-btn-xs" data-rbt-action="restore_trash" data-rbt-code="${esc(code)}">♻️ Khôi phục</button>`
+                            : ''}
+                        ${c.status === 'da_xoa' && p.canArchiveDeleted
+                            ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="archive_delete" data-rbt-code="${esc(code)}">📦 Lưu trữ ẩn</button>`
+                            : ''}
+                    </div>
+                </article>`;
+            }).join('');
+
+            return `<div class="rbt-panel">
+                <div class="rbt-toolbar">
+                    <div class="rbt-toolbar__group">
+                        <select id="rbt-declined-group-filter" class="form-input">
+                            <option value="all" ${this._declinedGroupFilter === 'all' ? 'selected' : ''}>Tất cả (${filtered.length})</option>
+                            <option value="khong_dong_y_mo" ${this._declinedGroupFilter === 'khong_dong_y_mo' ? 'selected' : ''}>❌ Không đồng ý mổ</option>
+                            <option value="hoan_mo" ${this._declinedGroupFilter === 'hoan_mo' ? 'selected' : ''}>⏸️ Hoãn mổ</option>
+                            <option value="da_xoa" ${this._declinedGroupFilter === 'da_xoa' ? 'selected' : ''}>🗑️ Thùng rác</option>
+                        </select>
+                        <select id="rbt-postpone-filter" class="form-input">
+                            <option value="all" ${this._postponeFilterReason === 'all' ? 'selected' : ''}>Mọi lý do hoãn mổ</option>
+                            ${Object.entries(postMap).map(([k, v]) => `<option value="${esc(k)}" ${this._postponeFilterReason === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Thời gian dự kiến (chọn lịch)</label>
-                        <div class="rbt-date-wrap">
-                            <input class="form-input rbt-date-picker-only" type="date" name="expectedTimeframe" value="${esc(initExpDate)}" ${expMin ? `min="${esc(expMin)}"` : ''}>
-                            <button type="button" class="rbt-date-clear-btn" data-rbt-clear-date="expectedTimeframe" title="Xóa ngày dự kiến" aria-label="Xóa ngày dự kiến">✕</button>
-                        </div>
-                        ${this._buildDatePresetsHtml('expectedTimeframe')}
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Ghi chú tư vấn</label>
-                        <textarea class="form-textarea" name="consultNote" rows="2">${esc(rc.consultNote || '')}</textarea>
-                    </div>
-                    <div class="modal-footer" style="margin-top:12px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Cập nhật</button>
-                    </div>
-                </form>
-            `;
-            this._openRobotModal(`🩺 Kết quả tư vấn — ${code}`, html, 'consult_result', code);
-            document.getElementById('rbt-consult-form')?.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const fd = new FormData(ev.target);
-                await this._runModalPatch(rc, {
-                    action: 'consult_result',
-                    expectedRevision: Number(rc.caseRevision || 1),
-                    consultResult: String(fd.get('consultResult') || ''),
-                    expectedTimeframe: String(fd.get('expectedTimeframe') || '').trim(),
-                    consultNote: String(fd.get('consultNote') || '').trim()
-                });
+                    ${this._renderSearchBarHtml()}
+                </div>
+                ${filtered.length
+                    ? `<div class="rbt-cards-stack">${cardsHtml}</div>`
+                    : `<div class="rbt-empty">Không có hồ sơ nào trong nhóm Không đồng ý mổ / Hoãn mổ / Thùng rác.</div>`}
+            </div>`;
+        },
+
+        _renderCompletedSubtab(cases) {
+            const p = this._perms();
+            const nonTrash = cases.filter(c => c.status !== 'da_xoa' && !c.isTestSandboxCase);
+            const yearsSet = new Set();
+            nonTrash.forEach(c => {
+                const y = String(c.surgeryDate || c.consultDate || c.createdAt || '').slice(0, 4);
+                if (/^\d{4}$/.test(y)) yearsSet.add(y);
             });
+            const years = Array.from(yearsSet).sort().reverse();
+
+            const matchStats = (c) => {
+                const refDate = String(c.surgeryDate || c.consultDate || c.createdAt || '');
+                if (this._statsYear !== 'all' && !refDate.startsWith(this._statsYear)) return false;
+                if (this._statsMonth !== 'all' && refDate.slice(5, 7) !== this._statsMonth) return false;
+                if (this._statsSurgeon !== 'all' && String(c.mainSurgeonId) !== String(this._statsSurgeon)) return false;
+                return true;
+            };
+
+            const scoped = nonTrash.filter(matchStats);
+            const decidedPool = scoped.filter(c => ['robot', 'noisoi', 'khong_mo'].includes(c.consultOutcome));
+            const decidedRobot = decidedPool.filter(c => c.consultOutcome === 'robot').length;
+            const decidedNs = decidedPool.filter(c => c.consultOutcome === 'noisoi').length;
+            const decidedNo = decidedPool.filter(c => c.consultOutcome === 'khong_mo').length;
+            const convRobotPct = decidedPool.length ? Math.round((decidedRobot / decidedPool.length) * 100) : 0;
+
+            const doneList = cases
+                .filter(c => c.status === 'da_mo' && matchStats(c))
+                .sort((a, b) => String(b.surgeryDate || '').localeCompare(String(a.surgeryDate || '')));
+            const visibleDone = doneList.slice(0, this._completedVisibleLimit);
+
+            return `<div class="rbt-panel">
+                <div class="rbt-toolbar">
+                    <div class="rbt-toolbar__group">
+                        <select id="rbt-stats-year" class="form-input">
+                            <option value="all" ${this._statsYear === 'all' ? 'selected' : ''}>Mọi năm</option>
+                            ${years.map(y => `<option value="${y}" ${this._statsYear === y ? 'selected' : ''}>Năm ${y}</option>`).join('')}
+                        </select>
+                        <select id="rbt-stats-month" class="form-input">
+                            <option value="all" ${this._statsMonth === 'all' ? 'selected' : ''}>Cả năm</option>
+                            ${Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => `<option value="${m}" ${this._statsMonth === m ? 'selected' : ''}>Tháng ${m}</option>`).join('')}
+                        </select>
+                        <select id="rbt-stats-surgeon" class="form-input">
+                            <option value="all" ${this._statsSurgeon === 'all' ? 'selected' : ''}>Tất cả PTV</option>
+                            ${this._surgeons().map(s => `<option value="${s.id}" ${String(this._statsSurgeon) === String(s.id) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                        </select>
+                    </div>
+                    ${this._renderSearchBarHtml()}
+                </div>
+
+                <div class="rbt-stats-summary">
+                    <div class="rbt-stat-pill"><strong>${scoped.length}</strong><span>Tổng ca tiếp nhận</span></div>
+                    <div class="rbt-stat-pill rbt-stat-pill--green"><strong>${decidedRobot} (${convRobotPct}%)</strong><span>Chốt Mổ Robot</span></div>
+                    <div class="rbt-stat-pill rbt-stat-pill--ocean"><strong>${decidedNs}</strong><span>Chuyển Nội soi</span></div>
+                    <div class="rbt-stat-pill rbt-stat-pill--red"><strong>${decidedNo}</strong><span>Không đồng ý mổ</span></div>
+                    <div class="rbt-stat-pill rbt-stat-pill--navy"><strong>${doneList.length}</strong><span>Đã phẫu thuật</span></div>
+                </div>
+
+                <div class="rbt-table-wrap rbt-desktop-only">
+                    <table class="rbt-table">
+                        <thead>
+                            <tr>
+                                <th>Mã</th>
+                                <th>Ngày mổ</th>
+                                <th>Bệnh nhân</th>
+                                <th>Phòng</th>
+                                <th>Phương pháp</th>
+                                <th>PTV chính</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${visibleDone.length ? visibleDone.map(c => {
+                                const code = c.robotCaseCode || c.soNV;
+                                return `<tr>
+                                    <td class="rbt-col-code">${esc(code)}</td>
+                                    <td class="rbt-col-date">${fmtViDate(c.surgeryDate)}<br><small>${esc(c.caseSlot || '—')}</small></td>
+                                    <td class="rbt-col-patient">${esc(c.patientName)} ${c.birthYear ? `(${esc(c.birthYear)})` : ''}</td>
+                                    <td>${esc(roomLabel(c.wardRoom))}</td>
+                                    <td>${esc(c.robotProcedure || c.diagnosis || '—')}</td>
+                                    <td class="rbt-col-surgeon">${esc(this._surgeonDisplay(c))}</td>
+                                    <td class="rbt-col-actions">
+                                        <div class="rbt-card-actions">
+                                            <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                                            ${p.canManageRobot ? `<button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_postpone" data-rbt-code="${esc(code)}">Hoãn hậu kiểm</button>` : ''}
+                                        </div>
+                                    </td>
+                                </tr>`;
+                            }).join('') : `<tr><td colspan="7" class="rbt-empty">Chưa có ca phẫu thuật hoàn tất.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="rbt-mobile-only">
+                    ${visibleDone.length
+                        ? `<div class="rbt-cards-stack">${visibleDone.map(c => {
+                            const code = c.robotCaseCode || c.soNV;
+                            return `<article class="rbt-case-card rbt-case-card--da_mo">
+                                <div class="rbt-case-top">
+                                    <span class="rbt-case-code">${esc(code)}</span>
+                                    <span class="rbt-badge rbt-badge--navy">${fmtViDate(c.surgeryDate)} · ${esc(c.caseSlot || '')}</span>
+                                </div>
+                                <div class="rbt-case-name">${esc(c.patientName)}</div>
+                                <div class="rbt-case-meta">${esc(c.robotProcedure || c.diagnosis || '')} · ${esc(this._surgeonDisplay(c))}</div>
+                                <div class="rbt-card-actions">
+                                    <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                                </div>
+                            </article>`;
+                        }).join('')}</div>`
+                        : `<div class="rbt-empty">Chưa có ca phẫu thuật hoàn tất.</div>`}
+                </div>
+
+                ${doneList.length > visibleDone.length
+                    ? `<div style="margin-top:12px;"><button type="button" class="btn btn-secondary rbt-mobile-load-more" data-rbt-action="load_more_completed">Xem thêm (${doneList.length - visibleDone.length} ca nữa)</button></div>`
+                    : ''}
+            </div>`;
+        },
+
+        _renderConfigSubtab() {
+            const p = this._perms();
+            if (!p.canConfigureCoordinators) {
+                return `<div class="rbt-panel"><div class="rbt-empty">Chỉ Ban Chủ nhiệm khoa mới có quyền cấu hình Điều phối viên.</div></div>`;
+            }
+            const cfg = this._cfg();
+            const coords = new Set((cfg.coordinators || []).map(x => String(x).toLowerCase()));
+            const accounts = (this._bootstrap && Array.isArray(this._bootstrap.staffAccounts)) ? this._bootstrap.staffAccounts : [];
+
+            return `<div class="rbt-panel">
+                <h3>⚙️ Cấu hình Điều phối viên &amp; In P.CTXH</h3>
+                <p class="rbt-header__sub" style="color:var(--text-secondary,#475569);margin-bottom:14px;">Chọn các tài khoản được phân quyền xếp lịch tư vấn (Bước 2) &amp; điều phối lịch mổ Robot (mặc định: BS Võ Chí Nguyện, BS Lê Văn Hoan).</p>
+                <div class="rbt-form-grid">
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label">Danh sách Điều phối viên Robot</label>
+                        <div class="rbt-coord-list">
+                            ${accounts.map(acc => {
+                                const uname = String(acc.username || '').toLowerCase();
+                                return `<label class="rbt-coord-check">
+                                    <input type="checkbox" class="rbt-cfg-coord" value="${esc(uname)}" ${coords.has(uname) ? 'checked' : ''}>
+                                    <span><strong>${esc([acc.title, acc.name].filter(Boolean).join(' ') || uname)}</strong> <small>(${esc(uname)})</small></span>
+                                </label>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-cfg-scheduler">Người lập phiếu mặc định (P.CTXH A5)</label>
+                        <input id="rbt-cfg-scheduler" type="text" class="form-input" value="${esc(cfg.defaultSchedulerName || 'BSCKII. Võ Chí Nguyện')}">
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-cfg-lookback">Giới hạn ngày hoãn hậu kiểm (1–30)</label>
+                        <input id="rbt-cfg-lookback" type="number" min="1" max="30" class="form-input" value="${Number(cfg.postponeLookbackDays || 7)}">
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-cfg-archive">Tự lưu trữ ẩn Thùng rác sau (1–90 ngày)</label>
+                        <input id="rbt-cfg-archive" type="number" min="1" max="90" class="form-input" value="${Number(cfg.trashAutoArchiveDays || 14)}">
+                    </div>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" class="btn btn-primary" data-rbt-action="save_config">Lưu cấu hình</button>
+                </div>
+            </div>`;
+        },
+
+        _dirtyBannerHtml() {
+            return `<div id="rbt-dirty-guard-banner" class="rbt-dirty-banner" hidden>⚠️ Bạn đang có dữ liệu chưa lưu. Hãy bấm <strong>Lưu</strong> hoặc bấm Đóng/Hủy thêm một lần nữa để thoát.</div>`;
+        },
+
+        _renderSlotPickerHtml(dateIso, selectedSlot, excludeCode = '') {
+            const dIso = String(dateIso || '').trim();
+            const occ = { 'Ca 1': [], 'Ca 2': [], 'Ca 3': [] };
+            let totalDay = 0;
+            this._cases().forEach(c => {
+                if ((c.robotCaseCode || c.soNV) === excludeCode) return;
+                if (c.isTestSandboxCase) return;
+                if (c.status !== 'da_xep_robot') return;
+                if (c.surgeryDate !== dIso) return;
+                const sl = VALID_SLOTS.includes(c.caseSlot) ? c.caseSlot : 'Ca 1';
+                occ[sl].push(c.patientName || c.robotCaseCode);
+                totalDay += 1;
+            });
+            const sel = VALID_SLOTS.includes(selectedSlot) ? selectedSlot : 'Ca 1';
+
+            return `<input type="hidden" id="rbt-inp-slot" value="${esc(sel)}">
+            <div class="rbt-day-cap-hint ${totalDay >= 3 ? 'is-full' : ''}" style="margin-bottom:6px;">
+                Công suất Robot ngày ${dIso ? fmtViDate(dIso) : 'đã chọn'}: <strong>${totalDay}/3 ca</strong> ${totalDay >= 3 ? '⚠️ ĐÃ ĐỦ 3 CA/NGÀY' : ''}
+            </div>
+            <div class="rbt-slot-pills">
+                ${VALID_SLOTS.map(slot => {
+                    const busy = occ[slot].length > 0;
+                    return `<button type="button" class="rbt-slot-pill ${sel === slot ? 'is-selected' : ''} ${busy ? 'is-busy' : ''}" data-rbt-pick-slot="${slot}">
+                        <strong>${slot} (${slotToStartTime(slot)})</strong>
+                        <span class="rbt-slot-pill__sub">${busy ? `Đã có: ${esc(occ[slot][0])}` : 'Còn trống'}</span>
+                    </button>`;
+                }).join('')}
+            </div>`;
+        },
+
+        openCreateModal(mode = 'create_consult') {
+            const p = this._perms();
+            const todayIso = this._todayIso();
+            const surgeons = this._surgeons();
+            const rooms = this._wardRooms();
+            const isDirect = mode === 'create_case';
+            const title = isDirect ? '⚡ Tạo trực tiếp ca Lịch mổ Robot' : '🩺 Bước 1 · Gửi bệnh nhân Tư vấn PT Nội soi / Robot';
+            const modalMode = isDirect ? 'create_case' : 'create_consult';
+
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-form-grid">
+                <div>
+                    <label class="form-label" for="rbt-inp-name">Họ và tên bệnh nhân *</label>
+                    <input id="rbt-inp-name" type="text" class="form-input" placeholder="VD: Nguyễn Văn A">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-birth">Năm sinh *</label>
+                    <input id="rbt-inp-birth" type="number" min="1900" max="2026" class="form-input" placeholder="1965">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-gender">Giới tính</label>
+                    <select id="rbt-inp-gender" class="form-input">
+                        <option value="">-- Chọn --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-phone">Số điện thoại liên hệ ${isDirect ? '' : '*'}</label>
+                    <input id="rbt-inp-phone" type="tel" class="form-input" placeholder="09xxxxxxxx">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-ward-room">Phòng bệnh hiện tại *</label>
+                    <select id="rbt-inp-ward-room" class="form-input">
+                        <option value="">-- Chọn phòng bệnh (B705–B719) hoặc Ngoại trú --</option>
+                        ${rooms.map(rm => `<option value="${esc(rm)}">${esc(roomLabel(rm))}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Bác sĩ gửi hồ sơ</label>
+                    <input type="text" class="form-input" value="${esc(this._currentUserDisplay())}" readonly>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-adm">Số nhập viện / HSBA</label>
+                    <input id="rbt-inp-adm" type="text" class="form-input" placeholder="26xxxxxx">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-indication">Chỉ định phẫu thuật</label>
+                    <select id="rbt-inp-indication" class="form-input">
+                        <option value="robot_hoac_noisoi">PT Nội soi hoặc Robot</option>
+                        <option value="uu_tien_robot">Ưu tiên phẫu thuật Robot</option>
+                        <option value="uu_tien_noisoi">Ưu tiên phẫu thuật Nội soi</option>
+                    </select>
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-diag">Chẩn đoán *</label>
+                    <input id="rbt-inp-diag" type="text" class="form-input" placeholder="VD: K trực tràng giữa cT3N1M0">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-proc">Dự kiến phương pháp phẫu thuật</label>
+                    <input id="rbt-inp-proc" type="text" class="form-input" placeholder="VD: Cắt trước thấp">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-surgeon">PTV dự kiến / Tư vấn</label>
+                    <select id="rbt-inp-surgeon" class="form-input">
+                        ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === 1 ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                    </select>
+                </div>
+
+                ${isDirect ? `
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-date">Ngày phẫu thuật Robot *</label>
+                    ${datePresetsHtml('rbt-inp-date', todayIso)}
+                    <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${addDaysIso(todayIso, 2)}"></div>
+                </div>
+                <div id="rbt-create-slot-wrap" class="rbt-form-grid--full">
+                    ${this._renderSlotPickerHtml(addDaysIso(todayIso, 2), 'Ca 1', '')}
+                </div>` : ''}
+
+                <div class="rbt-form-grid--full">
+                    <label class="rbt-check-card">
+                        <input id="rbt-inp-labs-ready" type="checkbox" ${isDirect ? 'checked' : ''}>
+                        <span><strong>Xác nhận đủ xét nghiệm tiền phẫu &amp; có chỉ định PT Nội soi/Robot *</strong></span>
+                    </label>
+                </div>
+
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-note">Ghi chú gửi Điều phối &amp; TS. Hữu</label>
+                    <textarea id="rbt-inp-note" class="form-input" rows="2" placeholder="Tình trạng bệnh nền, kháng đông, thời gian dự kiến..."></textarea>
+                </div>
+
+                ${p.canAccessSandbox ? `<div class="rbt-form-grid--full">
+                    <label class="rbt-check-card">
+                        <input id="rbt-inp-sandbox" type="checkbox">
+                        <span>Tạo ca giả lập [TEST] (chỉ hiển thị với tài khoản quản trị Sandbox)</span>
+                    </label>
+                </div>` : ''}
+            </div>
+            <div id="rbt-modal-conflict-host"></div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_create" data-rbt-extra="${esc(modalMode)}">${isDirect ? 'Tạo ca &amp; Xếp lịch Robot' : 'Gửi ca tư vấn'}</button>`;
+
+            this._markModalOpen(modalMode, null);
+            openRobotModal(title, html, footer);
+        },
+
+        async _submitCreateModal(mode, btnEl) {
+            const payload = {
+                action: mode,
+                patientName: document.getElementById('rbt-inp-name')?.value?.trim() || '',
+                birthYear: document.getElementById('rbt-inp-birth')?.value?.trim() || '',
+                gender: document.getElementById('rbt-inp-gender')?.value || '',
+                phone: document.getElementById('rbt-inp-phone')?.value?.trim() || '',
+                wardRoom: document.getElementById('rbt-inp-ward-room')?.value || '',
+                admissionId: document.getElementById('rbt-inp-adm')?.value?.trim() || '',
+                indicationType: document.getElementById('rbt-inp-indication')?.value || 'robot_hoac_noisoi',
+                diagnosis: document.getElementById('rbt-inp-diag')?.value?.trim() || '',
+                robotProcedure: document.getElementById('rbt-inp-proc')?.value?.trim() || '',
+                mainSurgeonId: Number(document.getElementById('rbt-inp-surgeon')?.value || 1),
+                labsReadyConfirmed: Boolean(document.getElementById('rbt-inp-labs-ready')?.checked),
+                consultNote: document.getElementById('rbt-inp-note')?.value?.trim() || ''
+            };
+            const sbxEl = document.getElementById('rbt-inp-sandbox');
+            if (sbxEl && sbxEl.checked) payload.isTestSandboxCase = true;
+
+            if (mode === 'create_case') {
+                payload.surgeryDate = document.getElementById('rbt-inp-date')?.value || '';
+                payload.caseSlot = document.getElementById('rbt-inp-slot')?.value || 'Ca 1';
+                this._attachConflictOverride(payload);
+            }
+
+            if (btnEl) btnEl.disabled = true;
+            try {
+                if (!this._inflightIdem) this._inflightIdem = newIdempotencyKey();
+                const res = await this._apiJson('/api/robot/cases', {
+                    method: 'POST',
+                    body: payload,
+                    idempotencyKey: this._inflightIdem
+                });
+                this._upsertCaseInMemory(res.case);
+                await this.ensureLoaded(true).catch(() => {});
+                if (typeof Modal !== 'undefined' && Modal.close) Modal.close(true);
+                notifyToast(mode === 'create_case' ? 'Đã tạo & xếp lịch Robot thành công!' : 'Đã gửi hồ sơ tư vấn cho Điều phối!', 'success');
+                this._rerenderPage();
+            } catch (err) {
+                this._handleMutationError(err);
+            } finally {
+                if (btnEl) btnEl.disabled = false;
+            }
+        },
+
+        openScheduleConsultModal(code) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const todayIso = this._todayIso();
+            const defaultDate = rc.consultDate || addDaysIso(todayIso, 1);
+            const sess = rc.consultSession === 'chieu' ? 'chieu' : 'sang';
+
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-sheet-summary">
+                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))}<br>
+                <span>CĐ: ${esc(rc.diagnosis || '—')} · BS gửi: ${esc(rc.createdByName || rc.createdByUsername || '—')}</span>
+            </div>
+            <div class="rbt-form-grid">
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-consult-date">Ngày tư vấn TS. BSCKII. Nguyễn Phú Hữu *</label>
+                    ${datePresetsHtml('rbt-inp-consult-date', todayIso, [
+                        { label: 'Hôm nay', iso: todayIso },
+                        { label: 'Ngày mai', iso: addDaysIso(todayIso, 1) },
+                        { label: '+2 ngày', iso: addDaysIso(todayIso, 2) },
+                        { label: '+3 ngày', iso: addDaysIso(todayIso, 3) }
+                    ])}
+                    <div class="rbt-date-wrap"><input id="rbt-inp-consult-date" type="date" class="form-input" value="${esc(defaultDate)}"></div>
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label">Buổi tư vấn *</label>
+                    <input type="hidden" id="rbt-inp-consult-session" value="${esc(sess)}">
+                    <div class="rbt-slot-pills rbt-session-pills">
+                        <button type="button" class="rbt-slot-pill ${sess === 'sang' ? 'is-selected' : ''}" data-rbt-pick-session="sang">
+                            <strong>🌅 Buổi Sáng</strong>
+                            <span class="rbt-slot-pill__sub">07:30 – 11:30</span>
+                        </button>
+                        <button type="button" class="rbt-slot-pill ${sess === 'chieu' ? 'is-selected' : ''}" data-rbt-pick-session="chieu">
+                            <strong>🌇 Buổi Chiều</strong>
+                            <span class="rbt-slot-pill__sub">13:00 – 16:30</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-consult-sched-note">Ghi chú lịch hẹn (phòng / giờ cụ thể nếu có)</label>
+                    <input id="rbt-inp-consult-sched-note" type="text" class="form-input" value="${esc(rc.consultScheduleNote || '')}" placeholder="VD: Tư vấn tại phòng khám lầu 7 sau giao ban">
+                </div>
+            </div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_schedule_consult" data-rbt-code="${esc(code)}">Lưu lịch tư vấn</button>`;
+
+            this._markModalOpen('schedule_consult', code);
+            openRobotModal(`📅 Bước 2 · Xếp lịch tư vấn (${code})`, html, footer);
+        },
+
+        async _submitScheduleConsult(code, btnEl) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const body = {
+                action: 'schedule_consult',
+                expectedRevision: Number(rc.caseRevision || 1),
+                consultDate: document.getElementById('rbt-inp-consult-date')?.value || '',
+                consultSession: document.getElementById('rbt-inp-consult-session')?.value || 'sang',
+                consultScheduleNote: document.getElementById('rbt-inp-consult-sched-note')?.value?.trim() || ''
+            };
+            await this._sendPatch(code, body, 'Đã xếp lịch tư vấn TS. Nguyễn Phú Hữu!', btnEl);
+        },
+
+        openDecideConsultModal(code, defaultDecision = '') {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const todayIso = this._todayIso();
+            const defDec = defaultDecision || (rc.indicationType === 'uu_tien_noisoi' ? 'noisoi' : 'robot');
+            const defSurgDate = rc.surgeryDate || addDaysIso(todayIso, 2);
+            const surgeons = this._surgeons();
+            const refusals = this._refusalReasons();
+
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-sheet-summary">
+                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} · Mã ${esc(code)}<br>
+                <span>CĐ: ${esc(rc.diagnosis || '—')} · BS TV: <strong>${esc(rc.consultedByName || 'TS. BSCKII. Nguyễn Phú Hữu')}</strong></span>
+            </div>
+
+            <input type="hidden" id="rbt-inp-decision" value="${esc(defDec)}">
+            <label class="form-label">Chọn kết quả sau tư vấn *</label>
+            <div class="rbt-decision-grid">
+                <button type="button" class="rbt-decision-card ${defDec === 'robot' ? 'is-selected' : ''}" data-rbt-pick-decision="robot">
+                    <span class="rbt-decision-card__icon">🤖</span>
+                    <strong>Mổ Robot</strong>
+                    <small>Đồng bộ Lịch tuần + P.CTXH A5</small>
+                </button>
+                <button type="button" class="rbt-decision-card ${defDec === 'noisoi' ? 'is-selected' : ''}" data-rbt-pick-decision="noisoi">
+                    <span class="rbt-decision-card__icon">🔬</span>
+                    <strong>Chuyển Nội soi</strong>
+                    <small>Xếp ngày &amp; PTV chính, không tốn slot Robot</small>
+                </button>
+                <button type="button" class="rbt-decision-card ${defDec === 'can_nhac' ? 'is-selected' : ''}" data-rbt-pick-decision="can_nhac">
+                    <span class="rbt-decision-card__icon">⏳</span>
+                    <strong>Đang cân nhắc</strong>
+                    <small>Chuyển lại ĐP hẹn tư vấn lần sau</small>
+                </button>
+                <button type="button" class="rbt-decision-card rbt-decision-card--danger ${defDec === 'khong_mo' ? 'is-selected' : ''}" data-rbt-pick-decision="khong_mo">
+                    <span class="rbt-decision-card__icon">❌</span>
+                    <strong>Không đồng ý mổ</strong>
+                    <small>Ghi nhận lý do để BS phòng theo dõi</small>
+                </button>
+            </div>
+
+            <div class="rbt-form-grid" style="margin-top:12px;">
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-dec-proc">Phương pháp phẫu thuật</label>
+                    <input id="rbt-inp-dec-proc" type="text" class="form-input" value="${esc(rc.robotProcedure || '')}" placeholder="VD: Cắt trước thấp / Cắt đại tràng phải">
+                </div>
+            </div>
+
+            <div data-rbt-branch-panel="robot" ${defDec === 'robot' ? '' : 'hidden'} class="rbt-branch-panel">
+                <div class="rbt-form-grid">
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-inp-date">Ngày phẫu thuật Robot *</label>
+                        ${datePresetsHtml('rbt-inp-date', todayIso)}
+                        <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${esc(defSurgDate)}"></div>
+                    </div>
+                    <div id="rbt-decide-slot-wrap" class="rbt-form-grid--full">
+                        ${this._renderSlotPickerHtml(defSurgDate, rc.caseSlot || 'Ca 1', code)}
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-inp-dec-surgeon-robot">PTV chính</label>
+                        <select id="rbt-inp-dec-surgeon-robot" class="form-input">
+                            ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="rbt-check-card" style="margin-top:22px;">
+                            <input id="rbt-inp-dec-print-after" type="checkbox" checked>
+                            <span>Mở xem/in ngay Giấy GT P.CTXH (A5) sau khi lưu</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div data-rbt-branch-panel="noisoi" ${defDec === 'noisoi' ? '' : 'hidden'} class="rbt-branch-panel">
+                <div class="rbt-info-banner">🔬 Ca chuyển mổ Nội soi sẽ <strong>đồng bộ 2 chiều lên Lịch mổ tuần</strong> với phương pháp Nội soi và <strong>không chiếm slot 3 ca/ngày của Robot</strong>.</div>
+                <div class="rbt-form-grid">
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-inp-ns-date">Ngày phẫu thuật Nội soi *</label>
+                        ${datePresetsHtml('rbt-inp-ns-date', todayIso)}
+                        <div class="rbt-date-wrap"><input id="rbt-inp-ns-date" type="date" class="form-input" value="${esc(defSurgDate)}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-inp-dec-surgeon-ns">PTV chính phân công *</label>
+                        <select id="rbt-inp-dec-surgeon-ns" class="form-input">
+                            ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-inp-ns-type">Loại phẫu thuật *</label>
+                        <select id="rbt-inp-ns-type" class="form-input">
+                            <option value="chuongtrinh" ${rc.scheduledSurgeryType === 'chuongtrinh' ? 'selected' : ''}>Chương trình</option>
+                            <option value="yeucau" ${rc.scheduledSurgeryType === 'yeucau' ? 'selected' : ''}>Yêu cầu</option>
+                            <option value="bankhan" ${rc.scheduledSurgeryType === 'bankhan' ? 'selected' : ''}>Bán khẩn</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div data-rbt-branch-panel="can_nhac" ${defDec === 'can_nhac' ? '' : 'hidden'} class="rbt-branch-panel">
+                <div class="rbt-info-banner">⏳ Bệnh nhân cần thêm thời gian suy nghĩ/hội ý gia đình — hồ sơ sẽ quay lại hàng đợi Bước 2 để Điều phối viên hẹn tư vấn lại.</div>
+            </div>
+
+            <div data-rbt-branch-panel="khong_mo" ${defDec === 'khong_mo' ? '' : 'hidden'} class="rbt-branch-panel">
+                <label class="form-label" for="rbt-inp-refusal-reason">Lý do bệnh nhân không đồng ý mổ *</label>
+                <select id="rbt-inp-refusal-reason" class="form-input">
+                    ${Object.entries(refusals).map(([k, v]) => `<option value="${esc(k)}" ${rc.refusalReason === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}
+                </select>
+            </div>
+
+            <div style="margin-top:12px;">
+                <label class="form-label" for="rbt-inp-dec-note">Ghi chú kết quả tư vấn (BS phòng sẽ xem được)</label>
+                <textarea id="rbt-inp-dec-note" class="form-input" rows="2" placeholder="Dặn dò chuẩn bị tiền phẫu, kháng đông hoặc lý do cụ thể...">${esc(rc.consultNote || '')}</textarea>
+            </div>
+            <div id="rbt-modal-conflict-host"></div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_decide_consult" data-rbt-code="${esc(code)}">Chốt kết quả tư vấn</button>`;
+
+            this._markModalOpen('decide_consult', code);
+            openRobotModal(`🩺 Bước 3 · Kết quả tư vấn TS. Hữu (${code})`, html, footer);
+        },
+
+        async _submitDecideConsult(code, btnEl) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const decision = document.getElementById('rbt-inp-decision')?.value || 'robot';
+            const body = {
+                action: 'decide_consult',
+                expectedRevision: Number(rc.caseRevision || 1),
+                decision,
+                robotProcedure: document.getElementById('rbt-inp-dec-proc')?.value?.trim() || '',
+                consultNote: document.getElementById('rbt-inp-dec-note')?.value?.trim() || ''
+            };
+
+            let printAfter = false;
+            if (decision === 'robot') {
+                body.surgeryDate = document.getElementById('rbt-inp-date')?.value || '';
+                body.caseSlot = document.getElementById('rbt-inp-slot')?.value || 'Ca 1';
+                body.mainSurgeonId = Number(document.getElementById('rbt-inp-dec-surgeon-robot')?.value || 1);
+                this._attachConflictOverride(body);
+                printAfter = Boolean(document.getElementById('rbt-inp-dec-print-after')?.checked);
+            } else if (decision === 'noisoi') {
+                body.surgeryDate = document.getElementById('rbt-inp-ns-date')?.value || '';
+                body.mainSurgeonId = Number(document.getElementById('rbt-inp-dec-surgeon-ns')?.value || 1);
+                body.scheduledSurgeryType = document.getElementById('rbt-inp-ns-type')?.value || 'chuongtrinh';
+            } else if (decision === 'khong_mo') {
+                body.refusalReason = document.getElementById('rbt-inp-refusal-reason')?.value || 'ly_do_khac';
+            }
+
+            const ok = await this._sendPatch(code, body, 'Đã chốt kết quả tư vấn & đồng bộ lịch!', btnEl);
+            if (ok && decision === 'robot' && printAfter) {
+                this.openPrintPctxhModal(code);
+            }
+        },
+
+        openDischargeWaitModal(code) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const todayIso = this._todayIso();
+            const surgDate = rc.surgeryDate || addDaysIso(todayIso, 7);
+            const pre1 = addDaysIso(surgDate, -1);
+            const pre2 = addDaysIso(surgDate, -2);
+            const defReadmit = rc.plannedReadmitDate || (pre2 >= todayIso ? pre2 : (pre1 >= todayIso ? pre1 : todayIso));
+
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-info-banner">🏠 <strong>Giữ nguyên slot lịch mổ:</strong> Bệnh nhân xuất viện chờ tại nhà, ca mổ ngày <strong>${fmtViDate(surgDate)}</strong> (${esc(rc.caseSlot || 'Nội soi')}) vẫn được <strong>giữ nguyên trên Lịch mổ tuần</strong> để điều phối không bị xếp chồng ca.</div>
+            <div class="rbt-form-grid">
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-readmit-date">Ngày hẹn nhập viện trở lại * (≤ ${fmtViDate(surgDate)})</label>
+                    ${datePresetsHtml('rbt-inp-readmit-date', todayIso, [
+                        pre2 >= todayIso ? { label: 'Trước mổ 2 ngày', iso: pre2 } : null,
+                        pre1 >= todayIso ? { label: 'Trước mổ 1 ngày', iso: pre1 } : null,
+                        { label: 'Đúng ngày mổ', iso: surgDate }
+                    ].filter(Boolean))}
+                    <div class="rbt-date-wrap"><input id="rbt-inp-readmit-date" type="date" class="form-input" max="${esc(surgDate)}" value="${esc(defReadmit)}"></div>
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-discharge-reason">Lý do / Dặn dò khi xuất viện chờ</label>
+                    <input id="rbt-inp-discharge-reason" type="text" class="form-input" value="${esc(rc.dischargeReason || 'Lịch mổ còn xa — cho xuất viện chờ hẹn nhập lại')}" placeholder="VD: Ngưng thuốc kháng đông 5 ngày trước nhập lại">
+                </div>
+            </div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_discharge_wait" data-rbt-code="${esc(code)}">Xác nhận Xuất viện chờ</button>`;
+
+            this._markModalOpen('discharge_wait', code);
+            openRobotModal(`🏠 Bước 4 · Xuất viện chờ giữ slot (${code})`, html, footer);
+        },
+
+        async _submitDischargeWait(code, btnEl) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const body = {
+                action: 'discharge_wait',
+                expectedRevision: Number(rc.caseRevision || 1),
+                plannedReadmitDate: document.getElementById('rbt-inp-readmit-date')?.value || '',
+                dischargeReason: document.getElementById('rbt-inp-discharge-reason')?.value?.trim() || ''
+            };
+            await this._sendPatch(code, body, 'Đã ghi nhận Xuất viện chờ (vẫn giữ slot Lịch mổ tuần).', btnEl);
+        },
+
+        openEditInfoModal(code) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const rooms = this._wardRooms();
+            const telRaw = rc.phoneMasked ? '' : (rc.phone || '');
+
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-form-grid">
+                <div>
+                    <label class="form-label" for="rbt-ei-name">Họ tên bệnh nhân *</label>
+                    <input id="rbt-ei-name" type="text" class="form-input" value="${esc(rc.patientName || '')}">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-ei-birth">Năm sinh</label>
+                    <input id="rbt-ei-birth" type="number" class="form-input" value="${esc(rc.birthYear || '')}">
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-ei-ward">Phòng bệnh</label>
+                    <select id="rbt-ei-ward" class="form-input">
+                        <option value="">-- Chọn --</option>
+                        ${rooms.map(rm => `<option value="${esc(rm)}" ${rc.wardRoom === rm ? 'selected' : ''}>${esc(roomLabel(rm))}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-ei-phone">Số điện thoại</label>
+                    <input id="rbt-ei-phone" type="tel" class="form-input" value="${esc(telRaw)}" placeholder="${rc.phoneMasked ? 'Đã ẩn SĐT' : '09xxxxxxxx'}">
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-ei-diag">Chẩn đoán</label>
+                    <input id="rbt-ei-diag" type="text" class="form-input" value="${esc(rc.diagnosis || '')}">
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-ei-proc">Phương pháp phẫu thuật</label>
+                    <input id="rbt-ei-proc" type="text" class="form-input" value="${esc(rc.robotProcedure || '')}">
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-ei-note">Ghi chú</label>
+                    <textarea id="rbt-ei-note" class="form-input" rows="2">${esc(rc.note || '')}</textarea>
+                </div>
+            </div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_edit_info" data-rbt-code="${esc(code)}">Lưu thông tin</button>`;
+
+            this._markModalOpen('edit_info', code);
+            openRobotModal(`✏️ Sửa thông tin hồ sơ (${code})`, html, footer);
+        },
+
+        async _submitEditInfo(code, btnEl) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const body = {
+                action: 'edit_info',
+                expectedRevision: Number(rc.caseRevision || 1),
+                patientName: document.getElementById('rbt-ei-name')?.value?.trim() || '',
+                birthYear: document.getElementById('rbt-ei-birth')?.value?.trim() || '',
+                wardRoom: document.getElementById('rbt-ei-ward')?.value || '',
+                diagnosis: document.getElementById('rbt-ei-diag')?.value?.trim() || '',
+                robotProcedure: document.getElementById('rbt-ei-proc')?.value?.trim() || '',
+                note: document.getElementById('rbt-ei-note')?.value?.trim() || ''
+            };
+            const phoneVal = document.getElementById('rbt-ei-phone')?.value?.trim() || '';
+            if (phoneVal) body.phone = phoneVal;
+            await this._sendPatch(code, body, 'Đã cập nhật thông tin ca bệnh.', btnEl);
+        },
+
+        openEditScheduleModal(code) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const todayIso = this._todayIso();
+            const isNs = rc.status === 'da_xep_noisoi';
+            const surgeons = this._surgeons();
+
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-sheet-summary"><strong>${esc(rc.patientName)}</strong> · ${isNs ? '🔬 Chuyển mổ Nội soi' : '🤖 Mổ Robot'}</div>
+            <div class="rbt-form-grid">
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-inp-date">Ngày mổ *</label>
+                    ${datePresetsHtml('rbt-inp-date', todayIso)}
+                    <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${esc(rc.surgeryDate || addDaysIso(todayIso, 2))}"></div>
+                </div>
+                ${!isNs ? `<div id="rbt-edit-sched-slot-wrap" class="rbt-form-grid--full">
+                    ${this._renderSlotPickerHtml(rc.surgeryDate || addDaysIso(todayIso, 2), rc.caseSlot || 'Ca 1', code)}
+                </div>` : ''}
+                <div>
+                    <label class="form-label" for="rbt-es-surgeon">PTV chính</label>
+                    <select id="rbt-es-surgeon" class="form-input">
+                        ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                    </select>
+                </div>
+                ${isNs ? `<div>
+                    <label class="form-label" for="rbt-es-type">Loại PT Nội soi</label>
+                    <select id="rbt-es-type" class="form-input">
+                        <option value="chuongtrinh" ${rc.scheduledSurgeryType === 'chuongtrinh' ? 'selected' : ''}>Chương trình</option>
+                        <option value="yeucau" ${rc.scheduledSurgeryType === 'yeucau' ? 'selected' : ''}>Yêu cầu</option>
+                        <option value="bankhan" ${rc.scheduledSurgeryType === 'bankhan' ? 'selected' : ''}>Bán khẩn</option>
+                    </select>
+                </div>` : ''}
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-es-note">Ghi chú điều chỉnh lịch</label>
+                    <input id="rbt-es-note" type="text" class="form-input" value="${esc(rc.note || '')}">
+                </div>
+            </div>
+            <div id="rbt-modal-conflict-host"></div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_edit_schedule" data-rbt-code="${esc(code)}">Cập nhật lịch mổ</button>`;
+
+            this._markModalOpen('edit_schedule', code);
+            openRobotModal(`🗓️ Điều chỉnh lịch mổ (${code})`, html, footer);
+        },
+
+        async _submitEditSchedule(code, btnEl) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const isNs = rc.status === 'da_xep_noisoi';
+            const body = {
+                action: 'edit_schedule',
+                expectedRevision: Number(rc.caseRevision || 1),
+                surgeryDate: document.getElementById('rbt-inp-date')?.value || '',
+                mainSurgeonId: Number(document.getElementById('rbt-es-surgeon')?.value || 1),
+                note: document.getElementById('rbt-es-note')?.value?.trim() || ''
+            };
+            if (isNs) {
+                body.scheduledSurgeryType = document.getElementById('rbt-es-type')?.value || 'chuongtrinh';
+            } else {
+                body.caseSlot = document.getElementById('rbt-inp-slot')?.value || 'Ca 1';
+                this._attachConflictOverride(body);
+            }
+            await this._sendPatch(code, body, 'Đã cập nhật lịch mổ & đồng bộ Lịch mổ tuần.', btnEl);
         },
 
         openPostponeModal(code) {
             const rc = this._findCase(code);
             if (!rc) return;
-            const reasons = (this._bootstrap && this._bootstrap.postponeReasons) || {};
-            const html = `
-                <form id="rbt-postpone-form" data-rbt-modal="1">
-                    <div class="form-group">
-                        <label class="form-label">Chọn lý do hoãn ca ${esc(rc.patientName)} *</label>
-                        <select class="form-select" name="postponeReasonCode" required>
-                            <option value="">— Chọn lý do chuẩn —</option>
-                            ${Object.entries(reasons).map(([k, lbl]) => `<option value="${esc(k)}">${esc(lbl)}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Ghi chú chi tiết</label>
-                        <textarea class="form-textarea" name="postponeReasonNote" rows="2" placeholder="Bắt buộc ≥ 3 ký tự nếu chọn Lý do khác"></textarea>
-                    </div>
-                    <div class="modal-footer" style="margin-top:12px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                        <button type="submit" class="btn btn-danger">Xác nhận hoãn mổ</button>
-                    </div>
-                </form>
-            `;
-            this._openRobotModal(`⏸️ Hoãn mổ Robot — ${code}`, html, 'postpone', code);
-            document.getElementById('rbt-postpone-form')?.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const fd = new FormData(ev.target);
-                await this._runModalPatch(rc, {
-                    action: 'postpone',
-                    expectedRevision: Number(rc.caseRevision || 1),
-                    postponeReasonCode: String(fd.get('postponeReasonCode') || ''),
-                    postponeReasonNote: String(fd.get('postponeReasonNote') || '').trim()
-                }, true);
-            });
+            const reasons = this._postponeReasons();
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-sheet-summary"><strong>${esc(rc.patientName)}</strong> · Lịch: ${fmtViDate(rc.surgeryDate)} ${esc(rc.caseSlot || '')}</div>
+            <div class="rbt-form-grid">
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-pp-reason">Lý do hoãn mổ chuẩn (7 lý do) *</label>
+                    <select id="rbt-pp-reason" class="form-input">
+                        ${Object.entries(reasons).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-pp-note">Ghi chú chi tiết</label>
+                    <textarea id="rbt-pp-note" class="form-input" rows="2" placeholder="Nhập chi tiết (bắt buộc nếu chọn Lý do khác)"></textarea>
+                </div>
+            </div>`;
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-danger" data-rbt-action="submit_postpone" data-rbt-code="${esc(code)}">Xác nhận hoãn mổ</button>`;
+            this._markModalOpen('postpone', code);
+            openRobotModal(`⏸️ Hoãn ca phẫu thuật (${code})`, html, footer);
         },
 
-        openDischargeModal(code) {
+        async _submitPostpone(code, btnEl) {
             const rc = this._findCase(code);
             if (!rc) return;
-            const html = `
-                <form id="rbt-discharge-form" data-rbt-modal="1">
-                    <div class="form-group">
-                        <label class="form-label">Lý do cho xuất viện chờ lịch mổ mới *</label>
-                        <textarea class="form-textarea" name="dischargeReason" rows="2" required minlength="3" placeholder="VD: Về điều chỉnh nội khoa 2 tuần"></textarea>
-                    </div>
-                    <div class="modal-footer" style="margin-top:12px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Chuyển Xuất viện chờ</button>
-                    </div>
-                </form>
-            `;
-            this._openRobotModal(`🏠 Xuất viện chờ — ${code}`, html, 'discharge_wait', code);
-            document.getElementById('rbt-discharge-form')?.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const fd = new FormData(ev.target);
-                await this._runModalPatch(rc, {
-                    action: 'discharge_wait',
-                    expectedRevision: Number(rc.caseRevision || 1),
-                    dischargeReason: String(fd.get('dischargeReason') || '').trim()
-                }, true);
-            });
+            const body = {
+                action: 'postpone',
+                expectedRevision: Number(rc.caseRevision || 1),
+                postponeReasonCode: document.getElementById('rbt-pp-reason')?.value || 'ly_do_khac',
+                postponeReasonNote: document.getElementById('rbt-pp-note')?.value?.trim() || ''
+            };
+            await this._sendPatch(code, body, 'Đã hoãn ca & giải phóng slot trên Lịch mổ tuần.', btnEl);
         },
 
-        openRestoreScheduleModal(code, actionName) {
+        openLinkSurgeryModal(surgeryId) {
+            const unlinked = (this._bootstrap && Array.isArray(this._bootstrap.unlinkedFutureRobotSurgeries))
+                ? this._bootstrap.unlinkedFutureRobotSurgeries
+                : [];
+            const s = unlinked.find(x => String(x.id) === String(surgeryId));
+            if (!s) return;
+            const rooms = this._wardRooms();
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-sheet-summary"><strong>${esc(s.patientName)}</strong> · Ngày ${fmtViDate(s.date)} · ${esc(s.mainSurgeonName)}</div>
+            <div class="rbt-form-grid">
+                <div>
+                    <label class="form-label" for="rbt-lk-slot">Ca mổ Robot *</label>
+                    <select id="rbt-lk-slot" class="form-input">
+                        ${VALID_SLOTS.map(sl => `<option value="${sl}" ${(s.isFirstCase ? 'Ca 1' : 'Ca 2') === sl ? 'selected' : ''}>${sl}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-lk-ward">Phòng bệnh</label>
+                    <select id="rbt-lk-ward" class="form-input">
+                        <option value="">-- Chọn --</option>
+                        ${rooms.map(rm => `<option value="${esc(rm)}">${esc(roomLabel(rm))}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="rbt-form-grid--full">
+                    <label class="form-label" for="rbt-lk-phone">Số điện thoại liên hệ</label>
+                    <input id="rbt-lk-phone" type="tel" class="form-input" placeholder="09xxxxxxxx">
+                </div>
+            </div>`;
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="submit_link_surgery" data-rbt-extra="${s.id}">Liên kết hồ sơ Robot</button>`;
+            this._markModalOpen('link_surgery', String(s.id));
+            openRobotModal(`🔗 Liên kết ca Lịch mổ tuần (#${s.id})`, html, footer);
+        },
+
+        async _submitLinkSurgery(surgeryId, btnEl) {
+            if (btnEl) btnEl.disabled = true;
+            try {
+                if (!this._inflightIdem) this._inflightIdem = newIdempotencyKey();
+                const res = await this._apiJson('/api/robot/cases/link-surgery', {
+                    method: 'POST',
+                    idempotencyKey: this._inflightIdem,
+                    body: {
+                        action: 'link_existing_surgery',
+                        surgeryId: Number(surgeryId),
+                        caseSlot: document.getElementById('rbt-lk-slot')?.value || 'Ca 1',
+                        wardRoom: document.getElementById('rbt-lk-ward')?.value || '',
+                        phone: document.getElementById('rbt-lk-phone')?.value?.trim() || ''
+                    }
+                });
+                this._upsertCaseInMemory(res.case);
+                await this.ensureLoaded(true).catch(() => {});
+                if (typeof Modal !== 'undefined' && Modal.close) Modal.close(true);
+                notifyToast('Đã liên kết ca mổ Robot!', 'success');
+                this._rerenderPage();
+            } catch (err) {
+                this._handleMutationError(err);
+            } finally {
+                if (btnEl) btnEl.disabled = false;
+            }
+        },
+
+        openCaseSheetModal(code) {
+            this.openDetailModal(code);
+        },
+
+        openDetailModal(code) {
             const rc = this._findCase(code);
             if (!rc) return;
-            const bs = this._bootstrap || {};
-            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3'];
-            const rooms = (bs.robotConfig && bs.robotConfig.robotRooms) || ['PM Robot'];
-            const isReadmit = actionName === 'readmit';
-            const html = `
-                <form id="rbt-restore-form" data-rbt-modal="1">
-                    <div id="rbt-conflict-slot"></div>
-                    <div class="rbt-form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Ngày mổ mới *</label>
-                            <input class="form-input rbt-date-picker-only" type="date" name="surgeryDate" value="${esc(bs.todayVn || '')}" required>
-                            ${this._buildDatePresetsHtml('surgeryDate')}
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Ca mổ *</label>
-                            <select class="form-select rbt-sr-select-mobile" name="caseSlot" required>
-                                ${slots.map(sl => `<option value="${esc(sl)}" ${(rc.caseSlot || 'Ca 1') === sl ? 'selected' : ''}>${esc(sl)}</option>`).join('')}
-                            </select>
-                            ${this._buildSlotPillsHtml(slots, rc.caseSlot || 'Ca 1')}
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Phòng mổ Robot</label>
-                            <select class="form-select" name="operatingRoom">
-                                ${rooms.map(rm => `<option value="${esc(rm)}">${esc(rm)}</option>`).join('')}
-                            </select>
-                        </div>
-                        ${!isReadmit ? `
-                            <div class="form-group">
-                                <label class="form-label">Bước đích</label>
-                                <select class="form-select" name="targetStep">
-                                    <option value="cho_duyet_tien_phau">Về B2 Chờ duyệt tiền phẫu (Khuyến nghị)</option>
-                                    <option value="cho_mo">Lên thẳng B3 Chờ mổ (Cùng đợt cũ)</option>
-                                </select>
-                            </div>
-                        ` : ''}
-                        <div class="form-group rbt-form-grid--full">
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                                <input type="checkbox" name="newEpisode" value="1">
-                                <span>Đây là đợt điều trị mới (niêm phong liên kết cũ, tạo mã ca lịch tuần mới)</span>
-                            </label>
-                        </div>
+            const p = this._perms();
+            const sm = STATUS_META[rc.status] || { label: rc.status, badge: 'rbt-badge--navy' };
+            const tel = cleanTelHref(rc);
+            const isSched = rc.status === 'da_xep_robot' || rc.status === 'da_xep_noisoi';
+            const canReopen = ['khong_dong_y_mo', 'hoan_mo', 'can_nhac'].includes(rc.status) && (p.canScheduleConsult || p.canDecideConsult);
+
+            const html = `<div class="rbt-sheet-summary">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+                    <strong>${esc(code)}</strong>
+                    <div>
+                        <span class="rbt-badge ${sm.badge}">${esc(sm.label)}</span>
+                        <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(rc.wardRoom))}</span>
+                        ${rc.inpatientState === 'xuat_vien_cho' ? `<span class="rbt-badge rbt-badge--amber">🏠 XV chờ · Nhập lại ${fmtViDate(rc.plannedReadmitDate)}</span>` : ''}
                     </div>
-                    <div class="modal-footer" style="margin-top:12px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Xác nhận xếp lịch</button>
-                    </div>
-                </form>
-            `;
-            this._openRobotModal(isReadmit ? `🏥 Nhập lại chờ mổ — ${code}` : `📅 Xếp lịch lại — ${code}`, html, actionName, code);
-            const restoreForm = document.getElementById('rbt-restore-form');
-            this._bindSlotPillsAndCapacity(restoreForm, rc.robotCaseCode || '');
-            restoreForm?.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const fd = new FormData(ev.target);
-                const payload = {
-                    action: actionName,
-                    expectedRevision: Number(rc.caseRevision || 1),
-                    surgeryDate: String(fd.get('surgeryDate') || '').trim(),
-                    caseSlot: String(fd.get('caseSlot') || '').trim(),
-                    operatingRoom: String(fd.get('operatingRoom') || 'PM Robot').trim(),
-                    newEpisode: Boolean(fd.get('newEpisode'))
-                };
-                if (!isReadmit) {
-                    payload.targetStep = String(fd.get('targetStep') || 'cho_duyet_tien_phau');
-                }
-                await this._runModalPatch(rc, payload, true);
-            });
+                </div>
+                <div style="font-size:1.05rem;font-weight:700;">${esc(rc.patientName)} ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''} ${rc.gender ? `· ${esc(rc.gender)}` : ''}</div>
+            </div>
+            <div class="rbt-detail-list">
+                <div><strong>Số nhập viện / HSBA:</strong> ${esc(rc.admissionId || '—')}</div>
+                <div><strong>SĐT:</strong> ${esc(rc.phone || '—')} ${tel ? `<a href="${esc(tel)}">(Gọi ngay)</a>` : ''}</div>
+                <div><strong>Chẩn đoán:</strong> ${esc(rc.diagnosis || '—')}</div>
+                <div><strong>Phương pháp phẫu thuật:</strong> ${esc(rc.robotProcedure || '—')}</div>
+                <div><strong>BS khu vực gửi:</strong> ${esc(rc.createdByName || rc.createdByUsername || '—')} · ${rc.labsReadyConfirmed ? '✅ Đủ XN tiền phẫu' : 'Chưa xác nhận XN'}</div>
+                <div><strong>Lịch tư vấn TS. Hữu:</strong> ${rc.consultDate ? `${rc.consultSession === 'sang' ? 'Sáng' : 'Chiều'} ${fmtViDate(rc.consultDate)}` : 'Chưa xếp'}</div>
+                <div><strong>Bác sĩ tư vấn / Người nhập KQ:</strong> ${esc(rc.consultedByName || 'TS. BSCKII. Nguyễn Phú Hữu')}${rc.consultDecidedByName ? ` (Nhập KQ: ${esc(rc.consultDecidedByName)})` : ''}</div>
+                ${rc.consultNote ? `<div><strong>Ghi chú tư vấn:</strong> ${esc(rc.consultNote)}</div>` : ''}
+                ${rc.refusalReason ? `<div><strong>Lý do không mổ:</strong> ${esc(this._refusalReasons()[rc.refusalReason] || rc.refusalReason)}</div>` : ''}
+                ${rc.surgeryDate ? `<div><strong>Lịch phẫu thuật:</strong> ${fmtViDate(rc.surgeryDate)} ${rc.caseSlot ? `· ${esc(rc.caseSlot)}` : ''} · PTV: ${esc(this._surgeonDisplay(rc))}</div>` : ''}
+                ${rc.note ? `<div><strong>Ghi chú khác:</strong> ${esc(rc.note)}</div>` : ''}
+            </div>`;
+
+            const footerBtns = [
+                `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>`
+            ];
+            if (rc.status === 'da_xep_robot') {
+                footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_print_single" data-rbt-code="${esc(code)}">🖨️ In P.CTXH A5</button>`);
+            }
+            if (p.canScheduleConsult && ['cho_xep_tu_van', 'da_xep_tu_van', 'can_nhac'].includes(rc.status)) {
+                footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_schedule_consult" data-rbt-code="${esc(code)}">📅 Xếp lịch TV</button>`);
+            }
+            if (p.canDecideConsult && ['cho_xep_tu_van', 'da_xep_tu_van', 'can_nhac'].includes(rc.status)) {
+                footerBtns.push(`<button type="button" class="btn btn-primary" data-rbt-action="open_decide_consult" data-rbt-code="${esc(code)}">🩺 Nhập KQ tư vấn</button>`);
+            }
+            if (isSched && p.canEditSchedule) {
+                footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_edit_schedule" data-rbt-code="${esc(code)}">🗓️ Sửa lịch mổ</button>`);
+            }
+            if (isSched && p.canManageInpatientWait && rc.inpatientState !== 'xuat_vien_cho') {
+                footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_discharge_wait" data-rbt-code="${esc(code)}">🏠 XV chờ</button>`);
+            }
+            if (isSched && p.canManageInpatientWait && rc.inpatientState === 'xuat_vien_cho') {
+                footerBtns.push(`<button type="button" class="btn btn-primary" data-rbt-action="confirm_readmit" data-rbt-code="${esc(code)}">✅ Nhập lại</button>`);
+            }
+            if (isSched && (p.canEditSchedule || p.canManageInpatientWait)) {
+                footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_postpone" data-rbt-code="${esc(code)}">⏸️ Hoãn mổ</button>`);
+            }
+            if (isSched && p.canEditSchedule) {
+                footerBtns.push(`<button type="button" class="btn btn-primary" data-rbt-action="mark_completed" data-rbt-code="${esc(code)}">✅ Đã mổ</button>`);
+            }
+            if (canReopen) {
+                footerBtns.push(`<button type="button" class="btn btn-primary" data-rbt-action="reopen_consult" data-rbt-code="${esc(code)}">🔄 Mở lại TV</button>`);
+            }
+            if (p.canManageRobot || p.canCreateConsult) {
+                footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">✏️ Sửa thông tin</button>`);
+            }
+
+            this._markModalOpen('detail', code);
+            openRobotModal(`📋 Chi tiết hồ sơ ${code}`, html, footerBtns.join(''));
         },
 
-        openLinkSurgeryModal(preselectSid = '') {
-            const bs = this._bootstrap || {};
-            const list = bs.unlinkedFutureRobotSurgeries || [];
+        openMobileMenuModal() {
+            const p = this._perms();
+            const html = `<div class="rbt-sheet-list">
+                <button type="button" id="rbt-mobile-menu-tutorial-btn" class="rbt-sheet-item rbt-sheet-item--guide" data-rbt-action="open_tutorial">
+                    <span>❓ Hướng dẫn thao tác 7 bước</span>
+                    <small>Xem tour hướng dẫn ngay trên tab</small>
+                </button>
+                <button type="button" class="rbt-sheet-item" data-rbt-action="copy_zalo_consult">
+                    <span>📋 Copy lịch tư vấn gửi Zalo</span>
+                    <small>Không kèm SĐT (Zero-PHI)</small>
+                </button>
+                <button type="button" class="rbt-sheet-item" data-rbt-action="open_print_modal">
+                    <span>🖨️ In Giấy giới thiệu P.CTXH (A5)</span>
+                    <small>Mẫu Màu / Laser Trắng Đen</small>
+                </button>
+                ${p.canDirectCreateCase ? `<button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_create_case">
+                    <span>⚡ Tạo thẳng ca Lịch mổ Robot</span>
+                    <small>Dành cho ĐP / BCN</small>
+                </button>` : ''}
+                <button type="button" class="rbt-sheet-item" data-rbt-action="refresh">
+                    <span>🔄 Làm mới dữ liệu</span>
+                    <small>Đồng bộ từ máy chủ</small>
+                </button>
+            </div>`;
+            this._markModalOpen('mobile_menu', null);
+            openRobotModal('Tiện ích Điều phối Robot', html, `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>`);
+        },
+
+        async copyZaloConsultSchedule() {
+            const list = this._cases()
+                .filter(c => c.status === 'da_xep_tu_van' && !c.isTestSandboxCase)
+                .sort((a, b) => {
+                    const da = String(a.consultDate || '9999-99-99');
+                    const db = String(b.consultDate || '9999-99-99');
+                    if (da !== db) return da.localeCompare(db);
+                    return (a.consultSession === 'sang' ? 0 : 1) - (b.consultSession === 'sang' ? 0 : 1);
+                });
+
             if (!list.length) {
-                Toast.info('Không còn ca Robot chưa liên kết trên Lịch mổ tuần.');
+                notifyToast('Hiện chưa có ca nào trong danh sách Đã xếp lịch tư vấn.', 'info');
                 return;
             }
-            const slots = bs.validSlots || ['Ca 1', 'Ca 2', 'Ca 3'];
-            const html = `
-                <form id="rbt-link-form" data-rbt-modal="1">
-                    <div class="form-group">
-                        <label class="form-label">Chọn ca Robot trên Lịch mổ tuần *</label>
-                        <select class="form-select" name="surgeryId" required>
-                            ${list.map(s => `<option value="${esc(s.id)}" ${String(preselectSid) === String(s.id) ? 'selected' : ''}>#${esc(s.id)} · ${_fmtViDate(s.date)} · ${esc(s.patientName)} (${esc(s.mainSurgeonName || '')})</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="rbt-form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Ca mổ Robot</label>
-                            <select class="form-select" name="caseSlot">
-                                ${slots.map(sl => `<option value="${esc(sl)}">${esc(sl)}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Số điện thoại liên hệ</label>
-                            <input class="form-input" name="phone" placeholder="0901234567">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Ghi chú liên kết</label>
-                        <input class="form-input" name="note" value="">
-                    </div>
-                    <div class="modal-footer" style="margin-top:12px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Liên kết hồ sơ</button>
-                    </div>
-                </form>
-            `;
-            this._openRobotModal('🔗 Liên kết ca Robot sẵn có từ Lịch tuần', html, 'link_existing_surgery');
-            document.getElementById('rbt-link-form')?.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                const fd = new FormData(ev.target);
-                try {
-                    await this._apiJson('/api/robot/cases/link-surgery', {
-                        method: 'POST',
-                        body: {
-                            action: 'link_existing_surgery',
-                            surgeryId: Number(fd.get('surgeryId')),
-                            caseSlot: String(fd.get('caseSlot') || 'Ca 1'),
-                            phone: String(fd.get('phone') || '').trim(),
-                            note: String(fd.get('note') || '').trim()
-                        }
-                    });
-                    this._modalDirty = false;
-                    Modal.close();
-                    Toast.success('Đã liên kết ca Lịch tuần sang Điều phối Robot.');
-                    await this._refreshBoth(true);
-                } catch (err) {
-                    Toast.error(err.message || 'Không thể liên kết ca.');
+
+            const lines = ['📋 LỊCH TƯ VẤN PHẪU THUẬT ROBOT (TS. BSCKII. NGUYỄN PHÚ HỮU)', ''];
+            let curGroup = '';
+            let idx = 0;
+            list.forEach(c => {
+                const grp = `${fmtWeekdayVi(c.consultDate)}, ${fmtViDate(c.consultDate)} — ${c.consultSession === 'sang' ? 'BUỔI SÁNG' : 'BUỔI CHIỀU'}`;
+                if (grp !== curGroup) {
+                    if (curGroup) lines.push('');
+                    lines.push(`📅 ${grp}:`);
+                    curGroup = grp;
+                    idx = 0;
                 }
+                idx += 1;
+                const yr = c.birthYear ? ` (${c.birthYear})` : '';
+                const proc = c.robotProcedure ? ` · PP: ${c.robotProcedure}` : '';
+                const note = c.consultScheduleNote ? ` · Ghi chú: ${c.consultScheduleNote}` : '';
+                lines.push(`${idx}. ${c.patientName}${yr} · ${roomLabel(c.wardRoom)} · CĐ: ${c.diagnosis || '—'}${proc}${note} [${c.robotCaseCode}]`);
             });
+            const text = lines.join('\n');
+
+            let copied = false;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    copied = true;
+                }
+            } catch (_) {
+                copied = false;
+            }
+
+            if (copied) {
+                notifyToast(`Đã copy lịch tư vấn (${list.length} ca) vào clipboard để dán Zalo!`, 'success');
+                return;
+            }
+
+            this._markModalOpen('zalo_copy', null);
+            openRobotModal(
+                '📋 Lịch tư vấn gửi Zalo (Zero-PHI)',
+                `<p>Trình duyệt chặn copy tự động — vui lòng bấm chọn và sao chép khung dưới đây:</p>
+                <textarea class="form-input" rows="10" readonly onclick="this.select()">${esc(text)}</textarea>`,
+                `<button type="button" class="btn btn-primary" onclick="Modal.close()">Đóng</button>`
+            );
         },
 
-        async _runModalPatch(rc, payload, syncWeekly = false) {
-            if (this._conflictState && document.getElementById('rbt-confirm-conflict-cb')?.checked) {
-                payload.confirmConflict = true;
-                payload.conflictOverrideReason = String(document.getElementById('rbt-conflict-reason')?.value || '').trim();
-                payload.expectedConflictFingerprint = this._conflictState.conflictFingerprint;
+        openPrintPctxhModal(caseCode = '') {
+            const robotCases = this._cases()
+                .filter(c => c.status === 'da_xep_robot' && !c.isTestSandboxCase)
+                .sort((a, b) => String(a.surgeryDate || '').localeCompare(String(b.surgeryDate || '')));
+
+            const targetCode = caseCode || (robotCases[0] && robotCases[0].robotCaseCode) || '';
+            this._printState.caseCode = targetCode;
+            this._printState.scope = targetCode ? 'single' : 'week';
+            if (targetCode) {
+                const found = this._findCase(targetCode);
+                if (found && found.surgeryDate) this._printState.date = found.surgeryDate;
             }
-            try {
-                await this._apiJson(`/api/robot/cases/${encodeURIComponent(rc.robotCaseCode)}`, {
-                    method: 'PATCH',
-                    body: payload
-                });
-                this._modalDirty = false;
-                Modal.close();
-                Toast.success('Đã cập nhật trạng thái Điều phối Robot.');
-                await this._refreshBoth(syncWeekly);
-            } catch (err) {
-                if (err.status === 409 && ['SCHEDULE_SLOT_CONFLICT', 'CONFLICT_FINGERPRINT_MISMATCH', 'ROBOT_DAILY_CAPACITY_EXCEEDED'].includes(err.code)) {
-                    this._conflictState = err.data || {};
-                    const slotEl = document.getElementById('rbt-conflict-slot');
-                    if (slotEl) slotEl.innerHTML = this._renderConflictBoxHtml();
-                    Toast.warning(err.message);
-                } else {
-                    Toast.error(err.message || 'Thao tác thất bại.');
+            if (!this._printState.date) this._printState.date = this._todayIso();
+
+            const html = `<div class="rbt-form-grid">
+                <div>
+                    <label class="form-label" for="rbt-inp-print-scope">Phạm vi in (Khổ A5 dọc)</label>
+                    <select id="rbt-inp-print-scope" class="form-input">
+                        <option value="single" ${this._printState.scope === 'single' ? 'selected' : ''}>1 Ca cụ thể (Giấy giới thiệu qua P.CTXH)</option>
+                        <option value="date" ${this._printState.scope === 'date' ? 'selected' : ''}>Theo 1 ngày mổ</option>
+                        <option value="week" ${this._printState.scope === 'week' ? 'selected' : ''}>Theo tuần đang xem</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-print-mode">Chế độ in</label>
+                    <select id="rbt-inp-print-mode" class="form-input">
+                        <option value="color" ${this._printState.mode === 'color' ? 'selected' : ''}>Màu (Navy BVBD)</option>
+                        <option value="bw" ${this._printState.mode === 'bw' ? 'selected' : ''}>Laser Trắng Đen (#000000)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-print-case">Ca Robot (nếu in 1 ca)</label>
+                    <select id="rbt-inp-print-case" class="form-input">
+                        ${robotCases.length
+                            ? robotCases.map(c => `<option value="${esc(c.robotCaseCode)}" ${c.robotCaseCode === targetCode ? 'selected' : ''}>${esc(c.robotCaseCode)} · ${esc(c.patientName)} (${fmtViShortDate(c.surgeryDate)})</option>`).join('')
+                            : `<option value="">(Chưa có ca Robot đang xếp lịch)</option>`}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rbt-inp-print-date">Ngày mổ (nếu in theo ngày)</label>
+                    <div class="rbt-date-wrap"><input id="rbt-inp-print-date" type="date" class="form-input" value="${esc(this._printState.date)}"></div>
+                </div>
+            </div>
+            <div id="rbt-print-preview-host" style="margin-top:14px;"></div>`;
+
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
+                <button type="button" class="btn btn-primary" data-rbt-action="execute_print_pctxh">🖨️ In ngay (A5)</button>`;
+
+            this._markModalOpen('print_pctxh', targetCode || null);
+            openRobotModal('🖨️ In Giấy giới thiệu qua P.CTXH (Khổ A5)', html, footer);
+            this._syncPrintPreviewFromModal();
+        },
+
+        _syncPrintPreviewFromModal() {
+            const mode = document.getElementById('rbt-inp-print-mode')?.value || 'color';
+            const scope = document.getElementById('rbt-inp-print-scope')?.value || 'week';
+            const dateIso = document.getElementById('rbt-inp-print-date')?.value || this._todayIso();
+            const caseCode = document.getElementById('rbt-inp-print-case')?.value || '';
+            this._printState = { ...this._printState, mode, scope, date: dateIso, caseCode };
+
+            const host = document.getElementById('rbt-print-preview-host');
+            if (!host) return;
+            const sheetHtml = this._buildA5SheetHtml();
+            host.innerHTML = sheetHtml;
+            const root = document.getElementById('robot-pctxh-print-root');
+            if (root) root.innerHTML = sheetHtml;
+        },
+
+        _buildA5SheetHtml() {
+            const { mode, scope, date, caseCode, schedulerName } = this._printState;
+            const robotCases = this._cases().filter(c => c.status === 'da_xep_robot' && !c.isTestSandboxCase);
+            let rows = [];
+            let subtitle = '';
+            if (scope === 'single') {
+                const rc = robotCases.find(c => c.robotCaseCode === caseCode);
+                if (rc) rows = [rc];
+                subtitle = rc ? `Giấy giới thiệu bệnh nhân tư vấn / xếp lịch qua Phòng Công tác Xã hội` : 'Chưa chọn ca Robot';
+            } else if (scope === 'date') {
+                rows = robotCases.filter(c => c.surgeryDate === date).sort((a, b) => String(a.caseSlot || '').localeCompare(String(b.caseSlot || '')));
+                subtitle = `Lịch phẫu thuật Robot ngày ${fmtViDate(date)}`;
+            } else {
+                const startIso = this._weekStartIso || getMondayIso(this._todayIso());
+                const endIso = addDaysIso(startIso, 6);
+                rows = robotCases
+                    .filter(c => c.surgeryDate >= startIso && c.surgeryDate <= endIso)
+                    .sort((a, b) => String(a.surgeryDate || '').localeCompare(String(b.surgeryDate || '')) || String(a.caseSlot || '').localeCompare(String(b.caseSlot || '')));
+                subtitle = `Lịch phẫu thuật Robot tuần ${fmtViDate(startIso)} – ${fmtViDate(endIso)}`;
+            }
+
+            const singleRc = (scope === 'single' && rows.length === 1) ? rows[0] : null;
+            const bodyBlock = singleRc
+                ? `<div class="rbt-a5-referral-card">
+                    <div><strong>Mã hồ sơ:</strong> ${esc(singleRc.robotCaseCode)}</div>
+                    <div><strong>Họ và tên bệnh nhân:</strong> ${esc(singleRc.patientName)} &nbsp;·&nbsp; <strong>Năm sinh:</strong> ${esc(singleRc.birthYear || '—')} &nbsp;·&nbsp; <strong>Giới:</strong> ${esc(singleRc.gender || '—')}</div>
+                    <div><strong>Phòng bệnh:</strong> ${esc(roomLabel(singleRc.wardRoom))} &nbsp;·&nbsp; <strong>Số nhập viện:</strong> ${esc(singleRc.admissionId || '—')}</div>
+                    <div><strong>Chẩn đoán:</strong> ${esc(singleRc.diagnosis || '—')}</div>
+                    <div><strong>Phương pháp PT Robot:</strong> ${esc(singleRc.robotProcedure || '—')}</div>
+                    <div><strong>Ngày mổ dự kiến:</strong> ${fmtViDate(singleRc.surgeryDate)} (${esc(singleRc.caseSlot || 'Ca 1')}) &nbsp;·&nbsp; <strong>PTV chính:</strong> ${esc(this._surgeonDisplay(singleRc))}</div>
+                    <div><strong>Bác sĩ tư vấn Robot:</strong> ${esc(singleRc.consultedByName || 'TS. BSCKII. Nguyễn Phú Hữu')}</div>
+                    <div><strong>Tình trạng lưu trú:</strong> ${singleRc.inpatientState === 'xuat_vien_cho' ? `Xuất viện chờ (Hẹn nhập lại ${fmtViDate(singleRc.plannedReadmitDate)})` : 'Đang nằm viện'}</div>
+                </div>`
+                : `<table class="rbt-a5-table">
+                    <thead>
+                        <tr>
+                            <th>Ngày / Ca</th>
+                            <th>Họ tên BN (NS)</th>
+                            <th>Phòng</th>
+                            <th>Chẩn đoán &amp; PP Robot</th>
+                            <th>PTV</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.length ? rows.map(c => `<tr>
+                            <td class="rbt-col-nowrap">${fmtViShortDate(c.surgeryDate)}<br>${esc(c.caseSlot || '')}</td>
+                            <td>${esc(c.patientName)} (${esc(c.birthYear || '—')})</td>
+                            <td class="rbt-col-nowrap">${esc(roomLabel(c.wardRoom))}</td>
+                            <td>${esc(c.diagnosis || '')} — ${esc(c.robotProcedure || '')}</td>
+                            <td class="rbt-col-surgeon">${esc(this._surgeonDisplay(c))}</td>
+                        </tr>`).join('') : `<tr><td colspan="5">Chưa có ca mổ Robot trong khoảng thời gian đã chọn.</td></tr>`}
+                    </tbody>
+                </table>`;
+
+            return `<div class="rbt-a5-sheet ${mode === 'bw' ? 'rbt-a5-sheet--bw' : ''}">
+                <div class="rbt-a5-sheet__top">
+                    <img src="img/logo-khoa.jpg" alt="Logo Khoa PTĐTT" class="rbt-a5-sheet__logo">
+                    <div class="rbt-a5-sheet__org">
+                        <div class="rbt-a5-sheet__hosp">BỆNH VIỆN BÌNH DÂN · P.CTXH (A5)</div>
+                        <div class="rbt-a5-sheet__dept">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
+                    </div>
+                </div>
+                <div class="rbt-a5-sheet__title">GIẤY GIỚI THIỆU PHẪU THUẬT ROBOT QUA P.CTXH</div>
+                <div class="rbt-a5-sheet__subtitle">${esc(subtitle)}</div>
+                ${bodyBlock}
+                <div class="rbt-a5-sheet__footer">
+                    <div>Người gửi / Điều phối: <strong>${esc(schedulerName || 'BSCKII. Võ Chí Nguyện')}</strong></div>
+                    <div>TS. BSCKII. Nguyễn Phú Hữu<br><small>Trưởng khoa PT Đại trực tràng</small></div>
+                </div>
+            </div>`;
+        },
+
+        _executePrint() {
+            this._syncPrintPreviewFromModal();
+            if (document.body) document.body.classList.add('printing-robot-pctxh');
+            if (typeof global.print === 'function') global.print();
+        },
+
+        _attachConflictOverride(body) {
+            if (this._conflictState && this._conflictState.fingerprint) {
+                const chk = document.getElementById('rbt-inp-override-confirm');
+                const rsn = document.getElementById('rbt-inp-override-reason');
+                if (chk && chk.checked) {
+                    body.confirmConflict = true;
+                    body.conflictOverrideReason = (rsn && rsn.value ? rsn.value.trim() : '');
+                    body.expectedConflictFingerprint = this._conflictState.fingerprint;
                 }
             }
         },
 
-        async _runQuickPatch(code, action, extraBody = {}, syncWeekly = false) {
+        _handleMutationError(err) {
+            const data = err.data || {};
+            if (err.status === 409 && err.code === 'ROBOT_SCHEDULE_CONFLICT') {
+                this._conflictState = {
+                    fingerprint: data.conflictFingerprint || '',
+                    conflicts: data.conflicts || []
+                };
+                const host = document.getElementById('rbt-modal-conflict-host');
+                if (host) {
+                    const items = (data.conflicts || []).map(c => `<li>${esc(c.patientName || c.robotCaseCode)} (${fmtViDate(c.surgeryDate)} · ${esc(c.caseSlot || '')})</li>`).join('');
+                    host.innerHTML = `<div class="rbt-conflict-box" style="margin-top:12px;">
+                        <strong>⚠️ Phát hiện trùng lịch hoặc vượt 3 ca Robot/ngày:</strong>
+                        <ul class="rbt-conflict-list">${items}</ul>
+                        <label class="rbt-check-card" style="margin-top:8px;">
+                            <input id="rbt-inp-override-confirm" type="checkbox">
+                            <span>Tôi hiểu cảnh báo và muốn ghi đè ngoại lệ (Override)</span>
+                        </label>
+                        <input id="rbt-inp-override-reason" type="text" class="form-input" style="margin-top:6px;" placeholder="Nhập lý do ngoại lệ (bắt buộc tối thiểu 5 ký tự)">
+                    </div>`;
+                }
+            }
+            notifyToast(err.message || 'Thao tác thất bại.', 'error');
+        },
+
+        async _sendPatch(code, body, successMsg, btnEl) {
+            if (btnEl) btnEl.disabled = true;
+            try {
+                if (!this._inflightIdem) this._inflightIdem = newIdempotencyKey();
+                const res = await this._apiJson(`/api/robot/cases/${encodeURIComponent(code)}`, {
+                    method: 'PATCH',
+                    body,
+                    idempotencyKey: this._inflightIdem
+                });
+                this._upsertCaseInMemory(res.case);
+                await this.ensureLoaded(true).catch(() => {});
+                if (typeof Modal !== 'undefined' && Modal.close) Modal.close(true);
+                notifyToast(successMsg, 'success');
+                this._rerenderPage();
+                return true;
+            } catch (err) {
+                this._handleMutationError(err);
+                return false;
+            } finally {
+                if (btnEl) btnEl.disabled = false;
+            }
+        },
+
+        async _submitSimplePatch(code, action, extraBody, successMsg) {
             const rc = this._findCase(code);
             if (!rc) return;
-            try {
-                await this._apiJson(`/api/robot/cases/${encodeURIComponent(code)}`, {
-                    method: 'PATCH',
-                    body: { action, expectedRevision: Number(rc.caseRevision || 1), ...extraBody }
-                });
-                Toast.success('Đã cập nhật thành công.');
-                await this._refreshBoth(syncWeekly);
-            } catch (err) {
-                Toast.error(err.message || 'Không thể thực hiện thao tác.');
-            }
+            await this._sendPatch(code, {
+                action,
+                expectedRevision: Number(rc.caseRevision || 1),
+                ...(extraBody || {})
+            }, successMsg, null);
         },
 
-        async _runArchiveDelete(code) {
+        async _submitArchiveDelete(code) {
             const rc = this._findCase(code);
             if (!rc) return;
             try {
@@ -2231,204 +2739,34 @@
                     method: 'DELETE',
                     body: { expectedRevision: Number(rc.caseRevision || 1) }
                 });
-                Toast.success(`Đã lưu trữ ẩn hồ sơ ${code} (Zero-RM).`);
-                await this._refreshBoth(false);
+                await this.ensureLoaded(true).catch(() => {});
+                notifyToast('Đã lưu trữ ẩn hồ sơ (Zero-RM).', 'success');
+                this._rerenderPage();
             } catch (err) {
-                Toast.error(err.message || 'Không thể lưu trữ ẩn hồ sơ.');
+                this._handleMutationError(err);
             }
         },
 
-        async _saveConfigFromTab() {
-            const form = document.getElementById('rbt-config-form');
-            if (!form) return;
-            const fd = new FormData(form);
-            const coords = fd.getAll('coordinators').map(x => String(x).trim().toLowerCase()).filter(Boolean);
-            const cfgRev = Number((this._bootstrap && this._bootstrap.configRevision) || 1);
+        async _submitConfigSave(btnEl) {
+            if (btnEl) btnEl.disabled = true;
             try {
-                await this._apiJson('/api/robot/config', {
-                    method: 'PUT',
-                    body: {
-                        coordinators: coords,
-                        defaultSchedulerName: String(fd.get('defaultSchedulerName') || 'Quang').trim(),
-                        postponeLookbackDays: Number(fd.get('postponeLookbackDays') || 7),
-                        expectedConfigRevision: cfgRev
-                    }
-                });
-                Toast.success('Đã lưu cấu hình Điều phối Robot.');
-                await this._refreshBoth(false);
+                const coords = Array.from(document.querySelectorAll('.rbt-cfg-coord:checked')).map(el => el.value);
+                const body = {
+                    coordinators: coords,
+                    defaultSchedulerName: document.getElementById('rbt-cfg-scheduler')?.value?.trim() || 'BSCKII. Võ Chí Nguyện',
+                    postponeLookbackDays: Number(document.getElementById('rbt-cfg-lookback')?.value || 7),
+                    trashAutoArchiveDays: Number(document.getElementById('rbt-cfg-archive')?.value || 14),
+                    expectedConfigRevision: Number((this._bootstrap && this._bootstrap.configRevision) || 1)
+                };
+                await this._apiJson('/api/robot/config', { method: 'PUT', body });
+                await this.ensureLoaded(true);
+                notifyToast('Đã lưu cấu hình Điều phối Robot.', 'success');
+                this._rerenderPage();
             } catch (err) {
-                Toast.error(err.message || 'Không thể lưu cấu hình.');
+                this._handleMutationError(err);
+            } finally {
+                if (btnEl) btnEl.disabled = false;
             }
-        },
-
-        _buildPctxhSheetHtml() {
-            const bs = this._bootstrap || {};
-            const st = this._printState;
-            const weekStart = _mondayOf(this._weekStartIso || bs.todayVn || _fmtIsoLocal(new Date()));
-            const weekDates = new Set();
-            for (let i = 0; i < 6; i++) {
-                const d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
-                weekDates.add(_fmtIsoLocal(d));
-            }
-            const rowsData = (bs.cases || []).filter(c => {
-                if (!['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo'].includes(c.status)) return false;
-                if (st.scope === 'day' && st.date) return c.surgeryDate === st.date;
-                return weekDates.has(c.surgeryDate);
-            }).sort((a, b) => String(a.surgeryDate || '').localeCompare(String(b.surgeryDate || '')));
-
-            const sheetCls = st.mode === 'bw' ? 'rbt-a5-sheet rbt-a5-sheet--bw' : 'rbt-a5-sheet rbt-a5-sheet--color';
-            const scheduler = st.schedulerName || (bs.robotConfig && bs.robotConfig.defaultSchedulerName) || 'Quang';
-            const scopeTitle = st.scope === 'day' && st.date
-                ? `Ngày mổ: ${_fmtViDate(st.date)}`
-                : `Tuần mổ từ ${_fmtViDate(_fmtIsoLocal(weekStart))}`;
-
-            return `
-                <div class="${sheetCls}" id="rbt-a5-pctxh-sheet">
-                    <div class="rbt-a5-sheet__top">
-                        <img src="img/logo-khoa.jpg" alt="Logo Khoa PTĐTT" class="rbt-a5-sheet__logo">
-                        <div class="rbt-a5-sheet__org">
-                            <div class="rbt-a5-sheet__hosp">BỆNH VIỆN BÌNH DÂN</div>
-                            <div class="rbt-a5-sheet__dept">KHOA PHẪU THUẬT ĐẠI TRỰC TRÀNG</div>
-                        </div>
-                        <div style="text-align:right;font-size:10px;">
-                            <div><strong>MẪU A5 — PHÒNG CTXH</strong></div>
-                            <div>Ngày in: ${_fmtViDate(bs.todayVn || _fmtIsoLocal(new Date()))}</div>
-                        </div>
-                    </div>
-                    <h2 class="rbt-a5-sheet__title">PHIẾU CHUYỂN DANH SÁCH XẾP LỊCH MỔ ROBOT</h2>
-                    <p class="rbt-a5-sheet__subtitle">Kính chuyển: Anh/Chị <strong>${esc(scheduler)}</strong> — Phòng Công tác Xã hội · ${esc(scopeTitle)}</p>
-                    <table class="rbt-a5-table">
-                        <thead>
-                            <tr>
-                                <th class="rbt-col-nowrap">STT</th>
-                                <th>Họ và tên BN</th>
-                                <th class="rbt-col-nowrap">NS / Giới</th>
-                                <th class="rbt-col-nowrap">Số NV</th>
-                                <th>Chẩn đoán &amp; Phương pháp PT Robot</th>
-                                <th class="rbt-col-nowrap">Ngày / Ca</th>
-                                <th class="rbt-col-surgeon">PTV chính</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rowsData.length ? rowsData.map((c, idx) => `
-                                <tr>
-                                    <td class="rbt-col-nowrap">${idx + 1}</td>
-                                    <td><strong class="rbt-col-patient-line">${esc(c.patientName)}</strong></td>
-                                    <td class="rbt-col-nowrap">${esc(c.birthYear || '—')}<br>${esc(c.gender || '')}</td>
-                                    <td class="rbt-col-nowrap">${esc(c.admissionId || '—')}</td>
-                                    <td><strong>${esc(c.diagnosis || '—')}</strong><br>${esc(c.robotProcedure || '—')}</td>
-                                    <td class="rbt-col-nowrap">${_fmtViDate(c.surgeryDate)}<br>${esc(c.caseSlot || '—')}</td>
-                                    <td class="rbt-col-surgeon">${esc(c.mainSurgeonName || '—')}</td>
-                                </tr>
-                            `).join('') : `<tr><td colspan="7" style="text-align:center;">Không có ca Robot phù hợp trong khoảng chọn.</td></tr>`}
-                        </tbody>
-                    </table>
-                    <div class="rbt-a5-sheet__footer">
-                        <div>Tổng số ca dự kiến: <strong>${rowsData.length} ca</strong> (Không in số điện thoại cá nhân lên phiếu giấy)</div>
-                        <div style="text-align:center;"><strong>ĐIỀU PHỐI KHOA PTĐTT</strong><br><span style="font-size:10px;">(Ký xác nhận)</span></div>
-                    </div>
-                </div>
-            `;
-        },
-
-        openPrintPctxhModal() {
-            const bs = this._bootstrap || {};
-            if (!this._printState.schedulerName) {
-                this._printState.schedulerName = (bs.robotConfig && bs.robotConfig.defaultSchedulerName) || 'Quang';
-            }
-            if (!this._printState.date) {
-                this._printState.date = bs.todayVn || _fmtIsoLocal(new Date());
-            }
-
-            const html = `
-                <div id="robot-pctxh-print-controls">
-                    <div class="rbt-form-grid" style="margin-bottom:12px;">
-                        <div class="form-group">
-                            <label class="form-label">Chế độ màu bản in A5</label>
-                            <select class="form-select" id="rbt-pctxh-mode" data-rbt-no-dirty="1">
-                                <option value="color" ${this._printState.mode === 'color' ? 'selected' : ''}>🎨 Màu thương hiệu (#1D2357 / #1878B4)</option>
-                                <option value="bw" ${this._printState.mode === 'bw' ? 'selected' : ''}>🖨️ Trắng đen (#000000 tiết kiệm mực)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Người nhận tại Phòng CTXH</label>
-                            <input class="form-input" id="rbt-pctxh-scheduler" data-rbt-no-dirty="1" value="${esc(this._printState.schedulerName)}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Phạm vi danh sách</label>
-                            <select class="form-select" id="rbt-pctxh-scope" data-rbt-no-dirty="1">
-                                <option value="week" ${this._printState.scope === 'week' ? 'selected' : ''}>Cả tuần đang xem</option>
-                                <option value="day" ${this._printState.scope === 'day' ? 'selected' : ''}>Theo 1 ngày cụ thể</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Ngày (khi chọn Theo ngày)</label>
-                            <input class="form-input rbt-date-picker-only" type="date" id="rbt-pctxh-date" data-rbt-no-dirty="1" value="${esc(this._printState.date)}">
-                        </div>
-                    </div>
-                    <div id="rbt-pctxh-preview-box">${this._buildPctxhSheetHtml()}</div>
-                    <div class="modal-footer" style="margin-top:14px;">
-                        <button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>
-                        <button type="button" class="btn btn-primary" id="rbt-pctxh-do-print">🖨️ In phiếu A5 P.CTXH</button>
-                    </div>
-                </div>
-            `;
-            this._openRobotModal('🖨️ Xem trước & In Phiếu A5 P.CTXH', html, 'print_pctxh');
-
-            const syncPreview = () => {
-                this._printState.mode = document.getElementById('rbt-pctxh-mode')?.value || 'color';
-                this._printState.schedulerName = document.getElementById('rbt-pctxh-scheduler')?.value || 'Quang';
-                this._printState.scope = document.getElementById('rbt-pctxh-scope')?.value || 'week';
-                this._printState.date = document.getElementById('rbt-pctxh-date')?.value || '';
-                const box = document.getElementById('rbt-pctxh-preview-box');
-                if (box) box.innerHTML = this._buildPctxhSheetHtml();
-            };
-
-            ['rbt-pctxh-mode', 'rbt-pctxh-scope', 'rbt-pctxh-date'].forEach(id => {
-                document.getElementById(id)?.addEventListener('change', syncPreview);
-            });
-            document.getElementById('rbt-pctxh-scheduler')?.addEventListener('input', syncPreview);
-            document.getElementById('rbt-pctxh-do-print')?.addEventListener('click', () => {
-                syncPreview();
-                const sheetHtml = this._buildPctxhSheetHtml();
-                const root = document.getElementById('robot-pctxh-print-root');
-                if (root) {
-                    root.innerHTML = sheetHtml;
-                    document.body.classList.add('printing-robot-pctxh');
-                }
-                if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                    window.print();
-                }
-            });
-        },
-
-        async openFromWeeklySchedule(robotCode) {
-            if (typeof App !== 'undefined') {
-                App.navigate('robot-schedule');
-            }
-            if (!this._bootstrap) {
-                try { await this.loadBootstrap(true); } catch (_) {}
-            }
-            const rc = this._findCase(robotCode);
-            if (!rc) {
-                this._rerenderInPlace();
-                return;
-            }
-            if (['cho_duyet_tien_phau', 'cho_duyet_luu_vien', 'cho_mo', 'da_mo'].includes(rc.status)) {
-                this._subtab = 'week';
-                if (rc.surgeryDate) {
-                    this._weekStartIso = _fmtIsoLocal(_mondayOf(rc.surgeryDate));
-                    this._mobileDayIso = rc.surgeryDate;
-                    this._mobileWeekAllDays = false;
-                }
-            } else if (['hoan_mo', 'xuat_vien_cho'].includes(rc.status)) {
-                this._subtab = 'postponed';
-            } else if (rc.status === 'da_xoa') {
-                this._subtab = 'trash';
-            } else {
-                this._subtab = 'consult';
-            }
-            this._rerenderInPlace();
         }
     };
 

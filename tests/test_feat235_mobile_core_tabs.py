@@ -195,7 +195,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611250843"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251807"
 
         # Seed 2 Robot cases via live API so Robot Mobile cards render for '+' overlap test
         client = cls.sf.app.test_client()
@@ -265,7 +265,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         )
         ctx.route("**/api/emr*", lambda route: route.fulfill(status=200, content_type="application/json", body='{"patients":[]}'))
         dismiss_script = "" if show_icon_guide else "localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');"
-        dismiss_script += "localStorage.setItem('ptdtt_robot_tutorial_v1_dismissed', '1');"
+        dismiss_script += "localStorage.setItem('ptdtt_robot_tutorial_v2_dismissed', '1');"
         ctx.add_init_script(
             f"""
             localStorage.setItem('ptdtt_cache_ver', '2609281105');

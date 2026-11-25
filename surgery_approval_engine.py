@@ -414,7 +414,8 @@ def can_user_access_sandbox(user: dict, db: dict) -> bool:
 
 DEFAULT_ROBOT_CONFIG = {
     "goLiveDate": "2026-11-21",
-    "coordinators": ["vcnguyen"],
+    "coordinators": ["vcnguyen", "lvhoan"],
+    "robotConfigSchemaVersion": 2,
     "defaultSchedulerName": "Quang",
     "robotRooms": ["PM Robot"],
     "defaultOperatingRoom": "PM Robot",
@@ -425,10 +426,30 @@ DEFAULT_ROBOT_CONFIG = {
 }
 
 ROBOT_SLOT_HOLDING_STATUSES = {
-    "cho_duyet_tien_phau",
-    "cho_duyet_luu_vien",
-    "cho_mo",
-    "xuat_vien_cho",
+    "da_xep_robot",
+}
+
+ROBOT_WARD_ROOMS = (
+    "B705",
+    "B706",
+    "B707",
+    "B708",
+    "B709",
+    "B710",
+    "B711",
+    "B712",
+    "B712A",
+    "B718",
+    "B719",
+    "ngoai_tru",
+)
+
+ROBOT_REFUSAL_REASONS = {
+    "chi_phi": "Chưa thu xếp chi phí phẫu thuật",
+    "suy_nghi_them": "Bệnh nhân / gia đình xin về suy nghĩ thêm",
+    "dieu_tri_noi": "Chuyển hướng điều trị nội khoa / theo dõi",
+    "chuyen_vien": "Xin chuyển viện / điều trị nơi khác",
+    "ly_do_khac": "Lý do khác",
 }
 
 ROBOT_VALID_SLOTS = ("Ca 1", "Ca 2", "Ca 3")
@@ -455,7 +476,7 @@ def get_robot_config(db: dict) -> dict:
                 cfg[k] = copy.deepcopy(v)
     coords = cfg.get("coordinators")
     if not isinstance(coords, list):
-        coords = ["vcnguyen"]
+        coords = ["vcnguyen", "lvhoan"]
     norm_coords = []
     seen = set()
     for c in coords:
@@ -464,6 +485,7 @@ def get_robot_config(db: dict) -> dict:
             seen.add(cu)
             norm_coords.append(cu)
     cfg["coordinators"] = norm_coords
+    cfg["robotConfigSchemaVersion"] = int(cfg.get("robotConfigSchemaVersion") or 1)
     rooms = cfg.get("robotRooms")
     if not isinstance(rooms, list) or not rooms:
         cfg["robotRooms"] = ["PM Robot"]
@@ -534,8 +556,8 @@ def resolve_robot_permissions(real_user: dict, db: dict) -> dict:
             or ("phó trưởng khoa" in role_lc)
         )
     )
-    can_create = can_manage or is_head_nurse or is_attending or is_trainee
-    can_postpone = can_manage or is_head_nurse or is_attending
+    can_create = bool(username) and (can_manage or is_attending or is_trainee)
+    can_postpone = bool(username) and (can_manage or is_attending)
     return {
         "username": username,
         "staffId": int(staff_id) if is_pos_int(staff_id) else 0,
@@ -543,13 +565,16 @@ def resolve_robot_permissions(real_user: dict, db: dict) -> dict:
         "isBcn": is_bcn,
         "isCoordinator": is_coord,
         "canView": True,
-        "canViewFullPhone": can_create,
+        "canViewFullPhone": bool(can_create or is_head_nurse),
         "canCreate": can_create,
         "canEditInfo": can_create,
+        "canScheduleConsult": can_manage,
+        "canDecideConsult": can_manage,
         "canEditSchedule": can_manage,
         "canApproveSteps": can_manage,
         "canInlineNote": can_manage,
         "canOverrideConflict": can_manage,
+        "canManageInpatientWait": can_create,
         "canPostponeOrDischarge": can_postpone,
         "canManageRobot": can_manage,
         "isHeadNurse": is_head_nurse,
@@ -766,9 +791,14 @@ def resolve_staff_name_by_id(db: dict, staff_id) -> str:
 
 
 def build_robot_surgery_payload(rcase: dict, existing_surgery: dict = None) -> dict:
-    """Strict allowlist mapping Robot -> surgeries[]. NEVER copies phone, wardRoom, or robotNotes."""
+    """Strict allowlist mapping Robot -> surgeries[]. NEVER copies phone or clinical/consult notes."""
     base = copy.deepcopy(existing_surgery) if isinstance(existing_surgery, dict) else {}
-    slot = str(rcase.get("caseSlot") or "")
+    sched_approach = (
+        "noisoi"
+        if (rcase.get("status") == "da_xep_noisoi" or rcase.get("scheduledApproach") == "noisoi")
+        else "robot"
+    )
+    slot = str(rcase.get("caseSlot") or "") if sched_approach == "robot" else ""
     base["patientName"] = str(rcase.get("patientName") or "").strip()
     if is_pos_int(rcase.get("birthYear")):
         base["birthYear"] = int(rcase["birthYear"])
@@ -781,17 +811,24 @@ def build_robot_surgery_payload(rcase: dict, existing_surgery: dict = None) -> d
         base["admissionId"] = ""
     base["diagnosis"] = str(rcase.get("diagnosis") or "").strip()
     base["method"] = str(rcase.get("robotProcedure") or "").strip()
-    base["surgeryType"] = "robot"
-    base["approachType"] = "robot"
+    if sched_approach == "noisoi":
+        raw_stype = str(rcase.get("scheduledSurgeryType") or "chuongtrinh").strip()
+        base["surgeryType"] = raw_stype if raw_stype in ("chuongtrinh", "yeucau", "bankhan") else "chuongtrinh"
+        base["approachType"] = "noisoi"
+        op_room = ""
+    else:
+        base["surgeryType"] = "robot"
+        base["approachType"] = "robot"
+        op_room = str(rcase.get("operatingRoom") or "PM Robot")
     base["date"] = str(rcase.get("surgeryDate") or "").strip()
     base["mainSurgeon"] = rcase.get("mainSurgeonId")
     base["assistSurgeon1"] = rcase.get("assistSurgeon1") if is_pos_int(rcase.get("assistSurgeon1")) else None
-    base["duration"] = int(rcase.get("durationMinutes") or 180)
+    base["duration"] = int(rcase.get("durationMinutes") or (120 if sched_approach == "noisoi" else 180))
     if rcase.get("surgeryTime"):
         base["surgeryTime"] = rcase.get("surgeryTime")
     elif not existing_surgery:
         base.pop("surgeryTime", None)
-    base["isFirstCase"] = (slot == "Ca 1")
+    base["isFirstCase"] = False if sched_approach == "noisoi" else (slot == "Ca 1")
     if rcase.get("isTestSandboxCase") is True:
         base["isTestSandboxCase"] = True
         if base["patientName"] and "[test]" not in base["patientName"].lower():
@@ -800,8 +837,14 @@ def build_robot_surgery_payload(rcase: dict, existing_surgery: dict = None) -> d
         base.pop("isTestSandboxCase", None)
     base["robotCaseId"] = str(rcase.get("robotCaseCode") or rcase.get("soNV") or "").strip()
     base["robotSyncMeta"] = {
-        "operatingRoom": str(rcase.get("operatingRoom") or "PM Robot"),
+        "scheduledApproach": sched_approach,
+        "operatingRoom": op_room,
         "caseSlot": slot,
+        "wardRoom": str(rcase.get("wardRoom") or ""),
+        "inpatientState": str(rcase.get("inpatientState") or "noi_tru"),
+        "plannedReadmitDate": str(rcase.get("plannedReadmitDate") or ""),
+        "consultOutcome": str(rcase.get("consultOutcome") or ""),
+        "createdByName": str(rcase.get("createdByName") or ""),
         "robotCaseRevision": int(rcase.get("caseRevision", 1) or 1),
         "syncedAt": now_vn_iso(),
     }
@@ -3958,14 +4001,37 @@ def _reconcile_linked_robot_surgery_edit(
     if not robot_code:
         return None
 
-    if merged.get("approachType") != "robot" or merged.get("surgeryType") != "robot":
-        raise ApprovalEngineError(
-            409,
-            "ROBOT_APPROACH_LOCKED",
-            f"Ca mổ #{merged.get('id')} đang liên kết Điều phối Robot ({robot_code}) — không thể đổi khác đường mổ Robot.",
+    rcase = next(
+        (
+            r for r in (db.get("robotCases") or [])
+            if isinstance(r, dict) and str(r.get("robotCaseCode") or r.get("soNV") or "").strip() == robot_code
+        ),
+        None,
+    )
+    expected_approach = (
+        "noisoi"
+        if (
+            (isinstance(rcase, dict) and (rcase.get("status") == "da_xep_noisoi" or rcase.get("scheduledApproach") == "noisoi"))
+            or (isinstance(old_r.get("robotSyncMeta"), dict) and old_r["robotSyncMeta"].get("scheduledApproach") == "noisoi")
         )
+        else "robot"
+    )
+    if expected_approach == "robot":
+        if merged.get("approachType") != "robot" or merged.get("surgeryType") != "robot":
+            raise ApprovalEngineError(
+                409,
+                "ROBOT_APPROACH_LOCKED",
+                f"Ca mổ #{merged.get('id')} đang liên kết Điều phối Robot ({robot_code}) — không thể đổi khác đường mổ Robot.",
+            )
+    else:
+        if merged.get("approachType") != "noisoi" or merged.get("surgeryType") not in ("chuongtrinh", "yeucau", "bankhan"):
+            raise ApprovalEngineError(
+                409,
+                "ROBOT_APPROACH_LOCKED",
+                f"Ca mổ #{merged.get('id')} được phân lịch Mổ Nội soi từ Điều phối Robot ({robot_code}) — không thể đổi khác đường mổ Nội soi.",
+            )
 
-    synced_pairs = (
+    synced_pairs = [
         ("patientName", "patientName"),
         ("birthYear", "birthYear"),
         ("admissionId", "admissionId"),
@@ -3976,18 +4042,13 @@ def _reconcile_linked_robot_surgery_edit(
         ("assistSurgeon1", "assistSurgeon1"),
         ("duration", "durationMinutes"),
         ("surgeryTime", "surgeryTime"),
-    )
+    ]
+    if expected_approach == "noisoi":
+        synced_pairs.append(("surgeryType", "scheduledSurgeryType"))
     changed_keys = [sk for sk, _ in synced_pairs if (old_r.get(sk) or None) != (merged.get(sk) or None)]
     if not changed_keys:
         return None
 
-    rcase = next(
-        (
-            r for r in (db.get("robotCases") or [])
-            if isinstance(r, dict) and str(r.get("robotCaseCode") or r.get("soNV") or "").strip() == robot_code
-        ),
-        None,
-    )
     if rcase is None:
         return None
 
@@ -4030,11 +4091,11 @@ def _reconcile_linked_robot_surgery_edit(
         raise ApprovalEngineError(
             403,
             "ROBOT_SCHEDULE_COORDINATOR_REQUIRED",
-            "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền đổi Ngày mổ / PTV chính của ca Robot.",
+            "Chỉ Ban Chủ nhiệm hoặc Điều phối viên Robot mới có quyền đổi Ngày mổ / PTV chính của ca liên kết.",
             {"robotCaseCode": robot_code},
         )
 
-    if any(k in changed_keys for k in ("date", "mainSurgeon", "surgeryTime")):
+    if expected_approach == "robot" and any(k in changed_keys for k in ("date", "mainSurgeon", "surgeryTime")):
         cand_slot = {
             "surgeryDate": merged.get("date"),
             "operatingRoom": rcase.get("operatingRoom") or "PM Robot",
@@ -4074,16 +4135,20 @@ def _reconcile_linked_robot_surgery_edit(
             rcase[rk] = str(merged.get(sk) or "").strip() if rk == "admissionId" else copy.deepcopy(merged.get(sk))
     if "mainSurgeon" in changed_keys:
         rcase["mainSurgeonName"] = resolve_staff_name_by_id(db, merged.get("mainSurgeon"))
-    if any(k in changed_keys for k in ("diagnosis", "method")) and rcase.get("preopApprovedAt"):
-        rcase["postB2ClinicalDirty"] = True
     rcase["caseRevision"] = int(rcase.get("caseRevision", 1) or 1) + 1
     rcase["updatedAt"] = now_vn_iso()
     rcase["updatedBy"] = user.get("username") or user.get("sub") or "unknown"
 
     merged["robotSyncMeta"] = {
         **(old_r.get("robotSyncMeta") or {}),
-        "operatingRoom": rcase.get("operatingRoom") or "PM Robot",
-        "caseSlot": rcase.get("caseSlot") or "",
+        "scheduledApproach": expected_approach,
+        "operatingRoom": (rcase.get("operatingRoom") or "PM Robot") if expected_approach == "robot" else "",
+        "caseSlot": (rcase.get("caseSlot") or "") if expected_approach == "robot" else "",
+        "wardRoom": str(rcase.get("wardRoom") or ""),
+        "inpatientState": str(rcase.get("inpatientState") or "noi_tru"),
+        "plannedReadmitDate": str(rcase.get("plannedReadmitDate") or ""),
+        "consultOutcome": str(rcase.get("consultOutcome") or ""),
+        "createdByName": str(rcase.get("createdByName") or ""),
         "robotCaseRevision": rcase["caseRevision"],
         "syncedAt": now_vn_iso(),
     }
@@ -4666,6 +4731,87 @@ def build_approval_notifications(
             "read": False,
             "isTestSandboxCase": is_sandbox,
         })
+        next_id += 1
+
+    db.setdefault("nextIds", {})["notifications"] = next_id
+    return created
+
+
+def build_robot_handoff_notifications(
+    db: dict,
+    rcase: dict,
+    *,
+    actor_staff_id: int,
+    event_id: str,
+    notif_type: str,
+    message: str,
+    recipient_staff_ids: list,
+    dedup_key: str = None,
+    include_actor: bool = False,
+) -> list:
+    """
+    Zero-Local-PHI server-issued notifications for 5-step Robot Coordination handoffs.
+    Caller MUST pass data-minimized `message` (code + wardRoom + doctor/date/session only;
+    NEVER embed patientName, phone, or diagnosis because client stores notifications locally).
+    """
+    is_sandbox = bool((rcase or {}).get("isTestSandboxCase") is True)
+    internal_staff_ids = {
+        s.get("id") for s in (db.get("staff") or [])
+        if isinstance(s, dict) and is_pos_int(s.get("id"))
+    }
+    existing_notifs = db.get("notifications") or []
+    if dedup_key:
+        for n in existing_notifs:
+            if isinstance(n, dict) and n.get("dedupKey") == dedup_key:
+                return []
+
+    dedup_targets = []
+    for rid in (recipient_staff_ids or []):
+        if not is_pos_int(rid):
+            continue
+        rid_int = int(rid)
+        if not include_actor and is_pos_int(actor_staff_id) and rid_int == int(actor_staff_id):
+            continue
+        if rid_int in dedup_targets:
+            continue
+        if internal_staff_ids and rid_int not in internal_staff_ids:
+            continue
+        if is_sandbox and rid_int != DEPUTY_STAFF_ID:
+            continue
+        dedup_targets.append(rid_int)
+
+    if not dedup_targets:
+        return []
+
+    max_nid = max([int(n["id"]) for n in existing_notifs if isinstance(n, dict) and is_pos_int(n.get("id"))], default=0)
+    raw_next = int((db.get("nextIds") or {}).get("notifications", 1) or 1)
+    next_id = max(raw_next, max_nid + 1)
+
+    code = str((rcase or {}).get("robotCaseCode") or (rcase or {}).get("soNV") or "").strip()
+    prefix = "[TEST] " if is_sandbox else ""
+    final_msg = f"{prefix}{message}"
+    created = []
+    ts = now_vn_iso()
+    for target_id in dedup_targets:
+        rec = {
+            "id": next_id,
+            "sourceType": "robot_coordination",
+            "sourceEventId": f"{event_id}:to:{target_id}",
+            "type": notif_type,
+            "robotCaseCode": code,
+            "surgeryId": (rcase or {}).get("canonicalSurgeryId"),
+            "fromStaffId": int(actor_staff_id) if is_pos_int(actor_staff_id) else None,
+            "toStaffId": target_id,
+            "message": final_msg,
+            "detail": "",
+            "category": "🤖 Điều phối Robot",
+            "createdAt": ts,
+            "read": False,
+            "isTestSandboxCase": is_sandbox,
+        }
+        if dedup_key:
+            rec["dedupKey"] = dedup_key
+        created.append(rec)
         next_id += 1
 
     db.setdefault("nextIds", {})["notifications"] = next_id

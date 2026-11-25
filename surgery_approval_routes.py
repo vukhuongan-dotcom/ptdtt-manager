@@ -2096,7 +2096,7 @@ def register_surgery_approval_routes(app, sf_mod):
                 raise ApprovalEngineError(
                     409,
                     "ROBOT_CASE_USE_COORDINATOR_FLOW",
-                    f"Ca mổ #{sid} đang liên kết hồ sơ Điều phối Robot ({rec.get('robotCaseId')}). Vui lòng chọn Hoãn mổ / Xuất viện chờ / Xóa trong Tab Điều phối Robot.",
+                    f"Ca mổ #{sid} đang liên kết hồ sơ Điều phối Robot ({rec.get('robotCaseId')}). Vui lòng thao tác Hoãn mổ / Xuất viện chờ / Xóa trong Tab Điều phối Robot.",
                     {"robotCaseCode": rec.get("robotCaseId")},
                 )
             if not real_user.get("isSuperAdmin") and sf_mod.is_surgery_week_locked(rec.get("date", "")):
