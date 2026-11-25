@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Sửa nhãn 'Việc của tôi' trên Tutorial/thanh việc cần làm & tự động điền đầy đủ dữ liệu khi tạo ca giả lập [TEST] Điều phối Robot (`[FEAT-244]`, build `v2611251839`).
+- Sửa nhãn 'Việc của tôi' trên Tutorial/thanh việc cần làm & tự động điền đầy đủ dữ liệu khi tạo ca giả lập [TEST] Điều phối Robot (`[FEAT-244]`, commit `e5e91f3`, build `v2611251839`).
 - Xây dựng lại phân hệ Điều phối Lịch mổ Robot theo quy trình 5 bước, nhánh Nội soi 2 chiều, Xuất viện chờ giữ nguyên slot, thông báo Dual-WAL & Tutorial v2 (`[FEAT-243]`, commit `cd1862d`, build `v2611251807`).
 - Tutorial hướng dẫn thao tác vĩnh viễn trực tiếp trên tab Điều phối Lịch mổ Robot (`[FEAT-242]`, commit `31467ef`, build `v2611250843`).
 - Thiết kế lại giao diện Mobile (Android & iPhone, Sáng/Tối #0C1022) cho 6 tab: Lịch mổ tuần, Duyệt mổ, Nhân sự, Kế hoạch hoạt động, Báo cáo khoa học & Nghiên cứu khoa học (`[FEAT-241]`, commit `b95d47a`, build `v2611212135`).
