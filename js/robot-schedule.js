@@ -53,7 +53,7 @@
 
     const _getClientBuild = () => String(
         (typeof window !== 'undefined' && (window.SW_BUILD_VER || window.REQUIRED_VER)) ||
-        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611212135')
+        (typeof CLIENT_BUILD !== 'undefined' ? CLIENT_BUILD : '2611250843')
     );
 
     const _parseIsoLocal = (isoStr) => {
@@ -168,6 +168,7 @@
             const printRoot = document.getElementById('robot-pctxh-print-root');
             if (printRoot) printRoot.innerHTML = '';
             if (document.body) document.body.classList.remove('printing-robot-pctxh');
+            if (typeof RobotTutorial !== 'undefined') RobotTutorial.close({ silent: true });
         },
 
         canCloseModal(force = false) {
@@ -361,6 +362,9 @@
                     }
                 }
             }
+            if (this._bootstrap && typeof RobotTutorial !== 'undefined') {
+                RobotTutorial.maybeAutoStart();
+            }
         },
 
         render() {
@@ -460,6 +464,7 @@
                             ${perms.canDirectCreateCase ? `<button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_create_case">+ Tạo lịch Robot</button>` : ''}
                             ${perms.canLinkExistingSurgery && unlinkedCount > 0 ? `<button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_link_surgery">🔗 Gắn ca từ Lịch tuần (${unlinkedCount})</button>` : ''}
                             <button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_print_pctxh">🖨️ In A5 P.CTXH</button>
+                            <button type="button" id="rbt-tutorial-btn" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="open_tutorial" title="Xem hướng dẫn thao tác từng bước">❓ Hướng dẫn</button>
                             <button type="button" class="btn btn-sm rbt-btn-outline-light" data-rbt-action="reload" title="Đồng bộ lại">↻</button>
                         </div>
                         <div class="rbt-mobile-hdr-tools rbt-mobile-only-flex">
@@ -505,6 +510,13 @@
                         </div>
                     </div>
 
+                    <div class="rbt-mobile-guide-strip rbt-mobile-only-flex">
+                        <button type="button" id="rbt-mobile-tutorial-pill" class="rbt-mobile-guide-btn" data-rbt-action="open_tutorial">
+                            <span>❓ Hướng dẫn thao tác Robot</span>
+                            <span>Xem 7 bước ›</span>
+                        </button>
+                    </div>
+
                     <div class="rbt-subtabs-wrap" role="tablist" aria-label="Phân mục Điều phối Robot">
                         ${tabsHtml}
                     </div>
@@ -521,6 +533,8 @@
                 this.loadBootstrap(false)
                     .then(() => this._rerenderInPlace())
                     .catch(() => this._rerenderInPlace());
+            } else if (this._bootstrap && typeof RobotTutorial !== 'undefined') {
+                RobotTutorial.maybeAutoStart();
             }
         },
 
@@ -1288,6 +1302,10 @@
                 return;
             }
             if (act === 'open_mobile_menu') return this.openMobileHeaderMenuSheet();
+            if (act === 'open_tutorial') {
+                if (typeof RobotTutorial !== 'undefined') RobotTutorial.start({ force: true });
+                return;
+            }
             if (act === 'open_fab_sheet') return this.openFabCreateSheet();
             if (act === 'open_case_sheet') return this.openCaseActionSheet(code);
             if (act === 'prev_week' || act === 'next_week' || act === 'this_week') {
@@ -1523,6 +1541,7 @@
             const perms = bs.permissions || {};
             const html = `
                 <div id="rbt-header-menu-sheet" class="rbt-sheet-list">
+                    <button type="button" class="rbt-sheet-item rbt-sheet-item--guide" id="rbt-mobile-menu-tutorial-btn" data-rbt-action="open_tutorial">❓ Hướng dẫn thao tác Robot (7 bước)</button>
                     <button type="button" class="rbt-sheet-item rbt-sheet-item--primary" data-rbt-action="open_print_pctxh">🖨️ Xem trước &amp; In Phiếu A5 P.CTXH</button>
                     <button type="button" class="rbt-sheet-item" data-rbt-action="reload">↻ Đồng bộ lại dữ liệu máy chủ</button>
                     ${perms.canConfigureCoordinators ? `<button type="button" class="rbt-sheet-item" data-rbt-action="subtab" data-rbt-code="config">⚙️ Cấu hình Phân quyền Điều phối</button>` : ''}

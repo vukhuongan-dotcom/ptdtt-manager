@@ -1478,3 +1478,65 @@
         min-height: 44px;
     }
 }
+
+/* ===== FEAT-242: PERMANENT ROBOT TUTORIAL TRIGGER BUTTONS ===== */
+.rbt-mobile-guide-strip {
+    display: none;
+}
+
+.rbt-sheet-item--guide {
+    background: #EFF6FF;
+    color: #1D2357;
+    border-color: #BFDBFE;
+    font-weight: 700;
+}
+
+@media (min-width: 769px) {
+    .rbt-mobile-guide-strip {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .rbt-mobile-guide-strip {
+        display: flex;
+        width: 100%;
+    }
+
+    .rbt-mobile-guide-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid #BFDBFE;
+        background: #EFF6FF;
+        color: #1D2357;
+        font-size: 0.84rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .rbt-mobile-guide-btn span:last-child {
+        font-size: 0.76rem;
+        color: #1878B4;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    [data-theme="dark"] .rbt-mobile-guide-btn,
+    [data-theme="dark"] .rbt-sheet-item--guide {
+        background: #131A35;
+        color: #E2E8F0;
+        border-color: rgba(56, 189, 248, 0.32);
+    }
+
+    [data-theme="dark"] .rbt-mobile-guide-btn span:last-child {
+        color: #38BDF8;
+    }
+}

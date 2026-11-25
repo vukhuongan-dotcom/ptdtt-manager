@@ -1089,6 +1089,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                     sessionStorage.setItem('ptdtt_session', {json.dumps(session_json)});
                     localStorage.setItem('ptdtt_onboarding_done', 'true');
                     localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
+                    localStorage.setItem('ptdtt_robot_tutorial_v1_dismissed', '1');
                     """
                 )
                 pg = ctx.new_page()
@@ -1423,6 +1424,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 sessionStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
                 localStorage.setItem('ptdtt_onboarding_done', 'true');
                 localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
+                localStorage.setItem('ptdtt_robot_tutorial_v1_dismissed', '1');
                 """
             )
             page = ctx.new_page()
@@ -1634,6 +1636,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                 sessionStorage.setItem('ptdtt_session', {json.dumps(json.dumps(session_obj, ensure_ascii=False))});
                 localStorage.setItem('ptdtt_onboarding_done', 'true');
                 localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
+                localStorage.setItem('ptdtt_robot_tutorial_v1_dismissed', '1');
                 """
             )
             pg = ctx.new_page()

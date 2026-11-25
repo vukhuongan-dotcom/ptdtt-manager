@@ -372,3 +372,413 @@ const IconGuideNotice = {
         this.close({ silent: true });
     }
 };
+
+// ===== PERMANENT ROBOT SCHEDULE TUTORIAL (FEAT-242 · ZERO-LOCAL-PHI UI FLAG ONLY) =====
+const RobotTutorial = {
+    STORAGE_KEY_GLOBAL: 'ptdtt_robot_tutorial_v1_dismissed',
+    STORAGE_KEY_PREFIX: 'ptdtt_robot_tutorial_v1_dismissed:',
+    SESSION_KEY_PREFIX: 'ptdtt_robot_tutorial_v1_session:',
+    currentStep: 0,
+    _isOpen: false,
+    _autoTimer: null,
+    _keyHandler: null,
+    _repositionHandler: null,
+    _stepsCache: [],
+
+    _esc(v) {
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
+    _getUsername() {
+        try {
+            if (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') {
+                return Auth.getSession()?.username || 'guest';
+            }
+        } catch (_) { /* noop */ }
+        return 'guest';
+    },
+
+    isDismissed(username) {
+        const user = username || this._getUsername();
+        try {
+            if (localStorage.getItem(this.STORAGE_KEY_GLOBAL) === '1') return true;
+            if (localStorage.getItem(this.STORAGE_KEY_PREFIX + user) === '1') return true;
+            if (sessionStorage.getItem(this.SESSION_KEY_PREFIX + user) === '1') return true;
+        } catch (_) {
+            return false;
+        }
+        return false;
+    },
+
+    clearSessionDismiss(username) {
+        const user = username || this._getUsername();
+        try {
+            sessionStorage.removeItem(this.SESSION_KEY_PREFIX + user);
+        } catch (_) { /* noop */ }
+    },
+
+    shouldAutoShow(opts = {}) {
+        if (typeof App !== 'undefined' && App.currentPage !== 'robot-schedule') return false;
+        if (!document.getElementById('robot-schedule-page')) return false;
+        if (typeof RobotSchedulePage === 'undefined' || !RobotSchedulePage._bootstrap) return false;
+        if (this.isDismissed(opts.username)) return false;
+        try {
+            if (typeof Auth !== 'undefined' && Auth.getSession()?.mustChangePassword) return false;
+            if (typeof Onboarding !== 'undefined' && typeof Onboarding.shouldShow === 'function' && Onboarding.shouldShow()) {
+                return false;
+            }
+            if (document.getElementById('onboarding-overlay')) return false;
+            if (document.getElementById('icon-guide-overlay')) return false;
+            const modalOverlay = document.getElementById('modal-overlay');
+            if (modalOverlay && modalOverlay.classList.contains('active')) return false;
+        } catch (_) { /* noop */ }
+        return true;
+    },
+
+    maybeAutoStart() {
+        if (this._autoTimer) {
+            clearTimeout(this._autoTimer);
+            this._autoTimer = null;
+        }
+        if (this._isOpen || !this.shouldAutoShow()) return false;
+        this._autoTimer = setTimeout(() => {
+            this._autoTimer = null;
+            if (!this._isOpen && this.shouldAutoShow()) {
+                this.start({ auto: true });
+            }
+        }, 180);
+        return true;
+    },
+
+    getSteps(perms) {
+        const p = perms || (typeof RobotSchedulePage !== 'undefined' && RobotSchedulePage._bootstrap?.permissions) || {};
+        const roleSummary = p.isBcn
+            ? 'Ban Chủ nhiệm (Toàn quyền: tạo lịch trực tiếp, duyệt B1→B3, cấu hình Điều phối, lưu trữ xóa & in A5)'
+            : (p.isCoordinator
+                ? 'Điều phối viên Robot (tạo lịch trực tiếp, gắn ca Lịch tuần, duyệt B1→B3, hoãn/XV chờ & in A5)'
+                : (p.canCreate
+                    ? 'Bác sĩ điều trị / ĐD Trưởng (tạo + Ca tư vấn, cập nhật Kết quả TV, sửa/hoãn ca phụ trách & in A5)'
+                    : 'Xem lịch (theo dõi lịch tuần & thống kê Robot; SĐT bệnh nhân tự động ẩn theo Zero-Local-PHI)'));
+
+        const step4Desc = p.canDirectCreateCase
+            ? 'Bấm "+ Ca tư vấn" cho bệnh nhân mới cân nhắc, "+ Tạo lịch Robot" để đặt thẳng ngày/Ca, hoặc "🔗 Gắn ca từ Lịch tuần" (trên điện thoại dùng nút "+"). Chọn ngày bằng lịch, tối đa 3 ca/ngày (Ca 1–Ca 3).'
+            : (p.canCreate
+                ? 'Bấm "+ Ca tư vấn" (trên điện thoại dùng nút "+") để nhập ca mổ Robot dự kiến. Điều phối/BCN sẽ xếp lịch chính thức với giới hạn tối đa 3 ca/ngày (Ca 1–Ca 3).'
+                : 'Chỉ Bác sĩ điều trị, ĐD Trưởng, Điều phối và BCN được khởi tạo ca mới; tài khoản của bạn theo dõi trạng thái lịch theo thời gian thực.');
+
+        return [
+            {
+                icon: '🤖',
+                title: 'Tổng quan & Phân quyền của bạn',
+                desc: `Quyền hiện tại: ${roleSummary}. Mọi lịch mổ ở đây liên thông nguyên tử 2 chiều với Lịch mổ tuần và tuân thủ Zero-Local-PHI (không lưu dữ liệu bệnh nhân tại trình duyệt).`,
+                targets: ['#robot-schedule-page .rbt-header']
+            },
+            {
+                icon: '📊',
+                title: '4 Thẻ KPI Bấm Nhảy Nhanh',
+                desc: 'Chạm trực tiếp vào từng thẻ chỉ số (Chờ xếp lịch/Tiền phẫu, B3 Chờ mổ, Đã phẫu thuật Robot, Hoãn mổ/XV chờ) để nhảy ngay sang đúng hàng đợi.',
+                targets: ['#robot-schedule-page .rbt-kpi-grid']
+            },
+            {
+                icon: '🗂️',
+                title: '6 Phân mục Quản Lý Vòng Đời Ca',
+                desc: `Dùng thanh tab để theo dõi trọn quy trình: 📅 Lịch tuần · 🩺 Tư vấn & Chờ xếp lịch · ⏸️ Hoãn mổ & XV chờ · ✅ Đã mổ & Thống kê · 🗑️ Thùng rác${p.canConfigureCoordinators ? ' · ⚙️ Cấu hình BCN' : ''}.`,
+                targets: ['#robot-schedule-page .rbt-subtabs-wrap']
+            },
+            {
+                icon: '➕',
+                title: 'Khởi Tạo Ca Mới & Giới Hạn 3 Ca/Ngày',
+                desc: step4Desc,
+                targets: ['#rbt-mobile-fab', '#robot-schedule-page .rbt-header__actions', '#robot-schedule-page .rbt-header']
+            },
+            {
+                icon: '⚡',
+                title: 'Quy Trình 3 Bước B1 → B2 → B3 Trên Thẻ Ca',
+                desc: 'Cập nhật Kết quả TV → 📅 Xếp lịch B1 (Ca 1–Ca 3) → ✓ B2 Tiền phẫu (nhắc duyệt lại nếu sửa lâm sàng sau B2) → ✓ B3 Chờ mổ (tự đồng bộ sang Lịch mổ tuần & hiện huy hiệu Duyệt mổ khoa).',
+                targets: ['#robot-schedule-page .rbt-week-grid', '#robot-schedule-page .rbt-mcard-list', '#robot-schedule-page .rbt-panel']
+            },
+            {
+                icon: '⏸️',
+                title: 'Hoãn Mổ, Xuất Viện Chờ & Xếp Lịch Lại',
+                desc: 'Khi hoãn mổ (7 lý do chuẩn) hoặc cho Xuất viện chờ, slot Robot được tự trả lại cho ca khác. Khi BN sẵn sàng, mở tab "Hoãn mổ & XV chờ" và bấm "Xếp lịch lại" hoặc "Nhập lại & Xếp lịch".',
+                targets: ['#robot-schedule-page .rbt-subtab[data-rbt-code="postponed"]', '#robot-schedule-page .rbt-subtabs-wrap']
+            },
+            {
+                icon: '🖨️',
+                title: 'In Phiếu A5 P.CTXH & Xem Lại Bất Kỳ Lúc Nào',
+                desc: 'Bấm "🖨️ In A5 P.CTXH" (hoặc menu "⋮" trên điện thoại) để in phiếu màu/trắng đen theo Tuần hoặc Ngày. Bấm nút "❓ Hướng dẫn" cố định ngay trên tab bất kỳ lúc nào để mở lại hướng dẫn này.',
+                targets: ['#robot-schedule-page [data-rbt-action="open_print_pctxh"]', '#robot-schedule-page [data-rbt-action="open_mobile_menu"]', '#robot-schedule-page .rbt-header']
+            }
+        ];
+    },
+
+    _findVisibleTarget(selectors) {
+        if (!Array.isArray(selectors)) return null;
+        for (const sel of selectors) {
+            const el = document.querySelector(sel);
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            const cs = typeof getComputedStyle === 'function' ? getComputedStyle(el) : null;
+            if (rect.width > 0 && rect.height > 0 && (!cs || (cs.display !== 'none' && cs.visibility !== 'hidden'))) {
+                return el;
+            }
+        }
+        return null;
+    },
+
+    start(opts = {}) {
+        if (this._autoTimer) {
+            clearTimeout(this._autoTimer);
+            this._autoTimer = null;
+        }
+        if (!opts.force && !this.shouldAutoShow(opts)) return false;
+        if (!document.getElementById('robot-schedule-page')) return false;
+
+        this._stepsCache = this.getSteps(opts.perms);
+        this.currentStep = 0;
+        this._isOpen = true;
+        this._bindGlobalListeners();
+        this._renderStep();
+        return true;
+    },
+
+    goTo(idx) {
+        if (!this._isOpen) return;
+        const max = Math.max(0, this._stepsCache.length - 1);
+        this.currentStep = Math.min(max, Math.max(0, Number(idx) || 0));
+        this._renderStep();
+    },
+
+    next() {
+        if (!this._isOpen) return;
+        if (this.currentStep < this._stepsCache.length - 1) {
+            this.currentStep++;
+            this._renderStep();
+        } else {
+            this.dismissPermanently();
+            if (typeof Toast !== 'undefined' && Toast.success) {
+                Toast.success('🎉 Đã hoàn thành hướng dẫn Điều phối Robot! Bấm "❓ Hướng dẫn" để xem lại bất kỳ lúc nào.');
+            }
+        }
+    },
+
+    prev() {
+        if (!this._isOpen) return;
+        if (this.currentStep > 0) {
+            this.currentStep--;
+            this._renderStep();
+        }
+    },
+
+    close(opts = {}) {
+        if (this._autoTimer) {
+            clearTimeout(this._autoTimer);
+            this._autoTimer = null;
+        }
+        if (!opts.silent) {
+            try {
+                sessionStorage.setItem(this.SESSION_KEY_PREFIX + this._getUsername(), '1');
+            } catch (_) { /* noop */ }
+        }
+        this._isOpen = false;
+        this._unbindGlobalListeners();
+        const existing = document.getElementById('robot-tutorial-overlay');
+        if (existing) existing.remove();
+    },
+
+    dismissPermanently() {
+        const user = this._getUsername();
+        try {
+            localStorage.setItem(this.STORAGE_KEY_PREFIX + user, '1');
+            sessionStorage.setItem(this.SESSION_KEY_PREFIX + user, '1');
+        } catch (_) { /* noop */ }
+        this.close({ silent: true });
+    },
+
+    _bindGlobalListeners() {
+        this._unbindGlobalListeners();
+        this._keyHandler = (e) => {
+            if (!this._isOpen) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.close();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.next();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.prev();
+            }
+        };
+        this._repositionHandler = () => {
+            if (this._isOpen) this._positionElements();
+        };
+        document.addEventListener('keydown', this._keyHandler);
+        window.addEventListener('resize', this._repositionHandler);
+        window.addEventListener('scroll', this._repositionHandler, { passive: true });
+    },
+
+    _unbindGlobalListeners() {
+        if (this._keyHandler) {
+            document.removeEventListener('keydown', this._keyHandler);
+            this._keyHandler = null;
+        }
+        if (this._repositionHandler) {
+            window.removeEventListener('resize', this._repositionHandler);
+            window.removeEventListener('scroll', this._repositionHandler);
+            this._repositionHandler = null;
+        }
+    },
+
+    _renderStep() {
+        const step = this._stepsCache[this.currentStep];
+        if (!step) {
+            this.close({ silent: true });
+            return;
+        }
+        const total = this._stepsCache.length;
+        const isLast = this.currentStep === total - 1;
+
+        let overlay = document.getElementById('robot-tutorial-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'robot-tutorial-overlay';
+            overlay.className = 'rbt-tut-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'rbt-tut-title');
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay || e.target.classList.contains('rbt-tut-backdrop')) {
+                    this.close();
+                }
+            });
+            document.body.appendChild(overlay);
+        }
+
+        const targetEl = this._findVisibleTarget(step.targets);
+        if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+            try { targetEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' }); } catch (_) {}
+        }
+
+        const dotsHtml = this._stepsCache.map((_, i) => `
+            <button type="button"
+                class="rbt-tut-dot ${i < this.currentStep ? 'is-done' : ''} ${i === this.currentStep ? 'is-active' : ''}"
+                data-rbt-tut-dot="${i}"
+                aria-label="Chuyển tới bước ${i + 1}"
+                onclick="RobotTutorial.goTo(${i})"></button>
+        `).join('');
+
+        overlay.innerHTML = `
+            <div class="rbt-tut-backdrop" aria-hidden="true"></div>
+            <div class="rbt-tut-spotlight" id="rbt-tut-spotlight" aria-hidden="true"></div>
+            <div class="rbt-tut-card" id="rbt-tut-card">
+                <div class="rbt-tut-card-top">
+                    <span class="rbt-tut-badge">HƯỚNG DẪN MỔ ROBOT · Bước ${this.currentStep + 1}/${total}</span>
+                    <button type="button" class="rbt-tut-close-x" id="rbt-tut-close-x" aria-label="Đóng hướng dẫn" onclick="RobotTutorial.close()">&times;</button>
+                </div>
+                <div class="rbt-tut-heading">
+                    <span class="rbt-tut-icon" aria-hidden="true">${this._esc(step.icon)}</span>
+                    <h3 class="rbt-tut-title" id="rbt-tut-title">${this._esc(step.title)}</h3>
+                </div>
+                <p class="rbt-tut-desc">${this._esc(step.desc)}</p>
+                <div class="rbt-tut-dots" role="tablist" aria-label="Tiến độ các bước hướng dẫn">${dotsHtml}</div>
+                <div class="rbt-tut-footer">
+                    <div class="rbt-tut-dismiss-row">
+                        <button type="button" class="rbt-tut-btn rbt-tut-btn--ghost" id="rbt-tut-close-btn" onclick="RobotTutorial.close()">Đóng</button>
+                        <button type="button" class="rbt-tut-btn rbt-tut-btn--muted" id="rbt-tut-dismiss-btn" onclick="RobotTutorial.dismissPermanently()">Đã hiểu, không tự mở lại</button>
+                    </div>
+                    <div class="rbt-tut-nav-row">
+                        ${this.currentStep > 0
+                            ? `<button type="button" class="rbt-tut-btn rbt-tut-btn--secondary" id="rbt-tut-prev-btn" onclick="RobotTutorial.prev()">← Trước</button>`
+                            : '<span></span>'}
+                        <button type="button" class="rbt-tut-btn rbt-tut-btn--primary" id="rbt-tut-next-btn" onclick="RobotTutorial.next()">
+                            ${isLast ? '✓ Hoàn tất' : 'Tiếp theo →'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this._positionElements(targetEl);
+    },
+
+    _positionElements(explicitTarget) {
+        const step = this._stepsCache[this.currentStep];
+        const spotlight = document.getElementById('rbt-tut-spotlight');
+        const card = document.getElementById('rbt-tut-card');
+        if (!step || !card) return;
+
+        const targetEl = explicitTarget || this._findVisibleTarget(step.targets);
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const rect = targetEl ? targetEl.getBoundingClientRect() : null;
+
+        if (spotlight) {
+            if (rect && rect.width > 0 && rect.height > 0) {
+                const top = Math.max(4, rect.top - 4);
+                const left = Math.max(4, rect.left - 4);
+                const width = Math.min(vw - left - 4, rect.width + 8);
+                const height = Math.min(vh - top - 4, rect.height + 8);
+                spotlight.style.display = 'block';
+                spotlight.style.top = `${top}px`;
+                spotlight.style.left = `${left}px`;
+                spotlight.style.width = `${Math.max(24, width)}px`;
+                spotlight.style.height = `${Math.max(24, height)}px`;
+            } else {
+                spotlight.style.display = 'none';
+            }
+        }
+
+        if (vw <= 768) {
+            card.style.left = '12px';
+            card.style.right = '12px';
+            card.style.width = 'auto';
+            card.style.maxWidth = `${Math.max(260, vw - 24)}px`;
+            card.style.transform = 'none';
+            if (rect && rect.bottom > vh - 260 && rect.top > 250) {
+                card.style.top = '12px';
+                card.style.bottom = 'auto';
+            } else {
+                card.style.top = 'auto';
+                card.style.bottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
+            }
+            return;
+        }
+
+        card.style.right = 'auto';
+        card.style.bottom = 'auto';
+        card.style.width = '420px';
+        card.style.maxWidth = `${Math.max(320, vw - 32)}px`;
+        card.style.transform = 'none';
+
+        if (!rect) {
+            card.style.top = '50%';
+            card.style.left = '50%';
+            card.style.transform = 'translate(-50%, -50%)';
+            return;
+        }
+
+        const cRect = card.getBoundingClientRect();
+        const cardH = cRect.height || 260;
+        const cardW = cRect.width || 420;
+        const gap = 14;
+
+        let top = rect.bottom + gap;
+        if (top + cardH > vh - 16) {
+            const aboveTop = rect.top - cardH - gap;
+            top = aboveTop >= 16 ? aboveTop : Math.max(16, vh - cardH - 16);
+        }
+        let left = Math.min(Math.max(16, rect.left), Math.max(16, vw - cardW - 16));
+        card.style.top = `${Math.round(top)}px`;
+        card.style.left = `${Math.round(left)}px`;
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.RobotTutorial = RobotTutorial;
+}

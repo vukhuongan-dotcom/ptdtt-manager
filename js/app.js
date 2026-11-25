@@ -125,6 +125,9 @@ const App = {
         if (typeof IconGuideNotice !== 'undefined') {
             IconGuideNotice.close({ silent: true });
         }
+        if (typeof RobotTutorial !== 'undefined') {
+            RobotTutorial.close({ silent: true });
+        }
         document.getElementById('app').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
 
@@ -150,6 +153,9 @@ const App = {
 
         if (typeof IconGuideNotice !== 'undefined') {
             IconGuideNotice.clearSessionDismiss();
+        }
+        if (typeof RobotTutorial !== 'undefined') {
+            RobotTutorial.clearSessionDismiss();
         }
         this.showApp();
     },
@@ -733,6 +739,9 @@ const App = {
 
         this.currentPage = page;
         this._hideMobileNavTooltip();
+        if (page !== 'robot-schedule' && typeof RobotTutorial !== 'undefined') {
+            RobotTutorial.close({ silent: true });
+        }
 
         // Update nav active state + aria-current (A4: accessibility)
         let activeItem = null;
