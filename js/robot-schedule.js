@@ -74,7 +74,7 @@
     };
 
     const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
-    const CLIENT_BUILD = '2611251839';
+    const CLIENT_BUILD = '2611261009';
     const SANDBOX_PROFILES = [
         {
             patientName: '[TEST] Nguyễn Văn Minh',
@@ -854,6 +854,15 @@
                 await this._submitSimplePatch(code, 'reopen_consult', {}, 'Đã mở lại bước chờ xếp lịch tư vấn.');
                 return;
             }
+            if (action === 'open_confirm_delete') {
+                this.openConfirmDeleteModal(code);
+                return;
+            }
+            if (action === 'confirm_soft_delete') {
+                const reason = document.getElementById('rbt-del-reason')?.value?.trim() || 'Xóa ca chờ tư vấn';
+                await this._submitSimplePatch(code, 'soft_delete', { deleteReason: reason }, 'Đã chuyển ca chờ tư vấn vào Thùng rác.');
+                return;
+            }
             if (action === 'soft_delete') {
                 await this._submitSimplePatch(code, 'soft_delete', { deleteReason: 'Đưa vào thùng rác từ Điều phối Robot' }, 'Đã chuyển hồ sơ vào Thùng rác.');
                 return;
@@ -1193,6 +1202,9 @@
                             : ''}
                         ${tel ? `<a href="${esc(tel)}" class="rbt-btn-call" title="Gọi BN">📞 Gọi</a>` : ''}
                         <button type="button" class="btn btn-secondary rbt-btn-xs" data-rbt-action="open_detail" data-rbt-code="${esc(code)}">Chi tiết</button>
+                        ${this._canSoftDeleteCase(c)
+                            ? `<button type="button" class="btn btn-secondary rbt-btn-xs rbt-btn-danger-outline" data-rbt-action="open_confirm_delete" data-rbt-code="${esc(code)}">🗑️ Xóa</button>`
+                            : ''}
                     </div>
                 </article>`;
             };
@@ -1843,8 +1855,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label" for="rbt-inp-phone">Số điện thoại liên hệ ${isDirect ? '' : '*'}</label>
-                    <input id="rbt-inp-phone" type="tel" class="form-input" placeholder="09xxxxxxxx">
+                    <label class="form-label" for="rbt-inp-phone">Số điện thoại liên hệ (không bắt buộc)</label>
+                    <input id="rbt-inp-phone" type="tel" class="form-input" placeholder="09xxxxxxxx (có thể để trống)">
                 </div>
                 <div>
                     <label class="form-label" for="rbt-inp-ward-room">Phòng bệnh hiện tại *</label>
@@ -2455,6 +2467,33 @@
             }
         },
 
+        _canSoftDeleteCase(rc) {
+            if (!rc) return false;
+            const p = this._perms();
+            if (p.canSoftDelete) return true;
+            const isWait = ['cho_xep_tu_van', 'da_xep_tu_van', 'can_nhac'].includes(rc.status);
+            const me = this._currentUsername();
+            return Boolean(isWait && me && String(rc.createdByUsername || '').trim().toLowerCase() === me);
+        },
+
+        openConfirmDeleteModal(code) {
+            const rc = this._findCase(code);
+            if (!rc) return;
+            const html = `${this._dirtyBannerHtml()}
+            <div class="rbt-sheet-summary">
+                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} · Mã <strong>${esc(code)}</strong>
+            </div>
+            <p style="margin:10px 0 8px;font-size:0.9rem;">Ca sẽ được chuyển vào <strong>Thùng rác</strong> (vẫn khôi phục được trong vòng 14 ngày theo quy tắc Zero-RM).</p>
+            <div>
+                <label class="form-label" for="rbt-del-reason">Lý do xóa (tùy chọn)</label>
+                <input id="rbt-del-reason" type="text" class="form-input" value="Xóa ca chờ tư vấn" placeholder="VD: Nhập trùng hồ sơ / BN hủy khám">
+            </div>`;
+            const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
+                <button type="button" class="btn btn-danger" data-rbt-action="confirm_soft_delete" data-rbt-code="${esc(code)}">🗑️ Xác nhận Xóa</button>`;
+            this._markModalOpen('confirm_delete', code);
+            openRobotModal(`🗑️ Xóa ca chờ tư vấn (${code})`, html, footer);
+        },
+
         openCaseSheetModal(code) {
             this.openDetailModal(code);
         },
@@ -2525,6 +2564,9 @@
             }
             if (p.canManageRobot || p.canCreateConsult) {
                 footerBtns.push(`<button type="button" class="btn btn-secondary" data-rbt-action="open_edit_info" data-rbt-code="${esc(code)}">✏️ Sửa thông tin</button>`);
+            }
+            if (rc.status !== 'da_xoa' && this._canSoftDeleteCase(rc)) {
+                footerBtns.push(`<button type="button" class="btn btn-secondary rbt-btn-danger-outline" data-rbt-action="open_confirm_delete" data-rbt-code="${esc(code)}">🗑️ Xóa</button>`);
             }
 
             this._markModalOpen('detail', code);

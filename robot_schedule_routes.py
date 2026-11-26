@@ -1487,7 +1487,7 @@ def register_robot_schedule_routes(app, sf_mod):
 
             birth_year = _validate_birth_year(body.get("birthYear"))
             gender = _validate_gender(body.get("gender"))
-            phone = normalize_phone_vn(body.get("phone"), required=(action == "create_consult"))
+            phone = normalize_phone_vn(body.get("phone"), required=False)
             admission_id = str(body.get("admissionId") or "").strip()
             diagnosis = str(body.get("diagnosis") or "").strip()
             robot_proc = str(body.get("robotProcedure") or "").strip()
@@ -2352,8 +2352,13 @@ def register_robot_schedule_routes(app, sf_mod):
 
             elif action == "soft_delete":
                 _validate_allowed_fields(body, {"action", "expectedRevision", "deleteReason"})
-                if not perms["canSoftDelete"]:
-                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm hoặc Điều phối viên mới có quyền đưa ca vào Thùng rác.")
+                is_wait_owner = bool(
+                    cur_status in ("cho_xep_tu_van", "da_xep_tu_van", "can_nhac")
+                    and uname
+                    and str(rcase.get("createdByUsername") or "").strip().lower() == uname.lower()
+                )
+                if not (perms["canSoftDelete"] or is_wait_owner):
+                    raise ApprovalEngineError(403, "ROBOT_COORDINATOR_REQUIRED", "Chỉ Ban Chủ nhiệm, Điều phối viên hoặc Bác sĩ tạo ca chờ tư vấn mới có quyền đưa ca này vào Thùng rác.")
                 if cur_status == "da_xoa":
                     raise ApprovalEngineError(409, "ALREADY_IN_TRASH", "Ca này đã nằm trong Thùng rác.")
                 rcase["preDeleteStatus"] = cur_status

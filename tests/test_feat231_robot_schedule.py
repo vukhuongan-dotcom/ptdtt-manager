@@ -74,7 +74,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
         cls.src_db = json.loads((REPO_ROOT / "data" / "db.json").read_text(encoding="utf-8"))
         cls.pw_hash = cls.sf._hash_password("RobotStrong2026")
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611251839"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611261009"
 
         cls.pw = sync_playwright().start()
         cls.browsers = {
@@ -403,6 +403,38 @@ class TestFeat231RobotSchedule(unittest.TestCase):
         r_boot = client.get("/api/robot/bootstrap", headers=self._headers("vcnguyen")).get_json()
         got = next(c for c in r_boot["cases"] if c["robotCaseCode"] == rc["robotCaseCode"])
         self.assertEqual(got["diagnosis"], "K trực tràng cT3N1 (Đã hội chẩn)")
+
+        # Create consult WITHOUT phone succeeds; invalid phone -> 422; owner doctor can soft_delete waiting consult, non-owner nurse -> 403
+        r_bad_ph = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={"action": "create_consult", "patientName": "BN Sai SĐT", "phone": "123", "wardRoom": "B708", "labsReadyConfirmed": True, "diagnosis": "K trực tràng"},
+        )
+        self.assertEqual(r_bad_ph.status_code, 422)
+
+        r_noph = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={"action": "create_consult", "patientName": "BN Không SĐT", "phone": "", "wardRoom": "B708", "labsReadyConfirmed": True, "diagnosis": "U đại tràng phải"},
+        )
+        self.assertEqual(r_noph.status_code, 201, r_noph.get_data(as_text=True))
+        noph_rc = r_noph.get_json()["case"]
+        self.assertEqual(noph_rc["phone"], "")
+
+        r_del_deny = client.patch(
+            f"/api/robot/cases/{noph_rc['robotCaseCode']}",
+            headers=self._headers("ttdanh"),
+            json={"action": "soft_delete", "expectedRevision": noph_rc["caseRevision"]},
+        )
+        self.assertEqual(r_del_deny.status_code, 403)
+
+        r_del_ok = client.patch(
+            f"/api/robot/cases/{noph_rc['robotCaseCode']}",
+            headers=self._headers("vnatuan"),
+            json={"action": "soft_delete", "expectedRevision": noph_rc["caseRevision"], "deleteReason": "Nhập nhầm ca chờ tư vấn"},
+        )
+        self.assertEqual(r_del_ok.status_code, 200, r_del_ok.get_data(as_text=True))
+        self.assertEqual(r_del_ok.get_json()["case"]["status"], "da_xoa")
 
     def test_tc_r02_laparoscopic_decision_2way_sync_and_no_robot_slot_limit(self):
         _, _, client = self._new_env(sandbox_only=False)
@@ -828,19 +860,27 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                     ov = page.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
                     self.assertLessEqual(ov, 0, f"Desktop overflow dark={dark}: {ov}")
 
-                # Step 1 create consult via UI
+                # Step 1 create consult via UI WITHOUT phone -> succeeds
                 page.click('.rbt-subtab[data-rbt-subtab="consult"]')
                 page.click('[data-rbt-action="open_create_consult"]')
                 page.wait_for_selector("#rbt-inp-name", timeout=5000)
                 page.fill("#rbt-inp-name", "BN UI Năm Bước")
                 page.fill("#rbt-inp-birth", "1972")
-                page.fill("#rbt-inp-phone", CANARY_PHONE)
+                page.fill("#rbt-inp-phone", "")
                 page.select_option("#rbt-inp-ward-room", "B711")
                 page.fill("#rbt-inp-diag", "K đại tràng Sigma")
                 page.check("#rbt-inp-labs-ready")
                 page.click('[data-rbt-action="submit_create"]')
                 page.wait_for_timeout(500)
                 self.assertIn("BN UI Năm Bước", page.inner_text("#robot-schedule-page"))
+
+                # Soft-delete the earlier XSS waiting consult directly via 🗑️ Xóa button + confirm modal
+                del_btns = page.locator('[data-rbt-action="open_confirm_delete"]')
+                self.assertGreaterEqual(del_btns.count(), 1)
+                del_btns.last.click()
+                page.wait_for_selector('[data-rbt-action="confirm_soft_delete"]', timeout=5000)
+                page.click('[data-rbt-action="confirm_soft_delete"]')
+                page.wait_for_timeout(500)
 
                 # Zalo copy captures Zero-PHI schedule with \n\n after header
                 page.evaluate("""() => {

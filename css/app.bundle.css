@@ -15063,6 +15063,23 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
 [data-theme="dark"] .rbt-sandbox-box__label {
     color: #E2E8F0;
 }
+
+.rbt-btn-danger-outline {
+    border-color: rgba(220, 38, 38, 0.45);
+    color: #B91C1C;
+    background: rgba(220, 38, 38, 0.06);
+}
+
+.rbt-btn-danger-outline:hover {
+    background: rgba(220, 38, 38, 0.14);
+    border-color: #DC2626;
+}
+
+[data-theme="dark"] .rbt-btn-danger-outline {
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #FECACA;
+    background: rgba(220, 38, 38, 0.16);
+}
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;
