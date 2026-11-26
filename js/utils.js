@@ -831,7 +831,7 @@ const Modal = {
         if (this._vpSyncActive || this._openFocusTimerId !== null) {
             this._teardownViewportSync({ keepScrollLock: true });
         }
-        if (modal) modal.classList.remove('sap-modal-xl', 'sap-drawer-right');
+        if (modal) modal.classList.remove('sap-modal-xl', 'sap-drawer-right', 'rbt-modal-wide', 'rbt-modal-md', 'rbt-modal-sm');
         if (overlay) overlay.classList.remove('sap-drawer-overlay', 'kb-open');
 
         // Lock background scroll and preserve scrollY on first open
@@ -928,7 +928,7 @@ const Modal = {
         }
         this._teardownViewportSync({ keepScrollLock: false });
         const modalEl = document.getElementById('modal');
-        if (modalEl) modalEl.classList.remove('sap-modal-xl', 'sap-drawer-right');
+        if (modalEl) modalEl.classList.remove('sap-modal-xl', 'sap-drawer-right', 'rbt-modal-wide', 'rbt-modal-md', 'rbt-modal-sm');
         const overlay = document.getElementById('modal-overlay');
         if (overlay) {
             overlay.classList.remove('active', 'sap-drawer-overlay', 'kb-open');

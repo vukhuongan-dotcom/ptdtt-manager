@@ -170,7 +170,7 @@ class TestFeat242RobotTutorial(unittest.TestCase):
         cls.rroutes.ensure_robot_bootstrapped(cls.sf)
 
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611261009"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611261952"
 
         # Seed 1 Robot case with canary phone to verify Zero-Local-PHI
         client = cls.sf.app.test_client()
@@ -296,6 +296,16 @@ class TestFeat242RobotTutorial(unittest.TestCase):
                     s2_desc = page.locator("#robot-tutorial-overlay .rbt-tut-desc").inner_text()
                     self.assertIn("Việc của tôi", s2_desc)
                     self.assertNotIn("#rbt-my-work-bar", s2_desc)
+                elif step_num == 4:
+                    s4_desc = page.locator("#robot-tutorial-overlay .rbt-tut-desc").inner_text()
+                    self.assertIn("Cấp cứu", s4_desc)
+                    self.assertIn("Phòng khám", s4_desc)
+                    self.assertIn("nhập tay", s4_desc)
+                    self.assertIn("không bắt buộc", s4_desc)
+                elif step_num == 5:
+                    s5_desc = page.locator("#robot-tutorial-overlay .rbt-tut-desc").inner_text()
+                    self.assertIn("Sáng/Chiều", s5_desc)
+                    self.assertIn("Nội soi", s5_desc)
                 spot_visible = page.evaluate("() => getComputedStyle(document.getElementById('rbt-tut-spotlight')).display !== 'none'")
                 self.assertTrue(spot_visible, f"Spotlight hidden at step {step_num}")
                 if step_num < 7:

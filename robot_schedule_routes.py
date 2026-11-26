@@ -87,6 +87,8 @@ ROBOT_ACTIVE_SCHEDULE_STATUSES = {"da_xep_robot", "da_xep_noisoi"}
 ROBOT_INPATIENT_STATES = {"noi_tru", "xuat_vien_cho", "da_nhap_lai"}
 ROBOT_VALID_CONSULT_SESSIONS = ("sang", "chieu")
 ROBOT_INDICATION_TYPES = ("robot_hoac_noisoi", "uu_tien_robot", "uu_tien_noisoi")
+ROBOT_ADMISSION_SOURCES = ("", "cap_cuu", "phong_kham")
+ROBOT_ADMITTING_DOCTOR_TYPES = ("", "staff", "external", "manual")
 
 _HHMM_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
@@ -159,6 +161,192 @@ def _normalize_ward_room(raw_room, *, required: bool = False) -> str:
         "INVALID_WARD_ROOM",
         f"Phòng bệnh phải thuộc khoa ({', '.join(ROBOT_WARD_ROOMS)}).",
     )
+
+
+def _format_external_doctor_name(ext: dict) -> str:
+    name = str(ext.get("name") or "").strip()
+    title = str(ext.get("title") or "").strip().rstrip(".")
+    if not title:
+        return name
+    if not name:
+        return title
+    return f"{title}. {name}"
+
+
+def _is_eligible_internal_admitting_doctor(st: dict, today_str: str) -> bool:
+    if not isinstance(st, dict) or not is_pos_int(st.get("id")):
+        return False
+    if int(st["id"]) in TRAINEE_STAFF_IDS:
+        return False
+    if str(st.get("status") or "active").strip().lower() == "inactive":
+        return False
+    start_d = str(st.get("startDate") or "").strip()
+    if start_d and is_valid_iso_date(start_d) and start_d > today_str:
+        return False
+    role_lc = str(st.get("role") or "").strip().lower()
+    if any(bad in role_lc for bad in ("điều dưỡng", "hộ lý", "thư ký", "học viên", "nội trú")):
+        return False
+    return (
+        "bác sĩ chính" in role_lc
+        or "bs chính" in role_lc
+        or "bs trưởng khoa" in role_lc
+        or "bs phó trưởng khoa" in role_lc
+    )
+
+
+def _build_admitting_doctors_catalog(db: dict, today_str: str) -> dict:
+    raw_internal = [
+        st for st in (db.get("staff") or [])
+        if _is_eligible_internal_admitting_doctor(st, today_str)
+    ]
+    last_counts = {}
+    for st in raw_internal:
+        parts = [p for p in str(st.get("name") or "").strip().split() if p]
+        if parts:
+            lw = parts[-1].lower()
+            last_counts[lw] = last_counts.get(lw, 0) + 1
+
+    internal = []
+    for st in raw_internal:
+        sid = int(st["id"])
+        name = str(st.get("name") or "").strip()
+        title = str(st.get("title") or "").strip()
+        role = str(st.get("role") or "").strip()
+        parts = [p for p in name.split() if p]
+        if sid == CHIEF_STAFF_ID:
+            short_name = f"TS. {parts[-1]}" if parts else "TS. Hữu"
+        elif parts and (len(parts) >= 2 and (sid in (7, 12) or last_counts.get(parts[-1].lower(), 0) > 1)):
+            short_name = f"BS. {' '.join(parts[-2:])}"
+        elif parts:
+            short_name = f"BS. {parts[-1]}"
+        else:
+            short_name = name
+        internal.append({
+            "id": sid,
+            "name": name,
+            "title": title,
+            "fullName": format_doctor_full_name(st) or name,
+            "shortName": short_name,
+            "role": role,
+            "group": "internal",
+        })
+
+    external = []
+    for d in (db.get("externalDoctors") or []):
+        if not isinstance(d, dict) or not is_pos_int(d.get("id")):
+            continue
+        name = str(d.get("name") or "").strip()
+        if not name:
+            continue
+        title = str(d.get("title") or "").strip()
+        external.append({
+            "id": int(d["id"]),
+            "name": name,
+            "title": title,
+            "fullName": _format_external_doctor_name(d),
+            "department": str(d.get("department") or "").strip(),
+            "position": str(d.get("position") or "").strip(),
+            "group": "external",
+        })
+    return {"internal": internal, "external": external}
+
+
+def _normalize_admission_source_and_doctor(db: dict, body: dict, *, existing_case: dict = None) -> dict:
+    raw_src = body["admissionSource"] if "admissionSource" in body else (existing_case or {}).get("admissionSource", "")
+    src = str(raw_src or "").strip().lower()
+    if src not in ROBOT_ADMISSION_SOURCES:
+        raise ApprovalEngineError(
+            422,
+            "INVALID_ADMISSION_SOURCE",
+            "Nguồn bệnh nhân phải là Cấp cứu (cap_cuu), Phòng khám (phong_kham) hoặc để trống.",
+        )
+    if src != "phong_kham":
+        return {
+            "admissionSource": src,
+            "admittingDoctorType": "",
+            "admittingDoctorId": None,
+            "admittingDoctorName": "",
+        }
+
+    has_doc_keys = any(k in body for k in ("admittingDoctorType", "admittingDoctorId", "admittingDoctorName"))
+    if not has_doc_keys and isinstance(existing_case, dict) and existing_case.get("admissionSource") == "phong_kham":
+        return {
+            "admissionSource": "phong_kham",
+            "admittingDoctorType": str(existing_case.get("admittingDoctorType") or "").strip(),
+            "admittingDoctorId": existing_case.get("admittingDoctorId"),
+            "admittingDoctorName": str(existing_case.get("admittingDoctorName") or "").strip(),
+        }
+
+    dtype = str(body.get("admittingDoctorType") or "").strip().lower()
+    raw_did = body.get("admittingDoctorId")
+    dname = str(body.get("admittingDoctorName") or "").strip()
+
+    if dtype not in ROBOT_ADMITTING_DOCTOR_TYPES:
+        raise ApprovalEngineError(422, "INVALID_ADMITTING_DOCTOR_TYPE", "Loại bác sĩ cho nhập không hợp lệ.")
+    if dtype == "" and dname:
+        dtype = "manual"
+    if dtype == "" and raw_did not in ("", None):
+        raise ApprovalEngineError(422, "INVALID_ADMITTING_DOCTOR_TYPE", "Vui lòng chọn nhóm Bác sĩ cho nhập hợp lệ.")
+
+    if dtype == "staff":
+        if not is_pos_int(raw_did):
+            raise ApprovalEngineError(422, "INVALID_ADMITTING_DOCTOR", "Mã Bác sĩ chính cho nhập không hợp lệ.")
+        sid = int(raw_did)
+        today_str = _today_vn_iso()
+        st = next((x for x in (db.get("staff") or []) if isinstance(x, dict) and x.get("id") == sid), None)
+        if not st or not _is_eligible_internal_admitting_doctor(st, today_str):
+            raise ApprovalEngineError(
+                422,
+                "INVALID_ADMITTING_DOCTOR",
+                "Bác sĩ cho nhập không thuộc danh sách Bác sĩ chính trong khoa.",
+            )
+        return {
+            "admissionSource": "phong_kham",
+            "admittingDoctorType": "staff",
+            "admittingDoctorId": sid,
+            "admittingDoctorName": format_doctor_full_name(st) or str(st.get("name") or "").strip(),
+        }
+
+    if dtype == "external":
+        if not is_pos_int(raw_did):
+            raise ApprovalEngineError(422, "INVALID_ADMITTING_DOCTOR", "Mã Bác sĩ ngoài khoa không hợp lệ.")
+        eid = int(raw_did)
+        ext = next((x for x in (db.get("externalDoctors") or []) if isinstance(x, dict) and x.get("id") == eid), None)
+        if not ext or not str(ext.get("name") or "").strip():
+            raise ApprovalEngineError(
+                422,
+                "INVALID_ADMITTING_DOCTOR",
+                "Không tìm thấy Bác sĩ ngoài khoa trong danh sách Nhân sự.",
+            )
+        return {
+            "admissionSource": "phong_kham",
+            "admittingDoctorType": "external",
+            "admittingDoctorId": eid,
+            "admittingDoctorName": _format_external_doctor_name(ext),
+        }
+
+    if dtype == "manual":
+        if len(dname) < 2:
+            raise ApprovalEngineError(
+                422,
+                "ADMITTING_DOCTOR_NAME_REQUIRED",
+                "Vui lòng nhập tên Bác sĩ phòng khám cho nhập (tối thiểu 2 ký tự).",
+            )
+        if len(dname) > 120:
+            raise ApprovalEngineError(422, "INVALID_ADMITTING_DOCTOR", "Tên Bác sĩ cho nhập tối đa 120 ký tự.")
+        return {
+            "admissionSource": "phong_kham",
+            "admittingDoctorType": "manual",
+            "admittingDoctorId": None,
+            "admittingDoctorName": dname,
+        }
+
+    return {
+        "admissionSource": "phong_kham",
+        "admittingDoctorType": "",
+        "admittingDoctorId": None,
+        "admittingDoctorName": "",
+    }
 
 
 def _coordinator_staff_ids(db: dict, sf_mod=None) -> list:
@@ -1402,6 +1590,7 @@ def register_robot_schedule_routes(app, sf_mod):
                 "historicalRobotSurgeries": historical_robot,
                 "unlinkedFutureRobotSurgeries": unlinked_future_robot,
                 "surgeons": surgeons,
+                "admittingDoctors": _build_admitting_doctors_catalog(db, today_str),
                 "staffAccounts": staff_accounts,
                 "wardRooms": list(ROBOT_WARD_ROOMS),
                 "refusalReasons": ROBOT_REFUSAL_REASONS,
@@ -1450,6 +1639,10 @@ def register_robot_schedule_routes(app, sf_mod):
                 "consultNote",
                 "note",
                 "isTestSandboxCase",
+                "admissionSource",
+                "admittingDoctorType",
+                "admittingDoctorId",
+                "admittingDoctorName",
             }
             sched_fields = {
                 "surgeryDate",
@@ -1488,6 +1681,7 @@ def register_robot_schedule_routes(app, sf_mod):
             birth_year = _validate_birth_year(body.get("birthYear"))
             gender = _validate_gender(body.get("gender"))
             phone = normalize_phone_vn(body.get("phone"), required=False)
+            adm_source_info = _normalize_admission_source_and_doctor(db, body)
             admission_id = str(body.get("admissionId") or "").strip()
             diagnosis = str(body.get("diagnosis") or "").strip()
             robot_proc = str(body.get("robotProcedure") or "").strip()
@@ -1517,6 +1711,10 @@ def register_robot_schedule_routes(app, sf_mod):
                 "phone": phone,
                 "admissionId": admission_id,
                 "wardRoom": ward_room,
+                "admissionSource": adm_source_info["admissionSource"],
+                "admittingDoctorType": adm_source_info["admittingDoctorType"],
+                "admittingDoctorId": adm_source_info["admittingDoctorId"],
+                "admittingDoctorName": adm_source_info["admittingDoctorName"],
                 "labsReadyConfirmed": bool(labs_ok is not False),
                 "indicationType": ind_type,
                 "diagnosis": diagnosis,
@@ -2049,7 +2247,7 @@ def register_robot_schedule_routes(app, sf_mod):
             elif action == "edit_info":
                 _validate_allowed_fields(
                     body,
-                    {"action", "expectedRevision", "patientName", "birthYear", "gender", "phone", "admissionId", "wardRoom", "indicationType", "labsReadyConfirmed", "diagnosis", "robotProcedure", "mainSurgeonId", "assistSurgeon1", "note", "expectedTimeframe", "consultNote"},
+                    {"action", "expectedRevision", "patientName", "birthYear", "gender", "phone", "admissionId", "wardRoom", "admissionSource", "admittingDoctorType", "admittingDoctorId", "admittingDoctorName", "indicationType", "labsReadyConfirmed", "diagnosis", "robotProcedure", "mainSurgeonId", "assistSurgeon1", "note", "expectedTimeframe", "consultNote"},
                 )
                 is_owner = (
                     (rcase.get("createdByUsername") == uname and uname)
@@ -2085,6 +2283,8 @@ def register_robot_schedule_routes(app, sf_mod):
                     rcase["admissionId"] = str(body.get("admissionId") or "").strip()
                 if "wardRoom" in body:
                     rcase["wardRoom"] = _normalize_ward_room(body.get("wardRoom"), required=False)
+                if any(k in body for k in ("admissionSource", "admittingDoctorType", "admittingDoctorId", "admittingDoctorName")):
+                    rcase.update(_normalize_admission_source_and_doctor(db, body, existing_case=rcase))
                 if "indicationType" in body and str(body.get("indicationType") or "").strip() in ROBOT_INDICATION_TYPES:
                     rcase["indicationType"] = str(body.get("indicationType")).strip()
                 if "labsReadyConfirmed" in body:

@@ -15080,6 +15080,550 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #FECACA;
     background: rgba(220, 38, 38, 0.16);
 }
+
+/* =====================================================================
+   FEAT-246: ADMISSION SOURCE, DOCTOR CHIP PICKER & DUAL MOBILE/LAPTOP FORMS
+   ===================================================================== */
+.rbt-sr-select {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.rbt-badge--source-cc {
+    background: rgba(220, 38, 38, 0.11);
+    color: #B91C1C;
+    border: 1px solid rgba(220, 38, 38, 0.28);
+}
+
+.rbt-badge--source-pk {
+    background: rgba(24, 120, 180, 0.12);
+    color: #0F4C81;
+    border: 1px solid rgba(24, 120, 180, 0.28);
+}
+
+.rbt-modal-root {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rbt-modal-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding-bottom: 4px;
+}
+
+.rbt-section-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border, #E2E8F0);
+    background: var(--bg-card, #FFFFFF);
+    min-width: 0;
+}
+
+.rbt-section-card__title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #1D2357;
+    margin-bottom: 10px;
+}
+
+.rbt-row-patient-3col {
+    display: grid;
+    grid-template-columns: 2fr 0.85fr 1.15fr;
+    gap: 10px;
+    align-items: end;
+}
+
+.rbt-row-patient-3col > *,
+.rbt-form-grid > *,
+.rbt-branch-split > * {
+    min-width: 0;
+}
+
+.rbt-seg-wrap {
+    position: relative;
+}
+
+.rbt-seg-group {
+    display: grid;
+    gap: 6px;
+}
+
+.rbt-seg-group--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rbt-seg-group--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rbt-seg-group--stack { grid-template-columns: 1fr; }
+
+.rbt-seg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-default, #CBD5E1);
+    background: var(--bg-secondary, #F8FAFC);
+    color: var(--text-primary, #0F172A);
+    font-size: 0.84rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.rbt-seg-group--stack .rbt-seg-btn {
+    justify-content: flex-start;
+    text-align: left;
+    padding: 8px 12px;
+}
+
+.rbt-seg-btn:hover {
+    border-color: #1878B4;
+}
+
+.rbt-seg-btn.is-selected {
+    background: #1D2357;
+    color: #FFFFFF;
+    border-color: #1D2357;
+}
+
+.rbt-adm-wrap {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #E2E8F0);
+    background: var(--surface-alt, #F8FAFC);
+}
+
+.rbt-adm-wrap.rbt-field-invalid {
+    border-color: #DC2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.16);
+}
+
+.rbt-adm-doc-panel {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border, #CBD5E1);
+}
+
+.rbt-adm-doc-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.rbt-adm-selected {
+    font-size: 0.8rem;
+}
+
+.rbt-adm-placeholder {
+    color: var(--text-secondary, #64748B);
+    font-style: italic;
+}
+
+.rbt-adm-selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(84, 168, 60, 0.14);
+    border: 1px solid rgba(84, 168, 60, 0.4);
+    color: #2E6B1E;
+    font-size: 0.78rem;
+}
+
+.rbt-adm-clear-btn {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.rbt-adm-doc-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.rbt-doc-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rbt-doc-tab {
+    min-height: 36px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default, #CBD5E1);
+    background: var(--bg-card, #FFFFFF);
+    color: var(--text-primary, #0F172A);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.rbt-doc-tab.is-selected {
+    background: #1878B4;
+    border-color: #1878B4;
+    color: #FFFFFF;
+}
+
+.rbt-doc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 185px;
+    overflow-y: auto;
+    padding: 2px 0;
+}
+
+.rbt-doc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 36px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default, #CBD5E1);
+    background: var(--bg-card, #FFFFFF);
+    color: var(--text-primary, #0F172A);
+    font-size: 0.79rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    text-align: left;
+}
+
+.rbt-doc-chip:hover {
+    border-color: #1878B4;
+}
+
+.rbt-doc-chip.is-selected {
+    background: #1D2357;
+    border-color: #1D2357;
+    color: #FFFFFF;
+}
+
+.rbt-doc-chip__dept {
+    opacity: 0.78;
+    font-weight: 500;
+}
+
+.rbt-doc-chip--manual {
+    border-style: dashed;
+    border-color: #1878B4;
+    color: #1878B4;
+    background: rgba(24, 120, 180, 0.06);
+}
+
+.rbt-adm-manual-wrap {
+    margin-top: 8px;
+}
+
+.rbt-adm-manual-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #64748B);
+}
+
+.rbt-room-picker {
+    position: relative;
+}
+
+.rbt-room-chips {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.rbt-room-chip {
+    min-height: 38px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border-default, #CBD5E1);
+    background: var(--bg-secondary, #F8FAFC);
+    color: var(--text-primary, #0F172A);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    text-align: center;
+}
+
+.rbt-room-chip:hover {
+    border-color: #1878B4;
+}
+
+.rbt-room-chip.is-selected {
+    background: #1D2357;
+    border-color: #1D2357;
+    color: #FFFFFF;
+}
+
+.rbt-quick-chips,
+.rbt-surgeon-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 8px;
+}
+
+.rbt-quick-chip {
+    min-height: 34px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default, #CBD5E1);
+    background: var(--bg-secondary, #F8FAFC);
+    color: var(--text-primary, #0F172A);
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.rbt-quick-chip:hover {
+    border-color: #1878B4;
+}
+
+.rbt-quick-chip.is-selected {
+    background: #1D2357;
+    border-color: #1D2357;
+    color: #FFFFFF;
+}
+
+.rbt-optional-group {
+    border-radius: 12px;
+    border: 1px solid var(--border, #E2E8F0);
+    background: var(--bg-card, #FFFFFF);
+}
+
+.rbt-optional-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 11px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1D2357;
+    cursor: pointer;
+    list-style: none;
+    touch-action: manipulation;
+}
+
+.rbt-optional-summary::-webkit-details-marker {
+    display: none;
+}
+
+.rbt-optional-body {
+    padding: 4px 14px 14px;
+}
+
+.rbt-branch-split {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 12px;
+    align-items: start;
+}
+
+.rbt-kbd-hint {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: inherit;
+    background: rgba(255, 255, 255, 0.18);
+    color: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+@media (min-width: 769px) {
+    #modal.rbt-modal-wide { max-width: 920px; }
+    #modal.rbt-modal-md { max-width: 680px; }
+    #modal.rbt-modal-sm { max-width: 540px; }
+
+    .rbt-modal-root .rbt-decision-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rbt-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border, #E2E8F0);
+    }
+}
+
+@media (max-width: 768px) {
+    .rbt-row-patient-3col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rbt-row-patient-3col .rbt-col-name {
+        grid-column: 1 / -1;
+    }
+
+    .rbt-room-chips {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rbt-modal-root .rbt-decision-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .rbt-modal-root .rbt-decision-card {
+        min-height: 60px;
+        padding: 10px 11px;
+    }
+
+    .rbt-branch-split {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .rbt-seg-btn,
+    .rbt-room-chip,
+    .rbt-doc-chip,
+    .rbt-quick-chip,
+    .rbt-doc-tab,
+    .rbt-optional-summary {
+        min-height: 44px;
+    }
+
+    #modal-body [data-rbt-modal="1"] input[type="checkbox"],
+    #modal-body [data-rbt-modal="1"] input[type="radio"] {
+        min-height: 20px !important;
+        width: 20px;
+        height: 20px;
+    }
+
+    .rbt-doc-chips {
+        max-height: 168px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .rbt-kbd-hint {
+        display: none !important;
+    }
+
+    .rbt-modal-footer [data-rbt-primary-submit="1"] {
+        flex: 1.85 !important;
+    }
+
+    .rbt-modal-footer .btn {
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 350px) {
+    .rbt-row-patient-3col,
+    .rbt-modal-root .rbt-decision-grid,
+    .rbt-seg-group--3 {
+        grid-template-columns: 1fr;
+    }
+
+    .rbt-room-chips {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* Dark Mode (#0C1022 / #141A30) overrides for FEAT-246 */
+[data-theme="dark"] .rbt-badge--source-cc {
+    background: rgba(220, 38, 38, 0.22);
+    color: #FECACA;
+    border-color: rgba(248, 113, 113, 0.42);
+}
+
+[data-theme="dark"] .rbt-badge--source-pk {
+    background: rgba(56, 189, 248, 0.16);
+    color: #BAE6FD;
+    border-color: rgba(56, 189, 248, 0.38);
+}
+
+[data-theme="dark"] .rbt-section-card,
+[data-theme="dark"] .rbt-optional-group {
+    background: #141A30;
+    border-color: rgba(148, 163, 184, 0.24);
+}
+
+[data-theme="dark"] .rbt-section-card__title,
+[data-theme="dark"] .rbt-optional-summary {
+    color: #E0E7FF;
+}
+
+[data-theme="dark"] .rbt-adm-wrap {
+    background: #0F1528;
+    border-color: rgba(148, 163, 184, 0.24);
+}
+
+[data-theme="dark"] .rbt-seg-btn,
+[data-theme="dark"] .rbt-room-chip,
+[data-theme="dark"] .rbt-doc-chip,
+[data-theme="dark"] .rbt-quick-chip,
+[data-theme="dark"] .rbt-doc-tab {
+    background: #19223E;
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .rbt-seg-btn.is-selected,
+[data-theme="dark"] .rbt-room-chip.is-selected,
+[data-theme="dark"] .rbt-doc-chip.is-selected,
+[data-theme="dark"] .rbt-quick-chip.is-selected {
+    background: #1D2357;
+    border-color: #38BDF8;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .rbt-doc-tab.is-selected {
+    background: #1878B4;
+    border-color: #38BDF8;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .rbt-doc-chip--manual {
+    background: rgba(56, 189, 248, 0.14);
+    border-color: #38BDF8;
+    color: #7DD3FC;
+}
+
+[data-theme="dark"] .rbt-adm-selected-pill {
+    background: rgba(84, 168, 60, 0.22);
+    border-color: rgba(134, 239, 172, 0.42);
+    color: #BBF7D0;
+}
 /* ===== SURGERY STATISTICS ===== */
 .sstats-controls {
     display: flex;

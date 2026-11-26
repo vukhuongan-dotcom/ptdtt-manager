@@ -841,6 +841,8 @@ def build_robot_surgery_payload(rcase: dict, existing_surgery: dict = None) -> d
         "operatingRoom": op_room,
         "caseSlot": slot,
         "wardRoom": str(rcase.get("wardRoom") or ""),
+        "admissionSource": str(rcase.get("admissionSource") or ""),
+        "admittingDoctorName": str(rcase.get("admittingDoctorName") or ""),
         "inpatientState": str(rcase.get("inpatientState") or "noi_tru"),
         "plannedReadmitDate": str(rcase.get("plannedReadmitDate") or ""),
         "consultOutcome": str(rcase.get("consultOutcome") or ""),

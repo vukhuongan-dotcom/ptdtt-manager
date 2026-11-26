@@ -8,10 +8,10 @@
 
 ## 📊 TỔNG QUAN THỐNG KÊ LỖI & TÍNH NĂNG ĐÃ KHẮC PHỤC (SCHEMA V3.1)
 
-- **Tổng số sự cố & tính năng ghi nhận:** **248 mục** (205 BUG, 43 FEAT).
+- **Tổng số sự cố & tính năng ghi nhận:** **249 mục** (205 BUG, 44 FEAT).
 - **Lịch sử kế thừa chưa thẩm tra (`UNVERIFIED_HISTORICAL`):** **153 mục** (Kế thừa bảng cũ, chưa có sign-off riêng).
 - **Đã sửa, chờ kiểm chứng độc lập (`FIXED_PENDING_VERIFY`):** **11 mục** (BUG-154 đến FEAT-164).
-- **Đã xác minh hoàn tất (`VERIFIED_CLOSED`):** **83 mục** (BUG-163 đến FEAT-245 — đã qua toàn bộ Gate 1..4 `T01`–`T11` và Automated Test Suite + Playwright).
+- **Đã xác minh hoàn tất (`VERIFIED_CLOSED`):** **84 mục** (BUG-163 đến FEAT-246 — đã qua toàn bộ Gate 1..4 `T01`–`T11` và Automated Test Suite + Playwright).
 - **Đang xử lý (`OPEN`):** 0
 - **Đã phong tỏa an toàn (`CONTAINED`):** 0
 - **Mở lại sau đóng (`REOPENED`):** 0
@@ -131,7 +131,7 @@
 
 ---
 
-## 📋 PHẦN II: MA TRẬN TOÀN BỘ 248 SỰ CỐ & TÍNH NĂNG MỚI (SCHEMA V3.1 — 14 TRƯỜNG BẮT BUỘC)
+## 📋 PHẦN II: MA TRẬN TOÀN BỘ 249 SỰ CỐ & TÍNH NĂNG MỚI (SCHEMA V3.1 — 14 TRƯỜNG BẮT BUỘC)
 
 | STT | Mã định danh | Ngày ghi nhận | Commit Link | Phân hệ ảnh hưởng | Tiêu đề tóm tắt | Hiện tượng / Bối cảnh | Mức độ | Trạng thái RCA | Giải pháp & Build | Trạng thái kỹ thuật | Biên lai xác minh | Rủi ro tồn dư | Ngày đóng & Người duyệt |
 |:---:|:---:|:---:|:---:|:---:|---|---|:---:|:---:|---|:---:|---|---|:---:|
@@ -383,6 +383,7 @@
 | 246 | `FEAT-243` | 2026-11-25 | [`cd1862d`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/cd1862d) | **Điều phối Lịch mổ Robot v2 (Quy trình 5 bước)** | Xây dựng lại phân hệ Điều phối Lịch mổ Robot theo quy trình 5 bước mới (BS khu vực -> BS Nguyện/Hoan -> TS. Hữu -> Theo dõi phòng & XV chờ giữ slot), bổ sung nhánh Nội soi 2 chiều không tốn slot Robot, copy Zalo Zero-PHI, in A5 P.CTXH 1 ca/tuần, thông báo chuông Dual-WAL, Tutorial v2 và migrate 2 ca VPS | Quy trình B1-B2-B3 cũ chưa bám sát quy trình thực tế 5 bước tại Khoa PTĐTT | High | N/A | Triển khai backend Dual-WAL & RBAC 5 bước, frontend 5 sub-tab + #rbt-my-work-bar + Copy Zalo Zero-PHI + In A5 1 ca/tuần + giữ nguyên slot surgeries[] khi Xuất viện chờ + migrate_robot_cases_v2 + Tutorial v2 (`v2611251807`) | VERIFIED_CLOSED | `RCPT-20261125T112459Z-FEAT-243-18f734b7` (exit=0, src=`0d59d8b1`, cmd: `python3 -m unittest tests/test_feat231_robot_schedule.py`) — 7/7 suites PASS via project_registry_gate.py run-verify-cmd (test_feat231, test_feat242, test_feat235, test_bug225, test_feat239, test_feat241, test_ui_mobile_and_orthography_contract); node --check & py_compile PASS; zero localStorage/sessionStorage in js/robot-schedule.js | Đang theo dõi (chưa đóng lỗi) | 2026-11-25 — BSCKII. Vũ Khương An |
 | 247 | `FEAT-244` | 2026-11-25 | [`e5e91f3`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/e5e91f3) | **Điều phối Lịch mổ Robot — Tutorial & Sandbox** | Sửa hiển thị nhãn #rbt-my-work-bar trong Tutorial v2 thành cụm từ 'Việc của tôi' và bổ sung chức năng tự điền đầy đủ dữ liệu khi chọn ca giả lập [TEST] | Bước 2 Tutorial v2 hiển thị mã kỹ thuật '#rbt-my-work-bar' thay vì 'Việc của tôi', và khi bấm tạo ca giả lập chưa tự điền sẵn các trường mẫu để vận hành thử | Medium | N/A | Thay cụm từ '#rbt-my-work-bar' thành 'Việc của tôi' trong Tutorial và thanh công việc, đồng thời bổ sung nút '🧪 Ca giả lập' + tự động điền 4 bộ hồ sơ mẫu [TEST] khi bật checkbox hoặc bấm '⚡ Điền mẫu khác' (`v2611251839`) | VERIFIED_CLOSED | `RCPT-20261125T114111Z-FEAT-244-a363b4b9` (exit=0, src=`e3e5d043`, cmd: `python3 -m unittest tests/test_feat231_robot_schedule.py`) — 7/7 suites PASS via project_registry_gate.py run-verify-cmd; verified Tutorial Step 2 displays 'Việc của tôi' without '#rbt-my-work-bar' and Sandbox button auto-fills & rotates synthetic [TEST] profiles. | Đang theo dõi (chưa đóng lỗi) | 2026-11-25 — BSCKII. Vũ Khương An |
 | 248 | `FEAT-245` | 2026-11-26 | [`73f9404`](https://github.com/vukhuongan-dotcom/ptdtt-manager/commit/73f9404) | **Điều phối Lịch mổ Robot — Ca chờ tư vấn & SĐT** | Bổ sung nút Xóa ca chờ tư vấn (đưa vào Thùng rác an toàn Zero-RM) cho người gửi/Điều phối/BCN và chuyển số điện thoại bệnh nhân khi nhập ca tư vấn sang không bắt buộc | Ca chờ tư vấn chưa có nút Xóa trực tiếp trên thẻ/chi tiết và form nhập ca tư vấn bắt buộc nhập số điện thoại gây vướng khi chưa có SĐT | Medium | N/A | Chuyển normalize_phone_vn(..., required=False) cho create_consult và mở quyền soft_delete cho người tạo ca chờ tư vấn; bổ sung nút 🗑️ Xóa kèm modal xác nhận trên thẻ chờ tư vấn & chi tiết hồ sơ (`v2611261009`) | VERIFIED_CLOSED | `RCPT-20261126T031132Z-FEAT-245-2299f807` (exit=0, src=`95a1c20f`, cmd: `python3 -m unittest tests/test_feat231_robot_schedule.py`) | Đang theo dõi (chưa đóng lỗi) | 2026-11-26 — BSCKII. Vũ Khương An |
+| 249 | `FEAT-246` | 2026-11-26 | `v2611261952` | **Điều phối Lịch mổ Robot — Nguồn BN, Chip BS & Form Đa Thiết Bị** | Bổ sung nguồn bệnh nhân (Cấp cứu/Phòng khám + chip BS cho nhập từ BS chính & BS ngoài khoa hoặc nhập tay), tối ưu bảng nhập liệu riêng cho Mobile/Laptop và cập nhật Tutorial | Bước 1 chưa ghi nhận nguồn bệnh nhân (Cấp cứu/Phòng khám) và bác sĩ phòng khám cho nhập; các modal nhập liệu chưa tối ưu riêng cho thao tác Mobile (Android/iPhone) và Laptop, thiếu wrapper [data-rbt-modal='1'], và Tutorial cần đồng bộ nội dung mới | Medium | N/A | Bổ sung admissionSource/admittingDoctor* + API admittingDoctors; xây dựng Smart Doctor Chip Picker (11 BS chính + 29 BS ngoài khoa + nhập tay); bọc [data-rbt-modal='1'] + 2 layout Mobile/Laptop cho toàn bộ modal Robot; cập nhật RobotTutorial 7 bước (`v2611261952`) | VERIFIED_CLOSED | `RCPT-20261126T125841Z-FEAT-246-be71e78b` (exit=0, src=`f0ca3de0`, cmd: `python3 -m unittest tests/test_feat231_robot_schedule.py`) | Đang theo dõi (chưa đóng lỗi) | 2026-11-26 — BSCKII. Vũ Khương An |
 
 ---
 

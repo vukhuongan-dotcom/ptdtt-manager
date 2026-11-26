@@ -74,7 +74,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
         cls.src_db = json.loads((REPO_ROOT / "data" / "db.json").read_text(encoding="utf-8"))
         cls.pw_hash = cls.sf._hash_password("RobotStrong2026")
         sw_m = re.search(r"SW_BUILD_VER\s*=\s*'(\d+)'", (REPO_ROOT / "index.html").read_text(encoding="utf-8"))
-        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611261009"
+        cls.sw_build_ver = sw_m.group(1) if sw_m else "2611261952"
 
         cls.pw = sync_playwright().start()
         cls.browsers = {
@@ -829,6 +829,7 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                     localStorage.setItem('ptdtt_onboarding_done', 'true');
                     localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
                     localStorage.setItem('ptdtt_robot_tutorial_v2_dismissed', '1');
+                    localStorage.setItem('ptdtt_robot_tutorial_v2_dismissed:' + {json.dumps(username)}, '1');
                     """
                 )
                 pg = ctx.new_page()
@@ -860,25 +861,44 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                     ov = page.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
                     self.assertLessEqual(ov, 0, f"Desktop overflow dark={dark}: {ov}")
 
-                # Step 1 create consult via UI WITHOUT phone -> succeeds
+                # Step 1 create consult via UI WITHOUT phone + Smart Doctor Chip Picker (Phòng khám -> manual)
                 page.click('.rbt-subtab[data-rbt-subtab="consult"]')
                 page.click('[data-rbt-action="open_create_consult"]')
                 page.wait_for_selector("#rbt-inp-name", timeout=5000)
+                self.assertEqual(page.locator('#modal.rbt-modal-wide').count(), 1)
+                self.assertTrue(page.evaluate("() => document.getElementById('rbt-optional-details')?.open === true"))
+
                 page.fill("#rbt-inp-name", "BN UI Năm Bước")
                 page.fill("#rbt-inp-birth", "1972")
+                # Pick Phòng khám -> test accent-insensitive search -> match external Dr. Bình, then use manual doctor name
+                page.click('[data-rbt-pick-source="phong_kham"][data-rbt-prefix="rbt-inp"]')
+                page.wait_for_selector("#rbt-inp-adm-doc-search", timeout=3000)
+                page.fill("#rbt-inp-adm-doc-search", "binh")
+                self.assertIn("Đậu Xuân Bình", page.inner_text("#rbt-inp-adm-doc-chips"))
+                page.fill("#rbt-inp-adm-doc-search", "BS. Ngoài Danh Sách")
+                page.press("#rbt-inp-adm-doc-search", "Enter")
+                # Enter in search must NOT submit the modal!
+                self.assertEqual(page.locator('[data-rbt-modal="1"]').count(), 1)
+                page.click('[data-rbt-use-manual-query="rbt-inp"]')
+                self.assertEqual(page.input_value("#rbt-inp-adm-doc-name"), "BS. Ngoài Danh Sách")
+
+                page.click('[data-rbt-pick-room="B711"][data-rbt-target="rbt-inp-ward-room"]')
+                self.assertEqual(page.input_value("#rbt-inp-ward-room"), "B711")
                 page.fill("#rbt-inp-phone", "")
-                page.select_option("#rbt-inp-ward-room", "B711")
                 page.fill("#rbt-inp-diag", "K đại tràng Sigma")
                 page.check("#rbt-inp-labs-ready")
                 page.click('[data-rbt-action="submit_create"]')
                 page.wait_for_timeout(500)
-                self.assertIn("BN UI Năm Bước", page.inner_text("#robot-schedule-page"))
+                page_txt = page.inner_text("#robot-schedule-page")
+                self.assertIn("BN UI Năm Bước", page_txt)
+                self.assertIn("BS. Ngoài Danh Sách", page_txt)
 
-                # Soft-delete the earlier XSS waiting consult directly via 🗑️ Xóa button + confirm modal
+                # Soft-delete the earlier XSS waiting consult directly via 🗑️ Xóa button + confirm modal + quick chip
                 del_btns = page.locator('[data-rbt-action="open_confirm_delete"]')
                 self.assertGreaterEqual(del_btns.count(), 1)
                 del_btns.last.click()
                 page.wait_for_selector('[data-rbt-action="confirm_soft_delete"]', timeout=5000)
+                page.click('[data-rbt-quick-fill="#rbt-del-reason"]')
                 page.click('[data-rbt-action="confirm_soft_delete"]')
                 page.wait_for_timeout(500)
 
@@ -889,12 +909,38 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                         configurable: true
                     });
                 }""")
-                # Schedule "BN UI Năm Bước" so it's in da_xep_tu_van, then copy Zalo:
+                # Schedule "BN UI Năm Bước" so it's in da_xep_tu_van (check session count hint & quick location chip), then copy Zalo:
                 sched_btns = page.locator('[data-rbt-action="open_schedule_consult"]')
                 sched_btns.first.click()
                 page.wait_for_selector("#rbt-inp-consult-date", timeout=5000)
+                self.assertTrue(bool(page.inner_text("#rbt-sess-count-sang")))
+                page.click('[data-rbt-quick-fill="#rbt-inp-consult-sched-note"]')
                 page.click('[data-rbt-action="submit_schedule_consult"]')
                 page.wait_for_timeout(500)
+
+                # Inspect Step 3 modal on Desktop (4-col decision grid, Nội soi pills, Khong mo chips)
+                page.locator('[data-rbt-action="open_decide_consult"]').first.click()
+                page.wait_for_selector(".rbt-decision-grid", timeout=5000)
+                dec_cols = page.evaluate("() => getComputedStyle(document.querySelector('.rbt-decision-grid')).gridTemplateColumns.split(' ').length")
+                self.assertEqual(dec_cols, 4, f"Desktop decision grid must be 4 columns, got {dec_cols}")
+                page.click('[data-rbt-pick-decision="noisoi"]')
+                page.click('[data-rbt-pick-seg="yeucau"][data-rbt-target="rbt-inp-ns-type"]')
+                self.assertEqual(page.input_value("#rbt-inp-ns-type"), "yeucau")
+                page.click('.modal-close')
+                page.click('.modal-close')
+                page.wait_for_selector('#modal-overlay.active', state='detached', timeout=3000)
+
+                # Step 4 quick instruction chip on Discharge Wait modal (on preseeded scheduled case)
+                page.click('.rbt-subtab[data-rbt-subtab="ward"]')
+                page.wait_for_selector('[data-rbt-action="open_discharge_wait"]', timeout=5000)
+                page.locator('[data-rbt-action="open_discharge_wait"]').first.click()
+                page.wait_for_selector("#rbt-inp-discharge-reason", timeout=5000)
+                page.locator('[data-rbt-quick-append="#rbt-inp-discharge-reason"]').first.click()
+                self.assertIn("Ngưng kháng đông 5 ngày", page.input_value("#rbt-inp-discharge-reason"))
+                page.click('.modal-close')
+                page.click('.modal-close')
+                page.wait_for_selector('#modal-overlay.active', state='detached', timeout=3000)
+                page.click('.rbt-subtab[data-rbt-subtab="consult"]')
 
                 page.click('[data-rbt-action="copy_zalo_consult"]')
                 page.wait_for_timeout(300)
@@ -940,34 +986,249 @@ class TestFeat231RobotSchedule(unittest.TestCase):
             finally:
                 ctx_sbx.close()
 
-            # 2) Mobile iPhone WebKit (440x956) ergonomics
-            ctx_mob, mpage = _open_logged_page("webkit", 440, 956, "vnatuan")
-            try:
-                mpage.evaluate("() => App.navigate('robot-schedule')")
-                mpage.wait_for_selector("#robot-schedule-page .rbt-header", timeout=8000)
-                metrics = mpage.evaluate(
-                    """() => {
-                        const hdr = document.querySelector('#robot-schedule-page .rbt-header');
-                        const fab = document.getElementById('rbt-mobile-fab');
-                        const tut = document.getElementById('rbt-mobile-tutorial-pill');
-                        return {
-                            ov: document.documentElement.scrollWidth - window.innerWidth,
-                            hdrH: hdr ? hdr.getBoundingClientRect().height : 999,
-                            fabPos: fab ? getComputedStyle(fab).position : '',
-                            fabW: fab ? fab.getBoundingClientRect().width : 0,
-                            tutH: tut ? tut.getBoundingClientRect().height : 0
-                        };
-                    }"""
-                )
-                self.assertLessEqual(metrics["ov"], 0, f"Mobile overflow: {metrics}")
-                self.assertLessEqual(metrics["hdrH"], 85, f"Mobile header too tall: {metrics}")
-                self.assertNotEqual(metrics["fabPos"], "fixed")
-                self.assertGreaterEqual(metrics["fabW"], 44)
-                self.assertGreaterEqual(metrics["tutH"], 44)
-            finally:
-                ctx_mob.close()
+            # 2) Mobile Android Chromium (360x800), iPhone WebKit (390x844) & narrow (320x568) Light & Dark form ergonomics
+            for browser_name, vw, vh, theme in (
+                ("chromium", 360, 800, "light"),
+                ("webkit", 390, 844, "light"),
+                ("webkit", 390, 844, "dark"),
+                ("chromium", 320, 568, "dark"),
+            ):
+                ctx_mob, mpage = _open_logged_page(browser_name, vw, vh, "vnatuan")
+                try:
+                    mpage.evaluate(f"() => {{ document.documentElement.setAttribute('data-theme', '{theme}'); App.navigate('robot-schedule'); }}")
+                    mpage.wait_for_selector("#robot-schedule-page .rbt-header", timeout=8000)
+                    metrics = mpage.evaluate(
+                        """() => {
+                            const hdr = document.querySelector('#robot-schedule-page .rbt-header');
+                            const fab = document.getElementById('rbt-mobile-fab');
+                            const tut = document.getElementById('rbt-mobile-tutorial-pill');
+                            return {
+                                ov: document.documentElement.scrollWidth - window.innerWidth,
+                                hdrH: hdr ? hdr.getBoundingClientRect().height : 999,
+                                fabPos: fab ? getComputedStyle(fab).position : '',
+                                fabW: fab ? fab.getBoundingClientRect().width : 0,
+                                tutH: tut ? tut.getBoundingClientRect().height : 0
+                            };
+                        }"""
+                    )
+                    self.assertLessEqual(metrics["ov"], 0, f"Mobile overflow {browser_name} {vw}x{vh}: {metrics}")
+                    self.assertLessEqual(metrics["hdrH"], 85, f"Mobile header too tall: {metrics}")
+                    self.assertNotEqual(metrics["fabPos"], "fixed")
+                    self.assertGreaterEqual(metrics["fabW"], 44)
+                    self.assertGreaterEqual(metrics["tutH"], 44)
+
+                    # Open Step 1 modal & inspect anti-zoom 16px, >=44px chips, collapsed optional group, sticky footer & kb-open
+                    mpage.click("#rbt-mobile-fab")
+                    mpage.wait_for_selector('[data-rbt-modal="1"] #rbt-inp-name', timeout=5000)
+                    mpage.click('[data-rbt-pick-source="phong_kham"][data-rbt-prefix="rbt-inp"]')
+                    mpage.wait_for_selector("#rbt-inp-adm-doc-chips .rbt-doc-chip", timeout=3000)
+                    form_metrics = mpage.evaluate(
+                        """() => {
+                            const opt = document.getElementById('rbt-optional-details');
+                            const optWasOpen = Boolean(opt && opt.open);
+                            if (opt && !opt.open) opt.open = true;
+                            const fields = Array.from(document.querySelectorAll('#modal-body [data-rbt-modal="1"] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), #modal-body [data-rbt-modal="1"] textarea')).filter(el => el.offsetParent !== null);
+                            const minFont = fields.length ? Math.min(...fields.map(el => parseFloat(getComputedStyle(el).fontSize) || 0)) : 99;
+                            const touchEls = Array.from(document.querySelectorAll('[data-rbt-modal="1"] .rbt-seg-btn, [data-rbt-modal="1"] .rbt-room-chip, [data-rbt-modal="1"] .rbt-doc-chip, [data-rbt-modal="1"] .rbt-doc-tab')).filter(el => el.offsetParent !== null);
+                            const minTouchH = touchEls.length ? Math.min(...touchEls.map(el => Math.round(el.getBoundingClientRect().height))) : 99;
+                            const mb = document.getElementById('modal-body');
+                            const footer = mb ? mb.querySelector('.modal-footer') : null;
+                            const mbRect = mb ? mb.getBoundingClientRect() : null;
+                            const fRect = footer ? footer.getBoundingClientRect() : null;
+                            const gapClosed = (mbRect && fRect) ? Math.round(mbRect.bottom - fRect.bottom) : 999;
+                            const ov = document.getElementById('modal-overlay');
+                            if (ov) ov.classList.add('kb-open');
+                            const posKbOpen = footer ? getComputedStyle(footer).position : '';
+                            if (ov) ov.classList.remove('kb-open');
+                            return {
+                                optWasOpen,
+                                minFont,
+                                minTouchH,
+                                gapClosed,
+                                posKbOpen,
+                                scrollOv: document.documentElement.scrollWidth - window.innerWidth,
+                                bodyOv: mb ? (mb.scrollWidth - mb.clientWidth) : 0
+                            };
+                        }"""
+                    )
+                    self.assertFalse(form_metrics["optWasOpen"], f"Mobile optional group must start collapsed: {form_metrics}")
+                    self.assertGreaterEqual(form_metrics["minFont"], 16.0, f"iOS anti-zoom 16px violated: {form_metrics}")
+                    self.assertGreaterEqual(form_metrics["minTouchH"], 44, f"Touch target < 44px: {form_metrics}")
+                    self.assertLessEqual(form_metrics["gapClosed"], 2, f"Sticky footer gap > 2px: {form_metrics}")
+                    self.assertEqual(form_metrics["posKbOpen"], "static", f"Footer must become static when kb-open: {form_metrics}")
+                    self.assertLessEqual(form_metrics["scrollOv"], 0, f"Modal viewport overflow {vw}x{vh}: {form_metrics}")
+                    self.assertLessEqual(form_metrics["bodyOv"], 0, f"Modal body horizontal overflow {vw}x{vh}: {form_metrics}")
+                finally:
+                    ctx_mob.close()
         finally:
             srv.shutdown()
+
+    def test_tc_r08_admission_source_doctors_and_edit_info(self):
+        _, _, client = self._new_env(sandbox_only=False)
+
+        # 1) Bootstrap exposes 11 internal official doctors (excluding nurse/trainees) & trimmed external doctors
+        r_boot = client.get("/api/robot/bootstrap", headers=self._headers("vnatuan"))
+        self.assertEqual(r_boot.status_code, 200)
+        adm_docs = r_boot.get_json().get("admittingDoctors") or {}
+        internal = adm_docs.get("internal") or []
+        external = adm_docs.get("external") or []
+        int_ids = {d["id"] for d in internal}
+        self.assertEqual(len(internal), 11, f"Expected 11 official doctors, got {internal}")
+        self.assertIn(1, int_ids)
+        self.assertIn(2, int_ids)
+        self.assertNotIn(3, int_ids)   # Head Nurse excluded
+        self.assertNotIn(43, int_ids)  # BSNT trainee excluded
+        self.assertGreaterEqual(len(external), 20)
+        ext_200 = next((d for d in external if d["id"] == 200), None)
+        self.assertIsNotNone(ext_200)
+        self.assertFalse(ext_200["name"].endswith(" "))
+
+        # 2) Emergency admission clears admitting doctor fields
+        r_cc = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN Cấp Cứu Nguồn",
+                "wardRoom": "B708",
+                "admissionSource": "cap_cuu",
+                "admittingDoctorType": "manual",
+                "admittingDoctorName": "Nên Bị Xóa",
+                "labsReadyConfirmed": True,
+                "diagnosis": "Tắc ruột do u đại tràng",
+            },
+        )
+        self.assertEqual(r_cc.status_code, 201, r_cc.get_data(as_text=True))
+        c_cc = r_cc.get_json()["case"]
+        self.assertEqual(c_cc["admissionSource"], "cap_cuu")
+        self.assertEqual(c_cc["admittingDoctorName"], "")
+        self.assertIsNone(c_cc["admittingDoctorId"])
+
+        # 3) Outpatient (Phòng khám) with internal staff doctor, external doctor, manual entry, and validations
+        r_staff = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN PK Khoa",
+                "wardRoom": "B708",
+                "admissionSource": "phong_kham",
+                "admittingDoctorType": "staff",
+                "admittingDoctorId": 2,
+                "labsReadyConfirmed": True,
+                "diagnosis": "K trực tràng",
+            },
+        )
+        self.assertEqual(r_staff.status_code, 201, r_staff.get_data(as_text=True))
+        self.assertIn("Vũ Khương An", r_staff.get_json()["case"]["admittingDoctorName"])
+
+        # Reject trainee as admitting internal staff doctor
+        r_bad_staff = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN PK Trainee",
+                "wardRoom": "B708",
+                "admissionSource": "phong_kham",
+                "admittingDoctorType": "staff",
+                "admittingDoctorId": 43,
+                "labsReadyConfirmed": True,
+                "diagnosis": "K trực tràng",
+            },
+        )
+        self.assertEqual(r_bad_staff.status_code, 422)
+
+        r_ext = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN PK Ngoài Khoa",
+                "wardRoom": "B710",
+                "admissionSource": "phong_kham",
+                "admittingDoctorType": "external",
+                "admittingDoctorId": 200,
+                "labsReadyConfirmed": True,
+                "diagnosis": "K đại tràng",
+            },
+        )
+        self.assertEqual(r_ext.status_code, 201, r_ext.get_data(as_text=True))
+        self.assertEqual(r_ext.get_json()["case"]["admittingDoctorName"], "BSCKII. Đậu Xuân Bình")
+
+        r_man = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN PK Nhập Tay",
+                "wardRoom": "B711",
+                "admissionSource": "phong_kham",
+                "admittingDoctorType": "manual",
+                "admittingDoctorName": "  BS. Trần Văn Ngoài  ",
+                "labsReadyConfirmed": True,
+                "diagnosis": "K trực tràng",
+            },
+        )
+        self.assertEqual(r_man.status_code, 201, r_man.get_data(as_text=True))
+        man_case = r_man.get_json()["case"]
+        self.assertEqual(man_case["admittingDoctorName"], "BS. Trần Văn Ngoài")
+        self.assertIsNone(man_case["admittingDoctorId"])
+
+        r_empty_man = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN PK Rỗng",
+                "wardRoom": "B711",
+                "admissionSource": "phong_kham",
+                "admittingDoctorType": "manual",
+                "admittingDoctorName": "",
+                "labsReadyConfirmed": True,
+                "diagnosis": "K trực tràng",
+            },
+        )
+        self.assertEqual(r_empty_man.status_code, 422)
+
+        r_bad_src = client.post(
+            "/api/robot/cases",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "create_consult",
+                "patientName": "BN Sai Nguồn",
+                "wardRoom": "B711",
+                "admissionSource": "chuyen_vien",
+                "labsReadyConfirmed": True,
+                "diagnosis": "K trực tràng",
+            },
+        )
+        self.assertEqual(r_bad_src.status_code, 422)
+
+        # 4) edit_info switches from phong_kham -> cap_cuu (clears doctor) and back to phong_kham external
+        r_ed1 = client.patch(
+            f"/api/robot/cases/{man_case['robotCaseCode']}",
+            headers=self._headers("vnatuan"),
+            json={"action": "edit_info", "expectedRevision": man_case["caseRevision"], "admissionSource": "cap_cuu"},
+        )
+        self.assertEqual(r_ed1.status_code, 200, r_ed1.get_data(as_text=True))
+        ed1_case = r_ed1.get_json()["case"]
+        self.assertEqual(ed1_case["admissionSource"], "cap_cuu")
+        self.assertEqual(ed1_case["admittingDoctorName"], "")
+
+        r_ed2 = client.patch(
+            f"/api/robot/cases/{ed1_case['robotCaseCode']}",
+            headers=self._headers("vnatuan"),
+            json={
+                "action": "edit_info",
+                "expectedRevision": ed1_case["caseRevision"],
+                "admissionSource": "phong_kham",
+                "admittingDoctorType": "external",
+                "admittingDoctorId": 102,
+            },
+        )
+        self.assertEqual(r_ed2.status_code, 200, r_ed2.get_data(as_text=True))
+        self.assertIn("Hoàng Vĩnh Chúc", r_ed2.get_json()["case"]["admittingDoctorName"])
 
 
 if __name__ == "__main__":

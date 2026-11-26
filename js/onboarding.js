@@ -468,14 +468,14 @@ const RobotTutorial = {
                         : 'Chỉ xem & In P.CTXH (Theo dõi lịch mổ tuần và in giấy giới thiệu A5; SĐT bệnh nhân tự động ẩn)')));
 
         const step4Desc = p.canCreateConsult
-            ? 'Khi bệnh nhân đã đủ xét nghiệm tiền phẫu và có chỉ định PT Nội soi hoặc Robot, bấm "+ Gửi ca tư vấn" (hoặc "+" trên điện thoại), chọn đúng Phòng bệnh (B705–B719 / Ngoại trú) và tick Xác nhận đủ XN.'
+            ? 'Bấm "+ Gửi ca tư vấn" (hoặc "+" trên điện thoại), chọn Nguồn BN (Cấp cứu / Phòng khám — nếu Phòng khám chọn chip BS cho nhập từ BS chính & BS ngoài khoa hoặc nhập tay), chạm chip Phòng bệnh, SĐT không bắt buộc, mở mục bổ sung nếu cần và tick đủ XN. Có thể bấm 🗑️ Xóa ca chờ tư vấn vào Thùng rác.'
             : 'Chỉ Bác sĩ trong khoa mới gửi hồ sơ tư vấn mới; ĐD Trưởng và nhân sự khác theo dõi tiến độ & in giấy giới thiệu P.CTXH theo thời gian thực.';
 
         return [
             {
                 icon: '🤖',
                 title: 'Quy Trình 5 Bước & Phân Quyền Hiện Tại',
-                desc: `Vai trò của bạn: ${roleSummary}. Toàn bộ dữ liệu liên thông 2 chiều với Lịch mổ tuần và tuân thủ Zero-Local-PHI.`,
+                desc: `Vai trò của bạn: ${roleSummary}. Toàn bộ dữ liệu liên thông 2 chiều với Lịch mổ tuần, tuân thủ Zero-Local-PHI và tối ưu bảng nhập liệu riêng cho Mobile (1 chạm) & Laptop (đa cột, Ctrl/Cmd+Enter).`,
                 targets: ['#robot-schedule-page .rbt-header']
             },
             {
@@ -487,7 +487,7 @@ const RobotTutorial = {
             {
                 icon: '🗂️',
                 title: '5 Phân Mục Theo Đúng 5 Bước Lâm Sàng',
-                desc: `🩺 Lịch tư vấn & Chờ xếp (B1–B3) · 📅 Lịch mổ đã xếp Robot & Nội soi · 🏥 Theo dõi phòng & XV chờ (B4) · ⏸️ Không mổ / Hoãn / Rác · 📊 Đã mổ & Thống kê${p.canConfigureCoordinators ? ' · ⚙️ Cấu hình' : ''}.`,
+                desc: `🩺 Lịch tư vấn & Chờ xếp (B1–B3) · 📅 Lịch mổ đã xếp Robot & Nội soi · 🏥 Theo dõi phòng & XV chờ (B4) · ⏸️ Không mổ / Hoãn / Rác · 📊 Đã mổ & Thống kê${p.canConfigureCoordinators ? ' · ⚙️ Cấu hình' : ''}. Hỗ trợ tìm nhanh theo BN, phòng, nguồn Cấp cứu/Phòng khám & BS cho nhập.`,
                 targets: ['#robot-schedule-page .rbt-subtabs-wrap']
             },
             {
@@ -499,19 +499,19 @@ const RobotTutorial = {
             {
                 icon: '🩺',
                 title: 'Bước 2–3 · Xếp Lịch TV & TS. Hữu Chốt Kết Quả',
-                desc: 'BS Nguyện / BS Hoan xếp Ngày + Buổi (Sáng/Chiều) và bấm "Copy lịch TV Zalo". TS. Hữu (hoặc ĐP nhập thay) chốt: Mổ Robot (Ca 1–Ca 3, tối đa 3 ca/ngày) | Chuyển Nội soi (PTV chính, không tốn slot Robot) | Cân nhắc | Không đồng ý mổ.',
+                desc: 'Bước 2: BS Nguyện / BS Hoan xem số ca đã xếp theo từng buổi Sáng/Chiều, chọn chip địa điểm nhanh & bấm "Copy lịch TV Zalo". Bước 3: Chốt 1 chạm Mổ Robot (Ca 1–3) | Chuyển Nội soi (Loại PT & PTV chính) | Cân nhắc | Không đồng ý mổ (chip lý do).',
                 targets: ['#robot-schedule-page .rbt-subtab[data-rbt-subtab="consult"]', '#robot-schedule-page .rbt-consult-split', '#robot-schedule-page .rbt-panel']
             },
             {
                 icon: '🏠',
                 title: 'Bước 4 · BS Phòng Theo Dõi & Xuất Viện Chờ Giữ Slot',
-                desc: 'Sau tư vấn, BS phòng xem KQ ngay tại tab "Theo dõi phòng & XV chờ". Nếu lịch mổ còn xa, chọn "Cho XV chờ & Hẹn nhập lại" (<= ngày mổ) — hệ thống VẪN GIỮ NGUYÊN slot trên Lịch mổ tuần và tự nhắc trước nhập lại 0–2 ngày.',
+                desc: 'Sau tư vấn, BS phòng xem KQ kèm nguồn BN & BS cho nhập tại tab "Theo dõi phòng & XV chờ". Nếu lịch mổ còn xa, chọn "Cho XV chờ & Hẹn nhập lại" dùng chip ngày & dặn dò nhanh — slot trên Lịch mổ tuần VẪN GIỮ NGUYÊN.',
                 targets: ['#robot-schedule-page .rbt-subtab[data-rbt-subtab="ward"]', '#robot-schedule-page .rbt-subtabs-wrap']
             },
             {
                 icon: '🖨️',
-                title: 'Bước 5 · In Giấy Giới Thiệu P.CTXH (A5) & Mở Lại Hướng Dẫn',
-                desc: 'Bấm "🖨️ In P.CTXH" (hỗ trợ in 1 ca hoặc cả tuần/ngày, mẫu Màu & Laser Trắng Đen) hoặc "📋 Copy lịch TV Zalo". Bấm "❓ Hướng dẫn" cố định trên tab bất kỳ lúc nào để xem lại.',
+                title: 'Bước 5 · In Giấy Giới Thiệu P.CTXH (A5) & Phím Tắt',
+                desc: 'Bấm "🖨️ In P.CTXH" (in 1 ca hoặc cả tuần/ngày, mẫu Màu & Laser Trắng Đen) hoặc "📋 Copy lịch TV Zalo". Trên Laptop hỗ trợ Ctrl/Cmd+Enter để lưu nhanh form; bấm "❓ Hướng dẫn" bất kỳ lúc nào để xem lại.',
                 targets: ['#robot-schedule-page [data-rbt-action="open_print_modal"]', '#robot-schedule-page [data-rbt-action="open_mobile_menu"]', '#robot-schedule-page .rbt-header']
             }
         ];

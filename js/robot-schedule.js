@@ -74,7 +74,27 @@
     };
 
     const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
-    const CLIENT_BUILD = '2611261009';
+    const CLIENT_BUILD = '2611261952';
+    const ADMISSION_SOURCE_LABELS = {
+        cap_cuu: 'Cấp cứu',
+        phong_kham: 'Phòng khám'
+    };
+    const CONSULT_NOTE_PRESETS = [
+        'Phòng khám lầu 7',
+        'Sau giao ban sáng',
+        'Tại buồng bệnh'
+    ];
+    const DISCHARGE_INSTRUCTION_PRESETS = [
+        'Ngưng kháng đông 5 ngày',
+        'Nhịn ăn từ 22h tối trước mổ',
+        'Đem đủ hồ sơ & thẻ BHYT',
+        'Làm lại XN tiền phẫu khi nhập lại'
+    ];
+    const DELETE_REASON_PRESETS = [
+        'Nhập trùng hồ sơ',
+        'BN hủy khám / chuyển viện',
+        'Nhập nhầm thông tin'
+    ];
     const SANDBOX_PROFILES = [
         {
             patientName: '[TEST] Nguyễn Văn Minh',
@@ -82,6 +102,9 @@
             gender: 'Nam',
             phone: '0901234561',
             wardRoom: 'B708',
+            admissionSource: 'phong_kham',
+            admittingDoctorType: 'staff',
+            admittingDoctorId: 2,
             indicationType: 'robot_hoac_noisoi',
             diagnosis: 'Ung thư trực tràng giữa cT3N1M0 (Ca giả lập)',
             robotProcedure: 'Phẫu thuật Robot cắt trước thấp (LAR)',
@@ -93,6 +116,9 @@
             gender: 'Nữ',
             phone: '0901234562',
             wardRoom: 'B710',
+            admissionSource: 'phong_kham',
+            admittingDoctorType: 'staff',
+            admittingDoctorId: 6,
             indicationType: 'uu_tien_robot',
             diagnosis: 'U đại tràng Sigma cT3N0M0 (Ca giả lập)',
             robotProcedure: 'Phẫu thuật Robot cắt đoạn đại tràng Sigma',
@@ -104,6 +130,9 @@
             gender: 'Nam',
             phone: '0901234563',
             wardRoom: 'B712',
+            admissionSource: 'phong_kham',
+            admittingDoctorType: 'external',
+            admittingDoctorId: 102,
             indicationType: 'uu_tien_noisoi',
             diagnosis: 'Polyp lớn đại tràng phải nghịch sản nặng (Ca giả lập)',
             robotProcedure: 'PT Nội soi cắt đại tràng phải',
@@ -115,12 +144,24 @@
             gender: 'Nam',
             phone: '0901234564',
             wardRoom: 'ngoai_tru',
+            admissionSource: 'cap_cuu',
+            admittingDoctorType: '',
+            admittingDoctorId: null,
             indicationType: 'robot_hoac_noisoi',
             diagnosis: 'K trực tràng cao cT2N0M0 (Ca giả lập)',
             robotProcedure: 'Phẫu thuật Robot cắt trước',
-            note: 'Hồ sơ giả lập ngoại trú — chờ xếp lịch tư vấn TS. Hữu.'
+            note: 'Hồ sơ giả lập nhập từ Cấp cứu — chờ xếp lịch tư vấn TS. Hữu.'
         }
     ];
+
+    function foldVi(v) {
+        return String(v == null ? '' : v)
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[đĐ]/g, 'd')
+            .toLowerCase()
+            .trim();
+    }
 
     const esc = (v) => (typeof Utils !== 'undefined' && typeof Utils.escapeHtml === 'function')
         ? Utils.escapeHtml(v == null ? '' : String(v))
@@ -233,12 +274,23 @@
         }
     }
 
-    function openRobotModal(title, bodyHtml, footerHtml) {
+    function openRobotModal(title, bodyHtml, footerHtml, opts = {}) {
+        const size = (opts && ['wide', 'md', 'sm'].includes(opts.size)) ? opts.size : 'md';
+        const mode = (opts && opts.mode) ? String(opts.mode) : '';
         const footerWrap = footerHtml
-            ? `<div class="modal-footer" style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border,#E2E8F0);">${footerHtml}</div>`
+            ? `<div class="modal-footer rbt-modal-footer">${footerHtml}</div>`
             : '';
+        const wrappedHtml = `<form class="rbt-modal-root rbt-modal-root--${esc(size)}" data-rbt-modal="1" data-rbt-form-mode="${esc(mode)}" novalidate onsubmit="return false;">
+            <div class="rbt-modal-fields">${bodyHtml}</div>
+            ${footerWrap}
+        </form>`;
         if (typeof Modal !== 'undefined' && typeof Modal.open === 'function') {
-            Modal.open(title, `${bodyHtml}${footerWrap}`);
+            Modal.open(title, wrappedHtml);
+            const modalEl = document.getElementById('modal');
+            if (modalEl) {
+                modalEl.classList.remove('rbt-modal-wide', 'rbt-modal-md', 'rbt-modal-sm');
+                modalEl.classList.add(`rbt-modal-${size}`);
+            }
         }
     }
 
@@ -346,6 +398,8 @@
             this._openModalMode = null;
             this._conflictState = null;
             this._inflightIdem = null;
+            const modalEl = document.getElementById('modal');
+            if (modalEl) modalEl.classList.remove('rbt-modal-wide', 'rbt-modal-md', 'rbt-modal-sm');
             const fab = document.getElementById('rbt-mobile-fab');
             if (fab && this._perms().canCreateConsult) fab.hidden = false;
             const printRoot = document.getElementById('robot-pctxh-print-root');
@@ -439,6 +493,48 @@
 
         _surgeons() {
             return (this._bootstrap && Array.isArray(this._bootstrap.surgeons)) ? this._bootstrap.surgeons : [];
+        },
+
+        _admittingDoctors() {
+            const raw = (this._bootstrap && this._bootstrap.admittingDoctors) || {};
+            return {
+                internal: Array.isArray(raw.internal) ? raw.internal : [],
+                external: Array.isArray(raw.external) ? raw.external : []
+            };
+        },
+
+        _isLaptopPointer() {
+            if (typeof window === 'undefined') return true;
+            const w = window.innerWidth || 1024;
+            if (w <= 768) return false;
+            if (typeof window.matchMedia === 'function') {
+                return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            }
+            return true;
+        },
+
+        _admissionSourceBadgeHtml(rc) {
+            if (!rc || !rc.admissionSource) return '';
+            if (rc.admissionSource === 'cap_cuu') {
+                return `<span class="rbt-badge rbt-badge--source-cc">🚨 Cấp cứu</span>`;
+            }
+            if (rc.admissionSource === 'phong_kham') {
+                const docTxt = rc.admittingDoctorName ? ` · ${rc.admittingDoctorName}` : '';
+                return `<span class="rbt-badge rbt-badge--source-pk">🏥 PK${esc(docTxt)}</span>`;
+            }
+            return '';
+        },
+
+        _countConsultsOn(dateIso, session = '') {
+            const d = String(dateIso || '').trim();
+            if (!d) return 0;
+            return this._cases().filter(c => {
+                if (c.isTestSandboxCase) return false;
+                if (c.status !== 'da_xep_tu_van') return false;
+                if (c.consultDate !== d) return false;
+                if (session && (c.consultSession || 'sang') !== session) return false;
+                return true;
+            }).length;
         },
 
         _currentUsername() {
@@ -636,12 +732,203 @@
                     return;
                 }
 
+                const srcBtn = target.closest('[data-rbt-pick-source]');
+                if (srcBtn) {
+                    const prefix = srcBtn.dataset.rbtPrefix || 'rbt-inp';
+                    const srcVal = srcBtn.dataset.rbtPickSource || '';
+                    if (srcVal === 'cap_cuu') {
+                        this._setAdmissionSourceState(prefix, { source: 'cap_cuu', docType: '', docId: '', docName: '', tab: 'internal' });
+                    } else {
+                        const curType = document.getElementById(`${prefix}-adm-doc-type`)?.value || '';
+                        const curId = document.getElementById(`${prefix}-adm-doc-id`)?.value || '';
+                        const curName = document.getElementById(`${prefix}-adm-doc-name`)?.value || '';
+                        const curTab = document.getElementById(`${prefix}-adm-doc-tab`)?.value || 'internal';
+                        this._setAdmissionSourceState(prefix, {
+                            source: 'phong_kham',
+                            docType: curType,
+                            docId: curId,
+                            docName: curName,
+                            tab: curTab
+                        });
+                    }
+                    this._markModalDirty();
+                    return;
+                }
+
+                const admTabBtn = target.closest('[data-rbt-adm-tab]');
+                if (admTabBtn) {
+                    const prefix = admTabBtn.dataset.rbtPrefix || 'rbt-inp';
+                    const tabVal = admTabBtn.dataset.rbtAdmTab || 'internal';
+                    const tabEl = document.getElementById(`${prefix}-adm-doc-tab`);
+                    if (tabEl) tabEl.value = tabVal;
+                    if (tabVal === 'manual') {
+                        const typeEl = document.getElementById(`${prefix}-adm-doc-type`);
+                        const idEl = document.getElementById(`${prefix}-adm-doc-id`);
+                        if (typeEl) typeEl.value = 'manual';
+                        if (idEl) idEl.value = '';
+                    }
+                    this._refreshAdmittingDoctorPicker(prefix);
+                    if (tabVal === 'manual') {
+                        const manEl = document.getElementById(`${prefix}-adm-doc-manual`);
+                        if (manEl) try { manEl.focus({ preventScroll: true }); } catch (_) {}
+                    }
+                    this._markModalDirty();
+                    return;
+                }
+
+                const admDocBtn = target.closest('[data-rbt-pick-adm-doc]');
+                if (admDocBtn) {
+                    const prefix = admDocBtn.dataset.rbtPrefix || 'rbt-inp';
+                    const dType = admDocBtn.dataset.rbtPickAdmDoc || 'staff';
+                    const dId = admDocBtn.dataset.rbtDocId || '';
+                    const dName = admDocBtn.dataset.rbtDocName || '';
+                    this._setAdmissionSourceState(prefix, {
+                        source: 'phong_kham',
+                        docType: dType,
+                        docId: dId,
+                        docName: dName,
+                        tab: dType === 'external' ? 'external' : 'internal'
+                    });
+                    this._markModalDirty();
+                    return;
+                }
+
+                const useManBtn = target.closest('[data-rbt-use-manual-query]');
+                if (useManBtn) {
+                    const prefix = useManBtn.dataset.rbtUseManualQuery || 'rbt-inp';
+                    const qRaw = (document.getElementById(`${prefix}-adm-doc-search`)?.value || '').trim();
+                    this._setAdmissionSourceState(prefix, {
+                        source: 'phong_kham',
+                        docType: 'manual',
+                        docId: '',
+                        docName: qRaw,
+                        tab: 'manual'
+                    });
+                    const manEl = document.getElementById(`${prefix}-adm-doc-manual`);
+                    if (manEl) manEl.value = qRaw;
+                    this._markModalDirty();
+                    return;
+                }
+
+                const clearDocBtn = target.closest('[data-rbt-clear-adm-doc]');
+                if (clearDocBtn) {
+                    const prefix = clearDocBtn.dataset.rbtClearAdmDoc || 'rbt-inp';
+                    const manEl = document.getElementById(`${prefix}-adm-doc-manual`);
+                    if (manEl) manEl.value = '';
+                    this._setAdmissionSourceState(prefix, {
+                        source: 'phong_kham',
+                        docType: '',
+                        docId: '',
+                        docName: '',
+                        tab: document.getElementById(`${prefix}-adm-doc-tab`)?.value || 'internal'
+                    });
+                    this._markModalDirty();
+                    return;
+                }
+
+                const roomChip = target.closest('[data-rbt-pick-room]');
+                if (roomChip) {
+                    const targetId = roomChip.dataset.rbtTarget;
+                    const roomVal = roomChip.dataset.rbtPickRoom || '';
+                    const sel = targetId ? document.getElementById(targetId) : null;
+                    if (sel) {
+                        sel.value = roomVal;
+                        sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    document.querySelectorAll(`[data-rbt-pick-room][data-rbt-target="${targetId}"]`).forEach(btn => {
+                        btn.classList.toggle('is-selected', (btn.dataset.rbtPickRoom || '') === roomVal);
+                    });
+                    this._markModalDirty();
+                    return;
+                }
+
+                const segBtn = target.closest('[data-rbt-pick-seg]');
+                if (segBtn) {
+                    const targetId = segBtn.dataset.rbtTarget;
+                    const segVal = segBtn.dataset.rbtPickSeg ?? '';
+                    const sel = targetId ? document.getElementById(targetId) : null;
+                    if (sel) {
+                        sel.value = segVal;
+                        sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    document.querySelectorAll(`[data-rbt-pick-seg][data-rbt-target="${targetId}"]`).forEach(btn => {
+                        btn.classList.toggle('is-selected', (btn.dataset.rbtPickSeg ?? '') === segVal);
+                    });
+                    if (targetId === 'rbt-pp-reason' && segVal === 'ly_do_khac') {
+                        const ppNote = document.getElementById('rbt-pp-note');
+                        if (ppNote) try { ppNote.focus({ preventScroll: true }); } catch (_) {}
+                    }
+                    this._markModalDirty();
+                    return;
+                }
+
+                const quickFillBtn = target.closest('[data-rbt-quick-fill]');
+                if (quickFillBtn) {
+                    const sel = quickFillBtn.dataset.rbtQuickFill;
+                    const inp = sel ? document.querySelector(sel) : null;
+                    const txt = quickFillBtn.dataset.rbtVal || '';
+                    if (inp) {
+                        inp.value = txt;
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                        this._markModalDirty();
+                    }
+                    return;
+                }
+
+                const quickAppendBtn = target.closest('[data-rbt-quick-append]');
+                if (quickAppendBtn) {
+                    const sel = quickAppendBtn.dataset.rbtQuickAppend;
+                    const inp = sel ? document.querySelector(sel) : null;
+                    const txt = quickAppendBtn.dataset.rbtVal || '';
+                    if (inp && txt) {
+                        const cur = String(inp.value || '').trim();
+                        if (!cur || cur.startsWith('Lịch mổ còn xa')) {
+                            inp.value = txt;
+                        } else if (!cur.includes(txt)) {
+                            inp.value = `${cur}; ${txt}`;
+                        }
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                        this._markModalDirty();
+                    }
+                    return;
+                }
+
                 const actionEl = target.closest('[data-rbt-action]');
                 if (!actionEl) return;
                 const action = actionEl.dataset.rbtAction;
                 const code = actionEl.dataset.rbtCode || '';
                 const extra = actionEl.dataset.rbtExtra || '';
                 this._handleAction(action, code, extra, actionEl);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                const modalOverlay = document.getElementById('modal-overlay');
+                if (!this._modalActive || !modalOverlay || !modalOverlay.classList.contains('active')) return;
+                const t = e.target;
+                if (!t || !modalOverlay.contains(t)) return;
+
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    const submitBtn = modalOverlay.querySelector('[data-rbt-primary-submit="1"]:not(:disabled)');
+                    if (submitBtn) submitBtn.click();
+                    return;
+                }
+
+                if (e.key === 'Enter') {
+                    if (t.matches('[data-rbt-adm-search]')) {
+                        e.preventDefault();
+                        const prefix = t.dataset.rbtPrefix || 'rbt-inp';
+                        const chips = document.querySelectorAll(`#${prefix}-adm-doc-chips [data-rbt-pick-adm-doc]`);
+                        if (chips.length === 1) {
+                            chips[0].click();
+                        }
+                        return;
+                    }
+                    if (t.matches('[data-rbt-adm-manual]')) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
             });
 
             document.addEventListener('input', (e) => {
@@ -651,6 +938,27 @@
                     this._searchQuery = t.value || '';
                     this._rerenderPage();
                     return;
+                }
+                if (t.matches('[data-rbt-adm-search]')) {
+                    const prefix = t.dataset.rbtPrefix || 'rbt-inp';
+                    this._refreshAdmittingDoctorPicker(prefix);
+                    return;
+                }
+                if (t.matches('[data-rbt-adm-manual]')) {
+                    const prefix = t.dataset.rbtPrefix || 'rbt-inp';
+                    const val = t.value || '';
+                    const typeEl = document.getElementById(`${prefix}-adm-doc-type`);
+                    const idEl = document.getElementById(`${prefix}-adm-doc-id`);
+                    const nameEl = document.getElementById(`${prefix}-adm-doc-name`);
+                    if (typeEl) typeEl.value = val.trim() ? 'manual' : '';
+                    if (idEl) idEl.value = '';
+                    if (nameEl) nameEl.value = val.trim();
+                    this._updateAdmittingSelectedBadge(prefix);
+                    this._markModalDirty();
+                    return;
+                }
+                if (this._openModalMode === 'create_consult' || this._openModalMode === 'create_case') {
+                    this._updateOptionalCount();
                 }
                 const modalOverlay = document.getElementById('modal-overlay');
                 if (this._modalActive && modalOverlay && modalOverlay.contains(t)) {
@@ -688,6 +996,9 @@
                 } else if (t.id === 'rbt-stats-surgeon') {
                     this._statsSurgeon = t.value || 'all';
                     this._rerenderPage();
+                } else if (t.id === 'rbt-inp-consult-date' && this._openModalMode === 'schedule_consult') {
+                    this._updateConsultSlotHints(t.value);
+                    this._markModalDirty();
                 } else if (t.id === 'rbt-inp-date' && this._openModalMode === 'decide_consult') {
                     const slotHost = document.getElementById('rbt-decide-slot-wrap');
                     if (slotHost) {
@@ -712,6 +1023,17 @@
                 } else if (t.id === 'rbt-inp-print-mode' || t.id === 'rbt-inp-print-scope' || t.id === 'rbt-inp-print-date' || t.id === 'rbt-inp-print-case') {
                     this._syncPrintPreviewFromModal();
                 } else {
+                    if (t.id) {
+                        document.querySelectorAll(`[data-rbt-pick-room][data-rbt-target="${t.id}"]`).forEach(btn => {
+                            btn.classList.toggle('is-selected', (btn.dataset.rbtPickRoom || '') === (t.value || ''));
+                        });
+                        document.querySelectorAll(`[data-rbt-pick-seg][data-rbt-target="${t.id}"]`).forEach(btn => {
+                            btn.classList.toggle('is-selected', (btn.dataset.rbtPickSeg ?? '') === (t.value ?? ''));
+                        });
+                    }
+                    if (this._openModalMode === 'create_consult' || this._openModalMode === 'create_case') {
+                        this._updateOptionalCount();
+                    }
                     const modalOverlay = document.getElementById('modal-overlay');
                     if (this._modalActive && modalOverlay && modalOverlay.contains(t)) {
                         this._markModalDirty();
@@ -1011,14 +1333,18 @@
                 this._subtab = 'consult';
             }
 
-            const q = this._searchQuery.trim().toLowerCase();
+            const q = foldVi(this._searchQuery);
             const matchesSearch = (c) => {
                 if (!q) return true;
+                const srcTxt = c.admissionSource === 'cap_cuu'
+                    ? 'cấp cứu cap cuu'
+                    : (c.admissionSource === 'phong_kham' ? 'phòng khám phong kham' : '');
                 const hay = [
                     c.robotCaseCode, c.patientName, c.admissionId, c.diagnosis,
-                    c.robotProcedure, c.wardRoom, c.mainSurgeonName, c.createdByName
-                ].join(' ').toLowerCase();
-                return hay.includes(q);
+                    c.robotProcedure, c.wardRoom, c.mainSurgeonName, c.createdByName,
+                    srcTxt, c.admittingDoctorName
+                ].join(' ');
+                return foldVi(hay).includes(q);
             };
 
             const bodyHtml = this._renderActiveSubtab(cases.filter(matchesSearch), todayIso);
@@ -1179,6 +1505,7 @@
                             ${c.isTestSandboxCase ? `<span class="rbt-badge rbt-badge--sandbox">SANDBOX</span>` : ''}
                             <span class="rbt-badge ${sm.badge}">${esc(sm.label)}</span>
                             ${roundTag}
+                            ${this._admissionSourceBadgeHtml(c)}
                         </div>
                         <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(c.wardRoom))}</span>
                     </div>
@@ -1457,6 +1784,7 @@
                         <div>
                             <span class="rbt-case-code">${esc(code)}</span>
                             <span class="rbt-badge rbt-badge--navy">🏥 ${esc(roomLabel(c.wardRoom))}</span>
+                            ${this._admissionSourceBadgeHtml(c)}
                             <span class="rbt-badge ${sm.badge}">${esc(sm.label)}</span>
                             ${c.inpatientState === 'xuat_vien_cho' ? `<span class="rbt-badge rbt-badge--amber">🏠 XV chờ · Nhập lại ${fmtViDate(c.plannedReadmitDate)}</span>` : ''}
                             ${c.inpatientState === 'da_nhap_lai' ? `<span class="rbt-badge rbt-badge--green">✅ Đã nhập lại</span>` : ''}
@@ -1781,6 +2109,209 @@
             </div>`;
         },
 
+        _renderWardRoomPickerHtml(selectId, selectedRoom = '') {
+            const rooms = this._wardRooms();
+            const sel = String(selectedRoom || '').trim();
+            return `<div class="rbt-room-picker">
+                <div class="rbt-room-chips" role="group" aria-label="Chọn phòng bệnh">
+                    ${rooms.map(rm => `<button type="button" class="rbt-room-chip ${sel === rm ? 'is-selected' : ''}" data-rbt-pick-room="${esc(rm)}" data-rbt-target="${esc(selectId)}">${esc(rm === 'ngoai_tru' ? 'Ngoại trú' : rm)}</button>`).join('')}
+                </div>
+                <select id="${esc(selectId)}" class="form-input rbt-sr-select" tabindex="-1" aria-label="Phòng bệnh">
+                    <option value="">-- Chọn phòng bệnh (B705–B719) hoặc Ngoại trú --</option>
+                    ${rooms.map(rm => `<option value="${esc(rm)}" ${sel === rm ? 'selected' : ''}>${esc(roomLabel(rm))}</option>`).join('')}
+                </select>
+            </div>`;
+        },
+
+        _renderSegmentedSelectHtml(selectId, options, selectedVal = '', extraCls = '') {
+            const sel = String(selectedVal == null ? '' : selectedVal);
+            return `<div class="rbt-seg-wrap">
+                <div class="rbt-seg-group ${extraCls}" role="group">
+                    ${options.map(opt => `<button type="button" class="rbt-seg-btn ${sel === String(opt.value) ? 'is-selected' : ''}" data-rbt-pick-seg="${esc(opt.value)}" data-rbt-target="${esc(selectId)}">${opt.icon ? `<span>${esc(opt.icon)}</span>` : ''}<span>${esc(opt.label)}</span></button>`).join('')}
+                </div>
+                <select id="${esc(selectId)}" class="form-input rbt-sr-select" tabindex="-1">
+                    ${options.map(opt => `<option value="${esc(opt.value)}" ${sel === String(opt.value) ? 'selected' : ''}>${esc(opt.fullLabel || opt.label)}</option>`).join('')}
+                </select>
+            </div>`;
+        },
+
+        _renderSurgeonQuickChipsHtml(selectId, surgeons, selectedId) {
+            const selStr = String(selectedId || '');
+            const cat = this._admittingDoctors().internal || [];
+            const shortById = new Map(cat.map(d => [String(d.id), d.shortName]));
+            return `<div class="rbt-surgeon-chips">
+                ${surgeons.slice(0, 8).map(s => {
+                    const idStr = String(s.id);
+                    const parts = String(s.name || '').trim().split(/\s+/);
+                    const lbl = shortById.get(idStr) || (Number(s.id) === 1 ? 'TS. Hữu' : `BS. ${parts[parts.length - 1] || s.name}`);
+                    return `<button type="button" class="rbt-quick-chip ${selStr === idStr ? 'is-selected' : ''}" data-rbt-pick-seg="${esc(idStr)}" data-rbt-target="${esc(selectId)}">${esc(lbl)}</button>`;
+                }).join('')}
+            </div>`;
+        },
+
+        _updateAdmittingSelectedBadge(prefix) {
+            const host = document.getElementById(`${prefix}-adm-doc-selected`);
+            if (!host) return;
+            const dName = (document.getElementById(`${prefix}-adm-doc-name`)?.value || '').trim();
+            const dType = (document.getElementById(`${prefix}-adm-doc-type`)?.value || '').trim();
+            if (!dName) {
+                host.innerHTML = `<span class="rbt-adm-placeholder">Chọn từ danh sách bên dưới hoặc nhập tay</span>`;
+                return;
+            }
+            const tag = dType === 'external' ? 'BS ngoài khoa' : (dType === 'manual' ? 'Nhập tay' : 'Khoa PTĐTT');
+            host.innerHTML = `<span class="rbt-adm-selected-pill">✓ <strong>${esc(dName)}</strong> <small>(${tag})</small> <button type="button" class="rbt-adm-clear-btn" data-rbt-clear-adm-doc="${esc(prefix)}" aria-label="Bỏ chọn bác sĩ">&times;</button></span>`;
+        },
+
+        _setAdmissionSourceState(prefix, state = {}) {
+            const src = state.source || '';
+            const docType = src === 'phong_kham' ? (state.docType || '') : '';
+            const docId = (src === 'phong_kham' && state.docId != null) ? String(state.docId) : '';
+            const docName = src === 'phong_kham' ? (state.docName || '') : '';
+            const tab = state.tab || (docType === 'external' ? 'external' : (docType === 'manual' ? 'manual' : 'internal'));
+
+            const setH = (suffix, v) => {
+                const el = document.getElementById(`${prefix}-${suffix}`);
+                if (el) el.value = v;
+            };
+            setH('adm-source', src);
+            setH('adm-doc-type', docType);
+            setH('adm-doc-id', docId);
+            setH('adm-doc-name', docName);
+            setH('adm-doc-tab', tab);
+
+            document.querySelectorAll(`[data-rbt-pick-source][data-rbt-prefix="${prefix}"]`).forEach(btn => {
+                btn.classList.toggle('is-selected', btn.dataset.rbtPickSource === src);
+            });
+            const srcWrap = document.getElementById(`${prefix}-adm-source-wrap`);
+            if (srcWrap) srcWrap.classList.remove('rbt-field-invalid');
+
+            const docPanel = document.getElementById(`${prefix}-adm-doc-panel`);
+            if (docPanel) docPanel.hidden = (src !== 'phong_kham');
+
+            if (src === 'phong_kham') {
+                this._refreshAdmittingDoctorPicker(prefix);
+            }
+        },
+
+        _refreshAdmittingDoctorPicker(prefix) {
+            const { internal, external } = this._admittingDoctors();
+            const tab = document.getElementById(`${prefix}-adm-doc-tab`)?.value || 'internal';
+            const docType = document.getElementById(`${prefix}-adm-doc-type`)?.value || '';
+            const docId = document.getElementById(`${prefix}-adm-doc-id`)?.value || '';
+            const docName = document.getElementById(`${prefix}-adm-doc-name`)?.value || '';
+            const searchInp = document.getElementById(`${prefix}-adm-doc-search`);
+            const rawSearch = (searchInp && searchInp.value ? searchInp.value : '').trim();
+            const q = foldVi(rawSearch);
+
+            document.querySelectorAll(`[data-rbt-adm-tab][data-rbt-prefix="${prefix}"]`).forEach(btn => {
+                btn.classList.toggle('is-selected', btn.dataset.rbtAdmTab === tab);
+            });
+
+            const manWrap = document.getElementById(`${prefix}-adm-doc-manual-wrap`);
+            const manInp = document.getElementById(`${prefix}-adm-doc-manual`);
+            if (manWrap) manWrap.hidden = (tab !== 'manual');
+            if (manInp && docType === 'manual' && docName && manInp.value !== docName) {
+                manInp.value = docName;
+            }
+
+            this._updateAdmittingSelectedBadge(prefix);
+
+            const chipsHost = document.getElementById(`${prefix}-adm-doc-chips`);
+            if (!chipsHost) return;
+
+            let htmlParts = [];
+            const renderIntChip = (d) => {
+                const active = docType === 'staff' && String(docId) === String(d.id);
+                return `<button type="button" class="rbt-doc-chip ${active ? 'is-selected' : ''}" data-rbt-pick-adm-doc="staff" data-rbt-doc-id="${d.id}" data-rbt-doc-name="${esc(d.fullName || d.name)}" data-rbt-prefix="${esc(prefix)}" title="${esc(d.fullName || d.name)}">${esc(d.shortName || d.name)}</button>`;
+            };
+            const renderExtChip = (d) => {
+                const active = docType === 'external' && String(docId) === String(d.id);
+                const deptTag = d.department ? ` <small class="rbt-doc-chip__dept">· ${esc(d.department)}</small>` : '';
+                return `<button type="button" class="rbt-doc-chip ${active ? 'is-selected' : ''}" data-rbt-pick-adm-doc="external" data-rbt-doc-id="${d.id}" data-rbt-doc-name="${esc(d.fullName || d.name)}" data-rbt-prefix="${esc(prefix)}"><span>${esc(d.fullName || d.name)}</span>${deptTag}</button>`;
+            };
+
+            if (q) {
+                const mInt = internal.filter(d => foldVi(`${d.fullName} ${d.shortName} ${d.name} ${d.role}`).includes(q));
+                const mExt = external.filter(d => foldVi(`${d.fullName} ${d.name} ${d.department} ${d.position}`).includes(q));
+                mInt.forEach(d => htmlParts.push(renderIntChip(d)));
+                mExt.forEach(d => htmlParts.push(renderExtChip(d)));
+                const exactHit = [...mInt, ...mExt].some(d => foldVi(d.fullName) === q || foldVi(d.name) === q);
+                if (!exactHit) {
+                    htmlParts.push(`<button type="button" class="rbt-doc-chip rbt-doc-chip--manual" data-rbt-use-manual-query="${esc(prefix)}">✍️ Dùng tên nhập tay "${esc(rawSearch)}"</button>`);
+                }
+            } else if (tab === 'internal') {
+                internal.forEach(d => htmlParts.push(renderIntChip(d)));
+                htmlParts.push(`<button type="button" class="rbt-doc-chip rbt-doc-chip--manual" data-rbt-adm-tab="manual" data-rbt-prefix="${esc(prefix)}">✍️ Nhập tay BS khác</button>`);
+            } else if (tab === 'external') {
+                external.forEach(d => htmlParts.push(renderExtChip(d)));
+                htmlParts.push(`<button type="button" class="rbt-doc-chip rbt-doc-chip--manual" data-rbt-adm-tab="manual" data-rbt-prefix="${esc(prefix)}">✍️ Nhập tay BS khác</button>`);
+            } else {
+                htmlParts.push(`<span class="rbt-adm-manual-hint">Nhập tên bác sĩ cho nhập ở ô bên dưới rồi lưu hồ sơ.</span>`);
+            }
+            chipsHost.innerHTML = htmlParts.join('');
+        },
+
+        _renderAdmissionSourcePickerHtml(prefix, state = {}) {
+            const { internal, external } = this._admittingDoctors();
+            const src = state.source || '';
+            const docType = src === 'phong_kham' ? (state.docType || '') : '';
+            const docId = (src === 'phong_kham' && state.docId != null) ? String(state.docId) : '';
+            const docName = src === 'phong_kham' ? (state.docName || '') : '';
+            const tab = state.tab || (docType === 'external' ? 'external' : (docType === 'manual' ? 'manual' : 'internal'));
+
+            return `<div id="${esc(prefix)}-adm-source-wrap" class="rbt-adm-wrap">
+                <input type="hidden" id="${esc(prefix)}-adm-source" value="${esc(src)}">
+                <input type="hidden" id="${esc(prefix)}-adm-doc-type" value="${esc(docType)}">
+                <input type="hidden" id="${esc(prefix)}-adm-doc-id" value="${esc(docId)}">
+                <input type="hidden" id="${esc(prefix)}-adm-doc-name" value="${esc(docName)}">
+                <input type="hidden" id="${esc(prefix)}-adm-doc-tab" value="${esc(tab)}">
+
+                <label class="form-label">Nguồn bệnh nhân *</label>
+                <div class="rbt-seg-group rbt-seg-group--2" role="group" aria-label="Nguồn bệnh nhân">
+                    <button type="button" class="rbt-seg-btn ${src === 'cap_cuu' ? 'is-selected' : ''}" data-rbt-pick-source="cap_cuu" data-rbt-prefix="${esc(prefix)}">🚨 Cấp cứu</button>
+                    <button type="button" class="rbt-seg-btn ${src === 'phong_kham' ? 'is-selected' : ''}" data-rbt-pick-source="phong_kham" data-rbt-prefix="${esc(prefix)}">🏥 Phòng khám</button>
+                </div>
+
+                <div id="${esc(prefix)}-adm-doc-panel" class="rbt-adm-doc-panel" ${src === 'phong_kham' ? '' : 'hidden'}>
+                    <div class="rbt-adm-doc-hdr">
+                        <label class="form-label" style="margin:0;">Bác sĩ phòng khám cho nhập</label>
+                        <div id="${esc(prefix)}-adm-doc-selected" class="rbt-adm-selected"></div>
+                    </div>
+                    <div class="rbt-adm-doc-controls">
+                        <div class="rbt-doc-tabs" role="tablist" aria-label="Nhóm bác sĩ">
+                            <button type="button" class="rbt-doc-tab ${tab === 'internal' ? 'is-selected' : ''}" data-rbt-adm-tab="internal" data-rbt-prefix="${esc(prefix)}">Khoa PTĐTT (${internal.length})</button>
+                            <button type="button" class="rbt-doc-tab ${tab === 'external' ? 'is-selected' : ''}" data-rbt-adm-tab="external" data-rbt-prefix="${esc(prefix)}">BS ngoài khoa (${external.length})</button>
+                            <button type="button" class="rbt-doc-tab ${tab === 'manual' ? 'is-selected' : ''}" data-rbt-adm-tab="manual" data-rbt-prefix="${esc(prefix)}">✍️ Nhập tay</button>
+                        </div>
+                        <input id="${esc(prefix)}-adm-doc-search" type="search" class="form-input rbt-adm-search" data-rbt-adm-search="1" data-rbt-prefix="${esc(prefix)}" placeholder="Tìm nhanh BS (gõ không dấu, VD: an, huu, chuc)..." autocomplete="off" enterkeyhint="search">
+                    </div>
+                    <div id="${esc(prefix)}-adm-doc-chips" class="rbt-doc-chips"></div>
+                    <div id="${esc(prefix)}-adm-doc-manual-wrap" class="rbt-adm-manual-wrap" ${tab === 'manual' ? '' : 'hidden'}>
+                        <label class="form-label" for="${esc(prefix)}-adm-doc-manual">Tên bác sĩ cho nhập (nhập tay)</label>
+                        <input id="${esc(prefix)}-adm-doc-manual" type="text" class="form-input" data-rbt-adm-manual="1" data-rbt-prefix="${esc(prefix)}" value="${esc(docType === 'manual' ? docName : '')}" placeholder="VD: BS. Trần Văn X — Phòng khám Ngoại" autocomplete="off" enterkeyhint="done">
+                    </div>
+                </div>
+            </div>`;
+        },
+
+        _updateOptionalCount() {
+            const badge = document.getElementById('rbt-optional-count');
+            if (!badge) return;
+            const vals = ['rbt-inp-phone', 'rbt-inp-adm', 'rbt-inp-proc', 'rbt-inp-note']
+                .map(id => (document.getElementById(id)?.value || '').trim())
+                .filter(Boolean);
+            badge.textContent = vals.length ? `Đã điền ${vals.length} mục` : 'Tùy chọn';
+        },
+
+        _updateConsultSlotHints(dateIso) {
+            const sCnt = this._countConsultsOn(dateIso, 'sang');
+            const cCnt = this._countConsultsOn(dateIso, 'chieu');
+            const sEl = document.getElementById('rbt-sess-count-sang');
+            const cEl = document.getElementById('rbt-sess-count-chieu');
+            if (sEl) sEl.textContent = sCnt ? `Đang có ${sCnt} ca` : 'Trống';
+            if (cEl) cEl.textContent = cCnt ? `Đang có ${cCnt} ca` : 'Trống';
+        },
+
         _fillSandboxForm() {
             const idx = (this._sandboxSampleIdx || 0) % SANDBOX_PROFILES.length;
             this._sandboxSampleIdx = (idx + 1) % SANDBOX_PROFILES.length;
@@ -1790,6 +2321,7 @@
                 const el = document.getElementById(id);
                 if (!el || val == null) return;
                 el.value = String(val);
+                el.dispatchEvent(new Event('change', { bubbles: true }));
             };
             const sbxChk = document.getElementById('rbt-inp-sandbox');
             if (sbxChk) sbxChk.checked = true;
@@ -1804,6 +2336,25 @@
             setVal('rbt-inp-proc', sample.robotProcedure);
             setVal('rbt-inp-surgeon', '1');
             setVal('rbt-inp-note', sample.note);
+
+            const { internal, external } = this._admittingDoctors();
+            let docName = '';
+            if (sample.admissionSource === 'phong_kham') {
+                const pool = sample.admittingDoctorType === 'external' ? external : internal;
+                const found = pool.find(d => Number(d.id) === Number(sample.admittingDoctorId));
+                docName = found ? (found.fullName || found.name) : '';
+            }
+            this._setAdmissionSourceState('rbt-inp', {
+                source: sample.admissionSource || 'phong_kham',
+                docType: sample.admittingDoctorType || '',
+                docId: sample.admittingDoctorId || '',
+                docName
+            });
+
+            const optDetails = document.getElementById('rbt-optional-details');
+            if (optDetails) optDetails.open = true;
+            this._updateOptionalCount();
+
             const labsChk = document.getElementById('rbt-inp-labs-ready');
             if (labsChk) labsChk.checked = true;
             const dateInp = document.getElementById('rbt-inp-date');
@@ -1819,9 +2370,9 @@
             const p = this._perms();
             const todayIso = this._todayIso();
             const surgeons = this._surgeons();
-            const rooms = this._wardRooms();
             const isDirect = mode === 'create_case';
             const useSandbox = Boolean(opts && opts.sandbox && p.canAccessSandbox);
+            const isLaptop = this._isLaptopPointer();
             const title = isDirect
                 ? '⚡ Tạo trực tiếp ca Lịch mổ Robot'
                 : (useSandbox ? '🧪 Tạo ca giả lập vận hành thử [TEST]' : '🩺 Bước 1 · Gửi bệnh nhân Tư vấn PT Nội soi / Robot');
@@ -1835,102 +2386,152 @@
                 <button type="button" id="rbt-btn-autofill-sandbox" class="btn btn-secondary rbt-btn-xs" data-rbt-action="autofill_sandbox">⚡ Điền mẫu khác</button>
             </div>` : '';
 
+            const genderPicker = this._renderSegmentedSelectHtml('rbt-inp-gender', [
+                { value: 'Nam', label: 'Nam' },
+                { value: 'Nữ', label: 'Nữ' }
+            ], '', 'rbt-seg-group--2');
+
+            const indPicker = this._renderSegmentedSelectHtml('rbt-inp-indication', [
+                { value: 'robot_hoac_noisoi', label: 'Nội soi / Robot', fullLabel: 'PT Nội soi hoặc Robot' },
+                { value: 'uu_tien_robot', label: 'Ưu tiên Robot', fullLabel: 'Ưu tiên phẫu thuật Robot' },
+                { value: 'uu_tien_noisoi', label: 'Ưu tiên Nội soi', fullLabel: 'Ưu tiên phẫu thuật Nội soi' }
+            ], 'robot_hoac_noisoi', 'rbt-seg-group--3');
+
             const html = `${this._dirtyBannerHtml()}
             ${sandboxBoxHtml}
-            <div class="rbt-form-grid">
-                <div>
-                    <label class="form-label" for="rbt-inp-name">Họ và tên bệnh nhân *</label>
-                    <input id="rbt-inp-name" type="text" class="form-input" placeholder="VD: Nguyễn Văn A">
+            <div class="rbt-section-card">
+                <div class="rbt-section-card__title">1. Hành chính &amp; Nguồn tiếp nhận</div>
+                <div class="rbt-row-patient-3col">
+                    <div class="rbt-col-name">
+                        <label class="form-label" for="rbt-inp-name">Họ và tên bệnh nhân *</label>
+                        <input id="rbt-inp-name" type="text" class="form-input" placeholder="VD: Nguyễn Văn A" autocomplete="off" enterkeyhint="next">
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-inp-birth">Năm sinh *</label>
+                        <input id="rbt-inp-birth" type="number" min="1900" max="2026" inputmode="numeric" pattern="[0-9]*" class="form-input" placeholder="1965" enterkeyhint="next">
+                    </div>
+                    <div>
+                        <label class="form-label">Giới tính</label>
+                        ${genderPicker}
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-birth">Năm sinh *</label>
-                    <input id="rbt-inp-birth" type="number" min="1900" max="2026" class="form-input" placeholder="1965">
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-gender">Giới tính</label>
-                    <select id="rbt-inp-gender" class="form-input">
-                        <option value="">-- Chọn --</option>
-                        <option value="Nam">Nam</option>
-                        <option value="Nữ">Nữ</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-phone">Số điện thoại liên hệ (không bắt buộc)</label>
-                    <input id="rbt-inp-phone" type="tel" class="form-input" placeholder="09xxxxxxxx (có thể để trống)">
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-ward-room">Phòng bệnh hiện tại *</label>
-                    <select id="rbt-inp-ward-room" class="form-input">
-                        <option value="">-- Chọn phòng bệnh (B705–B719) hoặc Ngoại trú --</option>
-                        ${rooms.map(rm => `<option value="${esc(rm)}">${esc(roomLabel(rm))}</option>`).join('')}
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Bác sĩ gửi hồ sơ</label>
-                    <input type="text" class="form-input" value="${esc(this._currentUserDisplay())}" readonly>
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-adm">Số nhập viện / HSBA</label>
-                    <input id="rbt-inp-adm" type="text" class="form-input" placeholder="26xxxxxx">
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-indication">Chỉ định phẫu thuật</label>
-                    <select id="rbt-inp-indication" class="form-input">
-                        <option value="robot_hoac_noisoi">PT Nội soi hoặc Robot</option>
-                        <option value="uu_tien_robot">Ưu tiên phẫu thuật Robot</option>
-                        <option value="uu_tien_noisoi">Ưu tiên phẫu thuật Nội soi</option>
-                    </select>
-                </div>
-                <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-inp-diag">Chẩn đoán *</label>
-                    <input id="rbt-inp-diag" type="text" class="form-input" placeholder="VD: K trực tràng giữa cT3N1M0">
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-proc">Dự kiến phương pháp phẫu thuật</label>
-                    <input id="rbt-inp-proc" type="text" class="form-input" placeholder="VD: Cắt trước thấp">
-                </div>
-                <div>
-                    <label class="form-label" for="rbt-inp-surgeon">PTV dự kiến / Tư vấn</label>
-                    <select id="rbt-inp-surgeon" class="form-input">
-                        ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === 1 ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
-                    </select>
-                </div>
-
-                ${isDirect ? `
-                <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-inp-date">Ngày phẫu thuật Robot *</label>
-                    ${datePresetsHtml('rbt-inp-date', todayIso)}
-                    <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${addDaysIso(todayIso, 2)}"></div>
-                </div>
-                <div id="rbt-create-slot-wrap" class="rbt-form-grid--full">
-                    ${this._renderSlotPickerHtml(addDaysIso(todayIso, 2), 'Ca 1', '')}
-                </div>` : ''}
-
-                <div class="rbt-form-grid--full">
-                    <label class="rbt-check-card">
-                        <input id="rbt-inp-labs-ready" type="checkbox" ${isDirect ? 'checked' : ''}>
-                        <span><strong>Xác nhận đủ xét nghiệm tiền phẫu &amp; có chỉ định PT Nội soi/Robot *</strong></span>
-                    </label>
-                </div>
-
-                <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-inp-note">Ghi chú gửi Điều phối &amp; TS. Hữu</label>
-                    <textarea id="rbt-inp-note" class="form-input" rows="2" placeholder="Tình trạng bệnh nền, kháng đông, thời gian dự kiến..."></textarea>
+                <div style="margin-top:12px;">
+                    ${this._renderAdmissionSourcePickerHtml('rbt-inp', {})}
                 </div>
             </div>
+
+            <div class="rbt-section-card">
+                <div class="rbt-section-card__title">2. Phòng bệnh, Chẩn đoán &amp; Chỉ định</div>
+                <div style="margin-bottom:10px;">
+                    <label class="form-label" for="rbt-inp-ward-room">Phòng bệnh hiện tại *</label>
+                    ${this._renderWardRoomPickerHtml('rbt-inp-ward-room', '')}
+                </div>
+                <div class="rbt-form-grid">
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-inp-diag">Chẩn đoán *</label>
+                        <input id="rbt-inp-diag" type="text" class="form-input" placeholder="VD: K trực tràng giữa cT3N1M0" enterkeyhint="next">
+                    </div>
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-inp-indication">Chỉ định phẫu thuật</label>
+                        ${indPicker}
+                    </div>
+                    ${isDirect ? `
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-inp-date">Ngày phẫu thuật Robot *</label>
+                        ${datePresetsHtml('rbt-inp-date', todayIso)}
+                        <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${addDaysIso(todayIso, 2)}"></div>
+                    </div>
+                    <div id="rbt-create-slot-wrap" class="rbt-form-grid--full">
+                        ${this._renderSlotPickerHtml(addDaysIso(todayIso, 2), 'Ca 1', '')}
+                    </div>` : ''}
+                    <div class="rbt-form-grid--full">
+                        <label class="rbt-check-card">
+                            <input id="rbt-inp-labs-ready" type="checkbox" ${isDirect ? 'checked' : ''}>
+                            <span><strong>Xác nhận đủ xét nghiệm tiền phẫu &amp; có chỉ định PT Nội soi/Robot *</strong></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <details id="rbt-optional-details" class="rbt-optional-group" ${(isLaptop || useSandbox) ? 'open' : ''}>
+                <summary class="rbt-optional-summary">
+                    <span>+ Thông tin bổ sung (SĐT không bắt buộc, HSBA, PP dự kiến, Ghi chú)</span>
+                    <span id="rbt-optional-count" class="rbt-badge rbt-badge--navy">Tùy chọn</span>
+                </summary>
+                <div class="rbt-optional-body">
+                    <div class="rbt-form-grid">
+                        <div>
+                            <label class="form-label" for="rbt-inp-phone">Số điện thoại liên hệ (không bắt buộc)</label>
+                            <input id="rbt-inp-phone" type="tel" inputmode="tel" class="form-input" placeholder="09xxxxxxxx (có thể để trống)" enterkeyhint="next">
+                        </div>
+                        <div>
+                            <label class="form-label" for="rbt-inp-adm">Số nhập viện / HSBA</label>
+                            <input id="rbt-inp-adm" type="text" class="form-input" placeholder="26xxxxxx" enterkeyhint="next">
+                        </div>
+                        <div>
+                            <label class="form-label" for="rbt-inp-proc">Dự kiến phương pháp phẫu thuật</label>
+                            <input id="rbt-inp-proc" type="text" class="form-input" placeholder="VD: Cắt trước thấp" enterkeyhint="next">
+                        </div>
+                        <div>
+                            <label class="form-label" for="rbt-inp-surgeon">PTV dự kiến / Tư vấn</label>
+                            <select id="rbt-inp-surgeon" class="form-input">
+                                ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === 1 ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Bác sĩ gửi hồ sơ</label>
+                            <input type="text" class="form-input" value="${esc(this._currentUserDisplay())}" readonly>
+                        </div>
+                        <div class="rbt-form-grid--full">
+                            <label class="form-label" for="rbt-inp-note">Ghi chú gửi Điều phối &amp; TS. Hữu</label>
+                            <textarea id="rbt-inp-note" class="form-input" rows="2" placeholder="Tình trạng bệnh nền, kháng đông, thời gian dự kiến..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </details>
             <div id="rbt-modal-conflict-host"></div>`;
 
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_create" data-rbt-extra="${esc(modalMode)}">${isDirect ? 'Tạo ca &amp; Xếp lịch Robot' : 'Gửi ca tư vấn'}</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_create" data-rbt-extra="${esc(modalMode)}">${isDirect ? 'Tạo ca &amp; Xếp lịch Robot' : 'Gửi ca tư vấn'} <kbd class="rbt-kbd-hint">⌘/Ctrl+↵</kbd></button>`;
 
             this._markModalOpen(modalMode, null);
-            openRobotModal(title, html, footer);
+            openRobotModal(title, html, footer, { size: 'wide', mode: modalMode });
             if (useSandbox) {
                 this._fillSandboxForm();
+            } else if (isLaptop) {
+                setTimeout(() => {
+                    const nameInp = document.getElementById('rbt-inp-name');
+                    if (nameInp && this._modalActive) try { nameInp.focus({ preventScroll: true }); } catch (_) {}
+                }, 60);
             }
+            this._updateOptionalCount();
         },
 
         async _submitCreateModal(mode, btnEl) {
+            const admSource = document.getElementById('rbt-inp-adm-source')?.value || '';
+            const admDocType = document.getElementById('rbt-inp-adm-doc-type')?.value || '';
+            const admDocIdRaw = document.getElementById('rbt-inp-adm-doc-id')?.value || '';
+            const admDocManRaw = document.getElementById('rbt-inp-adm-doc-manual')?.value?.trim() || '';
+            const admDocName = admDocType === 'manual'
+                ? admDocManRaw
+                : (document.getElementById('rbt-inp-adm-doc-name')?.value?.trim() || admDocManRaw);
+
+            if (!admSource) {
+                const wrap = document.getElementById('rbt-inp-adm-source-wrap');
+                if (wrap) {
+                    wrap.classList.add('rbt-field-invalid');
+                    wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                notifyToast('Vui lòng chọn Nguồn bệnh nhân (Cấp cứu hoặc Phòng khám).', 'error');
+                return;
+            }
+            if (admSource === 'phong_kham' && admDocType === 'manual' && admDocName.length < 2) {
+                const manInp = document.getElementById('rbt-inp-adm-doc-manual');
+                if (manInp) try { manInp.focus(); } catch (_) {}
+                notifyToast('Vui lòng nhập tên Bác sĩ phòng khám cho nhập (tối thiểu 2 ký tự).', 'error');
+                return;
+            }
+
             const payload = {
                 action: mode,
                 patientName: document.getElementById('rbt-inp-name')?.value?.trim() || '',
@@ -1938,6 +2539,10 @@
                 gender: document.getElementById('rbt-inp-gender')?.value || '',
                 phone: document.getElementById('rbt-inp-phone')?.value?.trim() || '',
                 wardRoom: document.getElementById('rbt-inp-ward-room')?.value || '',
+                admissionSource: admSource,
+                admittingDoctorType: admSource === 'phong_kham' ? admDocType : '',
+                admittingDoctorId: (admSource === 'phong_kham' && (admDocType === 'staff' || admDocType === 'external') && admDocIdRaw) ? Number(admDocIdRaw) : null,
+                admittingDoctorName: admSource === 'phong_kham' ? admDocName : '',
                 admissionId: document.getElementById('rbt-inp-adm')?.value?.trim() || '',
                 indicationType: document.getElementById('rbt-inp-indication')?.value || 'robot_hoac_noisoi',
                 diagnosis: document.getElementById('rbt-inp-diag')?.value?.trim() || '',
@@ -1981,21 +2586,27 @@
             const todayIso = this._todayIso();
             const defaultDate = rc.consultDate || addDaysIso(todayIso, 1);
             const sess = rc.consultSession === 'chieu' ? 'chieu' : 'sang';
+            const schedPresets = [
+                { label: 'Hôm nay', iso: todayIso },
+                { label: 'Ngày mai', iso: addDaysIso(todayIso, 1) },
+                { label: '+2 ngày', iso: addDaysIso(todayIso, 2) },
+                { label: '+3 ngày', iso: addDaysIso(todayIso, 3) }
+            ].map(p => {
+                const cnt = this._countConsultsOn(p.iso);
+                return { label: `${p.label}${cnt ? ` · ${cnt} ca` : ''}`, iso: p.iso };
+            });
+            const sCnt = this._countConsultsOn(defaultDate, 'sang');
+            const cCnt = this._countConsultsOn(defaultDate, 'chieu');
 
             const html = `${this._dirtyBannerHtml()}
             <div class="rbt-sheet-summary">
-                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))}<br>
+                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} ${this._admissionSourceBadgeHtml(rc)}<br>
                 <span>CĐ: ${esc(rc.diagnosis || '—')} · BS gửi: ${esc(rc.createdByName || rc.createdByUsername || '—')}</span>
             </div>
             <div class="rbt-form-grid">
                 <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-inp-consult-date">Ngày tư vấn TS. BSCKII. Nguyễn Phú Hữu *</label>
-                    ${datePresetsHtml('rbt-inp-consult-date', todayIso, [
-                        { label: 'Hôm nay', iso: todayIso },
-                        { label: 'Ngày mai', iso: addDaysIso(todayIso, 1) },
-                        { label: '+2 ngày', iso: addDaysIso(todayIso, 2) },
-                        { label: '+3 ngày', iso: addDaysIso(todayIso, 3) }
-                    ])}
+                    ${datePresetsHtml('rbt-inp-consult-date', todayIso, schedPresets)}
                     <div class="rbt-date-wrap"><input id="rbt-inp-consult-date" type="date" class="form-input" value="${esc(defaultDate)}"></div>
                 </div>
                 <div class="rbt-form-grid--full">
@@ -2003,26 +2614,29 @@
                     <input type="hidden" id="rbt-inp-consult-session" value="${esc(sess)}">
                     <div class="rbt-slot-pills rbt-session-pills">
                         <button type="button" class="rbt-slot-pill ${sess === 'sang' ? 'is-selected' : ''}" data-rbt-pick-session="sang">
-                            <strong>🌅 Buổi Sáng</strong>
-                            <span class="rbt-slot-pill__sub">07:30 – 11:30</span>
+                            <strong>🌅 Buổi Sáng (07:30 – 11:30)</strong>
+                            <span id="rbt-sess-count-sang" class="rbt-slot-pill__sub">${sCnt ? `Đang có ${sCnt} ca` : 'Trống'}</span>
                         </button>
                         <button type="button" class="rbt-slot-pill ${sess === 'chieu' ? 'is-selected' : ''}" data-rbt-pick-session="chieu">
-                            <strong>🌇 Buổi Chiều</strong>
-                            <span class="rbt-slot-pill__sub">13:00 – 16:30</span>
+                            <strong>🌇 Buổi Chiều (13:00 – 16:30)</strong>
+                            <span id="rbt-sess-count-chieu" class="rbt-slot-pill__sub">${cCnt ? `Đang có ${cCnt} ca` : 'Trống'}</span>
                         </button>
                     </div>
                 </div>
                 <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-inp-consult-sched-note">Ghi chú lịch hẹn (phòng / giờ cụ thể nếu có)</label>
-                    <input id="rbt-inp-consult-sched-note" type="text" class="form-input" value="${esc(rc.consultScheduleNote || '')}" placeholder="VD: Tư vấn tại phòng khám lầu 7 sau giao ban">
+                    <label class="form-label" for="rbt-inp-consult-sched-note">Ghi chú lịch hẹn (chạm nhanh hoặc nhập cụ thể)</label>
+                    <div class="rbt-quick-chips">
+                        ${CONSULT_NOTE_PRESETS.map(txt => `<button type="button" class="rbt-quick-chip" data-rbt-quick-fill="#rbt-inp-consult-sched-note" data-rbt-val="${esc(txt)}">${esc(txt)}</button>`).join('')}
+                    </div>
+                    <input id="rbt-inp-consult-sched-note" type="text" class="form-input" value="${esc(rc.consultScheduleNote || '')}" placeholder="VD: Tư vấn tại phòng khám lầu 7 sau giao ban" enterkeyhint="done">
                 </div>
             </div>`;
 
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_schedule_consult" data-rbt-code="${esc(code)}">Lưu lịch tư vấn</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_schedule_consult" data-rbt-code="${esc(code)}">Lưu lịch tư vấn <kbd class="rbt-kbd-hint">⌘/Ctrl+↵</kbd></button>`;
 
             this._markModalOpen('schedule_consult', code);
-            openRobotModal(`📅 Bước 2 · Xếp lịch tư vấn (${code})`, html, footer);
+            openRobotModal(`📅 Bước 2 · Xếp lịch tư vấn (${code})`, html, footer, { size: 'md', mode: 'schedule_consult' });
         },
 
         async _submitScheduleConsult(code, btnEl) {
@@ -2046,10 +2660,21 @@
             const defSurgDate = rc.surgeryDate || addDaysIso(todayIso, 2);
             const surgeons = this._surgeons();
             const refusals = this._refusalReasons();
+            const nsTypePicker = this._renderSegmentedSelectHtml('rbt-inp-ns-type', [
+                { value: 'chuongtrinh', label: 'Chương trình' },
+                { value: 'yeucau', label: 'Yêu cầu' },
+                { value: 'bankhan', label: 'Bán khẩn' }
+            ], rc.scheduledSurgeryType || 'chuongtrinh', 'rbt-seg-group--3');
+            const refusalPicker = this._renderSegmentedSelectHtml(
+                'rbt-inp-refusal-reason',
+                Object.entries(refusals).map(([k, v]) => ({ value: k, label: v })),
+                rc.refusalReason || Object.keys(refusals)[0] || 'ly_do_khac',
+                'rbt-seg-group--stack'
+            );
 
             const html = `${this._dirtyBannerHtml()}
             <div class="rbt-sheet-summary">
-                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} · Mã ${esc(code)}<br>
+                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} ${this._admissionSourceBadgeHtml(rc)} · Mã ${esc(code)}<br>
                 <span>CĐ: ${esc(rc.diagnosis || '—')} · BS TV: <strong>${esc(rc.consultedByName || 'TS. BSCKII. Nguyễn Phú Hữu')}</strong></span>
             </div>
 
@@ -2081,28 +2706,31 @@
             <div class="rbt-form-grid" style="margin-top:12px;">
                 <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-inp-dec-proc">Phương pháp phẫu thuật</label>
-                    <input id="rbt-inp-dec-proc" type="text" class="form-input" value="${esc(rc.robotProcedure || '')}" placeholder="VD: Cắt trước thấp / Cắt đại tràng phải">
+                    <input id="rbt-inp-dec-proc" type="text" class="form-input" value="${esc(rc.robotProcedure || '')}" placeholder="VD: Cắt trước thấp / Cắt đại tràng phải" enterkeyhint="next">
                 </div>
             </div>
 
             <div data-rbt-branch-panel="robot" ${defDec === 'robot' ? '' : 'hidden'} class="rbt-branch-panel">
-                <div class="rbt-form-grid">
-                    <div class="rbt-form-grid--full">
-                        <label class="form-label" for="rbt-inp-date">Ngày phẫu thuật Robot *</label>
-                        ${datePresetsHtml('rbt-inp-date', todayIso)}
-                        <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${esc(defSurgDate)}"></div>
-                    </div>
-                    <div id="rbt-decide-slot-wrap" class="rbt-form-grid--full">
-                        ${this._renderSlotPickerHtml(defSurgDate, rc.caseSlot || 'Ca 1', code)}
+                <div class="rbt-branch-split">
+                    <div>
+                        <div style="margin-bottom:10px;">
+                            <label class="form-label" for="rbt-inp-date">Ngày phẫu thuật Robot *</label>
+                            ${datePresetsHtml('rbt-inp-date', todayIso)}
+                            <div class="rbt-date-wrap"><input id="rbt-inp-date" type="date" class="form-input" value="${esc(defSurgDate)}"></div>
+                        </div>
+                        <div id="rbt-decide-slot-wrap">
+                            ${this._renderSlotPickerHtml(defSurgDate, rc.caseSlot || 'Ca 1', code)}
+                        </div>
                     </div>
                     <div>
-                        <label class="form-label" for="rbt-inp-dec-surgeon-robot">PTV chính</label>
-                        <select id="rbt-inp-dec-surgeon-robot" class="form-input">
-                            ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="rbt-check-card" style="margin-top:22px;">
+                        <div style="margin-bottom:10px;">
+                            <label class="form-label" for="rbt-inp-dec-surgeon-robot">PTV chính</label>
+                            ${this._renderSurgeonQuickChipsHtml('rbt-inp-dec-surgeon-robot', surgeons, rc.mainSurgeonId || 1)}
+                            <select id="rbt-inp-dec-surgeon-robot" class="form-input">
+                                ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
+                            </select>
+                        </div>
+                        <label class="rbt-check-card">
                             <input id="rbt-inp-dec-print-after" type="checkbox" checked>
                             <span>Mở xem/in ngay Giấy GT P.CTXH (A5) sau khi lưu</span>
                         </label>
@@ -2112,24 +2740,21 @@
 
             <div data-rbt-branch-panel="noisoi" ${defDec === 'noisoi' ? '' : 'hidden'} class="rbt-branch-panel">
                 <div class="rbt-info-banner">🔬 Ca chuyển mổ Nội soi sẽ <strong>đồng bộ 2 chiều lên Lịch mổ tuần</strong> với phương pháp Nội soi và <strong>không chiếm slot 3 ca/ngày của Robot</strong>.</div>
-                <div class="rbt-form-grid">
-                    <div class="rbt-form-grid--full">
+                <div class="rbt-branch-split">
+                    <div>
                         <label class="form-label" for="rbt-inp-ns-date">Ngày phẫu thuật Nội soi *</label>
                         ${datePresetsHtml('rbt-inp-ns-date', todayIso)}
                         <div class="rbt-date-wrap"><input id="rbt-inp-ns-date" type="date" class="form-input" value="${esc(defSurgDate)}"></div>
+                        <div style="margin-top:10px;">
+                            <label class="form-label" for="rbt-inp-ns-type">Loại phẫu thuật *</label>
+                            ${nsTypePicker}
+                        </div>
                     </div>
                     <div>
                         <label class="form-label" for="rbt-inp-dec-surgeon-ns">PTV chính phân công *</label>
+                        ${this._renderSurgeonQuickChipsHtml('rbt-inp-dec-surgeon-ns', surgeons, rc.mainSurgeonId || 1)}
                         <select id="rbt-inp-dec-surgeon-ns" class="form-input">
                             ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" for="rbt-inp-ns-type">Loại phẫu thuật *</label>
-                        <select id="rbt-inp-ns-type" class="form-input">
-                            <option value="chuongtrinh" ${rc.scheduledSurgeryType === 'chuongtrinh' ? 'selected' : ''}>Chương trình</option>
-                            <option value="yeucau" ${rc.scheduledSurgeryType === 'yeucau' ? 'selected' : ''}>Yêu cầu</option>
-                            <option value="bankhan" ${rc.scheduledSurgeryType === 'bankhan' ? 'selected' : ''}>Bán khẩn</option>
                         </select>
                     </div>
                 </div>
@@ -2141,9 +2766,7 @@
 
             <div data-rbt-branch-panel="khong_mo" ${defDec === 'khong_mo' ? '' : 'hidden'} class="rbt-branch-panel">
                 <label class="form-label" for="rbt-inp-refusal-reason">Lý do bệnh nhân không đồng ý mổ *</label>
-                <select id="rbt-inp-refusal-reason" class="form-input">
-                    ${Object.entries(refusals).map(([k, v]) => `<option value="${esc(k)}" ${rc.refusalReason === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}
-                </select>
+                ${refusalPicker}
             </div>
 
             <div style="margin-top:12px;">
@@ -2153,10 +2776,10 @@
             <div id="rbt-modal-conflict-host"></div>`;
 
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_decide_consult" data-rbt-code="${esc(code)}">Chốt kết quả tư vấn</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_decide_consult" data-rbt-code="${esc(code)}">Chốt kết quả tư vấn <kbd class="rbt-kbd-hint">⌘/Ctrl+↵</kbd></button>`;
 
             this._markModalOpen('decide_consult', code);
-            openRobotModal(`🩺 Bước 3 · Kết quả tư vấn TS. Hữu (${code})`, html, footer);
+            openRobotModal(`🩺 Bước 3 · Kết quả tư vấn TS. Hữu (${code})`, html, footer, { size: 'wide', mode: 'decide_consult' });
         },
 
         async _submitDecideConsult(code, btnEl) {
@@ -2214,16 +2837,19 @@
                     <div class="rbt-date-wrap"><input id="rbt-inp-readmit-date" type="date" class="form-input" max="${esc(surgDate)}" value="${esc(defReadmit)}"></div>
                 </div>
                 <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-inp-discharge-reason">Lý do / Dặn dò khi xuất viện chờ</label>
-                    <input id="rbt-inp-discharge-reason" type="text" class="form-input" value="${esc(rc.dischargeReason || 'Lịch mổ còn xa — cho xuất viện chờ hẹn nhập lại')}" placeholder="VD: Ngưng thuốc kháng đông 5 ngày trước nhập lại">
+                    <label class="form-label" for="rbt-inp-discharge-reason">Lý do / Dặn dò khi xuất viện chờ (chạm chip điền nhanh)</label>
+                    <div class="rbt-quick-chips">
+                        ${DISCHARGE_INSTRUCTION_PRESETS.map(txt => `<button type="button" class="rbt-quick-chip" data-rbt-quick-append="#rbt-inp-discharge-reason" data-rbt-val="${esc(txt)}">+ ${esc(txt)}</button>`).join('')}
+                    </div>
+                    <input id="rbt-inp-discharge-reason" type="text" class="form-input" value="${esc(rc.dischargeReason || 'Lịch mổ còn xa — cho xuất viện chờ hẹn nhập lại')}" placeholder="VD: Ngưng thuốc kháng đông 5 ngày trước nhập lại" enterkeyhint="done">
                 </div>
             </div>`;
 
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_discharge_wait" data-rbt-code="${esc(code)}">Xác nhận Xuất viện chờ</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_discharge_wait" data-rbt-code="${esc(code)}">Xác nhận Xuất viện chờ <kbd class="rbt-kbd-hint">⌘/Ctrl+↵</kbd></button>`;
 
             this._markModalOpen('discharge_wait', code);
-            openRobotModal(`🏠 Bước 4 · Xuất viện chờ giữ slot (${code})`, html, footer);
+            openRobotModal(`🏠 Bước 4 · Xuất viện chờ giữ slot (${code})`, html, footer, { size: 'md', mode: 'discharge_wait' });
         },
 
         async _submitDischargeWait(code, btnEl) {
@@ -2241,63 +2867,122 @@
         openEditInfoModal(code) {
             const rc = this._findCase(code);
             if (!rc) return;
-            const rooms = this._wardRooms();
             const telRaw = rc.phoneMasked ? '' : (rc.phone || '');
+            const genderPicker = this._renderSegmentedSelectHtml('rbt-ei-gender', [
+                { value: 'Nam', label: 'Nam' },
+                { value: 'Nữ', label: 'Nữ' }
+            ], rc.gender || '', 'rbt-seg-group--2');
+            const indPicker = this._renderSegmentedSelectHtml('rbt-ei-indication', [
+                { value: 'robot_hoac_noisoi', label: 'Nội soi / Robot', fullLabel: 'PT Nội soi hoặc Robot' },
+                { value: 'uu_tien_robot', label: 'Ưu tiên Robot', fullLabel: 'Ưu tiên phẫu thuật Robot' },
+                { value: 'uu_tien_noisoi', label: 'Ưu tiên Nội soi', fullLabel: 'Ưu tiên phẫu thuật Nội soi' }
+            ], rc.indicationType || 'robot_hoac_noisoi', 'rbt-seg-group--3');
+            const admState = {
+                source: rc.admissionSource || '',
+                docType: rc.admittingDoctorType || '',
+                docId: rc.admittingDoctorId != null ? String(rc.admittingDoctorId) : '',
+                docName: rc.admittingDoctorName || ''
+            };
 
             const html = `${this._dirtyBannerHtml()}
-            <div class="rbt-form-grid">
-                <div>
-                    <label class="form-label" for="rbt-ei-name">Họ tên bệnh nhân *</label>
-                    <input id="rbt-ei-name" type="text" class="form-input" value="${esc(rc.patientName || '')}">
+            <div class="rbt-section-card">
+                <div class="rbt-section-card__title">1. Hành chính &amp; Nguồn bệnh nhân</div>
+                <div class="rbt-row-patient-3col">
+                    <div class="rbt-col-name">
+                        <label class="form-label" for="rbt-ei-name">Họ tên bệnh nhân *</label>
+                        <input id="rbt-ei-name" type="text" class="form-input" value="${esc(rc.patientName || '')}">
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-ei-birth">Năm sinh</label>
+                        <input id="rbt-ei-birth" type="number" inputmode="numeric" pattern="[0-9]*" class="form-input" value="${esc(rc.birthYear || '')}">
+                    </div>
+                    <div>
+                        <label class="form-label">Giới tính</label>
+                        ${genderPicker}
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label" for="rbt-ei-birth">Năm sinh</label>
-                    <input id="rbt-ei-birth" type="number" class="form-input" value="${esc(rc.birthYear || '')}">
+                <div style="margin-top:12px;">
+                    ${this._renderAdmissionSourcePickerHtml('rbt-ei', admState)}
                 </div>
-                <div>
+            </div>
+            <div class="rbt-section-card">
+                <div class="rbt-section-card__title">2. Phòng bệnh, Chẩn đoán &amp; Thông tin khác</div>
+                <div style="margin-bottom:10px;">
                     <label class="form-label" for="rbt-ei-ward">Phòng bệnh</label>
-                    <select id="rbt-ei-ward" class="form-input">
-                        <option value="">-- Chọn --</option>
-                        ${rooms.map(rm => `<option value="${esc(rm)}" ${rc.wardRoom === rm ? 'selected' : ''}>${esc(roomLabel(rm))}</option>`).join('')}
-                    </select>
+                    ${this._renderWardRoomPickerHtml('rbt-ei-ward', rc.wardRoom || '')}
                 </div>
-                <div>
-                    <label class="form-label" for="rbt-ei-phone">Số điện thoại</label>
-                    <input id="rbt-ei-phone" type="tel" class="form-input" value="${esc(telRaw)}" placeholder="${rc.phoneMasked ? 'Đã ẩn SĐT' : '09xxxxxxxx'}">
-                </div>
-                <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-ei-diag">Chẩn đoán</label>
-                    <input id="rbt-ei-diag" type="text" class="form-input" value="${esc(rc.diagnosis || '')}">
-                </div>
-                <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-ei-proc">Phương pháp phẫu thuật</label>
-                    <input id="rbt-ei-proc" type="text" class="form-input" value="${esc(rc.robotProcedure || '')}">
-                </div>
-                <div class="rbt-form-grid--full">
-                    <label class="form-label" for="rbt-ei-note">Ghi chú</label>
-                    <textarea id="rbt-ei-note" class="form-input" rows="2">${esc(rc.note || '')}</textarea>
+                <div class="rbt-form-grid">
+                    <div>
+                        <label class="form-label" for="rbt-ei-phone">Số điện thoại</label>
+                        <input id="rbt-ei-phone" type="tel" inputmode="tel" class="form-input" value="${esc(telRaw)}" placeholder="${rc.phoneMasked ? 'Đã ẩn SĐT' : '09xxxxxxxx'}">
+                    </div>
+                    <div>
+                        <label class="form-label" for="rbt-ei-adm">Số nhập viện / HSBA</label>
+                        <input id="rbt-ei-adm" type="text" class="form-input" value="${esc(rc.admissionId || '')}" placeholder="26xxxxxx">
+                    </div>
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-ei-indication">Chỉ định phẫu thuật</label>
+                        ${indPicker}
+                    </div>
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-ei-diag">Chẩn đoán</label>
+                        <input id="rbt-ei-diag" type="text" class="form-input" value="${esc(rc.diagnosis || '')}">
+                    </div>
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-ei-proc">Phương pháp phẫu thuật</label>
+                        <input id="rbt-ei-proc" type="text" class="form-input" value="${esc(rc.robotProcedure || '')}">
+                    </div>
+                    <div class="rbt-form-grid--full">
+                        <label class="form-label" for="rbt-ei-note">Ghi chú</label>
+                        <textarea id="rbt-ei-note" class="form-input" rows="2">${esc(rc.note || '')}</textarea>
+                    </div>
                 </div>
             </div>`;
 
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_edit_info" data-rbt-code="${esc(code)}">Lưu thông tin</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_edit_info" data-rbt-code="${esc(code)}">Lưu thông tin <kbd class="rbt-kbd-hint">⌘/Ctrl+↵</kbd></button>`;
 
             this._markModalOpen('edit_info', code);
-            openRobotModal(`✏️ Sửa thông tin hồ sơ (${code})`, html, footer);
+            openRobotModal(`✏️ Sửa thông tin hồ sơ (${code})`, html, footer, { size: 'wide', mode: 'edit_info' });
+            if (admState.source === 'phong_kham') {
+                this._refreshAdmittingDoctorPicker('rbt-ei');
+            }
         },
 
         async _submitEditInfo(code, btnEl) {
             const rc = this._findCase(code);
             if (!rc) return;
+            const admSource = document.getElementById('rbt-ei-adm-source')?.value || '';
+            const admDocType = document.getElementById('rbt-ei-adm-doc-type')?.value || '';
+            const admDocIdRaw = document.getElementById('rbt-ei-adm-doc-id')?.value || '';
+            const admDocManRaw = document.getElementById('rbt-ei-adm-doc-manual')?.value?.trim() || '';
+            const admDocName = admDocType === 'manual'
+                ? admDocManRaw
+                : (document.getElementById('rbt-ei-adm-doc-name')?.value?.trim() || admDocManRaw);
+
+            if (admSource === 'phong_kham' && admDocType === 'manual' && admDocName.length < 2) {
+                const manInp = document.getElementById('rbt-ei-adm-doc-manual');
+                if (manInp) try { manInp.focus(); } catch (_) {}
+                notifyToast('Vui lòng nhập tên Bác sĩ phòng khám cho nhập (tối thiểu 2 ký tự).', 'error');
+                return;
+            }
+
             const body = {
                 action: 'edit_info',
                 expectedRevision: Number(rc.caseRevision || 1),
                 patientName: document.getElementById('rbt-ei-name')?.value?.trim() || '',
                 birthYear: document.getElementById('rbt-ei-birth')?.value?.trim() || '',
+                gender: document.getElementById('rbt-ei-gender')?.value || '',
                 wardRoom: document.getElementById('rbt-ei-ward')?.value || '',
+                admissionId: document.getElementById('rbt-ei-adm')?.value?.trim() || '',
+                indicationType: document.getElementById('rbt-ei-indication')?.value || 'robot_hoac_noisoi',
                 diagnosis: document.getElementById('rbt-ei-diag')?.value?.trim() || '',
                 robotProcedure: document.getElementById('rbt-ei-proc')?.value?.trim() || '',
-                note: document.getElementById('rbt-ei-note')?.value?.trim() || ''
+                note: document.getElementById('rbt-ei-note')?.value?.trim() || '',
+                admissionSource: admSource,
+                admittingDoctorType: admSource === 'phong_kham' ? admDocType : '',
+                admittingDoctorId: (admSource === 'phong_kham' && (admDocType === 'staff' || admDocType === 'external') && admDocIdRaw) ? Number(admDocIdRaw) : null,
+                admittingDoctorName: admSource === 'phong_kham' ? admDocName : ''
             };
             const phoneVal = document.getElementById('rbt-ei-phone')?.value?.trim() || '';
             if (phoneVal) body.phone = phoneVal;
@@ -2310,6 +2995,11 @@
             const todayIso = this._todayIso();
             const isNs = rc.status === 'da_xep_noisoi';
             const surgeons = this._surgeons();
+            const nsTypePicker = isNs ? this._renderSegmentedSelectHtml('rbt-es-type', [
+                { value: 'chuongtrinh', label: 'Chương trình' },
+                { value: 'yeucau', label: 'Yêu cầu' },
+                { value: 'bankhan', label: 'Bán khẩn' }
+            ], rc.scheduledSurgeryType || 'chuongtrinh', 'rbt-seg-group--3') : '';
 
             const html = `${this._dirtyBannerHtml()}
             <div class="rbt-sheet-summary"><strong>${esc(rc.patientName)}</strong> · ${isNs ? '🔬 Chuyển mổ Nội soi' : '🤖 Mổ Robot'}</div>
@@ -2322,32 +3012,29 @@
                 ${!isNs ? `<div id="rbt-edit-sched-slot-wrap" class="rbt-form-grid--full">
                     ${this._renderSlotPickerHtml(rc.surgeryDate || addDaysIso(todayIso, 2), rc.caseSlot || 'Ca 1', code)}
                 </div>` : ''}
-                <div>
+                <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-es-surgeon">PTV chính</label>
+                    ${this._renderSurgeonQuickChipsHtml('rbt-es-surgeon', surgeons, rc.mainSurgeonId || 1)}
                     <select id="rbt-es-surgeon" class="form-input">
                         ${surgeons.map(s => `<option value="${s.id}" ${Number(s.id) === Number(rc.mainSurgeonId || 1) ? 'selected' : ''}>${esc([s.title, s.name].filter(Boolean).join(' '))}</option>`).join('')}
                     </select>
                 </div>
-                ${isNs ? `<div>
+                ${isNs ? `<div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-es-type">Loại PT Nội soi</label>
-                    <select id="rbt-es-type" class="form-input">
-                        <option value="chuongtrinh" ${rc.scheduledSurgeryType === 'chuongtrinh' ? 'selected' : ''}>Chương trình</option>
-                        <option value="yeucau" ${rc.scheduledSurgeryType === 'yeucau' ? 'selected' : ''}>Yêu cầu</option>
-                        <option value="bankhan" ${rc.scheduledSurgeryType === 'bankhan' ? 'selected' : ''}>Bán khẩn</option>
-                    </select>
+                    ${nsTypePicker}
                 </div>` : ''}
                 <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-es-note">Ghi chú điều chỉnh lịch</label>
-                    <input id="rbt-es-note" type="text" class="form-input" value="${esc(rc.note || '')}">
+                    <input id="rbt-es-note" type="text" class="form-input" value="${esc(rc.note || '')}" enterkeyhint="done">
                 </div>
             </div>
             <div id="rbt-modal-conflict-host"></div>`;
 
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_edit_schedule" data-rbt-code="${esc(code)}">Cập nhật lịch mổ</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_edit_schedule" data-rbt-code="${esc(code)}">Cập nhật lịch mổ <kbd class="rbt-kbd-hint">⌘/Ctrl+↵</kbd></button>`;
 
             this._markModalOpen('edit_schedule', code);
-            openRobotModal(`🗓️ Điều chỉnh lịch mổ (${code})`, html, footer);
+            openRobotModal(`🗓️ Điều chỉnh lịch mổ (${code})`, html, footer, { size: 'md', mode: 'edit_schedule' });
         },
 
         async _submitEditSchedule(code, btnEl) {
@@ -2374,14 +3061,19 @@
             const rc = this._findCase(code);
             if (!rc) return;
             const reasons = this._postponeReasons();
+            const firstKey = Object.keys(reasons)[0] || 'ly_do_khac';
+            const reasonPicker = this._renderSegmentedSelectHtml(
+                'rbt-pp-reason',
+                Object.entries(reasons).map(([k, v]) => ({ value: k, label: v })),
+                firstKey,
+                'rbt-seg-group--stack'
+            );
             const html = `${this._dirtyBannerHtml()}
             <div class="rbt-sheet-summary"><strong>${esc(rc.patientName)}</strong> · Lịch: ${fmtViDate(rc.surgeryDate)} ${esc(rc.caseSlot || '')}</div>
             <div class="rbt-form-grid">
                 <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-pp-reason">Lý do hoãn mổ chuẩn (7 lý do) *</label>
-                    <select id="rbt-pp-reason" class="form-input">
-                        ${Object.entries(reasons).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join('')}
-                    </select>
+                    ${reasonPicker}
                 </div>
                 <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-pp-note">Ghi chú chi tiết</label>
@@ -2389,9 +3081,9 @@
                 </div>
             </div>`;
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-danger" data-rbt-action="submit_postpone" data-rbt-code="${esc(code)}">Xác nhận hoãn mổ</button>`;
+                <button type="button" class="btn btn-danger" data-rbt-primary-submit="1" data-rbt-action="submit_postpone" data-rbt-code="${esc(code)}">Xác nhận hoãn mổ</button>`;
             this._markModalOpen('postpone', code);
-            openRobotModal(`⏸️ Hoãn ca phẫu thuật (${code})`, html, footer);
+            openRobotModal(`⏸️ Hoãn ca phẫu thuật (${code})`, html, footer, { size: 'sm', mode: 'postpone' });
         },
 
         async _submitPostpone(code, btnEl) {
@@ -2412,32 +3104,33 @@
                 : [];
             const s = unlinked.find(x => String(x.id) === String(surgeryId));
             if (!s) return;
-            const rooms = this._wardRooms();
+            const defSlot = s.isFirstCase ? 'Ca 1' : 'Ca 2';
+            const slotPicker = this._renderSegmentedSelectHtml(
+                'rbt-lk-slot',
+                VALID_SLOTS.map(sl => ({ value: sl, label: `${sl} (${slotToStartTime(sl)})`, fullLabel: sl })),
+                defSlot,
+                'rbt-seg-group--3'
+            );
             const html = `${this._dirtyBannerHtml()}
             <div class="rbt-sheet-summary"><strong>${esc(s.patientName)}</strong> · Ngày ${fmtViDate(s.date)} · ${esc(s.mainSurgeonName)}</div>
             <div class="rbt-form-grid">
-                <div>
+                <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-lk-slot">Ca mổ Robot *</label>
-                    <select id="rbt-lk-slot" class="form-input">
-                        ${VALID_SLOTS.map(sl => `<option value="${sl}" ${(s.isFirstCase ? 'Ca 1' : 'Ca 2') === sl ? 'selected' : ''}>${sl}</option>`).join('')}
-                    </select>
+                    ${slotPicker}
                 </div>
-                <div>
+                <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-lk-ward">Phòng bệnh</label>
-                    <select id="rbt-lk-ward" class="form-input">
-                        <option value="">-- Chọn --</option>
-                        ${rooms.map(rm => `<option value="${esc(rm)}">${esc(roomLabel(rm))}</option>`).join('')}
-                    </select>
+                    ${this._renderWardRoomPickerHtml('rbt-lk-ward', '')}
                 </div>
                 <div class="rbt-form-grid--full">
                     <label class="form-label" for="rbt-lk-phone">Số điện thoại liên hệ</label>
-                    <input id="rbt-lk-phone" type="tel" class="form-input" placeholder="09xxxxxxxx">
+                    <input id="rbt-lk-phone" type="tel" inputmode="tel" class="form-input" placeholder="09xxxxxxxx" enterkeyhint="done">
                 </div>
             </div>`;
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-primary" data-rbt-action="submit_link_surgery" data-rbt-extra="${s.id}">Liên kết hồ sơ Robot</button>`;
+                <button type="button" class="btn btn-primary" data-rbt-primary-submit="1" data-rbt-action="submit_link_surgery" data-rbt-extra="${s.id}">Liên kết hồ sơ Robot</button>`;
             this._markModalOpen('link_surgery', String(s.id));
-            openRobotModal(`🔗 Liên kết ca Lịch mổ tuần (#${s.id})`, html, footer);
+            openRobotModal(`🔗 Liên kết ca Lịch mổ tuần (#${s.id})`, html, footer, { size: 'md', mode: 'link_surgery' });
         },
 
         async _submitLinkSurgery(surgeryId, btnEl) {
@@ -2481,17 +3174,20 @@
             if (!rc) return;
             const html = `${this._dirtyBannerHtml()}
             <div class="rbt-sheet-summary">
-                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} · Mã <strong>${esc(code)}</strong>
+                <strong>${esc(rc.patientName)}</strong> (${esc(rc.birthYear || '—')}) · ${esc(roomLabel(rc.wardRoom))} ${this._admissionSourceBadgeHtml(rc)} · Mã <strong>${esc(code)}</strong>
             </div>
             <p style="margin:10px 0 8px;font-size:0.9rem;">Ca sẽ được chuyển vào <strong>Thùng rác</strong> (vẫn khôi phục được trong vòng 14 ngày theo quy tắc Zero-RM).</p>
             <div>
-                <label class="form-label" for="rbt-del-reason">Lý do xóa (tùy chọn)</label>
-                <input id="rbt-del-reason" type="text" class="form-input" value="Xóa ca chờ tư vấn" placeholder="VD: Nhập trùng hồ sơ / BN hủy khám">
+                <label class="form-label" for="rbt-del-reason">Lý do xóa (chạm nhanh hoặc nhập cụ thể)</label>
+                <div class="rbt-quick-chips">
+                    ${DELETE_REASON_PRESETS.map(txt => `<button type="button" class="rbt-quick-chip" data-rbt-quick-fill="#rbt-del-reason" data-rbt-val="${esc(txt)}">${esc(txt)}</button>`).join('')}
+                </div>
+                <input id="rbt-del-reason" type="text" class="form-input" value="Xóa ca chờ tư vấn" placeholder="VD: Nhập trùng hồ sơ / BN hủy khám" enterkeyhint="done">
             </div>`;
             const footer = `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Hủy</button>
-                <button type="button" class="btn btn-danger" data-rbt-action="confirm_soft_delete" data-rbt-code="${esc(code)}">🗑️ Xác nhận Xóa</button>`;
+                <button type="button" class="btn btn-danger" data-rbt-primary-submit="1" data-rbt-action="confirm_soft_delete" data-rbt-code="${esc(code)}">🗑️ Xác nhận Xóa</button>`;
             this._markModalOpen('confirm_delete', code);
-            openRobotModal(`🗑️ Xóa ca chờ tư vấn (${code})`, html, footer);
+            openRobotModal(`🗑️ Xóa ca chờ tư vấn (${code})`, html, footer, { size: 'sm', mode: 'confirm_delete' });
         },
 
         openCaseSheetModal(code) {
@@ -2519,6 +3215,7 @@
                 <div style="font-size:1.05rem;font-weight:700;">${esc(rc.patientName)} ${rc.birthYear ? `(${esc(rc.birthYear)})` : ''} ${rc.gender ? `· ${esc(rc.gender)}` : ''}</div>
             </div>
             <div class="rbt-detail-list">
+                <div><strong>Nguồn tiếp nhận:</strong> ${rc.admissionSource ? (rc.admissionSource === 'cap_cuu' ? '🚨 Cấp cứu' : `🏥 Phòng khám${rc.admittingDoctorName ? ` — BS cho nhập: ${esc(rc.admittingDoctorName)}` : ''}`) : 'Chưa ghi nhận'}</div>
                 <div><strong>Số nhập viện / HSBA:</strong> ${esc(rc.admissionId || '—')}</div>
                 <div><strong>SĐT:</strong> ${esc(rc.phone || '—')} ${tel ? `<a href="${esc(tel)}">(Gọi ngay)</a>` : ''}</div>
                 <div><strong>Chẩn đoán:</strong> ${esc(rc.diagnosis || '—')}</div>
@@ -2570,7 +3267,7 @@
             }
 
             this._markModalOpen('detail', code);
-            openRobotModal(`📋 Chi tiết hồ sơ ${code}`, html, footerBtns.join(''));
+            openRobotModal(`📋 Chi tiết hồ sơ ${code}`, html, footerBtns.join(''), { size: 'md', mode: 'detail' });
         },
 
         openMobileMenuModal() {
@@ -2598,7 +3295,7 @@
                 </button>
             </div>`;
             this._markModalOpen('mobile_menu', null);
-            openRobotModal('Tiện ích Điều phối Robot', html, `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>`);
+            openRobotModal('Tiện ích Điều phối Robot', html, `<button type="button" class="btn btn-secondary" onclick="Modal.close()">Đóng</button>`, { size: 'sm', mode: 'mobile_menu' });
         },
 
         async copyZaloConsultSchedule() {
@@ -2708,7 +3405,7 @@
                 <button type="button" class="btn btn-primary" data-rbt-action="execute_print_pctxh">🖨️ In ngay (A5)</button>`;
 
             this._markModalOpen('print_pctxh', targetCode || null);
-            openRobotModal('🖨️ In Giấy giới thiệu qua P.CTXH (Khổ A5)', html, footer);
+            openRobotModal('🖨️ In Giấy giới thiệu qua P.CTXH (Khổ A5)', html, footer, { size: 'wide', mode: 'print_pctxh' });
             this._syncPrintPreviewFromModal();
         },
 
