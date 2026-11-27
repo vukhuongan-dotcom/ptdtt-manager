@@ -493,6 +493,30 @@ def register_surgery_approval_routes(app, sf_mod):
         except ApprovalEngineError as e:
             return jsonify(e.to_dict()), e.status_code
 
+    @app.route("/api/surgery/procedure-catalog", methods=["GET"])
+    def get_surgery_procedure_catalog_public_auth():
+        """Read-only BVBD 309-procedure catalog & attending column map for all authenticated users (Zero-PHI)."""
+        try:
+            db = sf_mod.load_data()
+            resolve_live_user_fail_closed(
+                request.headers.get("Authorization", ""),
+                sf_mod._verify_jwt,
+                sf_mod.AUTH_FILE,
+                db,
+                sf_mod._save_auth,
+            )
+            catalog = load_procedure_catalog(sf_mod.DATA_DIR, sf_mod.BASE_DIR)
+            pm = catalog.get("privilegeMatrix") or {}
+            return jsonify({
+                "catalogVersion": catalog.get("catalogVersion", ""),
+                "procedures": catalog.get("procedures") or [],
+                "attendingColumns": pm.get("attendingColumns") or {},
+                "robotCertifiedStaffIds": pm.get("robotCertifiedStaffIds") or [1],
+                "overColumnPolicy": pm.get("overColumnPolicy") or {},
+            })
+        except ApprovalEngineError as e:
+            return jsonify(e.to_dict()), e.status_code
+
     @app.route("/api/surgery-approval/config", methods=["GET"])
     def get_surgery_approval_config_route():
         try:

@@ -10261,6 +10261,741 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     }
 }
 
+/* ===== FEAT-248: DUAL FORM-FACTOR SURGERY MODAL (MOBILE & LAPTOP) ===== */
+.surg-form-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.surg-form-v2 *,
+.surg-form-v2 *::before,
+.surg-form-v2 *::after {
+    box-sizing: border-box;
+}
+
+.surg-section-card {
+    background: var(--bg-secondary, #f8fafc);
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.1));
+    border-radius: 12px;
+    padding: 14px 16px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.surg-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.surg-card-title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--primary-dark, #1D2357);
+    letter-spacing: 0.15px;
+}
+
+.surg-card-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+}
+
+.surg-sr-anchor {
+    position: relative;
+}
+
+.surg-sr-select {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 1px;
+    height: 1px;
+    max-width: 100%;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+}
+
+.surg-form-v2 .form-group {
+    margin-bottom: 10px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.surg-form-v2 .form-row > .form-group:last-child,
+.surg-section-card > .form-row:last-child > .form-group {
+    margin-bottom: 0;
+}
+
+.surg-form-v2 .form-input,
+.surg-form-v2 input[type="date"].form-input,
+.surg-form-v2 .form-textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Segmented controls (Loại PT & Đường mổ) */
+.surg-seg-group {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.surg-seg-btn,
+.surg-approach-btn {
+    min-height: 40px;
+    padding: 7px 6px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    touch-action: manipulation;
+    transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.08s ease;
+}
+
+.surg-seg-btn:hover:not(:disabled),
+.surg-approach-btn:hover:not(:disabled) {
+    border-color: var(--primary, #1D2357);
+}
+
+.surg-seg-btn:disabled,
+.surg-approach-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.surg-seg-btn.active {
+    background: #1E3A8A;
+    border-color: #1E3A8A;
+    color: #FFFFFF;
+}
+
+.surg-approach-btn[data-approach="mo"].active {
+    background: #A90042;
+    border-color: #A90042;
+    color: #FFFFFF;
+}
+
+.surg-approach-btn[data-approach="noisoi"].active {
+    background: #34A357;
+    border-color: #2B8A4A;
+    color: #111542;
+}
+
+.surg-approach-btn[data-approach="nsth"].active {
+    background: #7C4CD5;
+    border-color: #7C4CD5;
+    color: #FFFFFF;
+}
+
+.surg-approach-btn[data-approach="robot"].active {
+    background: #333C83;
+    border-color: #333C83;
+    color: #FFFFFF;
+}
+
+/* Quick Day & Duration Chip Strips */
+.surg-day-chips,
+.surg-dur-chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+    padding-bottom: 2px;
+}
+
+.surg-day-chips::-webkit-scrollbar,
+.surg-dur-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.surg-day-chip {
+    flex: 1 0 auto;
+    min-width: 48px;
+    min-height: 40px;
+    padding: 5px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.surg-day-chip span {
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.surg-day-chip small {
+    font-size: 0.68rem;
+    font-weight: 600;
+    opacity: 0.82;
+    line-height: 1.1;
+}
+
+.surg-dur-chip {
+    flex: 1 0 auto;
+    min-width: 46px;
+    min-height: 36px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+    transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.surg-day-chip.active,
+.surg-dur-chip.active {
+    background: #1E3A8A;
+    border-color: #1E3A8A;
+    color: #FFFFFF;
+}
+
+.surg-first-case-slot {
+    margin-top: 8px;
+    margin-bottom: 0 !important;
+}
+
+/* Autocomplete */
+.surg-ac-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+}
+
+.surg-ac-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 40;
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.18));
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.surg-ac-list[hidden] {
+    display: none !important;
+}
+
+.surg-ac-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    min-height: 38px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.84rem;
+    cursor: pointer;
+}
+
+.surg-ac-item:hover,
+.surg-ac-item.is-active {
+    background: rgba(30, 58, 138, 0.10);
+    color: #1E3A8A;
+}
+
+.surg-ac-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.surg-ac-meta {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--bg-tertiary, #e2e8f0);
+    color: var(--text-secondary, #475569);
+    white-space: nowrap;
+}
+
+.surg-ac-meta.is-catalog {
+    background: rgba(29, 35, 87, 0.12);
+    color: #1D2357;
+}
+
+/* Smart Doctor Chip Picker */
+.surg-doc-picker {
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.12));
+    border-radius: 10px;
+    background: var(--bg-primary, #ffffff);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.surg-doc-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.surg-doc-selected {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+.surg-doc-picked-empty {
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+    font-style: italic;
+}
+
+.surg-doc-picked-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(30, 58, 138, 0.12);
+    color: #1E3A8A;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.surg-doc-picked-pill > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.surg-doc-clear-btn {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.surg-doc-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.surg-doc-tab {
+    min-height: 30px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-secondary, #475569);
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.surg-doc-tab.active {
+    background: #1E3A8A;
+    border-color: #1E3A8A;
+    color: #FFFFFF;
+}
+
+.surg-doc-search {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.82rem;
+}
+
+.surg-doc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 132px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.surg-doc-chip {
+    min-height: 34px;
+    padding: 5px 10px;
+    border-radius: 9px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+    transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.surg-doc-chip:hover {
+    border-color: #1E3A8A;
+}
+
+.surg-doc-chip.active {
+    background: #1E3A8A;
+    border-color: #1E3A8A;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.surg-doc-empty {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+    padding: 6px 2px;
+}
+
+.surg-assist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.surg-assist-toggle-btn {
+    display: none;
+    min-height: 36px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px dashed var(--border-default, rgba(15, 23, 42, 0.2));
+    background: var(--bg-primary, #ffffff);
+    color: #1E3A8A;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Soft Column Hint Badge */
+.surg-col-hint {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.surg-col-hint.is-ok {
+    background: rgba(21, 128, 61, 0.10);
+    border: 1px solid rgba(21, 128, 61, 0.30);
+    color: #166534;
+}
+
+.surg-col-hint.is-warn {
+    background: rgba(217, 119, 6, 0.12);
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    color: #92400E;
+}
+
+.surg-col-hint.is-info {
+    background: rgba(30, 58, 138, 0.08);
+    border: 1px solid rgba(30, 58, 138, 0.22);
+    color: #1E3A8A;
+}
+
+/* Optional Collapsible Details */
+.surg-optional-details {
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.1));
+    border-radius: 12px;
+    background: var(--bg-secondary, #f8fafc);
+    padding: 10px 14px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.surg-optional-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    list-style: none;
+    min-height: 28px;
+}
+
+.surg-optional-summary::-webkit-details-marker {
+    display: none;
+}
+
+.surg-opt-meta {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+}
+
+.surg-optional-body {
+    margin-top: 10px;
+}
+
+.surg-modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.surg-btn-add-next {
+    border-color: #1E3A8A !important;
+    color: #1E3A8A !important;
+    font-weight: 700;
+}
+
+.surg-subgrid-2 {
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+    gap: 10px;
+}
+
+.surg-subgrid-2 > .form-group {
+    margin-bottom: 0;
+}
+
+/* Laptop / Desktop Layout (>= 769px) */
+@media (min-width: 769px) {
+    #modal.surg-modal-wide {
+        max-width: 960px;
+        width: min(960px, calc(100vw - 48px));
+    }
+
+    .surg-row-patient-3col,
+    .surg-row-datetime {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .surg-row-classify-2col,
+    .surg-row-clinical-2col,
+    .surg-row-team-2col {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .surg-doc-picker.is-collapsed-mobile {
+        display: flex;
+    }
+}
+
+/* Mobile Layout (<= 768px) */
+@media (max-width: 768px) {
+    .surg-section-card {
+        padding: 12px 12px;
+    }
+
+    .surg-seg-group {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .surg-seg-btn,
+    .surg-approach-btn,
+    .surg-day-chip,
+    .surg-dur-chip,
+    .surg-doc-chip,
+    .surg-doc-tab,
+    .surg-assist-toggle-btn,
+    .surg-ac-item {
+        min-height: 44px;
+    }
+
+    .surg-doc-search {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    .surg-assist-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .surg-doc-picker.is-collapsed-mobile {
+        display: none;
+    }
+
+    .surg-optional-summary {
+        min-height: 36px;
+    }
+
+    .surg-modal-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .surg-modal-footer .btn {
+        min-height: 44px;
+    }
+
+    #surg-submit-primary-btn,
+    #surg-submit-add-next-btn {
+        flex: 1 1 140px;
+    }
+}
+
+/* Dark Mode (#0C1022 Zero-Teal) */
+[data-theme="dark"] .surg-section-card,
+[data-theme="dark"] .surg-optional-details {
+    background: #131A35;
+    border-color: rgba(178, 193, 253, 0.16);
+}
+
+[data-theme="dark"] .surg-card-title,
+[data-theme="dark"] .surg-optional-summary {
+    color: #F1F5F9;
+}
+
+[data-theme="dark"] .surg-doc-picker,
+[data-theme="dark"] .surg-ac-list {
+    background: #0C1022;
+    border-color: rgba(178, 193, 253, 0.18);
+}
+
+[data-theme="dark"] .surg-seg-btn:not(.active),
+[data-theme="dark"] .surg-approach-btn:not(.active),
+[data-theme="dark"] .surg-day-chip:not(.active),
+[data-theme="dark"] .surg-dur-chip:not(.active),
+[data-theme="dark"] .surg-doc-chip:not(.active),
+[data-theme="dark"] .surg-doc-tab:not(.active),
+[data-theme="dark"] .surg-assist-toggle-btn,
+[data-theme="dark"] .surg-doc-search {
+    background: #161E36;
+    border-color: rgba(178, 193, 253, 0.18);
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .surg-seg-btn.active,
+[data-theme="dark"] .surg-day-chip.active,
+[data-theme="dark"] .surg-dur-chip.active,
+[data-theme="dark"] .surg-doc-chip.active,
+[data-theme="dark"] .surg-doc-tab.active {
+    background: #3B82F6;
+    border-color: #3B82F6;
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .surg-doc-picked-pill {
+    background: rgba(59, 130, 246, 0.22);
+    color: #93C5FD;
+}
+
+[data-theme="dark"] .surg-ac-item {
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .surg-ac-item:hover,
+[data-theme="dark"] .surg-ac-item.is-active {
+    background: rgba(59, 130, 246, 0.22);
+    color: #FFFFFF;
+}
+
+[data-theme="dark"] .surg-ac-meta.is-catalog {
+    background: rgba(147, 197, 253, 0.16);
+    color: #93C5FD;
+}
+
+[data-theme="dark"] .surg-col-hint.is-ok {
+    background: rgba(74, 222, 128, 0.14);
+    border-color: rgba(74, 222, 128, 0.35);
+    color: #86EFAC;
+}
+
+[data-theme="dark"] .surg-col-hint.is-warn {
+    background: rgba(251, 191, 36, 0.14);
+    border-color: rgba(251, 191, 36, 0.35);
+    color: #FDE68A;
+}
+
+[data-theme="dark"] .surg-col-hint.is-info {
+    background: #161E36;
+    border-color: rgba(178, 193, 253, 0.2);
+    color: #CBD5E1;
+}
+
+[data-theme="dark"] .surg-btn-add-next {
+    border-color: #60A5FA !important;
+    color: #93C5FD !important;
+}
+
+
 
 /* =====================================================================
    SURGERY APPROVAL MODULE — Khoa Phẫu thuật Đại trực tràng (BV Bình Dân)

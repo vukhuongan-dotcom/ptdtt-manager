@@ -161,6 +161,27 @@ function canEditSurgery(weekMondayStr) {
     return role.includes('Bác sĩ') || role.includes('Trưởng khoa') || role.includes('Phó trưởng khoa');
 }
 
+const SURGERY_APPROACH_META = {
+    mo:     { label: 'Mổ mở',   color: '#A90042', onColor: '#FFFFFF' },
+    noisoi: { label: 'Nội soi', color: '#34A357', onColor: '#111542' },
+    nsth:   { label: 'NSTH',    color: '#7C4CD5', onColor: '#FFFFFF' },
+    robot:  { label: 'Robot',   color: '#333C83', onColor: '#FFFFFF' }
+};
+
+const SURGERY_FALLBACK_ATTENDING_COLUMNS = {
+    1:  { name: 'TS. BSCKII. Nguyễn Phú Hữu', open: 'DB',  lap: 'DB',  robot: true },
+    2:  { name: 'BSCKII. Vũ Khương An',       open: 'DB',  lap: 'DB',  robot: false },
+    4:  { name: 'BSCKI. Nguyễn Vũ Tuấn',      open: 'DB',  lap: 'I',   robot: false },
+    5:  { name: 'ThS. BS. Phan Văn Sử',       open: 'I',   lap: 'I',   robot: false },
+    6:  { name: 'ThS. BS. Lê Chí Nguyện',     open: 'I',   lap: 'I',   robot: false },
+    7:  { name: 'ThS. BS. Võ Nguyên Trung',   open: 'I',   lap: 'II',  robot: false },
+    8:  { name: 'ThS. BS. Nguyễn Thanh Quy',  open: 'I',   lap: 'II',  robot: false },
+    9:  { name: 'ThS. BS. Nguyễn Ngọc Phú',   open: 'II',  lap: 'II',  robot: false },
+    10: { name: 'BS. Trần Minh Đức',          open: 'III', lap: 'III', robot: false },
+    11: { name: 'BS. Nguyễn Quốc Hoan',       open: 'III', lap: 'III', robot: false },
+    12: { name: 'ThS. BS. Nguyễn Minh Đức',   open: 'III', lap: 'III', robot: false }
+};
+
 const SurgeryPage = {
     currentWeekStart: null,
     _filterDoctor: 'all',
@@ -170,9 +191,16 @@ const SurgeryPage = {
     _mobileQuickFilter: 'all', // 'all' | 'mine' | 'robot' | 'yeucau'
     _showSandboxOnSchedule: false,
     _openApprovalAfterSave: false,
+    _addNextAfterSave: false,
     _sampleSandboxIdx: 0,
     _allExpanded: false,
     _expandedCardIds: new Set(),
+    _procedureCatalogCache: null,
+    _procedureCatalogPromise: null,
+    _acState: { diagnosis: { items: [], activeIdx: -1 }, method: { items: [], activeIdx: -1 } },
+    _docPickerTabs: { mainSurgeon: 'khoa', assistSurgeon1: 'khoa' },
+    _docPickerQueries: { mainSurgeon: '', assistSurgeon1: '' },
+    _formAssistExpanded: false,
 
     canUseSandboxSchedule() {
         if (typeof SurgeryApprovalPage === 'undefined') return false;
@@ -794,30 +822,713 @@ const SurgeryPage = {
         `);
     },
 
-    // Form
-    openForm(id, date, opts = {}) {
-        this._openApprovalAfterSave = false;
-        const all = this.getAllSurgeries();
-        const s = id ? all.find(x => String(x.id) === String(id)) : null;
-        const targetWeekKey = s?.date ? s.date.substring(0, 10) : this.getWeekKey();
-        if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
-        const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
-        const staff = Store.getAll('staff').filter(st => st.role.includes('Bác sĩ') || st.role.includes('Trưởng khoa') || st.role.includes('Phó trưởng khoa'));
+    _normSearch(str) {
+        return String(str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[đĐ]/g, 'd')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+    },
+
+    _ensureProcedureCatalog() {
+        if (this._procedureCatalogCache) return Promise.resolve(this._procedureCatalogCache);
+        if (this._procedureCatalogPromise) return this._procedureCatalogPromise;
+        if (typeof window === 'undefined' || (window.location && window.location.protocol === 'file:')) {
+            return Promise.resolve(null);
+        }
+        const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : '';
+        if (!token) return Promise.resolve(null);
+
+        this._procedureCatalogPromise = fetch('/api/surgery/procedure-catalog', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+            .then(resp => (resp.ok ? resp.json() : null))
+            .then(data => {
+                if (data && Array.isArray(data.procedures)) {
+                    this._procedureCatalogCache = {
+                        catalogVersion: data.catalogVersion || '',
+                        procedures: data.procedures,
+                        attendingColumns: data.attendingColumns || {},
+                        robotCertifiedStaffIds: Array.isArray(data.robotCertifiedStaffIds) ? data.robotCertifiedStaffIds : [1],
+                        overColumnPolicy: data.overColumnPolicy || {}
+                    };
+                    if (document.querySelector('#modal form[data-autosave-key^="surgery-"]')) {
+                        this._updateColumnHint();
+                    }
+                }
+                this._procedureCatalogPromise = null;
+                return this._procedureCatalogCache;
+            })
+            .catch(() => {
+                this._procedureCatalogPromise = null;
+                return null;
+            });
+        return this._procedureCatalogPromise;
+    },
+
+    _getAttendingColumnsMap() {
+        const merged = { ...SURGERY_FALLBACK_ATTENDING_COLUMNS };
+        const remote = this._procedureCatalogCache?.attendingColumns;
+        if (remote && typeof remote === 'object') {
+            Object.entries(remote).forEach(([k, v]) => {
+                if (v && typeof v === 'object') merged[k] = v;
+            });
+        }
+        return merged;
+    },
+
+    _getRobotCertifiedSet() {
+        const ids = this._procedureCatalogCache?.robotCertifiedStaffIds;
+        return new Set(Array.isArray(ids) && ids.length ? ids.map(Number) : [1]);
+    },
+
+    _getSurgeryWeekDays(baseDateStr) {
+        let base;
+        if (baseDateStr && /^\d{4}-\d{2}-\d{2}/.test(baseDateStr)) {
+            const parts = baseDateStr.split('T')[0].split('-');
+            base = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        } else {
+            base = new Date();
+        }
+        if (isNaN(base.getTime())) base = new Date();
+        const dow = base.getDay();
+        const monday = new Date(base);
+        monday.setDate(base.getDate() - (dow === 0 ? 6 : dow - 1));
+        monday.setHours(0, 0, 0, 0);
+        const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        return Array.from({ length: 6 }, (_, idx) => {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + idx);
+            return {
+                iso: this.dateStr(d),
+                dayLabel: dayNames[idx],
+                dateLabel: `${d.getDate()}/${d.getMonth() + 1}`
+            };
+        });
+    },
+
+    _shortDocLabel(doc, allDocs) {
+        if (!doc) return '';
+        const rawTitle = String(doc.title || '').trim();
+        let shortTitle = rawTitle;
+        if (/TS\.\s*BSCKII/i.test(rawTitle)) shortTitle = 'TS.';
+        else if (/BSCKII/i.test(rawTitle)) shortTitle = 'CKII.';
+        else if (/BSCKI/i.test(rawTitle)) shortTitle = 'CKI.';
+        else if (/ThS/i.test(rawTitle)) shortTitle = 'ThS.';
+        else if (/BS/i.test(rawTitle)) shortTitle = 'BS.';
+
+        const parts = String(doc.name || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return shortTitle || '';
+        const lastWord = parts[parts.length - 1];
+        const normLast = this._normSearch(lastWord);
+        const dupCount = Array.isArray(allDocs)
+            ? allDocs.filter(other => {
+                const op = String(other?.name || '').trim().split(/\s+/).filter(Boolean);
+                return op.length && this._normSearch(op[op.length - 1]) === normLast;
+            }).length
+            : 0;
+
+        let displayName = lastWord;
+        if (dupCount > 1 && parts.length >= 2) {
+            const initials = parts.slice(0, -1).map(p => p.charAt(0).toUpperCase() + '.').join('');
+            displayName = `${initials} ${lastWord}`;
+        }
+        return shortTitle ? `${shortTitle} ${displayName}` : displayName;
+    },
+
+    _getFormDoctorsContext() {
+        const staff = Store.getAll('staff').filter(st =>
+            st.role && (st.role.includes('Bác sĩ') || st.role.includes('Trưởng khoa') || st.role.includes('Phó trưởng khoa'))
+        );
         const mainSurgeonStaff = staff.filter(st => {
             if (typeof SAP_TRAINEE_IDS !== 'undefined' && SAP_TRAINEE_IDS.has(Number(st.id))) return false;
             const rl = String(st.role || '').toLowerCase();
             return !rl.includes('học viên') && !rl.includes('nội trú');
         });
         const extDocs = Store.getAll('externalDoctors') || [];
+        return { staff, mainSurgeonStaff, extDocs };
+    },
+
+    _renderDocPickerChips(fieldName) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const { staff, mainSurgeonStaff, extDocs } = this._getFormDoctorsContext();
+        const khoaDocs = fieldName === 'mainSurgeon' ? mainSurgeonStaff : staff;
+        const allDocs = [...khoaDocs, ...extDocs];
+        const selectEl = form.querySelector(`select[name="${fieldName}"]`);
+        const selectedVal = selectEl ? String(selectEl.value || '') : '';
+        const activeTab = (this._docPickerTabs && this._docPickerTabs[fieldName]) || 'khoa';
+        const qNorm = this._normSearch((this._docPickerQueries && this._docPickerQueries[fieldName]) || '');
+
+        let listDocs = qNorm
+            ? allDocs.filter(d => this._normSearch(`${d.title || ''} ${d.name || ''}`).includes(qNorm))
+            : (activeTab === 'ext' ? extDocs : khoaDocs);
+
+        // Render selected indicator pill
+        const selBox = document.getElementById(`surg-doc-selected-${fieldName}`);
+        if (selBox) {
+            const matchedDoc = allDocs.find(d => String(d.id) === selectedVal);
+            if (matchedDoc) {
+                const fullName = Utils.escapeHtml(`${matchedDoc.title ? matchedDoc.title + ' ' : ''}${matchedDoc.name || ''}`.trim());
+                selBox.innerHTML = `<span class="surg-doc-picked-pill" title="${fullName}"><span>✓ ${fullName}</span><button type="button" class="surg-doc-clear-btn" onclick="SurgeryPage._clearDocChip('${fieldName}')" aria-label="Bỏ chọn bác sĩ">×</button></span>`;
+            } else {
+                selBox.innerHTML = `<span class="surg-doc-picked-empty">Chưa chọn — chạm chip bên dưới</span>`;
+            }
+        }
+
+        // Sync tab pill states
+        const pickerEl = document.querySelector(`.surg-doc-picker[data-target="${fieldName}"]`);
+        if (pickerEl) {
+            pickerEl.querySelectorAll('.surg-doc-tab').forEach(btn => {
+                const isActive = !qNorm && btn.dataset.tab === activeTab;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+        }
+
+        const chipsWrap = document.getElementById(`surg-doc-chips-${fieldName}`);
+        if (!chipsWrap) return;
+        if (!listDocs.length) {
+            chipsWrap.innerHTML = `<div class="surg-doc-empty">Không tìm thấy bác sĩ phù hợp</div>`;
+            return;
+        }
+        chipsWrap.innerHTML = listDocs.map(doc => {
+            const isSel = selectedVal && String(doc.id) === selectedVal;
+            const fullName = Utils.escapeHtml(`${doc.title ? doc.title + ' ' : ''}${doc.name || ''}`.trim());
+            const shortLabel = Utils.escapeHtml(this._shortDocLabel(doc, allDocs));
+            return `<button type="button" class="surg-doc-chip ${isSel ? 'active' : ''}" data-doc-id="${doc.id}" aria-pressed="${isSel ? 'true' : 'false'}" title="${fullName}" onclick="SurgeryPage._selectDocChip('${fieldName}', ${doc.id})">${shortLabel}</button>`;
+        }).join('');
+    },
+
+    _switchDocTab(fieldName, tab) {
+        if (!this._docPickerTabs) this._docPickerTabs = {};
+        if (!this._docPickerQueries) this._docPickerQueries = {};
+        this._docPickerTabs[fieldName] = tab;
+        this._docPickerQueries[fieldName] = '';
+        const searchInp = document.querySelector(`.surg-doc-picker[data-target="${fieldName}"] .surg-doc-search`);
+        if (searchInp) searchInp.value = '';
+        this._renderDocPickerChips(fieldName);
+    },
+
+    _filterDocChips(fieldName, val) {
+        if (!this._docPickerQueries) this._docPickerQueries = {};
+        this._docPickerQueries[fieldName] = val || '';
+        this._renderDocPickerChips(fieldName);
+    },
+
+    _selectDocChip(fieldName, docId) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const selectEl = form.querySelector(`select[name="${fieldName}"]`);
+        if (!selectEl) return;
+        const targetVal = String(docId);
+        selectEl.value = (String(selectEl.value) === targetVal) ? '' : targetVal;
+        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        this._renderDocPickerChips(fieldName);
+        if (fieldName === 'mainSurgeon') this._updateColumnHint();
+    },
+
+    _clearDocChip(fieldName) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const selectEl = form.querySelector(`select[name="${fieldName}"]`);
+        if (!selectEl) return;
+        selectEl.value = '';
+        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        this._renderDocPickerChips(fieldName);
+        if (fieldName === 'mainSurgeon') this._updateColumnHint();
+    },
+
+    _toggleAssistPicker(forceOpen) {
+        const body = document.getElementById('surg-assist-picker-body');
+        const toggleBtn = document.getElementById('surg-assist-toggle-btn');
+        if (!body || !toggleBtn) return;
+        const nextOpen = (typeof forceOpen === 'boolean') ? forceOpen : body.classList.contains('is-collapsed-mobile');
+        this._formAssistExpanded = nextOpen;
+        body.classList.toggle('is-collapsed-mobile', !nextOpen);
+        toggleBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+        toggleBtn.textContent = nextOpen ? '▾ Thu gọn BS phụ 1' : '＋ Chọn BS phụ 1 (tùy chọn)';
+    },
+
+    _selectSurgeryType(typeKey) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const sel = form.querySelector('select[name="surgeryType"]');
+        if (!sel || sel.disabled) return;
+        sel.value = typeKey;
+        this._onSurgeryTypeChange(sel);
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        this._syncSegmentedControls();
+        this._updateColumnHint();
+    },
+
+    _selectApproachType(approachKey) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const sel = document.getElementById('surgery-approach');
+        if (!sel || sel.disabled) return;
+        sel.value = approachKey;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        this._syncSegmentedControls();
+        this._updateColumnHint();
+        const methodInput = form.querySelector('input[name="method"]');
+        const methodList = document.getElementById('surg-ac-method');
+        if (methodInput && methodList && !methodList.hidden) {
+            this._onAcInput('method', methodInput);
+        }
+    },
+
+    _renderDayChipsForDate(isoDateStr) {
+        const wrap = document.getElementById('surg-day-chips');
+        if (!wrap) return;
+        const days = this._getSurgeryWeekDays(isoDateStr);
+        wrap.dataset.weekKey = days[0]?.iso || '';
+        wrap.innerHTML = days.map(d => {
+            const active = d.iso === isoDateStr;
+            return `<button type="button" class="surg-day-chip ${active ? 'active' : ''}" data-date="${d.iso}" aria-pressed="${active ? 'true' : 'false'}" onclick="SurgeryPage._selectSurgeryDateChip('${d.iso}')"><span>${d.dayLabel}</span><small>${d.dateLabel}</small></button>`;
+        }).join('');
+    },
+
+    _syncDayChips() {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        const wrap = document.getElementById('surg-day-chips');
+        if (!form || !wrap) return;
+        const dateVal = form.querySelector('input[name="date"]')?.value || '';
+        const hasChip = dateVal && Boolean(wrap.querySelector(`.surg-day-chip[data-date="${dateVal}"]`));
+        if (dateVal && !hasChip) {
+            this._renderDayChipsForDate(dateVal);
+            return;
+        }
+        wrap.querySelectorAll('.surg-day-chip').forEach(btn => {
+            const active = btn.dataset.date === dateVal;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    },
+
+    _selectSurgeryDateChip(isoDate) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const dateInp = form.querySelector('input[name="date"]');
+        if (!dateInp) return;
+        dateInp.value = isoDate;
+        dateInp.dispatchEvent(new Event('change', { bubbles: true }));
+        this._syncDayChips();
+    },
+
+    _selectDurationChip(mins) {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const durInp = form.querySelector('input[name="duration"]');
+        if (!durInp) return;
+        durInp.value = String(mins);
+        durInp.dispatchEvent(new Event('input', { bubbles: true }));
+        durInp.dispatchEvent(new Event('change', { bubbles: true }));
+        this._syncDurationChips();
+    },
+
+    _syncDurationChips() {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const durVal = String(form.querySelector('input[name="duration"]')?.value || '').trim();
+        form.querySelectorAll('.surg-dur-chip').forEach(btn => {
+            const active = durVal !== '' && btn.dataset.dur === durVal;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    },
+
+    _syncSegmentedControls() {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        const typeSel = form.querySelector('select[name="surgeryType"]');
+        const appSel = document.getElementById('surgery-approach');
+        const typeVal = typeSel ? typeSel.value : 'chuongtrinh';
+        const appVal = appSel ? appSel.value : '';
+        const typeDisabled = Boolean(typeSel && typeSel.disabled);
+        const appDisabled = Boolean(appSel && appSel.disabled);
+
+        form.querySelectorAll('.surg-seg-btn[data-surg-type]').forEach(btn => {
+            const active = btn.dataset.surgType === typeVal;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.disabled = typeDisabled && !active;
+        });
+
+        form.querySelectorAll('.surg-approach-btn[data-approach]').forEach(btn => {
+            const active = btn.dataset.approach === appVal;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.disabled = appDisabled && !active;
+        });
+    },
+
+    _getDiagnosisSuggestions(query) {
+        const qNorm = this._normSearch(query);
+        const tokens = qNorm ? qNorm.split(' ').filter(Boolean) : [];
+        const freq = new Map();
+        const all = this.getAllSurgeries();
+        for (let i = all.length - 1; i >= 0; i--) {
+            const raw = String(all[i]?.diagnosis || '').trim();
+            if (!raw || raw.length < 3) continue;
+            const key = this._normSearch(raw);
+            if (!key) continue;
+            if (!freq.has(key)) freq.set(key, { value: raw, count: 0 });
+            freq.get(key).count += 1;
+        }
+        let entries = Array.from(freq.values());
+        if (tokens.length) {
+            entries = entries.filter(item => {
+                const hay = this._normSearch(item.value);
+                return tokens.every(tk => hay.includes(tk));
+            });
+        }
+        entries.sort((a, b) => {
+            if (qNorm) {
+                const aStarts = this._normSearch(a.value).startsWith(qNorm) ? 0 : 1;
+                const bStarts = this._normSearch(b.value).startsWith(qNorm) ? 0 : 1;
+                if (aStarts !== bStarts) return aStarts - bStarts;
+            }
+            return b.count - a.count;
+        });
+        return entries.slice(0, 8).map(e => ({
+            value: e.value,
+            meta: e.count > 1 ? `${e.count} ca` : 'Lịch sử',
+            procClass: ''
+        }));
+    },
+
+    _getMethodSuggestions(query, activeApproach) {
+        const qNorm = this._normSearch(query);
+        const tokens = qNorm ? qNorm.split(' ').filter(Boolean) : [];
+        const seen = new Set();
+        const items = [];
+
+        const catalogProcs = Array.isArray(this._procedureCatalogCache?.procedures)
+            ? this._procedureCatalogCache.procedures
+            : [];
+
+        const matchTokens = (text) => {
+            if (!tokens.length) return true;
+            const hay = this._normSearch(text);
+            return tokens.every(tk => hay.includes(tk));
+        };
+
+        // 1. Prioritize BVBD catalog matching activeApproach
+        const sortedCatalog = [...catalogProcs].sort((a, b) => {
+            const aMatch = activeApproach && a.approachGroup === activeApproach ? 0 : 1;
+            const bMatch = activeApproach && b.approachGroup === activeApproach ? 0 : 1;
+            if (aMatch !== bMatch) return aMatch - bMatch;
+            return (a.rowIndex || 999) - (b.rowIndex || 999);
+        });
+        for (const p of sortedCatalog) {
+            const name = String(p.officialName || '').trim();
+            if (!name) continue;
+            const key = this._normSearch(name);
+            if (seen.has(key)) continue;
+            const aliasText = Array.isArray(p.aliases) ? p.aliases.join(' ') : '';
+            if (!matchTokens(`${name} ${p.sheetCode || ''} ${aliasText}`)) continue;
+            seen.add(key);
+            items.push({
+                value: name,
+                meta: p.procedureClass || 'BVBD',
+                procClass: p.procedureClass || '',
+                approachGroup: p.approachGroup || '',
+                priorityBoost: (activeApproach && p.approachGroup === activeApproach) ? 2 : 1
+            });
+            if (items.length >= 10) break;
+        }
+
+        // 2. Complement with historical method strings from surgeries[]
+        if (items.length < 10) {
+            const freq = new Map();
+            const all = this.getAllSurgeries();
+            for (let i = all.length - 1; i >= 0; i--) {
+                const s = all[i];
+                const raw = String(s?.method || '').trim();
+                if (!raw || raw.length < 4) continue;
+                const key = this._normSearch(raw);
+                if (!key || seen.has(key)) continue;
+                if (!matchTokens(raw)) continue;
+                if (!freq.has(key)) freq.set(key, { value: raw, count: 0, sameApp: 0 });
+                const entry = freq.get(key);
+                entry.count += 1;
+                if (activeApproach && s?.approachType === activeApproach) entry.sameApp += 1;
+            }
+            const hist = Array.from(freq.values()).sort((a, b) => (b.sameApp - a.sameApp) || (b.count - a.count));
+            for (const h of hist) {
+                items.push({
+                    value: h.value,
+                    meta: h.count > 1 ? `${h.count} ca` : 'Lịch sử',
+                    procClass: '',
+                    priorityBoost: 0
+                });
+                if (items.length >= 10) break;
+            }
+        }
+        return items.slice(0, 10);
+    },
+
+    _onAcInput(field, inputEl) {
+        if (!inputEl) return;
+        const form = inputEl.closest('form');
+        const activeApproach = form ? (form.querySelector('#surgery-approach')?.value || '') : '';
+        const query = inputEl.value || '';
+        const items = field === 'diagnosis'
+            ? this._getDiagnosisSuggestions(query)
+            : this._getMethodSuggestions(query, activeApproach);
+        this._showAutocomplete(field, items);
+        if (field === 'method') {
+            delete inputEl.dataset.matchedClass;
+            this._updateColumnHint();
+        }
+    },
+
+    _showAutocomplete(field, items) {
+        const listEl = document.getElementById(`surg-ac-${field}`);
+        if (!listEl) return;
+        if (!this._acState) this._acState = { diagnosis: { items: [], activeIdx: -1 }, method: { items: [], activeIdx: -1 } };
+        this._acState[field] = { items: items || [], activeIdx: (items && items.length) ? 0 : -1 };
+        if (!items || !items.length) {
+            listEl.hidden = true;
+            listEl.innerHTML = '';
+            return;
+        }
+        listEl.innerHTML = items.map((item, idx) => `
+            <button type="button" class="surg-ac-item ${idx === 0 ? 'is-active' : ''}" role="option" aria-selected="${idx === 0 ? 'true' : 'false'}"
+                onmousedown="event.preventDefault(); SurgeryPage._pickAcItem('${field}', ${idx})">
+                <span class="surg-ac-text">${Utils.escapeHtml(item.value)}</span>
+                ${item.meta ? `<span class="surg-ac-meta ${item.procClass ? 'is-catalog' : ''}">${Utils.escapeHtml(item.meta)}</span>` : ''}
+            </button>
+        `).join('');
+        listEl.hidden = false;
+    },
+
+    _hideAutocomplete(field) {
+        const listEl = document.getElementById(`surg-ac-${field}`);
+        if (listEl) listEl.hidden = true;
+        if (this._acState && this._acState[field]) {
+            this._acState[field].activeIdx = -1;
+        }
+    },
+
+    _pickAcItem(field, idx) {
+        const state = this._acState && this._acState[field];
+        if (!state || !state.items || !state.items[idx]) return;
+        const item = state.items[idx];
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        const inp = form ? form.querySelector(`input[name="${field}"]`) : null;
+        if (inp) {
+            inp.value = item.value;
+            if (field === 'method') {
+                if (item.procClass) inp.dataset.matchedClass = item.procClass;
+                else delete inp.dataset.matchedClass;
+            }
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+            inp.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        this._hideAutocomplete(field);
+        if (field === 'method') this._updateColumnHint();
+    },
+
+    _onAcKeydown(field, e) {
+        const listEl = document.getElementById(`surg-ac-${field}`);
+        const isOpen = Boolean(listEl && !listEl.hidden);
+        if (!isOpen) return;
+        const state = (this._acState && this._acState[field]) || { items: [], activeIdx: -1 };
+        const count = state.items.length;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!count) return;
+            state.activeIdx = (state.activeIdx + 1) % count;
+            this._highlightAcItem(listEl, state.activeIdx);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!count) return;
+            state.activeIdx = (state.activeIdx - 1 + count) % count;
+            this._highlightAcItem(listEl, state.activeIdx);
+        } else if (e.key === 'Enter') {
+            if (count > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                this._pickAcItem(field, state.activeIdx >= 0 ? state.activeIdx : 0);
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            this._hideAutocomplete(field);
+        }
+    },
+
+    _highlightAcItem(listEl, activeIdx) {
+        if (!listEl) return;
+        listEl.querySelectorAll('.surg-ac-item').forEach((el, idx) => {
+            const on = idx === activeIdx;
+            el.classList.toggle('is-active', on);
+            el.setAttribute('aria-selected', on ? 'true' : 'false');
+            if (on && typeof el.scrollIntoView === 'function') {
+                el.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    },
+
+    _colRankScore(raw) {
+        const s = String(raw || '').toUpperCase().replace('PT-', '').replace('ĐB', 'DB').trim();
+        if (s === 'DB') return 4;
+        if (s === 'I') return 3;
+        if (s === 'II') return 2;
+        if (s === 'III') return 1;
+        return 0;
+    },
+
+    _updateColumnHint() {
+        const box = document.getElementById('surg-column-hint');
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!box || !form) return;
+
+        const mainIdRaw = form.querySelector('select[name="mainSurgeon"]')?.value || '';
+        if (!mainIdRaw) {
+            box.style.display = 'none';
+            box.className = 'surg-col-hint';
+            box.innerHTML = '';
+            return;
+        }
+
+        const colsMap = this._getAttendingColumnsMap();
+        const col = colsMap[String(mainIdRaw)] || colsMap[Number(mainIdRaw)];
+        if (!col) {
+            box.style.display = '';
+            box.className = 'surg-col-hint is-info';
+            box.innerHTML = 'ℹ️ <span>BS ngoài khoa — vui lòng kiểm tra phân quyền liên khoa nếu cần (không chặn lưu lịch).</span>';
+            return;
+        }
+
+        const { mainSurgeonStaff } = this._getFormDoctorsContext();
+        const docObj = mainSurgeonStaff.find(d => String(d.id) === String(mainIdRaw)) || { title: '', name: col.name || '' };
+        const shortName = Utils.escapeHtml(this._shortDocLabel(docObj, mainSurgeonStaff) || col.name || 'BS');
+        const approachVal = form.querySelector('#surgery-approach')?.value || '';
+        const methodInp = form.querySelector('input[name="method"]');
+        const methodVal = String(methodInp?.value || '').trim();
+        const robotSet = this._getRobotCertifiedSet();
+
+        if (approachVal === 'robot') {
+            const hasRobotCert = Boolean(col.robot) || robotSet.has(Number(mainIdRaw));
+            box.style.display = '';
+            if (hasRobotCert) {
+                box.className = 'surg-col-hint is-ok';
+                box.innerHTML = `✅ <span><strong>${shortName}</strong> đủ chứng chỉ mổ chính <strong>Robot</strong>.</span>`;
+            } else {
+                box.className = 'surg-col-hint is-warn';
+                box.innerHTML = `⚠️ <span>Lưu ý mềm: <strong>${shortName}</strong> chưa có chứng chỉ mổ chính <strong>Robot</strong> (chỉ cảnh báo, vẫn lưu được).</span>`;
+            }
+            return;
+        }
+
+        // Match method against catalog or explicit dataset class
+        let matchedClass = methodInp?.dataset?.matchedClass || '';
+        const catalogProcs = Array.isArray(this._procedureCatalogCache?.procedures)
+            ? this._procedureCatalogCache.procedures
+            : [];
+        const normMethod = this._normSearch(methodVal);
+        if (!matchedClass && normMethod && catalogProcs.length) {
+            const exact = catalogProcs.find(p => this._normSearch(p.officialName) === normMethod);
+            if (exact) {
+                matchedClass = exact.procedureClass || '';
+            } else if (normMethod.length >= 8) {
+                const fuzzy = catalogProcs.find(p => {
+                    const pn = this._normSearch(p.officialName);
+                    const appOk = !approachVal || p.approachGroup === approachVal;
+                    return appOk && pn.length >= 8 && (pn.includes(normMethod) || normMethod.includes(pn));
+                });
+                if (fuzzy) matchedClass = fuzzy.procedureClass || '';
+            }
+        }
+
+        if (matchedClass) {
+            const procScore = this._colRankScore(matchedClass);
+            const openScore = this._colRankScore(col.open);
+            const lapScore = this._colRankScore(col.lap);
+            let colCode = col.open || col.lap || '';
+            let surgeonScore = Math.max(openScore, lapScore);
+            if (approachVal === 'mo') {
+                colCode = col.open;
+                surgeonScore = openScore;
+            } else if (approachVal === 'noisoi' || approachVal === 'nsth') {
+                colCode = col.lap;
+                surgeonScore = lapScore;
+            }
+
+            if (procScore > 0 && surgeonScore > 0) {
+                box.style.display = '';
+                const safeClass = Utils.escapeHtml(matchedClass);
+                const safeCol = Utils.escapeHtml(colCode === 'DB' ? 'ĐB' : colCode);
+                if (surgeonScore >= procScore) {
+                    box.className = 'surg-col-hint is-ok';
+                    box.innerHTML = `✅ <span>Đúng phân cột BVBD: <strong>${safeClass}</strong> · ${shortName} (Cột ${safeCol}).</span>`;
+                } else {
+                    box.className = 'surg-col-hint is-warn';
+                    box.innerHTML = `⚠️ <span>Lưu ý mềm vượt cột: <strong>${safeClass}</strong> vượt Cột ${safeCol} của <strong>${shortName}</strong> — cần duyệt vượt cột khi trình mổ (vẫn lưu lịch được).</span>`;
+                }
+                return;
+            }
+        }
+
+        box.style.display = '';
+        box.className = 'surg-col-hint is-info';
+        const openLbl = col.open === 'DB' ? 'ĐB' : col.open;
+        const lapLbl = col.lap === 'DB' ? 'ĐB' : col.lap;
+        box.innerHTML = `🏷️ <span>Phân cột <strong>${shortName}</strong>: Mở <strong>${Utils.escapeHtml(openLbl)}</strong> · Nội soi <strong>${Utils.escapeHtml(lapLbl)}</strong>${col.robot ? ' · 🤖 Robot' : ''}</span>`;
+    },
+
+    _syncAllFormWidgetsFromInputs() {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (!form) return;
+        this._syncSegmentedControls();
+        this._syncDayChips();
+        this._syncDurationChips();
+        this._renderDocPickerChips('mainSurgeon');
+        this._renderDocPickerChips('assistSurgeon1');
+
+        const assistVal = form.querySelector('select[name="assistSurgeon1"]')?.value || '';
+        if (assistVal) {
+            this._toggleAssistPicker(true);
+        }
+
+        const notesVal = form.querySelector('textarea[name="notes"]')?.value || '';
+        const sbxChecked = Boolean(document.getElementById('surg-is-sandbox-case')?.checked);
+        const optDetails = document.getElementById('surg-optional-details');
+        if (optDetails && (notesVal.trim() || sbxChecked)) {
+            optDetails.open = true;
+        }
+        this._updateColumnHint();
+    },
+
+    // Form
+    openForm(id, date, opts = {}) {
+        this._openApprovalAfterSave = false;
+        this._addNextAfterSave = false;
+        const all = this.getAllSurgeries();
+        const s = id ? all.find(x => String(x.id) === String(id)) : null;
+        const targetWeekKey = s?.date ? s.date.substring(0, 10) : this.getWeekKey();
+        if (!canEditSurgery(targetWeekKey)) { Toast.show('🔒 Tuần này đã bị khoá. Không thể chỉnh sửa.', 'error'); return; }
+        const defaultDate = s?.date || date || new Date().toISOString().split('T')[0];
+        const { staff, mainSurgeonStaff, extDocs } = this._getFormDoctorsContext();
         const canSandbox = this.canUseSandboxSchedule();
         const isSandboxDefault = s ? Boolean(s.isTestSandboxCase) : Boolean(opts && opts.sandbox && canSandbox);
-        const curSession = (typeof Auth !== 'undefined' && Auth.getSession) ? (Auth.getSession() || {}) : {};
-        const curSid = Number(curSession.staffId || 0);
-        const curRoleLc = String(curSession.role || '').toLowerCase();
-        const isCurTrainee = (typeof SAP_TRAINEE_IDS !== 'undefined' && SAP_TRAINEE_IDS.has(curSid))
-            || curRoleLc.includes('học viên') || curRoleLc.includes('nội trú');
-        const defaultMainSurgeonId = s ? s.mainSurgeon : ((isSandboxDefault && !isCurTrainee && mainSurgeonStaff.some(st => Number(st.id) === curSid)) ? curSid : '');
-        const defaultAssistSurgeonId = s ? s.assistSurgeon1 : ((isSandboxDefault && isCurTrainee && staff.some(st => Number(st.id) === curSid)) ? curSid : '');
+        const defaultMainSurgeonId = s ? s.mainSurgeon : '';
+        const defaultAssistSurgeonId = s ? s.assistSurgeon1 : '';
+        this._docPickerTabs = {
+            mainSurgeon: (defaultMainSurgeonId && extDocs.some(d => String(d.id) === String(defaultMainSurgeonId))) ? 'ext' : 'khoa',
+            assistSurgeon1: (defaultAssistSurgeonId && extDocs.some(d => String(d.id) === String(defaultAssistSurgeonId))) ? 'ext' : 'khoa'
+        };
+        this._docPickerQueries = { mainSurgeon: '', assistSurgeon1: '' };
+        this._formAssistExpanded = Boolean(defaultAssistSurgeonId);
 
         const formKey = `surgery-${id || (isSandboxDefault ? 'new-sandbox' : 'new')}`;
         const modalTitle = s
@@ -825,12 +1536,12 @@ const SurgeryPage = {
             : (isSandboxDefault ? '🧪 Tạo ca giả lập từ Lịch mổ [TEST]' : 'Thêm ca mổ');
 
         const sandboxBannerHtml = (!s && canSandbox) ? `
-            <div id="surg-sandbox-mode-box" style="margin-bottom:14px;padding:12px 14px;border-radius:10px;border:1.5px dashed ${isSandboxDefault ? '#d97706' : 'var(--border-default)'};background:${isSandboxDefault ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)'};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-width:0;max-width:100%;">
+            <div id="surg-sandbox-mode-box" style="margin-top:10px;padding:10px 12px;border-radius:10px;border:1.5px dashed ${isSandboxDefault ? '#d97706' : 'var(--border-default)'};background:${isSandboxDefault ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)'};display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;min-width:0;max-width:100%;">
                 <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;flex:1 1 180px;min-width:0;max-width:100%;">
                     <input type="checkbox" id="surg-is-sandbox-case" name="isTestSandboxCase" value="1" ${isSandboxDefault ? 'checked' : ''} onchange="SurgeryPage._onSandboxModeToggle(this)" style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:#d97706;">
                     <span>
-                        <strong style="display:block;font-size:0.92rem;color:var(--text-primary);">🧪 Ca giả lập đào tạo quy trình [TEST]</strong>
-                        <span style="display:block;font-size:0.8rem;color:var(--text-secondary);line-height:1.4;">Tự động gắn nhãn <code>[TEST]</code> & chuyển sang <strong>Tab Duyệt mổ</strong> để thực hành · Tách biệt 100% khỏi thống kê & xuất ảnh lịch mổ thật.</span>
+                        <strong style="display:block;font-size:0.9rem;color:var(--text-primary);">🧪 Ca giả lập đào tạo quy trình [TEST]</strong>
+                        <span style="display:block;font-size:0.78rem;color:var(--text-secondary);line-height:1.38;">Tự động gắn nhãn <code>[TEST]</code> & đồng bộ <strong>Tab Duyệt mổ</strong> · Tách biệt 100% khỏi bệnh nhân thật.</span>
                     </span>
                 </label>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="SurgeryPage.fillSampleSandboxForm()" style="border-color:#d97706;color:#b45309;font-weight:600;white-space:nowrap;">
@@ -839,7 +1550,7 @@ const SurgeryPage = {
             </div>
         ` : (s && s.isTestSandboxCase ? `
             <input type="hidden" name="isTestSandboxCase" value="1">
-            <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;border:1px solid #d97706;background:rgba(245,158,11,0.09);font-size:0.85rem;color:var(--text-primary);">
+            <div style="margin-bottom:12px;padding:10px 14px;border-radius:10px;border:1px solid #d97706;background:rgba(245,158,11,0.09);font-size:0.85rem;color:var(--text-primary);">
                 🧪 <strong>Ca giả lập đào tạo [TEST]</strong> — Mọi thay đổi trên lịch mổ sẽ đồng bộ trực tiếp sang <strong>Tab Duyệt mổ</strong> (0% ảnh hưởng bệnh nhân thật).
             </div>
         ` : '');
@@ -850,117 +1561,266 @@ const SurgeryPage = {
                 ? `🔬 Ca chuyển mổ Nội soi từ Điều phối Robot (<strong>${Utils.escapeHtml(s.robotCaseId)}</strong>) — Đường mổ cố định Nội soi. Mọi thay đổi được đồng bộ 2 chiều.`
                 : `🤖 Ca đang liên thông Điều phối Robot (<strong>${Utils.escapeHtml(s.robotCaseId)}</strong>) — Đường mổ cố định Robot. Mọi thay đổi được đồng bộ 2 chiều.`)
             : '';
+
+        const initSurgeryType = lockedApproach === 'robot' ? 'robot' : (s?.surgeryType || 'chuongtrinh');
+        const initApproach = lockedApproach || (initSurgeryType === 'robot' ? 'robot' : (s?.approachType || ''));
+        const weekDays = this._getSurgeryWeekDays(defaultDate);
+        const durPresets = [30, 60, 90, 120, 150, 180];
+        const openOptionalByDefault = Boolean((s && s.notes && String(s.notes).trim()) || isSandboxDefault);
+
         Modal.open(modalTitle, `
-            <form onsubmit="SurgeryPage.save(event, ${id || 0})" data-autosave-key="${formKey}">
-                ${sandboxBannerHtml}
+            <form class="surg-form-v2" onsubmit="SurgeryPage.save(event, ${id || 0})" data-autosave-key="${formKey}">
                 ${s?.robotCaseId ? `<div class="rbt-dirty-banner" style="margin-bottom:12px;">${lockedBannerText}</div>` : ''}
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Họ tên bệnh nhân</label>
-                        <input class="form-input" name="patientName" value="${Utils.escapeHtml(s?.patientName || '')}" required placeholder="${isSandboxDefault ? '[TEST] Nguyễn Văn Minh' : 'Nguyễn Văn A'}">
+                ${(s && s.isTestSandboxCase) ? sandboxBannerHtml : ''}
+
+                <!-- Card 1: Thông tin Bệnh nhân -->
+                <div class="surg-section-card surg-card-patient">
+                    <div class="surg-card-head">
+                        <span class="surg-card-title">1. Bệnh nhân</span>
+                        <span class="surg-card-hint">Họ tên bắt buộc · tự kiểm tra trùng hồ sơ</span>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Năm sinh</label>
-                        <input class="form-input" name="birthYear" value="${s?.birthYear || ''}" placeholder="1964" type="number" min="1900" max="2026">
+                    <div class="form-row surg-row-patient-3col">
+                        <div class="form-group">
+                            <label class="form-label">Họ tên bệnh nhân <span class="form-required">*</span></label>
+                            <input class="form-input" name="patientName" value="${Utils.escapeHtml(s?.patientName || '')}" required autocomplete="off" placeholder="${isSandboxDefault ? '[TEST] Nguyễn Văn Minh' : 'Nguyễn Văn A'}">
+                        </div>
+                        <div class="form-group surg-patient-pair">
+                            <div class="surg-subgrid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Năm sinh</label>
+                                    <input class="form-input" name="birthYear" value="${s?.birthYear || ''}" placeholder="1964" type="number" inputmode="numeric" min="1900" max="2026">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Số nhập viện</label>
+                                    <input class="form-input" name="admissionId" value="${Utils.escapeHtml(s?.admissionId || '')}" placeholder="26014285" inputmode="numeric" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="surgery-duplicate-banner" class="surgery-duplicate-banner" style="display:none;"></div>
+                </div>
+
+                <!-- Card 2: Phân loại & Lịch mổ -->
+                <div class="surg-section-card surg-card-schedule">
+                    <div class="surg-card-head">
+                        <span class="surg-card-title">2. Phân loại &amp; Lịch mổ</span>
+                        <span class="surg-card-hint">Chạm nhanh 1 lần để chọn</span>
+                    </div>
+
+                    <div class="form-row surg-row-classify-2col">
+                        <div class="form-group surg-sr-anchor">
+                            <label class="form-label">Loại phẫu thuật</label>
+                            <select class="surg-sr-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)" ${lockedApproach === 'robot' ? 'disabled' : ''}>
+                                ${Object.entries(SURGERY_TYPES).map(([key, t]) =>
+                                    `<option value="${key}" ${initSurgeryType === key ? 'selected' : ''}>${t.label}</option>`
+                                ).join('')}
+                            </select>
+                            <div class="surg-seg-group" role="group" aria-label="Loại phẫu thuật">
+                                ${Object.entries(SURGERY_TYPES).map(([key, t]) => {
+                                    const active = initSurgeryType === key;
+                                    const disabled = lockedApproach === 'robot' && !active;
+                                    return `<button type="button" class="surg-seg-btn ${active ? 'active' : ''}" data-surg-type="${key}" aria-pressed="${active ? 'true' : 'false'}" ${disabled ? 'disabled' : ''} onclick="SurgeryPage._selectSurgeryType('${key}')">${t.label}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="form-group surg-sr-anchor">
+                            <label class="form-label">Đường mổ <span class="form-required">*</span></label>
+                            <select class="surg-sr-select" name="approachType" id="surgery-approach" required ${(Boolean(lockedApproach) || initSurgeryType === 'robot') ? 'disabled' : ''}>
+                                <option value="">— Chọn —</option>
+                                <option value="mo" ${initApproach === 'mo' ? 'selected' : ''}>Mổ mở</option>
+                                <option value="noisoi" ${initApproach === 'noisoi' ? 'selected' : ''}>Nội soi</option>
+                                <option value="nsth" ${initApproach === 'nsth' ? 'selected' : ''}>Nội soi tiêu hoá</option>
+                                <option value="robot" ${initApproach === 'robot' ? 'selected' : ''}>Robot</option>
+                            </select>
+                            <div class="surg-seg-group surg-approach-group" role="group" aria-label="Đường mổ">
+                                ${Object.entries(SURGERY_APPROACH_META).map(([key, meta]) => {
+                                    const active = initApproach === key;
+                                    const locked = Boolean(lockedApproach) || initSurgeryType === 'robot';
+                                    return `<button type="button" class="surg-approach-btn ${active ? 'active' : ''}" data-approach="${key}" aria-pressed="${active ? 'true' : 'false'}" ${(locked && !active) ? 'disabled' : ''} onclick="SurgeryPage._selectApproachType('${key}')">${meta.label}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row surg-row-datetime">
+                        <div class="form-group">
+                            <label class="form-label">Ngày mổ <span class="form-required">*</span></label>
+                            <div id="surg-day-chips" class="surg-day-chips" role="group" aria-label="Chọn nhanh ngày trong tuần">
+                                ${weekDays.map(d => {
+                                    const active = d.iso === defaultDate;
+                                    return `<button type="button" class="surg-day-chip ${active ? 'active' : ''}" data-date="${d.iso}" aria-pressed="${active ? 'true' : 'false'}" onclick="SurgeryPage._selectSurgeryDateChip('${d.iso}')"><span>${d.dayLabel}</span><small>${d.dateLabel}</small></button>`;
+                                }).join('')}
+                            </div>
+                            <input class="form-input" type="date" name="date" value="${defaultDate}" required onchange="SurgeryPage._syncDayChips()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Thời gian cuộc mổ (phút)</label>
+                            <div class="surg-dur-chips" role="group" aria-label="Thời lượng nhanh">
+                                ${durPresets.map(m => {
+                                    const active = String(s?.duration || '') === String(m);
+                                    return `<button type="button" class="surg-dur-chip ${active ? 'active' : ''}" data-dur="${m}" aria-pressed="${active ? 'true' : 'false'}" onclick="SurgeryPage._selectDurationChip(${m})">${m}p</button>`;
+                                }).join('')}
+                            </div>
+                            <input class="form-input" name="duration" type="number" inputmode="numeric" min="10" max="720" value="${s?.duration || ''}" placeholder="Phút (VD: 120)" oninput="SurgeryPage._syncDurationChips()">
+                        </div>
+                    </div>
+
+                    <div class="form-group surg-first-case-slot" id="first-case-group"></div>
+                </div>
+
+                <!-- Card 3: Chẩn đoán & Phương pháp PT -->
+                <div class="surg-section-card surg-card-clinical">
+                    <div class="surg-card-head">
+                        <span class="surg-card-title">3. Chẩn đoán &amp; Phương pháp phẫu thuật</span>
+                        <span class="surg-card-hint">Gõ không dấu để lọc gợi ý BVBD</span>
+                    </div>
+                    <div class="form-row surg-row-clinical-2col">
+                        <div class="form-group">
+                            <label class="form-label">Chẩn đoán</label>
+                            <div class="surg-ac-wrap">
+                                <input class="form-input" name="diagnosis" value="${Utils.escapeHtml(s?.diagnosis || '')}" autocomplete="off" placeholder="Ung thư đại tràng Sigma cT3N1M0"
+                                    onfocus="SurgeryPage._onAcInput('diagnosis', this)"
+                                    oninput="SurgeryPage._onAcInput('diagnosis', this)"
+                                    onkeydown="SurgeryPage._onAcKeydown('diagnosis', event)"
+                                    onblur="setTimeout(() => SurgeryPage._hideAutocomplete('diagnosis'), 140)">
+                                <div class="surg-ac-list" id="surg-ac-diagnosis" role="listbox" hidden></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phương pháp phẫu thuật</label>
+                            <div class="surg-ac-wrap">
+                                <input class="form-input" name="method" value="${Utils.escapeHtml(s?.method || '')}" autocomplete="off" placeholder="Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch"
+                                    onfocus="SurgeryPage._onAcInput('method', this)"
+                                    oninput="SurgeryPage._onAcInput('method', this)"
+                                    onkeydown="SurgeryPage._onAcKeydown('method', event)"
+                                    onblur="setTimeout(() => SurgeryPage._hideAutocomplete('method'), 140)">
+                                <div class="surg-ac-list" id="surg-ac-method" role="listbox" hidden></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Inline Duplicate Warning Banner -->
-                <div id="surgery-duplicate-banner" class="surgery-duplicate-banner" style="display:none;"></div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Số nhập viện</label>
-                        <input class="form-input" name="admissionId" value="${Utils.escapeHtml(s?.admissionId || '')}" placeholder="26014285">
+
+                <!-- Card 4: Ê-kíp Phẫu thuật & Phân cột -->
+                <div class="surg-section-card surg-card-team">
+                    <div class="surg-card-head">
+                        <span class="surg-card-title">4. Ê-kíp phẫu thuật</span>
+                        <span class="surg-card-hint">Không tự điền mặc định để tránh nhập nhầm BS</span>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Loại phẫu thuật</label>
-                        <select class="form-select" name="surgeryType" onchange="SurgeryPage._onSurgeryTypeChange(this)" ${lockedApproach === 'robot' ? 'disabled' : ''}>
-                            ${Object.entries(SURGERY_TYPES).map(([key, t]) =>
-            `<option value="${key}" ${(s?.surgeryType || 'chuongtrinh') === key ? 'selected' : ''}>${t.label}</option>`
-        ).join('')}
-                        </select>
+                    <div class="form-row surg-row-team-2col">
+                        <div class="form-group surg-sr-anchor">
+                            <label class="form-label">BS mổ chính</label>
+                            <select class="surg-sr-select" name="mainSurgeon" aria-hidden="true" tabindex="-1" onchange="SurgeryPage._renderDocPickerChips('mainSurgeon'); SurgeryPage._updateColumnHint();">
+                                <option value="">— Chọn —</option>
+                                <optgroup label="BS chính trong khoa">
+                                ${mainSurgeonStaff.map(st => `<option value="${st.id}" ${defaultMainSurgeonId == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                                </optgroup>
+                                ${extDocs.length ? `<optgroup label="BS ngoài khoa">
+                                ${extDocs.map(d => `<option value="${d.id}" ${defaultMainSurgeonId == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
+                                </optgroup>` : ''}
+                            </select>
+                            <div class="surg-doc-picker" data-target="mainSurgeon">
+                                <div class="surg-doc-bar">
+                                    <div id="surg-doc-selected-mainSurgeon" class="surg-doc-selected"></div>
+                                    <div class="surg-doc-tabs" role="tablist">
+                                        <button type="button" class="surg-doc-tab active" data-tab="khoa" role="tab" aria-selected="true" onclick="SurgeryPage._switchDocTab('mainSurgeon', 'khoa')">Khoa (${mainSurgeonStaff.length})</button>
+                                        <button type="button" class="surg-doc-tab" data-tab="ext" role="tab" aria-selected="false" onclick="SurgeryPage._switchDocTab('mainSurgeon', 'ext')">Ngoài (${extDocs.length})</button>
+                                    </div>
+                                </div>
+                                <input type="search" class="surg-doc-search" placeholder="Tìm nhanh BS mổ chính..." aria-label="Tìm nhanh bác sĩ mổ chính" oninput="SurgeryPage._filterDocChips('mainSurgeon', this.value)">
+                                <div id="surg-doc-chips-mainSurgeon" class="surg-doc-chips"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group surg-sr-anchor">
+                            <div class="surg-assist-header">
+                                <label class="form-label" style="margin:0;">BS phụ 1</label>
+                                <button type="button" id="surg-assist-toggle-btn" class="surg-assist-toggle-btn" aria-expanded="${this._formAssistExpanded ? 'true' : 'false'}" onclick="SurgeryPage._toggleAssistPicker()">
+                                    ${this._formAssistExpanded ? '▾ Thu gọn BS phụ 1' : '＋ Chọn BS phụ 1 (tùy chọn)'}
+                                </button>
+                            </div>
+                            <select class="surg-sr-select" name="assistSurgeon1" aria-hidden="true" tabindex="-1" onchange="SurgeryPage._renderDocPickerChips('assistSurgeon1');">
+                                <option value="">— Chọn —</option>
+                                <optgroup label="BS trong khoa">
+                                ${staff.map(st => `<option value="${st.id}" ${defaultAssistSurgeonId == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
+                                </optgroup>
+                                ${extDocs.length ? `<optgroup label="BS ngoài khoa">
+                                ${extDocs.map(d => `<option value="${d.id}" ${defaultAssistSurgeonId == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
+                                </optgroup>` : ''}
+                            </select>
+                            <div id="surg-assist-picker-body" class="surg-doc-picker ${this._formAssistExpanded ? '' : 'is-collapsed-mobile'}" data-target="assistSurgeon1">
+                                <div class="surg-doc-bar">
+                                    <div id="surg-doc-selected-assistSurgeon1" class="surg-doc-selected"></div>
+                                    <div class="surg-doc-tabs" role="tablist">
+                                        <button type="button" class="surg-doc-tab active" data-tab="khoa" role="tab" aria-selected="true" onclick="SurgeryPage._switchDocTab('assistSurgeon1', 'khoa')">Khoa (${staff.length})</button>
+                                        <button type="button" class="surg-doc-tab" data-tab="ext" role="tab" aria-selected="false" onclick="SurgeryPage._switchDocTab('assistSurgeon1', 'ext')">Ngoài (${extDocs.length})</button>
+                                    </div>
+                                </div>
+                                <input type="search" class="surg-doc-search" placeholder="Tìm nhanh BS phụ 1..." aria-label="Tìm nhanh bác sĩ phụ 1" oninput="SurgeryPage._filterDocChips('assistSurgeon1', this.value)">
+                                <div id="surg-doc-chips-assistSurgeon1" class="surg-doc-chips"></div>
+                            </div>
+                        </div>
                     </div>
+                    <div id="surg-column-hint" class="surg-col-hint" aria-live="polite" style="display:none;"></div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Đường mổ <span class="form-required">*</span></label>
-                        <select class="form-select" name="approachType" id="surgery-approach" required ${(Boolean(lockedApproach) || (s?.surgeryType || 'chuongtrinh') === 'robot') ? 'disabled' : ''}>
-                            <option value="">— Chọn —</option>
-                            <option value="mo" ${s?.approachType === 'mo' ? 'selected' : ''}>Mổ mở</option>
-                            <option value="noisoi" ${s?.approachType === 'noisoi' || lockedApproach === 'noisoi' ? 'selected' : ''}>Nội soi</option>
-                            <option value="nsth" ${s?.approachType === 'nsth' ? 'selected' : ''}>Nội soi tiêu hoá</option>
-                            <option value="robot" ${s?.approachType === 'robot' || lockedApproach === 'robot' || (s?.surgeryType || 'chuongtrinh') === 'robot' ? 'selected' : ''}>Robot</option>
-                        </select>
+
+                <!-- Card 5: Ghi chú & Tùy chọn nâng cao -->
+                <details id="surg-optional-details" class="surg-optional-details" ${openOptionalByDefault ? 'open' : ''}>
+                    <summary class="surg-optional-summary">
+                        <span>📝 Ghi chú &amp; tùy chọn nâng cao</span>
+                        <span class="surg-opt-meta">${isSandboxDefault ? 'Đang bật [TEST]' : 'Ghi chú · Ca giả lập'}</span>
+                    </summary>
+                    <div class="surg-optional-body">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Ghi chú</label>
+                            <textarea class="form-textarea" name="notes" rows="2" placeholder="Yêu cầu dụng cụ đặc biệt, ghi chú kíp mổ...">${Utils.escapeHtml(s?.notes || '')}</textarea>
+                        </div>
+                        ${(!s && canSandbox) ? sandboxBannerHtml : ''}
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Ngày mổ</label>
-                        <input class="form-input" type="date" name="date" value="${defaultDate}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Thời gian cuộc mổ (phút)</label>
-                        <input class="form-input" name="duration" type="number" value="${s?.duration || ''}" placeholder="120">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">BS mổ chính</label>
-                        <select class="form-select" name="mainSurgeon">
-                            <option value="">— Chọn —</option>
-                            <optgroup label="BS chính trong khoa">
-                            ${mainSurgeonStaff.map(st => `<option value="${st.id}" ${defaultMainSurgeonId == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
-                            </optgroup>
-                            ${extDocs.length ? `<optgroup label="BS ngoài khoa">
-                            ${extDocs.map(d => `<option value="${d.id}" ${defaultMainSurgeonId == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
-                            </optgroup>` : ''}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">BS phụ 1</label>
-                        <select class="form-select" name="assistSurgeon1">
-                            <option value="">— Chọn —</option>
-                            <optgroup label="BS trong khoa">
-                            ${staff.map(st => `<option value="${st.id}" ${defaultAssistSurgeonId == st.id ? 'selected' : ''}>${st.title} ${st.name}</option>`).join('')}
-                            </optgroup>
-                            ${extDocs.length ? `<optgroup label="BS ngoài khoa">
-                            ${extDocs.map(d => `<option value="${d.id}" ${defaultAssistSurgeonId == d.id ? 'selected' : ''}>${d.title} ${d.name}</option>`).join('')}
-                            </optgroup>` : ''}
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Chẩn đoán</label>
-                    <input class="form-input" name="diagnosis" value="${Utils.escapeHtml(s?.diagnosis || '')}" placeholder="Ung thư đại tràng Sigma cT3N1M0">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Phương pháp phẫu thuật</label>
-                    <input class="form-input" name="method" value="${Utils.escapeHtml(s?.method || '')}" placeholder="Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ghi chú</label>
-                    <textarea class="form-textarea" name="notes">${Utils.escapeHtml(s?.notes || '')}</textarea>
-                </div>
-                <div class="form-group" id="first-case-group">
-                </div>
-                <div class="modal-footer" style="flex-wrap:wrap;gap:8px;">
+                </details>
+
+                <div class="modal-footer surg-modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="Modal.close()">Huỷ</button>
                     <button type="button" id="surg-submit-open-approval-btn" class="btn btn-secondary"
                         style="${isSandboxDefault ? 'border-color:#0284c7;color:#0369a1;background:rgba(14,165,233,0.1);font-weight:600;' : 'display:none;'}"
                         onclick="SurgeryPage.submitAndOpenApproval(this)">
                         📋 ${s ? 'Cập nhật & Sang Duyệt mổ' : 'Lưu & Sang Tab Duyệt mổ'}
                     </button>
+                    ${!id ? `<button type="button" id="surg-submit-add-next-btn" class="btn btn-secondary surg-btn-add-next" onclick="SurgeryPage.submitAndAddNext(this)">➕ Lưu &amp; thêm ca tiếp</button>` : ''}
                     <button type="submit" id="surg-submit-primary-btn" class="btn btn-primary">${s ? 'Cập nhật' : (isSandboxDefault ? '🧪 Lưu lên Lịch mổ' : 'Thêm ca mổ')}</button>
                 </div>
             </form>
         `);
 
-        // Init "Ca đầu tiên" checkbox after modal opens
+        const modalEl = document.getElementById('modal');
+        if (modalEl) modalEl.classList.add('surg-modal-wide');
+
+        this._ensureProcedureCatalog();
         this._initFirstCaseCheckbox(s, defaultDate);
+        this._syncAllFormWidgetsFromInputs();
+        setTimeout(() => {
+            if (document.querySelector(`#modal form[data-autosave-key="${formKey}"]`)) {
+                this._syncAllFormWidgetsFromInputs();
+            }
+        }, 180);
 
         // Init realtime duplicate check
         this._pendingOverride = null;
         this._bindRealtimeDuplicateCheck(id);
         this._checkAndShowInlineBanner(id);
+    },
+
+    submitAndAddNext(btnEl) {
+        const form = btnEl ? btnEl.closest('form') : document.querySelector('#modal form');
+        if (!form) return;
+        this._addNextAfterSave = true;
+        this._openApprovalAfterSave = false;
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
     },
 
     _onSandboxModeToggle(checkboxEl) {
@@ -970,6 +1830,8 @@ const SurgeryPage = {
             box.style.borderColor = checked ? '#d97706' : 'var(--border-default)';
             box.style.background = checked ? 'rgba(245,158,11,0.09)' : 'var(--bg-secondary)';
         }
+        const optDetails = document.getElementById('surg-optional-details');
+        if (optDetails && checked) optDetails.open = true;
         const primaryBtn = document.getElementById('surg-submit-primary-btn');
         if (primaryBtn) primaryBtn.textContent = checked ? '🧪 Lưu lên Lịch mổ' : 'Thêm ca mổ';
         const openAppBtn = document.getElementById('surg-submit-open-approval-btn');
@@ -993,6 +1855,7 @@ const SurgeryPage = {
         const form = btnEl ? btnEl.closest('form') : document.querySelector('#modal form');
         if (!form) return;
         this._openApprovalAfterSave = true;
+        this._addNextAfterSave = false;
         if (typeof form.requestSubmit === 'function') {
             form.requestSubmit();
         } else {
@@ -1003,6 +1866,8 @@ const SurgeryPage = {
     fillSampleSandboxForm() {
         const form = document.querySelector('#modal form');
         if (!form) return;
+        const optDetails = document.getElementById('surg-optional-details');
+        if (optDetails) optDetails.open = true;
         const sbxCheckbox = document.getElementById('surg-is-sandbox-case');
         if (sbxCheckbox && !sbxCheckbox.checked) {
             sbxCheckbox.checked = true;
@@ -1094,6 +1959,7 @@ const SurgeryPage = {
         setVal('notes', sample.notes);
 
         this._initFirstCaseCheckbox(null, sample.date);
+        this._syncAllFormWidgetsFromInputs();
         this._checkAndShowInlineBanner(0);
     },
 
@@ -1129,6 +1995,7 @@ const SurgeryPage = {
         if (dateInput) {
             dateInput.onchange = () => {
                 this._initFirstCaseCheckbox(s, dateInput.value);
+                this._syncDayChips();
             };
         }
     },
@@ -1634,7 +2501,9 @@ const SurgeryPage = {
     save(e, id) {
         e.preventDefault();
         const openApprovalAfter = Boolean(this._openApprovalAfterSave);
+        const addNextAfter = Boolean(this._addNextAfterSave && !id);
         this._openApprovalAfterSave = false;
+        this._addNextAfterSave = false;
         const form = e.target;
         const submitBtn = form?.querySelector('button[type="submit"]');
         const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
@@ -1662,9 +2531,10 @@ const SurgeryPage = {
 
             const all = this.getAllSurgeries();
             const existingRec = id ? all.find(x => String(x.id) === String(id)) : null;
+            const isLinkedRobot = Boolean(existingRec && existingRec.robotCaseId);
 
             // approachType: respect linked Robot vs Laparoscopic approach
-            const linkedApproach = existingRec && existingRec.robotCaseId
+            const linkedApproach = isLinkedRobot
                 ? ((existingRec.robotSyncMeta && existingRec.robotSyncMeta.scheduledApproach) || existingRec.approachType || 'robot')
                 : '';
             const surgeryType = linkedApproach === 'robot' ? 'robot' : f.get('surgeryType');
@@ -1714,6 +2584,7 @@ const SurgeryPage = {
             // Check for duplicates if not already overridden in this submit cycle
             if (!this._pendingOverride) {
                 if (openApprovalAfter) this._openApprovalAfterSave = true;
+                if (addNextAfter) this._addNextAfterSave = true;
                 const matches = this._findDuplicateSurgeries(candidateData, id);
                 if (matches && matches.length > 0) {
                     restoreBtn();
@@ -1721,6 +2592,7 @@ const SurgeryPage = {
                     return;
                 }
                 this._openApprovalAfterSave = false;
+                this._addNextAfterSave = false;
             }
 
             const data = {
@@ -1784,6 +2656,7 @@ const SurgeryPage = {
                             if (inp.type === 'checkbox') inp.checked = Boolean(v);
                             else if (v != null) inp.value = String(v);
                         });
+                        this._syncAllFormWidgetsFromInputs();
                     }
                     if (matchedCase) {
                         this._showDuplicateConfirmDialog([{
@@ -1804,7 +2677,9 @@ const SurgeryPage = {
             // P1: Clear auto-save draft on successful save
             const formKey = form?.getAttribute('data-autosave-key') || `surgery-${id || 'new'}`;
             try { Modal.clearDraft(formKey); } catch (_) {}
-            try { Modal.close(); } catch (_) {}
+            if (!addNextAfter) {
+                try { Modal.close(); } catch (_) {}
+            }
 
             if (isSandboxCase) {
                 this._showSandboxOnSchedule = true;
@@ -1834,6 +2709,17 @@ const SurgeryPage = {
                     SurgeryApprovalPage.openCaseModal(savedId, { source: 'schedule' });
                 });
                 Toast.success(id ? 'Đã cập nhật & mở hồ sơ trên Tab Duyệt mổ' : '🧪 Đã lưu ca giả lập & chuyển sang Tab Duyệt mổ');
+            } else if (addNextAfter) {
+                App.renderCurrentPage();
+                Toast.success(isSandboxCase
+                    ? '🧪 Đã lưu ca giả lập — tiếp tục nhập ca tiếp theo'
+                    : '✅ Đã lưu ca mổ — tiếp tục nhập ca mới');
+                this.openForm(null, surgeryDate, { sandbox: isSandboxCase });
+                if (window.innerWidth > 768) {
+                    setTimeout(() => {
+                        document.querySelector('#modal input[name="patientName"]')?.focus();
+                    }, 90);
+                }
             } else {
                 App.renderCurrentPage();
                 if (isSandboxCase) {
@@ -2090,8 +2976,12 @@ const SurgeryPage = {
             approach.value = 'robot';
             approach.disabled = true;
         } else {
-            approach.disabled = false;
+            const form = sel.closest('form');
+            const isLocked = Boolean(form && form.querySelector('.rbt-dirty-banner'));
+            if (!isLocked) approach.disabled = false;
         }
+        this._syncSegmentedControls();
+        this._updateColumnHint();
     },
 
     afterRender() { },
