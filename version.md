@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611261952`
+> 📌 **Current Build Stamp:** `2611271155`
 
 ---
 
@@ -56,7 +56,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Bổ sung nguồn bệnh nhân (Cấp cứu/Phòng khám + chip BS cho nhập), tối ưu bảng nhập liệu Mobile/Laptop và cập nhật Tutorial 7 bước (`[FEAT-246]`, build `v2611261952`).
+- Bổ sung nguồn bệnh nhân (Cấp cứu/Phòng khám + chip BS cho nhập), tối ưu bảng nhập liệu Mobile/Laptop và cập nhật Tutorial 7 bước (`[FEAT-246]`, commit `2588f72`, build `v2611261952`).
 - Bổ sung nút Xóa ca chờ tư vấn (Zero-RM) và chuyển số điện thoại khi nhập ca tư vấn sang không bắt buộc (`[FEAT-245]`, commit `73f9404`, build `v2611261009`).
 - Sửa nhãn 'Việc của tôi' trên Tutorial/thanh việc cần làm & tự động điền đầy đủ dữ liệu khi tạo ca giả lập [TEST] Điều phối Robot (`[FEAT-244]`, commit `e5e91f3`, build `v2611251839`).
 - Xây dựng lại phân hệ Điều phối Lịch mổ Robot theo quy trình 5 bước, nhánh Nội soi 2 chiều, Xuất viện chờ giữ nguyên slot, thông báo Dual-WAL & Tutorial v2 (`[FEAT-243]`, commit `cd1862d`, build `v2611251807`).
@@ -90,6 +90,7 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 - Xác nhận hiệu lực `Quyết định 1073/QĐ-BVBD` (`12/06/2024` — chưa có văn bản thay thế) và bảng xếp cột bác sĩ chính Khoa PTĐTT năm 2026 (`KẾT QUẢ XẾP CỘT BÁC SĨ KHOA PT-ĐTT 2026.xlsx`, thời hạn 01 năm, mỗi năm Bệnh viện xếp cột lại); bổ sung kiểm soát vượt cột theo tính chất mổ: mổ chương trình & mổ yêu cầu không được phép vượt cột (`422 OVER_COLUMN_FORBIDDEN_FOR_ELECTIVE`), mổ bán khẩn do Ban Chủ nhiệm khoa cân nhắc và chỉ được phép vượt tối đa 01 cột khi không có nhân sự phù hợp (`422 OVER_COLUMN_EXCEEDS_MAX_ONE_STEP` nếu vượt từ 02 cột trở lên) (`[FEAT-200]`, build `v2610312158`).
 
 ### Fixed
+- Sửa lỗi mất chữ tiêu đề banner tab Điều phối Robot trên giao diện Android (360px) và iPhone Air (420px), gia cố đồng bộ tiêu đề thanh trên cùng di động và bổ sung test hồi quy đa màn hình (BUG-247) (`[BUG-247]`, build `v2611271155`).
 - Sửa lỗi tàng hình tiêu đề .page-title trên header Navy-Ocean Mobile ở cả 7 tab (gỡ -webkit-text-fill-color: transparent / background-clip: text ở chế độ <=768px, bảo toàn 100% Desktop) (BUG-240) (`[BUG-240]`, commit `65e42e0`, build `v2611212030`).
 - Điều chỉnh độ rộng cột bảng Điều phối Lịch mổ Robot & Phiếu in A5 chống rớt chữ cột PTV chính, mã ca, ngày mổ và dòng tên bệnh nhân (BUG-233) (`[BUG-233]`, commit `8f81b64`, build `v2611211315`).
 - Sửa sao lưu off-site bị kẹt từ 31/10: bước GitHub không còn chặn bước pull_ready (`[BUG-228]`, commit `ecbcac1`) (`[BUG-228]`).

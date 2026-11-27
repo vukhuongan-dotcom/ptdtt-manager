@@ -786,6 +786,10 @@ const App = {
         const mainContent = document.getElementById('main-content');
         if (!mainContent) return;
 
+        if (typeof this.updateMobileHeaderTitle === 'function') {
+            this.updateMobileHeaderTitle(this.currentPage);
+        }
+
         try {
             const html = pageModule.render();
             mainContent.innerHTML = html;

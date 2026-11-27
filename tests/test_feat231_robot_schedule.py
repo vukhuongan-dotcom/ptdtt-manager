@@ -986,11 +986,13 @@ class TestFeat231RobotSchedule(unittest.TestCase):
             finally:
                 ctx_sbx.close()
 
-            # 2) Mobile Android Chromium (360x800), iPhone WebKit (390x844) & narrow (320x568) Light & Dark form ergonomics
+            # 2) Mobile Android Chromium (360x800), iPhone WebKit (390x844), iPhone Air WebKit (420x912) & narrow (320x568) Light & Dark
             for browser_name, vw, vh, theme in (
                 ("chromium", 360, 800, "light"),
                 ("webkit", 390, 844, "light"),
                 ("webkit", 390, 844, "dark"),
+                ("webkit", 420, 912, "light"),
+                ("webkit", 420, 912, "dark"),
                 ("chromium", 320, 568, "dark"),
             ):
                 ctx_mob, mpage = _open_logged_page(browser_name, vw, vh, "vnatuan")
@@ -1000,22 +1002,38 @@ class TestFeat231RobotSchedule(unittest.TestCase):
                     metrics = mpage.evaluate(
                         """() => {
                             const hdr = document.querySelector('#robot-schedule-page .rbt-header');
+                            const titleEl = document.querySelector('#robot-schedule-page .rbt-header__title');
+                            const titleSpan = document.querySelector('#robot-schedule-page .rbt-header__title-text');
+                            const tools = document.querySelector('#robot-schedule-page .rbt-mobile-hdr-tools');
+                            const topTitle = document.getElementById('mobile-header-title');
                             const fab = document.getElementById('rbt-mobile-fab');
                             const tut = document.getElementById('rbt-mobile-tutorial-pill');
+                            const tRect = titleEl ? titleEl.getBoundingClientRect() : null;
+                            const toolsRect = tools ? tools.getBoundingClientRect() : null;
                             return {
                                 ov: document.documentElement.scrollWidth - window.innerWidth,
                                 hdrH: hdr ? hdr.getBoundingClientRect().height : 999,
                                 fabPos: fab ? getComputedStyle(fab).position : '',
                                 fabW: fab ? fab.getBoundingClientRect().width : 0,
-                                tutH: tut ? tut.getBoundingClientRect().height : 0
+                                tutH: tut ? tut.getBoundingClientRect().height : 0,
+                                titleText: titleSpan ? titleSpan.textContent.replace(/\\u00a0/g, ' ').replace(/\\s+/g, ' ').trim() : '',
+                                titleOverflow: titleEl ? getComputedStyle(titleEl).overflow : '',
+                                titleScrollOv: titleEl ? (titleEl.scrollWidth - titleEl.clientWidth) : 999,
+                                titleToolsGap: (tRect && toolsRect) ? (toolsRect.left - tRect.right) : -999,
+                                mobileTopTitle: topTitle ? topTitle.textContent.trim() : ''
                             };
                         }"""
                     )
                     self.assertLessEqual(metrics["ov"], 0, f"Mobile overflow {browser_name} {vw}x{vh}: {metrics}")
-                    self.assertLessEqual(metrics["hdrH"], 85, f"Mobile header too tall: {metrics}")
+                    self.assertLessEqual(metrics["hdrH"], 80, f"Mobile header too tall: {metrics}")
                     self.assertNotEqual(metrics["fabPos"], "fixed")
                     self.assertGreaterEqual(metrics["fabW"], 44)
                     self.assertGreaterEqual(metrics["tutH"], 44)
+                    self.assertIn("Điều phối Lịch mổ Robot", metrics["titleText"], f"Banner title text truncated/missing: {metrics}")
+                    self.assertNotEqual(metrics["titleOverflow"], "hidden", f"Banner title overflow must not clip text: {metrics}")
+                    self.assertLessEqual(metrics["titleScrollOv"], 1, f"Banner title clipped horizontally: {metrics}")
+                    self.assertGreaterEqual(metrics["titleToolsGap"], -1, f"Banner title overlaps action tools: {metrics}")
+                    self.assertEqual(metrics["mobileTopTitle"], "Điều phối Robot", f"Mobile top header title mismatch: {metrics}")
 
                     # Open Step 1 modal & inspect anti-zoom 16px, >=44px chips, collapsed optional group, sticky footer & kb-open
                     mpage.click("#rbt-mobile-fab")

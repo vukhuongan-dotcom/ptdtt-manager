@@ -74,7 +74,7 @@
     };
 
     const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
-    const CLIENT_BUILD = '2611261952';
+    const CLIENT_BUILD = '2611271155';
     const ADMISSION_SOURCE_LABELS = {
         cap_cuu: 'Cấp cứu',
         phong_kham: 'Phòng khám'
@@ -1353,7 +1353,7 @@
                 <header class="rbt-header">
                     <div class="rbt-header__title-wrap">
                         <h2 class="rbt-header__title">
-                            <span>🤖 Điều phối Lịch mổ Robot</span>
+                            <span class="rbt-header__title-text">🤖&nbsp;Điều phối Lịch mổ Robot</span>
                             <span class="rbt-role-pill">${esc(roleLabel)}</span>
                         </h2>
                         <p class="rbt-header__sub">Quy trình 5 bước: BS Khu vực gửi TV → ĐP xếp lịch TS. Hữu → Chốt Robot / Nội soi / Không mổ → BS phòng theo dõi &amp; XV chờ giữ slot.</p>
