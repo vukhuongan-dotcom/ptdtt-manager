@@ -481,7 +481,7 @@ class TestFeat248SurgeryFormUx(unittest.TestCase):
                     document.querySelector('.surg-approach-btn[data-approach="mo"]').click();
                     document.querySelector('#surg-doc-chips-mainSurgeon .surg-doc-chip[data-doc-id="2"]').click();
                     document.querySelector('#modal input[name="diagnosis"]').value = 'Trĩ hỗn hợp độ III';
-                    document.querySelector('#modal input[name="method"]').value = 'Phẫu thuật cắt trĩ Longo';
+                    document.querySelector('#modal input[name="method"]').value = 'Phẫu thuật cắt 1 búi trĩ';
 
                     document.getElementById('surg-submit-add-next-btn').click();
 
@@ -541,6 +541,151 @@ class TestFeat248SurgeryFormUx(unittest.TestCase):
             self.assertEqual(res["approachVal"], "robot")
             self.assertTrue(res["approachDisabled"])
             self.assertTrue(res["moBtnDisabled"])
+        finally:
+            ctx.close()
+
+    def test_09_feat249_no_case_count_and_keep_dvkt_classification(self):
+        """TC-249-01: Remove case count badges from diagnosis/method; keep PT classification badges on BVBD DVKT items."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            page.evaluate("() => { SurgeryPage.openForm(); document.querySelector('.surg-approach-btn[data-approach=\"noisoi\"]').click(); }")
+            diag_inp = page.locator('#modal input[name="diagnosis"]')
+            diag_inp.click()
+            diag_inp.fill("")
+            page.wait_for_selector("#surg-ac-diagnosis .surg-ac-item", state="visible")
+            diag_metas = page.evaluate("() => Array.from(document.querySelectorAll('#surg-ac-diagnosis .surg-ac-meta')).map(e => e.textContent.trim())")
+            self.assertEqual(diag_metas, [], f"Diagnosis suggestions must NOT display case counts: {diag_metas}")
+
+            method_inp = page.locator('#modal input[name="method"]')
+            method_inp.click()
+            method_inp.fill("cat dai trang")
+            page.wait_for_selector("#surg-ac-method .surg-ac-item", state="visible")
+            method_metas = page.evaluate("() => Array.from(document.querySelectorAll('#surg-ac-method .surg-ac-meta')).map(e => e.textContent.trim())")
+            self.assertTrue(any(m.startswith("PT-") for m in method_metas), f"DVKT items must preserve PT-* badge: {method_metas}")
+            self.assertFalse(any(" ca" in m or m == "Lịch sử" for m in method_metas), f"Method suggestions must NOT show case counts: {method_metas}")
+        finally:
+            ctx.close()
+
+    def test_10_feat249_custom_method_pick_equivalent_dvkt_and_save(self):
+        """TC-249-02: Saving custom method opens #surgery-dvkt-dialog with <=5 matches; picking one replaces method and saves."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            page.evaluate(
+                """() => {
+                    const d = SurgeryPage.dateStr(SurgeryPage.getWeekDates()[1]);
+                    SurgeryPage.openForm(null, d);
+                    document.querySelector('#modal input[name="patientName"]').value = 'Nguyễn Văn DVKT Chọn';
+                    document.querySelector('#modal input[name="birthYear"]').value = '1965';
+                    document.querySelector('.surg-approach-btn[data-approach="noisoi"]').click();
+                    document.querySelector('#modal input[name="method"]').value = 'Cắt đại tràng phải nội soi';
+                    document.getElementById('surg-submit-primary-btn').click();
+                }"""
+            )
+            page.wait_for_selector("#surgery-dvkt-dialog", state="visible")
+            dlg_info = page.evaluate(
+                """() => ({
+                    itemCount: document.querySelectorAll('#surg-dvkt-list .surg-dvkt-item').length,
+                    firstText: document.querySelector('#surg-dvkt-list .surg-dvkt-item-name')?.textContent?.trim() || '',
+                    hasClassBadge: Boolean(document.querySelector('#surg-dvkt-list .surg-dvkt-class-badge')),
+                })"""
+            )
+            self.assertGreaterEqual(dlg_info["itemCount"], 1)
+            self.assertLessEqual(dlg_info["itemCount"], 5)
+            self.assertTrue(dlg_info["hasClassBadge"])
+
+            page.locator("#surg-dvkt-list .surg-dvkt-item").first.click()
+            page.wait_for_selector("#surgery-dvkt-dialog", state="detached")
+
+            saved = page.evaluate(
+                """() => {
+                    const rec = Store.getAll('surgeries').find(x => (x.patientName || '').includes('Dvkt Chọn') || (x.patientName || '').includes('DVKT Chọn'));
+                    return {
+                        modalClosed: !document.getElementById('modal-overlay').classList.contains('active'),
+                        savedMethod: rec ? rec.method : null,
+                    };
+                }"""
+            )
+            self.assertTrue(saved["modalClosed"])
+            self.assertEqual(saved["savedMethod"], dlg_info["firstText"])
+        finally:
+            ctx.close()
+
+    def test_11_feat249_custom_method_keep_custom_and_save(self):
+        """TC-249-03: Clicking 'Vẫn lưu phương án tự nhập' saves verbatim custom method without altering text."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            page.evaluate(
+                """() => {
+                    const d = SurgeryPage.dateStr(SurgeryPage.getWeekDates()[2]);
+                    SurgeryPage.openForm(null, d);
+                    document.querySelector('#modal input[name="patientName"]').value = 'Trần Văn Tự Nhập';
+                    document.querySelector('#modal input[name="birthYear"]').value = '1970';
+                    document.querySelector('.surg-approach-btn[data-approach="mo"]').click();
+                    document.querySelector('#modal input[name="method"]').value = 'Kỹ thuật tự nhập đặc biệt X';
+                    document.getElementById('surg-submit-primary-btn').click();
+                }"""
+            )
+            page.wait_for_selector("#surgery-dvkt-dialog", state="visible")
+            page.locator("#surg-dvkt-keep-custom-btn").click()
+            page.wait_for_selector("#surgery-dvkt-dialog", state="detached")
+
+            saved = page.evaluate(
+                """() => {
+                    const rec = Store.getAll('surgeries').find(x => (x.patientName || '').includes('Tự Nhập'));
+                    return {
+                        modalClosed: !document.getElementById('modal-overlay').classList.contains('active'),
+                        savedMethod: rec ? rec.method : null,
+                    };
+                }"""
+            )
+            self.assertTrue(saved["modalClosed"])
+            self.assertEqual(saved["savedMethod"], "Kỹ thuật tự nhập đặc biệt X")
+        finally:
+            ctx.close()
+
+    def test_12_feat249_skip_dvkt_dialog_for_nsth_empty_and_exact(self):
+        """TC-249-04: NSTH approach, empty method, and exact BVBD DVKT method save directly without #surgery-dvkt-dialog."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            res = page.evaluate(
+                """() => {
+                    const d = SurgeryPage.dateStr(SurgeryPage.getWeekDates()[3]);
+                    // Case A: NSTH with custom method
+                    SurgeryPage.openForm(null, d);
+                    document.querySelector('#modal input[name="patientName"]').value = 'Ca NSTH Direct';
+                    document.querySelector('.surg-approach-btn[data-approach="nsth"]').click();
+                    document.querySelector('#modal input[name="method"]').value = 'Cắt polyp đại tràng qua nội soi tiêu hoá';
+                    document.getElementById('surg-submit-primary-btn').click();
+                    const nsthOpenedDlg = Boolean(document.getElementById('surgery-dvkt-dialog'));
+                    const nsthSaved = Store.getAll('surgeries').some(x => (x.patientName || '').includes('Nsth Direct') || (x.patientName || '').includes('NSTH Direct'));
+
+                    // Case B: Empty method
+                    SurgeryPage.openForm(null, d);
+                    document.querySelector('#modal input[name="patientName"]').value = 'Ca Empty Direct';
+                    document.querySelector('.surg-approach-btn[data-approach="mo"]').click();
+                    document.querySelector('#modal input[name="method"]').value = '';
+                    document.getElementById('surg-submit-primary-btn').click();
+                    const emptyOpenedDlg = Boolean(document.getElementById('surgery-dvkt-dialog'));
+                    const emptySaved = Store.getAll('surgeries').some(x => (x.patientName || '').includes('Empty Direct'));
+
+                    // Case C: Exact DVKT
+                    SurgeryPage.openForm(null, d);
+                    document.querySelector('#modal input[name="patientName"]').value = 'Ca Exact Direct';
+                    document.querySelector('.surg-approach-btn[data-approach="noisoi"]').click();
+                    document.querySelector('#modal input[name="method"]').value = 'Cắt thực quản nội soi ngực và bụng';
+                    document.getElementById('surg-submit-primary-btn').click();
+                    const exactOpenedDlg = Boolean(document.getElementById('surgery-dvkt-dialog'));
+                    const exactSaved = Store.getAll('surgeries').some(x => (x.patientName || '').includes('Exact Direct'));
+
+                    return { nsthOpenedDlg, nsthSaved, emptyOpenedDlg, emptySaved, exactOpenedDlg, exactSaved };
+                }"""
+            )
+            self.assertFalse(res["nsthOpenedDlg"])
+            self.assertTrue(res["nsthSaved"])
+            self.assertFalse(res["emptyOpenedDlg"])
+            self.assertTrue(res["emptySaved"])
+            self.assertFalse(res["exactOpenedDlg"])
+            self.assertTrue(res["exactSaved"])
         finally:
             ctx.close()
 

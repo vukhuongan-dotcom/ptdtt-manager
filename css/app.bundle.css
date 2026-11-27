@@ -10995,6 +10995,234 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     color: #93C5FD !important;
 }
 
+/* ===== FEAT-249: DVKT EQUIVALENCE CONFIRMATION DIALOG ===== */
+.surg-dvkt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.surg-dvkt-dialog {
+    width: min(560px, 100%);
+    max-height: min(86vh, 680px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #0f172a);
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.surg-dvkt-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.surg-dvkt-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--primary-dark, #1D2357);
+}
+
+.surg-dvkt-desc {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--text-secondary, #475569);
+}
+
+.surg-dvkt-current {
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: rgba(217, 119, 6, 0.10);
+    border: 1px solid rgba(217, 119, 6, 0.32);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: #92400E;
+    word-break: break-word;
+}
+
+.surg-dvkt-search {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.16));
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.86rem;
+    box-sizing: border-box;
+}
+
+.surg-dvkt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 280px;
+    padding-right: 2px;
+}
+
+.surg-dvkt-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-default, rgba(15, 23, 42, 0.14));
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.surg-dvkt-item:hover {
+    border-color: #1E3A8A;
+    background: rgba(30, 58, 138, 0.08);
+}
+
+.surg-dvkt-item-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.surg-dvkt-item-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.surg-dvkt-class-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(29, 35, 87, 0.12);
+    color: #1D2357;
+    white-space: nowrap;
+}
+
+.surg-dvkt-app-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--bg-tertiary, #e2e8f0);
+    color: var(--text-secondary, #475569);
+    white-space: nowrap;
+}
+
+.surg-dvkt-empty {
+    padding: 12px;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-muted, #64748b);
+}
+
+.surg-dvkt-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-default, rgba(15, 23, 42, 0.1));
+}
+
+@media (max-width: 768px) {
+    .surg-dvkt-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .surg-dvkt-dialog {
+        width: 100%;
+        max-height: 88vh;
+        border-radius: 16px 16px 0 0;
+        padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .surg-dvkt-search {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    .surg-dvkt-item,
+    .surg-dvkt-footer .btn {
+        min-height: 44px;
+    }
+
+    .surg-dvkt-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+}
+
+[data-theme="dark"] .surg-dvkt-dialog {
+    background: #0C1022;
+    color: #F1F5F9;
+    border-color: rgba(178, 193, 253, 0.22);
+}
+
+[data-theme="dark"] .surg-dvkt-title {
+    color: #F8FAFC;
+}
+
+[data-theme="dark"] .surg-dvkt-desc {
+    color: #CBD5E1;
+}
+
+[data-theme="dark"] .surg-dvkt-current {
+    background: rgba(251, 191, 36, 0.14);
+    border-color: rgba(251, 191, 36, 0.35);
+    color: #FDE68A;
+}
+
+[data-theme="dark"] .surg-dvkt-search,
+[data-theme="dark"] .surg-dvkt-item {
+    background: #131A35;
+    border-color: rgba(178, 193, 253, 0.18);
+    color: #E2E8F0;
+}
+
+[data-theme="dark"] .surg-dvkt-item:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #60A5FA;
+}
+
+[data-theme="dark"] .surg-dvkt-class-badge {
+    background: rgba(147, 197, 253, 0.18);
+    color: #93C5FD;
+}
+
+[data-theme="dark"] .surg-dvkt-app-tag {
+    background: #161E36;
+    color: #CBD5E1;
+}
+
+
 
 
 /* =====================================================================

@@ -192,6 +192,10 @@ const SurgeryPage = {
     _showSandboxOnSchedule: false,
     _openApprovalAfterSave: false,
     _addNextAfterSave: false,
+    _pendingDvktConfirmed: false,
+    _dvktDialogMatches: [],
+    _dvktDialogContext: null,
+    _dvktEscHandler: null,
     _sampleSandboxIdx: 0,
     _allExpanded: false,
     _expandedCardIds: new Set(),
@@ -1199,14 +1203,21 @@ const SurgeryPage = {
         });
         return entries.slice(0, 8).map(e => ({
             value: e.value,
-            meta: e.count > 1 ? `${e.count} ca` : 'Lịch sử',
+            meta: '',
             procClass: ''
         }));
+    },
+
+    _mapApproachToCatalogGroup(approachType) {
+        if (approachType === 'noisoi' || approachType === 'robot') return 'noisoi';
+        if (approachType === 'mo') return 'mo';
+        return '';
     },
 
     _getMethodSuggestions(query, activeApproach) {
         const qNorm = this._normSearch(query);
         const tokens = qNorm ? qNorm.split(' ').filter(Boolean) : [];
+        const targetGroup = this._mapApproachToCatalogGroup(activeApproach);
         const seen = new Set();
         const items = [];
 
@@ -1220,10 +1231,10 @@ const SurgeryPage = {
             return tokens.every(tk => hay.includes(tk));
         };
 
-        // 1. Prioritize BVBD catalog matching activeApproach
+        // 1. Prioritize BVBD catalog matching activeApproach, preserving PT classification badge
         const sortedCatalog = [...catalogProcs].sort((a, b) => {
-            const aMatch = activeApproach && a.approachGroup === activeApproach ? 0 : 1;
-            const bMatch = activeApproach && b.approachGroup === activeApproach ? 0 : 1;
+            const aMatch = targetGroup && a.approachGroup === targetGroup ? 0 : 1;
+            const bMatch = targetGroup && b.approachGroup === targetGroup ? 0 : 1;
             if (aMatch !== bMatch) return aMatch - bMatch;
             return (a.rowIndex || 999) - (b.rowIndex || 999);
         });
@@ -1235,17 +1246,18 @@ const SurgeryPage = {
             const aliasText = Array.isArray(p.aliases) ? p.aliases.join(' ') : '';
             if (!matchTokens(`${name} ${p.sheetCode || ''} ${aliasText}`)) continue;
             seen.add(key);
+            const cls = (p.procedureClass && p.procedureClass !== 'unclassified') ? p.procedureClass : '';
             items.push({
                 value: name,
-                meta: p.procedureClass || 'BVBD',
-                procClass: p.procedureClass || '',
+                meta: cls,
+                procClass: cls,
                 approachGroup: p.approachGroup || '',
-                priorityBoost: (activeApproach && p.approachGroup === activeApproach) ? 2 : 1
+                priorityBoost: (targetGroup && p.approachGroup === targetGroup) ? 2 : 1
             });
             if (items.length >= 10) break;
         }
 
-        // 2. Complement with historical method strings from surgeries[]
+        // 2. Complement with historical method strings from surgeries[] without case count
         if (items.length < 10) {
             const freq = new Map();
             const all = this.getAllSurgeries();
@@ -1265,7 +1277,7 @@ const SurgeryPage = {
             for (const h of hist) {
                 items.push({
                     value: h.value,
-                    meta: h.count > 1 ? `${h.count} ca` : 'Lịch sử',
+                    meta: '',
                     procClass: '',
                     priorityBoost: 0
                 });
@@ -1273,6 +1285,194 @@ const SurgeryPage = {
             }
         }
         return items.slice(0, 10);
+    },
+
+    _findExactDvktProcedure(methodStr) {
+        const procs = this._procedureCatalogCache?.procedures;
+        if (!Array.isArray(procs) || !procs.length) return null;
+        const norm = this._normSearch(methodStr);
+        if (!norm) return null;
+        return procs.find(p => this._normSearch(p.officialName) === norm) || null;
+    },
+
+    _findSimilarDvktProcedures(query, approachType, limit = 5, strictSearch = false) {
+        const procs = this._procedureCatalogCache?.procedures;
+        if (!Array.isArray(procs) || !procs.length) return [];
+        const qNorm = this._normSearch(query);
+        const stopWords = new Set(['phau', 'thuat', 'pt', 'ptns', 'va', 'voi', 'bang', 'qua', 'co', 'khong', 'tu', 'cho', 'cua', 'cac', 'mot', 'nhom', 'phuong', 'phap']);
+        const allQTokens = qNorm ? qNorm.split(' ').filter(Boolean) : [];
+        const contentQTokens = allQTokens.filter(t => t.length >= 2 && !stopWords.has(t));
+        const qTokens = contentQTokens.length ? contentQTokens : allQTokens;
+        const targetGroup = this._mapApproachToCatalogGroup(approachType);
+
+        const scored = [];
+        for (const p of procs) {
+            const name = String(p.officialName || '').trim();
+            if (!name) continue;
+            const pn = this._normSearch(name);
+            const aliasText = Array.isArray(p.aliases) ? p.aliases.join(' ') : '';
+            const hay = aliasText ? `${pn} ${this._normSearch(aliasText)}` : pn;
+
+            if (strictSearch && qTokens.length && !qTokens.every(tk => hay.includes(tk))) {
+                continue;
+            }
+
+            let score = 0;
+            let hits = 0;
+            if (targetGroup && p.approachGroup === targetGroup) score += 12;
+            if (qNorm && (pn.includes(qNorm) || (pn.length >= 8 && qNorm.includes(pn)))) {
+                score += 35;
+            }
+            if (qTokens.length) {
+                for (const tk of qTokens) {
+                    if (pn.includes(tk)) hits += 1;
+                }
+                if (hits > 0) {
+                    const pTokens = pn.split(' ').filter(t => t.length >= 2 && !stopWords.has(t));
+                    score += (hits / qTokens.length) * 40 + (hits / Math.max(1, pTokens.length)) * 12;
+                }
+            }
+            scored.push({
+                proc: p,
+                hits,
+                score,
+                groupMatch: targetGroup && p.approachGroup === targetGroup ? 1 : 0
+            });
+        }
+
+        scored.sort((a, b) => {
+            if (b.hits !== a.hits && !strictSearch) return b.hits - a.hits;
+            if (Math.abs(b.score - a.score) > 0.01) return b.score - a.score;
+            if (b.groupMatch !== a.groupMatch) return b.groupMatch - a.groupMatch;
+            return (a.proc.rowIndex || 999) - (b.proc.rowIndex || 999);
+        });
+
+        return scored.slice(0, limit).map(x => x.proc);
+    },
+
+    _renderDvktDialogList(procs) {
+        this._dvktDialogMatches = procs || [];
+        const listEl = document.getElementById('surg-dvkt-list');
+        if (!listEl) return;
+        if (!this._dvktDialogMatches.length) {
+            listEl.innerHTML = '<div class="surg-dvkt-empty">Không tìm thấy DVKT BVBD khớp từ khóa — bạn có thể xoá bớt từ khóa hoặc bấm &ldquo;Vẫn lưu phương án tự nhập&rdquo;.</div>';
+            return;
+        }
+        listEl.innerHTML = this._dvktDialogMatches.map((p, idx) => {
+            const cls = (p.procedureClass && p.procedureClass !== 'unclassified') ? p.procedureClass : '';
+            const appLabel = p.approachGroup === 'noisoi' ? 'Nội soi' : (p.approachGroup === 'mo' ? 'Mổ mở' : '');
+            return `
+                <button type="button" class="surg-dvkt-item" data-dvkt-idx="${idx}" onclick="SurgeryPage._applyDvktAndSave(${idx})">
+                    <span class="surg-dvkt-item-name">${Utils.escapeHtml(p.officialName || '')}</span>
+                    <span class="surg-dvkt-item-badges">
+                        ${cls ? `<span class="surg-dvkt-class-badge">${Utils.escapeHtml(cls)}</span>` : ''}
+                        ${appLabel ? `<span class="surg-dvkt-app-tag">${Utils.escapeHtml(appLabel)}</span>` : ''}
+                    </span>
+                </button>
+            `;
+        }).join('');
+    },
+
+    _showDvktConfirmDialog(rawMethod, approachType, currentId) {
+        this._closeDvktConfirmDialog(false);
+        this._dvktDialogContext = { rawMethod, approachType, currentId: currentId || 0 };
+        const initialMatches = this._findSimilarDvktProcedures(rawMethod, approachType, 5, false);
+
+        const overlay = document.createElement('div');
+        overlay.id = 'surgery-dvkt-dialog';
+        overlay.className = 'surg-dvkt-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'surg-dvkt-title');
+        overlay.innerHTML = `
+            <div class="surg-dvkt-dialog">
+                <div class="surg-dvkt-head">
+                    <h4 id="surg-dvkt-title" class="surg-dvkt-title">📋 Đối chiếu Dịch vụ kỹ thuật (DVKT) BVBD</h4>
+                    <p class="surg-dvkt-desc">Chọn 1 DVKT tương đương trong danh mục BVBD để BCN khoa đánh giá đúng phân cột phẫu thuật, hoặc giữ nguyên phương án tự nhập.</p>
+                </div>
+                <div class="surg-dvkt-current">
+                    Phương án tự nhập: <strong>${Utils.escapeHtml(rawMethod)}</strong>
+                </div>
+                <input type="search" id="surg-dvkt-search" class="surg-dvkt-search" placeholder="Tìm nhanh trong 309 DVKT BVBD..." aria-label="Tìm trong 309 dịch vụ kỹ thuật BVBD" oninput="SurgeryPage._filterDvktDialog(this.value)">
+                <div id="surg-dvkt-list" class="surg-dvkt-list" role="listbox"></div>
+                <div class="surg-dvkt-footer">
+                    <button type="button" class="btn btn-secondary" onclick="SurgeryPage._closeDvktConfirmDialog(true)">Quay lại sửa</button>
+                    <button type="button" id="surg-dvkt-keep-custom-btn" class="btn btn-primary" onclick="SurgeryPage._keepCustomMethodAndSave()">Vẫn lưu phương án tự nhập</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        this._renderDvktDialogList(initialMatches);
+
+        if (this._dvktEscHandler) {
+            document.removeEventListener('keydown', this._dvktEscHandler, true);
+        }
+        this._dvktEscHandler = (ev) => {
+            if (ev.key === 'Escape' && document.getElementById('surgery-dvkt-dialog')) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this._closeDvktConfirmDialog(true);
+            }
+        };
+        document.addEventListener('keydown', this._dvktEscHandler, true);
+    },
+
+    _filterDvktDialog(searchStr) {
+        const ctx = this._dvktDialogContext || {};
+        const q = String(searchStr || '').trim();
+        const matches = q
+            ? this._findSimilarDvktProcedures(q, ctx.approachType || '', 8, true)
+            : this._findSimilarDvktProcedures(ctx.rawMethod || '', ctx.approachType || '', 5, false);
+        this._renderDvktDialogList(matches);
+    },
+
+    _closeDvktConfirmDialog(refocusMethod = false) {
+        const dialog = document.getElementById('surgery-dvkt-dialog');
+        if (dialog) dialog.remove();
+        if (this._dvktEscHandler) {
+            document.removeEventListener('keydown', this._dvktEscHandler, true);
+            this._dvktEscHandler = null;
+        }
+        if (refocusMethod) {
+            this._openApprovalAfterSave = false;
+            this._addNextAfterSave = false;
+            setTimeout(() => {
+                document.querySelector('#modal form[data-autosave-key^="surgery-"] input[name="method"]')?.focus();
+            }, 20);
+        }
+    },
+
+    _applyDvktAndSave(idx) {
+        const proc = this._dvktDialogMatches && this._dvktDialogMatches[idx];
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        if (proc && form) {
+            const methodInp = form.querySelector('input[name="method"]');
+            if (methodInp) {
+                methodInp.value = proc.officialName || '';
+                if (proc.procedureClass && proc.procedureClass !== 'unclassified') {
+                    methodInp.dataset.matchedClass = proc.procedureClass;
+                } else {
+                    delete methodInp.dataset.matchedClass;
+                }
+                methodInp.dispatchEvent(new Event('input', { bubbles: true }));
+                methodInp.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            this._updateColumnHint();
+        }
+        this._pendingDvktConfirmed = true;
+        this._closeDvktConfirmDialog(false);
+        if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    },
+
+    _keepCustomMethodAndSave() {
+        const form = document.querySelector('#modal form[data-autosave-key^="surgery-"]');
+        this._pendingDvktConfirmed = true;
+        this._closeDvktConfirmDialog(false);
+        if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
     },
 
     _onAcInput(field, inputEl) {
@@ -1513,6 +1713,7 @@ const SurgeryPage = {
     openForm(id, date, opts = {}) {
         this._openApprovalAfterSave = false;
         this._addNextAfterSave = false;
+        this._pendingDvktConfirmed = false;
         const all = this.getAllSurgeries();
         const s = id ? all.find(x => String(x.id) === String(id)) : null;
         const targetWeekKey = s?.date ? s.date.substring(0, 10) : this.getWeekKey();
@@ -2456,6 +2657,7 @@ const SurgeryPage = {
             reasonChip: defaultChipMap[resolution] || 'planned_two_stage'
         };
 
+        this._pendingDvktConfirmed = true;
         this._closeDuplicateConfirmDialog();
 
         // Submit form again with override enabled
@@ -2542,6 +2744,22 @@ const SurgeryPage = {
             if (!approachType) {
                 Toast.warning('Vui lòng chọn đường mổ: Mổ mở / Nội soi / Robot');
                 restoreBtn();
+                return;
+            }
+
+            const rawMethod = String(f.get('method') || '').trim();
+            const hasCatalog = Array.isArray(this._procedureCatalogCache?.procedures) && this._procedureCatalogCache.procedures.length > 0;
+            const needDvktCheck = !this._pendingDvktConfirmed
+                && approachType !== 'nsth'
+                && Boolean(rawMethod)
+                && hasCatalog
+                && !this._findExactDvktProcedure(rawMethod);
+            this._pendingDvktConfirmed = false;
+            if (needDvktCheck) {
+                if (openApprovalAfter) this._openApprovalAfterSave = true;
+                if (addNextAfter) this._addNextAfterSave = true;
+                restoreBtn();
+                this._showDvktConfirmDialog(rawMethod, approachType, id);
                 return;
             }
 

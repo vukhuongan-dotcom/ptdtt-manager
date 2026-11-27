@@ -940,10 +940,14 @@ const Modal = {
         if (typeof RobotSchedulePage !== 'undefined' && typeof RobotSchedulePage._onModalClosed === 'function') {
             try { RobotSchedulePage._onModalClosed(); } catch (_) {}
         }
-        // Remove any open duplicate confirmation sub-dialog
+        // Remove any open duplicate or DVKT confirmation sub-dialog
         const dupDialog = document.getElementById('surgery-duplicate-dialog');
         if (dupDialog) {
             try { dupDialog.remove(); } catch (_) {}
+        }
+        const dvktDialog = document.getElementById('surgery-dvkt-dialog');
+        if (dvktDialog) {
+            try { dvktDialog.remove(); } catch (_) {}
         }
         // Stop auto-save timer (keep draft — user may reopen)
         if (this._currentFormKey) {
