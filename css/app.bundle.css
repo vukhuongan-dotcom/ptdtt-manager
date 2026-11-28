@@ -16137,6 +16137,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border: 1px solid var(--border, #E2E8F0);
     background: var(--bg-card, #FFFFFF);
     min-width: 0;
+    overflow: visible;
 }
 
 .rbt-section-card__title {
@@ -16427,6 +16428,7 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     border-radius: 12px;
     border: 1px solid var(--border, #E2E8F0);
     background: var(--bg-card, #FFFFFF);
+    overflow: visible;
 }
 
 .rbt-optional-summary {

@@ -74,7 +74,7 @@
     };
 
     const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
-    const CLIENT_BUILD = '2611280742';
+    const CLIENT_BUILD = '2611280756';
     const ADMISSION_SOURCE_LABELS = {
         cap_cuu: 'Cấp cứu',
         phong_kham: 'Phòng khám'
@@ -2496,6 +2496,13 @@
 
             this._markModalOpen(modalMode, null);
             openRobotModal(title, html, footer, { size: 'wide', mode: modalMode });
+            if (typeof SurgeryPage !== 'undefined' && typeof SurgeryPage.bindClinicalAutocompletePair === 'function') {
+                SurgeryPage.bindClinicalAutocompletePair({
+                    diagInputId: 'rbt-inp-diag',
+                    methodInputId: 'rbt-inp-proc',
+                    getApproach: () => 'robot'
+                });
+            }
             if (useSandbox) {
                 this._fillSandboxForm();
             } else if (isLaptop) {
@@ -2780,6 +2787,13 @@
 
             this._markModalOpen('decide_consult', code);
             openRobotModal(`🩺 Bước 3 · Kết quả tư vấn TS. Hữu (${code})`, html, footer, { size: 'wide', mode: 'decide_consult' });
+            if (typeof SurgeryPage !== 'undefined' && typeof SurgeryPage.bindClinicalAutocompletePair === 'function') {
+                SurgeryPage.bindClinicalAutocompletePair({
+                    diagStaticText: rc.diagnosis || '',
+                    methodInputId: 'rbt-inp-dec-proc',
+                    getApproach: () => (document.getElementById('rbt-inp-decision')?.value === 'noisoi' ? 'noisoi' : 'robot')
+                });
+            }
         },
 
         async _submitDecideConsult(code, btnEl) {
@@ -2944,6 +2958,13 @@
 
             this._markModalOpen('edit_info', code);
             openRobotModal(`✏️ Sửa thông tin hồ sơ (${code})`, html, footer, { size: 'wide', mode: 'edit_info' });
+            if (typeof SurgeryPage !== 'undefined' && typeof SurgeryPage.bindClinicalAutocompletePair === 'function') {
+                SurgeryPage.bindClinicalAutocompletePair({
+                    diagInputId: 'rbt-ei-diag',
+                    methodInputId: 'rbt-ei-proc',
+                    getApproach: () => (rc.status === 'da_xep_noisoi' ? 'noisoi' : 'robot')
+                });
+            }
             if (admState.source === 'phong_kham') {
                 this._refreshAdmittingDoctorPicker('rbt-ei');
             }

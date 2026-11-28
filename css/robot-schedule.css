@@ -2025,6 +2025,7 @@
     border: 1px solid var(--border, #E2E8F0);
     background: var(--bg-card, #FFFFFF);
     min-width: 0;
+    overflow: visible;
 }
 
 .rbt-section-card__title {
@@ -2315,6 +2316,7 @@
     border-radius: 12px;
     border: 1px solid var(--border, #E2E8F0);
     background: var(--bg-card, #FFFFFF);
+    overflow: visible;
 }
 
 .rbt-optional-summary {

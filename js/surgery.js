@@ -868,6 +868,8 @@ const SurgeryPage = {
                         if (activeEl && activeEl.name === 'method') {
                             this._onAcInput('method', activeEl);
                         }
+                    } else if (document.activeElement && typeof document.activeElement._surgAcRefresh === 'function') {
+                        document.activeElement._surgAcRefresh();
                     }
                 }
                 this._procedureCatalogPromise = null;
@@ -1801,6 +1803,153 @@ const SurgeryPage = {
             e.stopPropagation();
             this._hideAutocomplete(field);
         }
+    },
+
+    bindClinicalAutocompletePair(opts = {}) {
+        const {
+            diagInputId = '',
+            methodInputId = '',
+            diagStaticText = '',
+            getApproach = null
+        } = opts || {};
+
+        this._ensureProcedureCatalog();
+
+        const attachField = (inputEl, role) => {
+            if (!inputEl || inputEl.dataset.surgAcBound === '1') return;
+            inputEl.dataset.surgAcBound = '1';
+            inputEl.dataset.surgAcRole = role;
+            inputEl.setAttribute('autocomplete', 'off');
+
+            let wrap = inputEl.parentElement;
+            if (!wrap || !wrap.classList.contains('surg-ac-wrap')) {
+                wrap = document.createElement('div');
+                wrap.className = 'surg-ac-wrap';
+                inputEl.parentNode.insertBefore(wrap, inputEl);
+                wrap.appendChild(inputEl);
+            }
+
+            let listEl = wrap.querySelector('.surg-ac-list');
+            if (!listEl) {
+                listEl = document.createElement('div');
+                listEl.className = 'surg-ac-list';
+                listEl.id = `${inputEl.id || ('surg-ac-' + role)}-ac-list`;
+                listEl.setAttribute('role', 'listbox');
+                listEl.hidden = true;
+                wrap.appendChild(listEl);
+            }
+
+            const state = { items: [], activeIdx: -1 };
+
+            const hideList = () => {
+                listEl.hidden = true;
+                state.activeIdx = -1;
+            };
+
+            const highlightAt = (idx) => {
+                listEl.querySelectorAll('.surg-ac-item').forEach((el, i) => {
+                    const on = i === idx;
+                    el.classList.toggle('is-active', on);
+                    el.setAttribute('aria-selected', on ? 'true' : 'false');
+                    if (on && typeof el.scrollIntoView === 'function') {
+                        el.scrollIntoView({ block: 'nearest' });
+                    }
+                });
+            };
+
+            const pickAt = (idx) => {
+                const item = state.items[idx];
+                if (!item) return;
+                inputEl.value = item.value;
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                hideList();
+            };
+
+            const refresh = () => {
+                const query = String(inputEl.value || '');
+                let items = [];
+                let headerText = '';
+
+                if (role === 'diagnosis') {
+                    items = this._getDiagnosisSuggestions(query);
+                } else {
+                    const approach = (typeof getApproach === 'function' ? getApproach() : '') || 'robot';
+                    const diagText = diagInputId
+                        ? String(document.getElementById(diagInputId)?.value || '').trim()
+                        : String(diagStaticText || '').trim();
+                    const hasCatalog = Array.isArray(this._procedureCatalogCache?.procedures) && this._procedureCatalogCache.procedures.length > 0;
+                    if (query.trim() === '' && diagText !== '' && hasCatalog) {
+                        items = this._recommendDvktFromDiagnosis(diagText, approach, 5);
+                        if (items.length) headerText = '💡 5 DVKT BVBD phù hợp theo chẩn đoán';
+                    } else {
+                        items = this._getMethodSuggestions(query, approach);
+                    }
+                }
+
+                state.items = items || [];
+                state.activeIdx = state.items.length ? 0 : -1;
+                if (!state.items.length) {
+                    listEl.hidden = true;
+                    listEl.innerHTML = '';
+                    return;
+                }
+                const headerHtml = headerText
+                    ? `<div class="surg-ac-header">${Utils.escapeHtml(headerText)}</div>`
+                    : '';
+                listEl.innerHTML = headerHtml + state.items.map((item, idx) => `
+                    <button type="button" class="surg-ac-item ${idx === 0 ? 'is-active' : ''}" role="option" aria-selected="${idx === 0 ? 'true' : 'false'}" data-ac-idx="${idx}">
+                        <span class="surg-ac-text">${Utils.escapeHtml(item.value)}</span>
+                        ${item.meta ? `<span class="surg-ac-meta ${item.procClass ? 'is-catalog' : ''}">${Utils.escapeHtml(item.meta)}</span>` : ''}
+                    </button>
+                `).join('');
+                listEl.querySelectorAll('.surg-ac-item').forEach(btn => {
+                    btn.addEventListener('mousedown', (ev) => {
+                        ev.preventDefault();
+                        pickAt(parseInt(btn.dataset.acIdx, 10));
+                    });
+                });
+                listEl.hidden = false;
+            };
+
+            inputEl._surgAcRefresh = refresh;
+            inputEl.addEventListener('focus', refresh);
+            inputEl.addEventListener('input', refresh);
+            inputEl.addEventListener('click', () => {
+                if (listEl.hidden) refresh();
+            });
+            inputEl.addEventListener('blur', () => {
+                setTimeout(hideList, 140);
+            });
+            inputEl.addEventListener('keydown', (ev) => {
+                if (listEl.hidden) return;
+                const count = state.items.length;
+                if (ev.key === 'ArrowDown') {
+                    ev.preventDefault();
+                    if (!count) return;
+                    state.activeIdx = (state.activeIdx + 1) % count;
+                    highlightAt(state.activeIdx);
+                } else if (ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    if (!count) return;
+                    state.activeIdx = (state.activeIdx - 1 + count) % count;
+                    highlightAt(state.activeIdx);
+                } else if (ev.key === 'Enter') {
+                    if (count > 0) {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        pickAt(state.activeIdx >= 0 ? state.activeIdx : 0);
+                    }
+                } else if (ev.key === 'Escape') {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    hideList();
+                }
+            });
+        };
+
+        if (diagInputId) attachField(document.getElementById(diagInputId), 'diagnosis');
+        if (methodInputId) attachField(document.getElementById(methodInputId), 'method');
     },
 
     _highlightAcItem(listEl, activeIdx) {

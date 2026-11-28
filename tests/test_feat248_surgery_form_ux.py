@@ -784,6 +784,116 @@ class TestFeat248SurgeryFormUx(unittest.TestCase):
         finally:
             ctx.close()
 
+    def test_15_feat251_robot_modals_diagnosis_and_5_dvkt_suggestions(self):
+        """TC-251-01: All 3 RobotSchedulePage modals support diagnosis autocomplete (no counts) & 5 BVBD DVKT recommendations on method click."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            page.evaluate(
+                """() => {
+                    if (typeof RobotSchedulePage === 'undefined') throw new Error('RobotSchedulePage missing');
+                    RobotSchedulePage._bootstrap = {
+                        staff: Store.getAll('staff') || [],
+                        externalDoctors: Store.getAll('externalDoctors') || [],
+                        cases: [
+                            {
+                                robotCaseCode: 'RBT-TEST-251',
+                                patientName: 'Bệnh Nhân Test Robot 251',
+                                birthYear: 1962,
+                                gender: 'Nam',
+                                wardRoom: 'P301',
+                                status: 'cho_bs_huu_tu_van',
+                                indicationType: 'robot_hoac_noisoi',
+                                diagnosis: 'K trực tràng thấp',
+                                robotProcedure: '',
+                                mainSurgeonId: 1,
+                                caseRevision: 1
+                            },
+                            {
+                                robotCaseCode: 'RBT-TEST-251B',
+                                patientName: 'Bệnh Nhân Sửa Thông Tin',
+                                birthYear: 1968,
+                                gender: 'Nữ',
+                                wardRoom: 'P302',
+                                status: 'da_xep_noisoi',
+                                indicationType: 'robot_hoac_noisoi',
+                                diagnosis: 'Rò hậu môn phức tạp',
+                                robotProcedure: '',
+                                mainSurgeonId: 2,
+                                caseRevision: 1
+                            }
+                        ]
+                    };
+                    RobotSchedulePage.openCreateModal('create_consult');
+                }"""
+            )
+            # 1) Create Modal: diagnosis autocomplete without counts + Escape stays in modal
+            diag_inp = page.locator('#rbt-inp-diag')
+            diag_inp.click()
+            diag_inp.fill('K đại tràng Sigma')
+            page.wait_for_selector('#rbt-inp-diag-ac-list .surg-ac-item', state='visible')
+            diag_metas = page.evaluate("() => Array.from(document.querySelectorAll('#rbt-inp-diag-ac-list .surg-ac-meta')).map(e => e.textContent)")
+            self.assertEqual(diag_metas, [])
+
+            # Open optional details & focus #rbt-inp-proc -> 5 BVBD DVKT matching K đại tràng Sigma
+            page.evaluate("() => { const d = document.getElementById('rbt-optional-details'); if (d) d.open = true; }")
+            proc_inp = page.locator('#rbt-inp-proc')
+            proc_inp.click()
+            page.wait_for_selector('#rbt-inp-proc-ac-list .surg-ac-item', state='visible')
+            c1 = page.evaluate(
+                """() => ({
+                    header: document.querySelector('#rbt-inp-proc-ac-list .surg-ac-header')?.textContent?.trim() || '',
+                    items: Array.from(document.querySelectorAll('#rbt-inp-proc-ac-list .surg-ac-item')).map(e => ({
+                        text: e.querySelector('.surg-ac-text')?.textContent?.trim() || '',
+                        meta: e.querySelector('.surg-ac-meta')?.textContent?.trim() || '',
+                    })),
+                })"""
+            )
+            self.assertIn('5 DVKT BVBD', c1['header'])
+            self.assertEqual(len(c1['items']), 5)
+            self.assertTrue(any('nạo vét hạch' in x['text'].lower() for x in c1['items']), c1)
+
+            # Escape closes dropdown, keeps Robot modal open
+            proc_inp.press('Escape')
+            esc_state = page.evaluate(
+                """() => ({
+                    modalOpen: document.getElementById('modal-overlay').classList.contains('active'),
+                    listHidden: document.getElementById('rbt-inp-proc-ac-list').hidden,
+                })"""
+            )
+            self.assertTrue(esc_state['modalOpen'])
+            self.assertTrue(esc_state['listHidden'])
+
+            # Click proc again -> pick item 0
+            proc_inp.click()
+            page.wait_for_selector('#rbt-inp-proc-ac-list .surg-ac-item', state='visible')
+            page.evaluate("() => document.querySelector('#rbt-inp-proc-ac-list .surg-ac-item').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))")
+            picked_proc = page.evaluate("() => document.getElementById('rbt-inp-proc').value")
+            self.assertEqual(picked_proc, c1['items'][0]['text'])
+
+            # 2) Decide Consult Modal (Bước 3 TS. Hữu)
+            page.evaluate("() => { Modal.close(true); RobotSchedulePage.openDecideConsultModal('RBT-TEST-251'); }")
+            dec_inp = page.locator('#rbt-inp-dec-proc')
+            dec_inp.click()
+            page.wait_for_selector('#rbt-inp-dec-proc-ac-list .surg-ac-item', state='visible')
+            c2 = page.evaluate(
+                """() => Array.from(document.querySelectorAll('#rbt-inp-dec-proc-ac-list .surg-ac-item .surg-ac-text')).map(e => e.textContent.trim().toLowerCase())"""
+            )
+            self.assertEqual(len(c2), 5)
+            self.assertTrue(any('trực tràng' in t for t in c2), c2)
+
+            # 3) Edit Info Modal
+            page.evaluate("() => { Modal.close(true); RobotSchedulePage.openEditInfoModal('RBT-TEST-251B'); }")
+            ei_proc = page.locator('#rbt-ei-proc')
+            ei_proc.click()
+            page.wait_for_selector('#rbt-ei-proc-ac-list .surg-ac-item', state='visible')
+            c3 = page.evaluate(
+                """() => Array.from(document.querySelectorAll('#rbt-ei-proc-ac-list .surg-ac-item .surg-ac-text')).map(e => e.textContent.trim().toLowerCase())"""
+            )
+            self.assertEqual(len(c3), 5)
+            self.assertIn('rò hậu môn phức tạp', c3[0], c3)
+        finally:
+            ctx.close()
+
 
 if __name__ == "__main__":
     unittest.main()
