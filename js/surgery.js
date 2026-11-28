@@ -394,6 +394,9 @@ const SurgeryPage = {
                 <button class="btn btn-secondary" onclick="SurgeryPage.exportCustomDateImage()" aria-label="Xuất danh sách ca mổ theo ngày">
                     📅 Xuất theo ngày
                 </button>
+                <button type="button" id="surg-tutorial-btn" class="btn btn-secondary" onclick="if(typeof SurgeryTutorial!=='undefined')SurgeryTutorial.start({force:true})" title="Xem hướng dẫn nhập liệu Lịch mổ tuần (6 bước)" aria-label="Xem hướng dẫn nhập liệu Lịch mổ tuần">
+                    ❓ Hướng dẫn
+                </button>
                 ${canEdit ? `<button class="btn btn-primary" onclick="SurgeryPage.openForm()" aria-label="Thêm ca phẫu thuật mới">
                     ${Utils.plusIcon()} Thêm ca mổ
                 </button>` : ''}
@@ -2100,6 +2103,7 @@ const SurgeryPage = {
         this._openApprovalAfterSave = false;
         this._addNextAfterSave = false;
         this._pendingDvktConfirmed = false;
+        if (typeof SurgeryTutorial !== 'undefined') SurgeryTutorial.close({ silent: true });
         const all = this.getAllSurgeries();
         const s = id ? all.find(x => String(x.id) === String(id)) : null;
         const targetWeekKey = s?.date ? s.date.substring(0, 10) : this.getWeekKey();
@@ -3589,7 +3593,11 @@ const SurgeryPage = {
         this._updateColumnHint();
     },
 
-    afterRender() { },
+    afterRender() {
+        if (typeof SurgeryTutorial !== 'undefined' && typeof SurgeryTutorial.maybeAutoStart === 'function') {
+            SurgeryTutorial.maybeAutoStart();
+        }
+    },
 
     // ===== EXPORT SURGERY LIST AS JPEG =====
     exportTomorrowImage() {
@@ -3792,6 +3800,9 @@ const SurgeryPage = {
         const trashCount = Store.cleanSurgeriesTrash(7).length;
         Modal.open('Tiện ích Lịch mổ tuần', `
             <div class="surg-sheet-actions">
+                <button type="button" id="surg-mobile-menu-tutorial-btn" class="surg-sheet-btn" onclick="Modal.close();if(typeof SurgeryTutorial!=='undefined')SurgeryTutorial.start({force:true})">
+                    <span>❓ Hướng dẫn nhập lịch mổ</span><span>6 bước</span>
+                </button>
                 ${showApproval ? `
                 <button type="button" class="surg-sheet-btn" onclick="Modal.close();App.navigate('surgery-approval')">
                     <span>📋 Duyệt mổ tại khoa</span><span>Mở tab</span>

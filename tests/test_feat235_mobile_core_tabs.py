@@ -266,6 +266,7 @@ class TestFeat235MobileCoreTabs(unittest.TestCase):
         ctx.route("**/api/emr*", lambda route: route.fulfill(status=200, content_type="application/json", body='{"patients":[]}'))
         dismiss_script = "" if show_icon_guide else "localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');"
         dismiss_script += "localStorage.setItem('ptdtt_robot_tutorial_v2_dismissed', '1');"
+        dismiss_script += "localStorage.setItem('ptdtt_surgery_tutorial_v261128_dismissed', '1');"
         ctx.add_init_script(
             f"""
             localStorage.setItem('ptdtt_cache_ver', '2609281105');

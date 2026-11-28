@@ -395,6 +395,7 @@ class TestFeat241MobileSixTabs(unittest.TestCase):
             localStorage.setItem('ptdtt_onboarding_done', 'true');
             localStorage.setItem('ptdtt_theme', {json.dumps(theme)});
             localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
+            localStorage.setItem('ptdtt_surgery_tutorial_v261128_dismissed', '1');
             """
         )
         page = ctx.new_page()

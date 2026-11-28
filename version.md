@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611280756`
+> 📌 **Current Build Stamp:** `2611282010`
 
 ---
 
@@ -56,7 +56,8 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- FEAT-251 (v2611280756): Nhân rộng autocomplete Chẩn đoán (0 số ca) & gợi ý 5 DVKT BVBD theo Chẩn đoán cho 3 modal Tab Điều phối Lịch mổ Robot (`[FEAT-251]`, build `v2611280756`).
+- FEAT-252 (v2611282010): Bổ sung SurgeryTutorial 6 bước hướng dẫn nhập Lịch mổ tuần tự động mở trong 1 tuần (28/11-05/12/2026) cho nhóm có quyền nhập lịch, kèm nút mở lại Desktop/Mobile (`[FEAT-252]`, build `v2611282010`).
+- FEAT-251 (v2611280756): Nhân rộng autocomplete Chẩn đoán (0 số ca) & gợi ý 5 DVKT BVBD theo Chẩn đoán cho 3 modal Tab Điều phối Lịch mổ Robot (`[FEAT-251]`, commit `787dd82`, build `v2611280756`).
 - Khi người dùng nhập Chẩn đoán và click vào ô Phương pháp phẫu thuật, tự động gợi ý 5 DVKT BVBD phù hợp nhất kèm xếp loại PT (có phân biệt dấu trĩ/trị và đóng HMNT) (`[FEAT-250]`, commit `b246cd8`, build `v2611280742`).
 - Bỏ hiển thị số ca ở gợi ý Chẩn đoán và Phương pháp PT, giữ nguyên xếp loại PT của DVKT BVBD và bổ sung hộp thoại đối chiếu chọn DVKT tương đương khi lưu phương án tự nhập (`[FEAT-249]`, commit `7afb1fa`, build `v2611280650`).
 - Thiết kế lại form nhập liệu Lịch mổ tuần tối ưu thao tác đa thiết bị Mobile (Android/iPhone) & Laptop (Dual Form-Factor, 1-touch segmented & chips, Smart Doctor Chip Picker, Autocomplete độc lập, cảnh báo mềm phân cột, Lưu & thêm ca tiếp) (`[FEAT-248]`, commit `86669c7`, build `v2611280624`).

@@ -201,6 +201,7 @@ class TestFeat248SurgeryFormUx(unittest.TestCase):
             localStorage.setItem('ptdtt_cache_ver', '2609281105');
             localStorage.setItem('ptdtt_sw_build', '{self.sw_build_ver}');
             localStorage.setItem('ptdtt_icon_guide_v261121_dismissed', '1');
+            localStorage.setItem('ptdtt_surgery_tutorial_v261128_dismissed', '1');
             localStorage.setItem('ptdtt_data', {json.dumps(db_raw)});
             localStorage.setItem('ptdtt_auth', JSON.stringify(sessionObj));
             localStorage.setItem('ptdtt_session', JSON.stringify(sessionObj));

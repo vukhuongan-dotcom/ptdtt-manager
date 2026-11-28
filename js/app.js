@@ -128,6 +128,9 @@ const App = {
         if (typeof RobotTutorial !== 'undefined') {
             RobotTutorial.close({ silent: true });
         }
+        if (typeof SurgeryTutorial !== 'undefined') {
+            SurgeryTutorial.close({ silent: true });
+        }
         document.getElementById('app').style.display = 'none';
         document.getElementById('modal-overlay').style.display = 'none';
 
@@ -156,6 +159,9 @@ const App = {
         }
         if (typeof RobotTutorial !== 'undefined') {
             RobotTutorial.clearSessionDismiss();
+        }
+        if (typeof SurgeryTutorial !== 'undefined') {
+            SurgeryTutorial.clearSessionDismiss();
         }
         this.showApp();
     },
@@ -741,6 +747,9 @@ const App = {
         this._hideMobileNavTooltip();
         if (page !== 'robot-schedule' && typeof RobotTutorial !== 'undefined') {
             RobotTutorial.close({ silent: true });
+        }
+        if (page !== 'surgery' && typeof SurgeryTutorial !== 'undefined') {
+            SurgeryTutorial.close({ silent: true });
         }
 
         // Update nav active state + aria-current (A4: accessibility)

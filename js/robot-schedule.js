@@ -74,7 +74,7 @@
     };
 
     const VALID_SLOTS = ['Ca 1', 'Ca 2', 'Ca 3'];
-    const CLIENT_BUILD = '2611280756';
+    const CLIENT_BUILD = '2611282010';
     const ADMISSION_SOURCE_LABELS = {
         cap_cuu: 'Cấp cứu',
         phong_kham: 'Phòng khám'

@@ -373,6 +373,415 @@ const IconGuideNotice = {
     }
 };
 
+// ===== WEEKLY SURGERY SCHEDULE TUTORIAL (FEAT-252 · 1-WEEK AUTO-SHOW · ZERO-LOCAL-PHI UI FLAG ONLY) =====
+const SurgeryTutorial = {
+    CAMPAIGN_ID: 'v261128',
+    START_AT: '2026-11-28T00:00:00+07:00',
+    EXPIRES_AT: '2026-12-05T23:59:59+07:00',
+    STORAGE_KEY_GLOBAL: 'ptdtt_surgery_tutorial_v261128_dismissed',
+    STORAGE_KEY_PREFIX: 'ptdtt_surgery_tutorial_v261128_dismissed:',
+    SESSION_KEY_PREFIX: 'ptdtt_surgery_tutorial_v261128_session:',
+    currentStep: 0,
+    _isOpen: false,
+    _autoTimer: null,
+    _keyHandler: null,
+    _repositionHandler: null,
+    _stepsCache: [],
+
+    _esc(v) {
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
+    _getUsername() {
+        try {
+            if (typeof Auth !== 'undefined' && typeof Auth.getSession === 'function') {
+                return Auth.getSession()?.username || 'guest';
+            }
+        } catch (_) { /* noop */ }
+        return 'guest';
+    },
+
+    isWithinWindow(nowDate) {
+        const ts = (nowDate instanceof Date ? nowDate : new Date()).getTime();
+        const start = Date.parse(this.START_AT);
+        const end = Date.parse(this.EXPIRES_AT);
+        return Number.isFinite(ts) && ts >= start && ts <= end;
+    },
+
+    isDismissed(username) {
+        const user = username || this._getUsername();
+        try {
+            if (localStorage.getItem(this.STORAGE_KEY_GLOBAL) === '1') return true;
+            if (localStorage.getItem(this.STORAGE_KEY_PREFIX + user) === '1') return true;
+            if (sessionStorage.getItem(this.SESSION_KEY_PREFIX + user) === '1') return true;
+        } catch (_) {
+            return false;
+        }
+        return false;
+    },
+
+    clearSessionDismiss(username) {
+        const user = username || this._getUsername();
+        try {
+            sessionStorage.removeItem(this.SESSION_KEY_PREFIX + user);
+        } catch (_) { /* noop */ }
+    },
+
+    _canEditCurrentWeek() {
+        try {
+            const weekKey = (typeof SurgeryPage !== 'undefined' && typeof SurgeryPage.getWeekKey === 'function')
+                ? SurgeryPage.getWeekKey()
+                : null;
+            if (typeof canEditSurgery === 'function') {
+                return Boolean(canEditSurgery(weekKey));
+            }
+        } catch (_) { /* noop */ }
+        return false;
+    },
+
+    shouldAutoShow(opts = {}) {
+        if (typeof App !== 'undefined' && App.currentPage !== 'surgery') return false;
+        if (!document.getElementById('surgery-page')) return false;
+        if (!this.isWithinWindow(opts.now)) return false;
+        if (!opts.ignorePerm && !this._canEditCurrentWeek()) return false;
+        if (this.isDismissed(opts.username)) return false;
+        try {
+            if (typeof Auth !== 'undefined' && Auth.getSession()?.mustChangePassword) return false;
+            if (typeof Onboarding !== 'undefined' && typeof Onboarding.shouldShow === 'function' && Onboarding.shouldShow()) {
+                return false;
+            }
+            if (document.getElementById('onboarding-overlay')) return false;
+            if (document.getElementById('icon-guide-overlay')) return false;
+            if (document.getElementById('robot-tutorial-overlay')) return false;
+            const modalOverlay = document.getElementById('modal-overlay');
+            if (modalOverlay && modalOverlay.classList.contains('active')) return false;
+        } catch (_) { /* noop */ }
+        return true;
+    },
+
+    maybeAutoStart() {
+        if (this._autoTimer) {
+            clearTimeout(this._autoTimer);
+            this._autoTimer = null;
+        }
+        if (this._isOpen || !this.shouldAutoShow()) return false;
+        this._autoTimer = setTimeout(() => {
+            this._autoTimer = null;
+            if (!this._isOpen && this.shouldAutoShow()) {
+                this.start({ auto: true });
+            }
+        }, 180);
+        return true;
+    },
+
+    getSteps() {
+        return [
+            {
+                icon: '📝',
+                title: 'Form Nhập Ca Mổ Mới (Mobile & Laptop)',
+                desc: 'Giao diện nhập liệu mới tối ưu riêng: Mobile gồm 4 thẻ chạm 1 lần + thanh Lưu dính đáy; Laptop cửa sổ rộng 2 cột và lưu nhanh bằng Ctrl/Cmd + Enter. Bấm "+ Thêm ca mổ" (hoặc "＋ Thêm ca") để bắt đầu.',
+                targets: ['#surgery-page .surg-header-actions .btn-primary', '#surgery-page .surg-mobile-primary-btn', '#surgery-page .page-header']
+            },
+            {
+                icon: '📅',
+                title: 'Bệnh Nhân, Phân Loại & Ngày Mổ 1 Chạm',
+                desc: 'Nhập Họ tên (tự kiểm tra trùng hồ sơ 2 tầng theo Số NV và Họ tên + Năm sinh), chạm chip chọn Loại phẫu thuật, Đường mổ, Ngày mổ trong tuần và Thời lượng nhanh (30–180 phút).',
+                targets: ['#surgery-page .surgery-mobile-day-picker', '#surgery-page .surgery-summary-panel', '#surgery-page .surgery-controls']
+            },
+            {
+                icon: '🩺',
+                title: 'Chẩn Đoán & Gợi Ý 5 DVKT BVBD Thông Minh',
+                desc: 'Gõ Chẩn đoán không dấu để chọn nhanh (đã bỏ hiển thị số ca). Sau khi nhập Chẩn đoán, chạm vào ô Phương pháp phẫu thuật còn trống — máy tự gợi ý 5 DVKT chuẩn BVBD phù hợp nhất kèm xếp loại PT-ĐB / PT-I / PT-II / PT-III.',
+                targets: ['#surgery-page .page-header', '#surgery-page']
+            },
+            {
+                icon: '👨‍⚕️',
+                title: 'Chip Chọn Bác Sĩ & Phân Cột Phẫu Thuật',
+                desc: 'Thay dropdown dài bằng Chip chọn BS (tab Khoa / Ngoài khoa, tìm không dấu tức thì). Ô BS mổ chính chủ động để trống tránh chọn nhầm người đăng nhập; hệ thống tự hiện nhắc phân cột phẫu thuật.',
+                targets: ['#surg-filter-doc', '#surgery-page .surg-mobile-quick-filters', '#surgery-page .surgery-controls']
+            },
+            {
+                icon: '✅',
+                title: 'Đối Chiếu DVKT Khi Lưu & Nhập Liên Tiếp',
+                desc: 'Nếu tự nhập phương pháp khác danh mục chuẩn BVBD, khi bấm Lưu hệ thống sẽ gợi ý 5 DVKT tương đương để chọn hoặc cho phép "Vẫn lưu phương án tự nhập" (không chặn cứng). Dùng "Lưu & thêm ca tiếp" để nhập nhiều ca cùng ngày.',
+                targets: ['#surgery-page .surg-header-actions .btn-primary', '#surgery-page .surg-mobile-primary-btn', '#surgery-page .page-header']
+            },
+            {
+                icon: '❓',
+                title: 'Xem Lại Hướng Dẫn Bất Kỳ Lúc Nào',
+                desc: 'Hướng dẫn này tự động hiển thị trong 1 tuần (28/11 – 05/12/2026). Bất kỳ lúc nào cần xem lại, bấm "❓ Hướng dẫn" trên máy tính hoặc chạm "⋮" → "Hướng dẫn nhập lịch mổ" trên điện thoại.',
+                targets: ['#surg-tutorial-btn', '#surg-mobile-more-btn', '#surgery-page .page-header']
+            }
+        ];
+    },
+
+    _findVisibleTarget(selectors) {
+        if (!Array.isArray(selectors)) return null;
+        for (const sel of selectors) {
+            const el = document.querySelector(sel);
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            const cs = typeof getComputedStyle === 'function' ? getComputedStyle(el) : null;
+            if (rect.width > 0 && rect.height > 0 && (!cs || (cs.display !== 'none' && cs.visibility !== 'hidden'))) {
+                return el;
+            }
+        }
+        return null;
+    },
+
+    start(opts = {}) {
+        if (this._autoTimer) {
+            clearTimeout(this._autoTimer);
+            this._autoTimer = null;
+        }
+        if (!opts.force && !this.shouldAutoShow(opts)) return false;
+        if (!document.getElementById('surgery-page')) return false;
+
+        this._stepsCache = this.getSteps();
+        this.currentStep = 0;
+        this._isOpen = true;
+        this._bindGlobalListeners();
+        this._renderStep();
+        return true;
+    },
+
+    goTo(idx) {
+        if (!this._isOpen) return;
+        const max = Math.max(0, this._stepsCache.length - 1);
+        this.currentStep = Math.min(max, Math.max(0, Number(idx) || 0));
+        this._renderStep();
+    },
+
+    next() {
+        if (!this._isOpen) return;
+        if (this.currentStep < this._stepsCache.length - 1) {
+            this.currentStep++;
+            this._renderStep();
+        } else {
+            this.dismissPermanently();
+            if (typeof Toast !== 'undefined' && Toast.success) {
+                Toast.success('🎉 Đã hoàn thành hướng dẫn nhập Lịch mổ tuần! Bấm "❓ Hướng dẫn" để xem lại bất kỳ lúc nào.');
+            }
+        }
+    },
+
+    prev() {
+        if (!this._isOpen) return;
+        if (this.currentStep > 0) {
+            this.currentStep--;
+            this._renderStep();
+        }
+    },
+
+    close(opts = {}) {
+        if (this._autoTimer) {
+            clearTimeout(this._autoTimer);
+            this._autoTimer = null;
+        }
+        if (!opts.silent) {
+            try {
+                sessionStorage.setItem(this.SESSION_KEY_PREFIX + this._getUsername(), '1');
+            } catch (_) { /* noop */ }
+        }
+        this._isOpen = false;
+        this._unbindGlobalListeners();
+        const existing = document.getElementById('surgery-tutorial-overlay');
+        if (existing) existing.remove();
+    },
+
+    dismissPermanently() {
+        const user = this._getUsername();
+        try {
+            localStorage.setItem(this.STORAGE_KEY_PREFIX + user, '1');
+            sessionStorage.setItem(this.SESSION_KEY_PREFIX + user, '1');
+        } catch (_) { /* noop */ }
+        this.close({ silent: true });
+    },
+
+    _bindGlobalListeners() {
+        this._unbindGlobalListeners();
+        this._keyHandler = (e) => {
+            if (!this._isOpen) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.close();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.next();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.prev();
+            }
+        };
+        this._repositionHandler = () => {
+            if (this._isOpen) this._positionElements();
+        };
+        document.addEventListener('keydown', this._keyHandler);
+        window.addEventListener('resize', this._repositionHandler);
+        window.addEventListener('scroll', this._repositionHandler, { passive: true });
+    },
+
+    _unbindGlobalListeners() {
+        if (this._keyHandler) {
+            document.removeEventListener('keydown', this._keyHandler);
+            this._keyHandler = null;
+        }
+        if (this._repositionHandler) {
+            window.removeEventListener('resize', this._repositionHandler);
+            window.removeEventListener('scroll', this._repositionHandler);
+            this._repositionHandler = null;
+        }
+    },
+
+    _renderStep() {
+        const step = this._stepsCache[this.currentStep];
+        if (!step) {
+            this.close({ silent: true });
+            return;
+        }
+        const total = this._stepsCache.length;
+        const isLast = this.currentStep === total - 1;
+
+        let overlay = document.getElementById('surgery-tutorial-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'surgery-tutorial-overlay';
+            overlay.className = 'rbt-tut-overlay surg-tut-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'surg-tut-title');
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay || e.target.classList.contains('rbt-tut-backdrop')) {
+                    this.close();
+                }
+            });
+            document.body.appendChild(overlay);
+        }
+
+        const targetEl = this._findVisibleTarget(step.targets);
+        if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+            try { targetEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' }); } catch (_) {}
+        }
+
+        const dotsHtml = this._stepsCache.map((_, i) => `
+            <button type="button"
+                class="rbt-tut-dot ${i < this.currentStep ? 'is-done' : ''} ${i === this.currentStep ? 'is-active' : ''}"
+                data-surg-tut-dot="${i}"
+                aria-label="Chuyển tới bước ${i + 1}"
+                onclick="SurgeryTutorial.goTo(${i})"></button>
+        `).join('');
+
+        overlay.innerHTML = `
+            <div class="rbt-tut-backdrop" aria-hidden="true"></div>
+            <div class="rbt-tut-spotlight" id="surg-tut-spotlight" aria-hidden="true"></div>
+            <div class="rbt-tut-card" id="surg-tut-card">
+                <div class="rbt-tut-card-top">
+                    <span class="rbt-tut-badge">HƯỚNG DẪN LỊCH MỔ · 28/11 – 05/12 · Bước ${this.currentStep + 1}/${total}</span>
+                    <button type="button" class="rbt-tut-close-x" id="surg-tut-close-x" aria-label="Đóng hướng dẫn" onclick="SurgeryTutorial.close()">&times;</button>
+                </div>
+                <div class="rbt-tut-heading">
+                    <span class="rbt-tut-icon" aria-hidden="true">${this._esc(step.icon)}</span>
+                    <h3 class="rbt-tut-title" id="surg-tut-title">${this._esc(step.title)}</h3>
+                </div>
+                <p class="rbt-tut-desc">${this._esc(step.desc)}</p>
+                <div class="rbt-tut-dots" role="tablist" aria-label="Tiến độ các bước hướng dẫn">${dotsHtml}</div>
+                <div class="rbt-tut-footer">
+                    <div class="rbt-tut-dismiss-row">
+                        <button type="button" class="rbt-tut-btn rbt-tut-btn--ghost" id="surg-tut-close-btn" onclick="SurgeryTutorial.close()">Đóng</button>
+                        <button type="button" class="rbt-tut-btn rbt-tut-btn--muted" id="surg-tut-dismiss-btn" onclick="SurgeryTutorial.dismissPermanently()">Đã hiểu, không tự mở lại</button>
+                    </div>
+                    <div class="rbt-tut-nav-row">
+                        ${this.currentStep > 0
+                            ? `<button type="button" class="rbt-tut-btn rbt-tut-btn--secondary" id="surg-tut-prev-btn" onclick="SurgeryTutorial.prev()">← Trước</button>`
+                            : '<span></span>'}
+                        <button type="button" class="rbt-tut-btn rbt-tut-btn--primary" id="surg-tut-next-btn" onclick="SurgeryTutorial.next()">
+                            ${isLast ? '✓ Hoàn tất' : 'Tiếp theo →'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this._positionElements(targetEl);
+    },
+
+    _positionElements(explicitTarget) {
+        const step = this._stepsCache[this.currentStep];
+        const spotlight = document.getElementById('surg-tut-spotlight');
+        const card = document.getElementById('surg-tut-card');
+        if (!step || !card) return;
+
+        const targetEl = explicitTarget || this._findVisibleTarget(step.targets);
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const rect = targetEl ? targetEl.getBoundingClientRect() : null;
+
+        if (spotlight) {
+            if (rect && rect.width > 0 && rect.height > 0) {
+                const top = Math.max(4, rect.top - 4);
+                const left = Math.max(4, rect.left - 4);
+                const width = Math.min(vw - left - 4, rect.width + 8);
+                const height = Math.min(vh - top - 4, rect.height + 8);
+                spotlight.style.display = 'block';
+                spotlight.style.top = `${top}px`;
+                spotlight.style.left = `${left}px`;
+                spotlight.style.width = `${Math.max(24, width)}px`;
+                spotlight.style.height = `${Math.max(24, height)}px`;
+            } else {
+                spotlight.style.display = 'none';
+            }
+        }
+
+        if (vw <= 768) {
+            card.style.left = '12px';
+            card.style.right = '12px';
+            card.style.width = 'auto';
+            card.style.maxWidth = `${Math.max(260, vw - 24)}px`;
+            card.style.transform = 'none';
+            if (rect && rect.bottom > vh - 260 && rect.top > 250) {
+                card.style.top = '12px';
+                card.style.bottom = 'auto';
+            } else {
+                card.style.top = 'auto';
+                card.style.bottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
+            }
+            return;
+        }
+
+        card.style.right = 'auto';
+        card.style.bottom = 'auto';
+        card.style.width = '420px';
+        card.style.maxWidth = `${Math.max(320, vw - 32)}px`;
+        card.style.transform = 'none';
+
+        if (!rect) {
+            card.style.top = '50%';
+            card.style.left = '50%';
+            card.style.transform = 'translate(-50%, -50%)';
+            return;
+        }
+
+        const cRect = card.getBoundingClientRect();
+        const cardH = cRect.height || 260;
+        const cardW = cRect.width || 420;
+        const gap = 14;
+
+        let top = rect.bottom + gap;
+        if (top + cardH > vh - 16) {
+            const aboveTop = rect.top - cardH - gap;
+            top = aboveTop >= 16 ? aboveTop : Math.max(16, vh - cardH - 16);
+        }
+        let left = Math.min(Math.max(16, rect.left), Math.max(16, vw - cardW - 16));
+        card.style.top = `${Math.round(top)}px`;
+        card.style.left = `${Math.round(left)}px`;
+    }
+};
+
 // ===== PERMANENT ROBOT SCHEDULE TUTORIAL (FEAT-243 v2 · ZERO-LOCAL-PHI UI FLAG ONLY) =====
 const RobotTutorial = {
     STORAGE_KEY_GLOBAL: 'ptdtt_robot_tutorial_v2_dismissed',
@@ -780,5 +1189,6 @@ const RobotTutorial = {
 };
 
 if (typeof window !== 'undefined') {
+    window.SurgeryTutorial = SurgeryTutorial;
     window.RobotTutorial = RobotTutorial;
 }

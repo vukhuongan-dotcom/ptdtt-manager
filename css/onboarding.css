@@ -397,8 +397,9 @@
     color: #FFFFFF;
 }
 
-/* ===== PERMANENT ROBOT TUTORIAL OVERLAY (FEAT-242 · LIGHT & DARK #0C1022 ZERO-TEAL) ===== */
-#robot-tutorial-overlay.rbt-tut-overlay {
+/* ===== PERMANENT ROBOT & SURGERY TUTORIAL OVERLAY (FEAT-242 / FEAT-252 · LIGHT & DARK #0C1022 ZERO-TEAL) ===== */
+#robot-tutorial-overlay.rbt-tut-overlay,
+#surgery-tutorial-overlay.rbt-tut-overlay {
     position: fixed;
     inset: 0;
     z-index: 10040;
