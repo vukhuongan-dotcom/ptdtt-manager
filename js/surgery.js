@@ -864,6 +864,10 @@ const SurgeryPage = {
                     };
                     if (document.querySelector('#modal form[data-autosave-key^="surgery-"]')) {
                         this._updateColumnHint();
+                        const activeEl = document.activeElement;
+                        if (activeEl && activeEl.name === 'method') {
+                            this._onAcInput('method', activeEl);
+                        }
                     }
                 }
                 this._procedureCatalogPromise = null;
@@ -1475,22 +1479,252 @@ const SurgeryPage = {
         }
     },
 
+    _recommendDvktFromDiagnosis(diagnosisStr, activeApproach, limit = 5) {
+        const procs = this._procedureCatalogCache?.procedures;
+        if (!Array.isArray(procs) || !procs.length) return [];
+
+        const rawDiag = String(diagnosisStr || '').trim();
+        const dNorm = this._normSearch(rawDiag);
+        if (!dNorm) return [];
+
+        const targetGroup = this._mapApproachToCatalogGroup(activeApproach);
+        const isCancer = /(^|\s)(k|ca)\s+|ung\s*thu|carcinoma|sarcoma|u\s*ac|ct[1-4]|pt[1-4]|t[1-4]n[0-3]/i.test(dNorm);
+
+        const isStomaClosure = dNorm.includes('hoi trang ra da')
+            || dNorm.includes('hau mon nhan tao')
+            || dNorm.includes('hmnt')
+            || dNorm.includes('dong hmnt')
+            || dNorm.includes('mo thong hoi trang')
+            || (dNorm.includes('dong ') && dNorm.includes('ra da'));
+
+        const isHemorrhoid = /(^|[\s,/-])trĩ(\s|$|[,/-])|búi\s*trĩ|trĩ\s*(nội|ngoại|hỗn\s*hợp|tắc\s*mạch|vòng|độ)|^trĩ$/i.test(rawDiag)
+            || /\b(longo|milligan|ferguson)\b/i.test(dNorm);
+
+        const isFistula = dNorm.includes('ro hau mon') || dNorm.includes('duong ro');
+        const isAbscessHauMon = dNorm.includes('ap xe') && (dNorm.includes('hau mon') || dNorm.includes('canh hau mon'));
+        const isInguinalHernia = dNorm.includes('thoat vi ben');
+        const isUmbilicalHernia = dNorm.includes('thoat vi ron');
+        const isVentralHernia = dNorm.includes('thoat vi thanh bung') || dNorm.includes('thoat vi vet mo');
+        const isSigmaOrLeft = dNorm.includes('sigma')
+            || dNorm.includes('xich ma')
+            || dNorm.includes('dai trang trai')
+            || dNorm.includes('goc lach')
+            || dNorm.includes('dai trang xuong')
+            || dNorm.includes('dai trang chau hong');
+        const isRightColon = dNorm.includes('dai trang phai')
+            || dNorm.includes('goc gan')
+            || dNorm.includes('manh trang')
+            || dNorm.includes('dai trang len');
+        const isTransverseColon = dNorm.includes('dai trang ngang');
+        const isRectal = !isStomaClosure && (dNorm.includes('truc trang') || dNorm.includes('ong hau mon'));
+        const isAppendix = dNorm.includes('ruot thua');
+        const isGastric = dNorm.includes('da day') || dNorm.includes('hang vi') || dNorm.includes('tam vi') || dNorm.includes('mon vi');
+        const isGallbladder = dNorm.includes('tui mat') || dNorm.includes('duong mat');
+
+        // Historical co-occurrence boost mapped strictly onto official BVBD catalog entries
+        const histBoostByNorm = new Map();
+        const stopWords = new Set(['benh', 'nhan', 'theo', 'doi', 'da', 'mo', 'hien', 'tai', 'viem', 'nhiem', 'do', 'cap', 'man', 'tinh', 'hai', 'ben', 'trai', 'phai', 'giua', 'tren', 'duoi', 'sau', 'truoc', 'kem', 'va', 'voi', 'hoac', 'tai', 'phat', 'giai', 'doan', 'ung', 'thu', 'k']);
+        const rawDiagTokens = dNorm.split(/[^a-z0-9]+/).filter(Boolean);
+        const contentDiagTokens = rawDiagTokens.filter(t => t.length >= 2 && !stopWords.has(t) && t !== 'tri');
+
+        const catalogNormMap = new Map();
+        for (const p of procs) {
+            const pn = this._normSearch(p.officialName);
+            if (pn) catalogNormMap.set(pn, pn);
+        }
+
+        const allSurgeries = this.getAllSurgeries();
+        for (let i = allSurgeries.length - 1; i >= 0; i--) {
+            const s = allSurgeries[i];
+            const sd = this._normSearch(s?.diagnosis);
+            const sm = this._normSearch(s?.method);
+            if (!sd || !sm) continue;
+            const matchedOfficial = catalogNormMap.get(sm);
+            if (!matchedOfficial) continue;
+
+            const sameDiag = sd === dNorm
+                || (sd.length >= 6 && dNorm.includes(sd))
+                || (dNorm.length >= 6 && sd.includes(dNorm))
+                || (contentDiagTokens.length >= 2 && contentDiagTokens.every(t => sd.includes(t)));
+            if (sameDiag) {
+                const prev = histBoostByNorm.get(matchedOfficial) || 0;
+                histBoostByNorm.set(matchedOfficial, Math.min(18, prev + 2));
+            }
+        }
+
+        const scored = [];
+        for (const p of procs) {
+            const pRaw = String(p.officialName || '').trim();
+            if (!pRaw) continue;
+            const pn = this._normSearch(pRaw);
+            let score = 0;
+
+            if (isStomaClosure) {
+                if (pn.includes('dong hau mon nhan tao') || pn.includes('dong hoi trang') || pn.includes('noi ruot')) {
+                    score += 65;
+                } else if (pn.includes('hau mon nhan tao')) {
+                    score += 35;
+                } else if (pn.includes('cat truc trang') || pn.includes('cat dai trang')) {
+                    score -= 30;
+                }
+            }
+
+            if (isHemorrhoid) {
+                const pIsTri = /(^|[\s,/-])trĩ(\s|$|[,/-])|búi\s*trĩ|trĩ\s*(kinh\s*điển|vòng|tắc\s*mạch)|longo|milligan|ferguson/i.test(pRaw);
+                if (pIsTri) {
+                    score += 65;
+                    if (dNorm.includes('tac mach') && pn.includes('tac mach')) score += 20;
+                    if (dNorm.includes('vong') && pn.includes('vong')) score += 15;
+                }
+            }
+
+            if (isFistula && (pn.includes('ro hau mon') || pn.includes('duong ro'))) {
+                score += 65;
+                if ((dNorm.includes('phuc tap') || dNorm.includes('cao')) && pn.includes('phuc tap')) score += 15;
+                if ((dNorm.includes('don gian') || dNorm.includes('thap')) && pn.includes('don gian')) score += 15;
+            }
+
+            if (isAbscessHauMon) {
+                if (pn.includes('ap xe')) score += 35;
+                if (pn.includes('hau mon')) score += 25;
+                if (pn.includes('ro hau mon')) score += 30;
+            }
+
+            if (isInguinalHernia && pn.includes('thoat vi ben')) {
+                score += 65;
+                if (dNorm.includes('tai phat') && pn.includes('tai phat')) score += 15;
+            }
+            if (isUmbilicalHernia && (pn.includes('thoat vi ron') || pn.includes('thoat vi thanh bung'))) {
+                score += 60;
+            }
+            if (isVentralHernia && (pn.includes('thoat vi thanh bung') || pn.includes('thoat vi vet mo'))) {
+                score += 60;
+            }
+
+            if (isSigmaOrLeft) {
+                if (pn.includes('dai trang chau hong') || pn.includes('dai trang trai') || pn.includes('sigma')) {
+                    score += 55;
+                    if (isCancer && pn.includes('nao vet hach')) score += 18;
+                } else if (pn.includes('dai trang phai') && !pn.includes('dai trang trai')) {
+                    score -= 10;
+                }
+            }
+
+            if (isRightColon) {
+                if (pn.includes('dai trang phai') || pn.includes('manh trang')) {
+                    score += 55;
+                    if (isCancer && pn.includes('nao vet hach')) score += 18;
+                } else if (pn.includes('dai trang trai') && !pn.includes('dai trang phai')) {
+                    score -= 10;
+                }
+            }
+
+            if (isTransverseColon && pn.includes('dai trang ngang')) {
+                score += 55;
+                if (isCancer && pn.includes('nao vet hach')) score += 18;
+            }
+
+            if (isRectal && (pn.includes('truc trang') || pn.includes('miles') || pn.includes('ong hau mon'))) {
+                score += 55;
+                if ((dNorm.includes('thap') || dNorm.includes('ong hau mon')) && (pn.includes('thap') || pn.includes('miles') || pn.includes('ong hau mon'))) {
+                    score += 18;
+                }
+                if (isCancer && pn.includes('nao vet hach')) score += 18;
+            }
+
+            if (isAppendix && pn.includes('ruot thua')) {
+                score += 65;
+                if (dNorm.includes('ap xe') && pn.includes('ap xe')) score += 15;
+            }
+
+            if (isGastric && pn.includes('da day')) {
+                score += 55;
+                if (isCancer && pn.includes('nao vet hach')) score += 18;
+                if (dNorm.includes('thung') && pn.includes('thung')) score += 20;
+            }
+
+            if (isGallbladder && (pn.includes('tui mat') || pn.includes('duong mat'))) {
+                score += 45;
+            }
+
+            // General token overlap (excluding false 'tri' match unless real hemorrhoid)
+            if (contentDiagTokens.length) {
+                let tkHits = 0;
+                for (const tk of contentDiagTokens) {
+                    if (pn.includes(tk)) tkHits += 1;
+                }
+                if (tkHits > 0) {
+                    score += (tkHits / contentDiagTokens.length) * 28;
+                }
+            }
+
+            // Historical co-occurrence boost from Khoa practice
+            const hBoost = histBoostByNorm.get(pn) || 0;
+            if (hBoost > 0) score += hBoost;
+
+            // Active approach tie-breaker & bonus
+            const groupMatch = Boolean(targetGroup && p.approachGroup === targetGroup);
+            if (groupMatch) score += 20;
+
+            scored.push({
+                proc: p,
+                score,
+                groupMatch: groupMatch ? 1 : 0,
+                rowIndex: p.rowIndex || 999
+            });
+        }
+
+        scored.sort((a, b) => {
+            if (Math.abs(b.score - a.score) > 0.01) return b.score - a.score;
+            if (b.groupMatch !== a.groupMatch) return b.groupMatch - a.groupMatch;
+            return a.rowIndex - b.rowIndex;
+        });
+
+        // Prefer entries with clinical/keyword/history match (score > 20, or fallback if few)
+        const relevant = scored.filter(x => x.score > 20);
+        const picked = (relevant.length >= limit ? relevant : scored).slice(0, limit);
+        return picked.map(({ proc }) => {
+            const cls = (proc.procedureClass && proc.procedureClass !== 'unclassified') ? proc.procedureClass : '';
+            return {
+                value: String(proc.officialName || '').trim(),
+                meta: cls,
+                procClass: cls,
+                approachGroup: proc.approachGroup || '',
+                fromDiag: true
+            };
+        });
+    },
+
     _onAcInput(field, inputEl) {
         if (!inputEl) return;
         const form = inputEl.closest('form');
         const activeApproach = form ? (form.querySelector('#surgery-approach')?.value || '') : '';
         const query = inputEl.value || '';
-        const items = field === 'diagnosis'
-            ? this._getDiagnosisSuggestions(query)
-            : this._getMethodSuggestions(query, activeApproach);
-        this._showAutocomplete(field, items);
-        if (field === 'method') {
-            delete inputEl.dataset.matchedClass;
-            this._updateColumnHint();
+
+        if (field === 'diagnosis') {
+            const items = this._getDiagnosisSuggestions(query);
+            this._showAutocomplete('diagnosis', items, '');
+            return;
         }
+
+        const diagVal = String(form?.querySelector('input[name="diagnosis"]')?.value || '').trim();
+        const hasCatalog = Array.isArray(this._procedureCatalogCache?.procedures) && this._procedureCatalogCache.procedures.length > 0;
+        let items;
+        let headerText = '';
+        if (query.trim() === '' && diagVal !== '' && hasCatalog) {
+            items = this._recommendDvktFromDiagnosis(diagVal, activeApproach, 5);
+            if (items.length) {
+                headerText = '💡 5 DVKT BVBD phù hợp theo chẩn đoán';
+            }
+        } else {
+            items = this._getMethodSuggestions(query, activeApproach);
+        }
+        this._showAutocomplete('method', items, headerText);
+        delete inputEl.dataset.matchedClass;
+        this._updateColumnHint();
     },
 
-    _showAutocomplete(field, items) {
+    _showAutocomplete(field, items, headerText = '') {
         const listEl = document.getElementById(`surg-ac-${field}`);
         if (!listEl) return;
         if (!this._acState) this._acState = { diagnosis: { items: [], activeIdx: -1 }, method: { items: [], activeIdx: -1 } };
@@ -1500,7 +1734,10 @@ const SurgeryPage = {
             listEl.innerHTML = '';
             return;
         }
-        listEl.innerHTML = items.map((item, idx) => `
+        const headerHtml = headerText
+            ? `<div class="surg-ac-header">${Utils.escapeHtml(headerText)}</div>`
+            : '';
+        listEl.innerHTML = headerHtml + items.map((item, idx) => `
             <button type="button" class="surg-ac-item ${idx === 0 ? 'is-active' : ''}" role="option" aria-selected="${idx === 0 ? 'true' : 'false'}"
                 onmousedown="event.preventDefault(); SurgeryPage._pickAcItem('${field}', ${idx})">
                 <span class="surg-ac-text">${Utils.escapeHtml(item.value)}</span>
@@ -1893,6 +2130,7 @@ const SurgeryPage = {
                             <label class="form-label">Phương pháp phẫu thuật</label>
                             <div class="surg-ac-wrap">
                                 <input class="form-input" name="method" value="${Utils.escapeHtml(s?.method || '')}" autocomplete="off" placeholder="Phẫu thuật nội soi cắt đại tràng Sigma + nạo vét hạch"
+                                    onclick="if (document.getElementById('surg-ac-method')?.hidden) SurgeryPage._onAcInput('method', this)"
                                     onfocus="SurgeryPage._onAcInput('method', this)"
                                     oninput="SurgeryPage._onAcInput('method', this)"
                                     onkeydown="SurgeryPage._onAcKeydown('method', event)"

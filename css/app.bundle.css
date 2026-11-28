@@ -10527,6 +10527,20 @@ tr[data-group] .schedule-pos-label { background: rgba(0,0,0,0.02); }
     display: none !important;
 }
 
+.surg-ac-header {
+    padding: 5px 10px 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #1E3A8A;
+    border-bottom: 1px solid var(--border-default, rgba(15, 23, 42, 0.08));
+    margin-bottom: 4px;
+}
+
+[data-theme="dark"] .surg-ac-header {
+    color: #93C5FD;
+    border-bottom-color: rgba(178, 193, 253, 0.16);
+}
+
 .surg-ac-item {
     display: flex;
     align-items: center;

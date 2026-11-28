@@ -4,7 +4,7 @@ Mọi thay đổi đáng chú ý về tính năng, giao diện, quy trình nghi�
 
 Định dạng tuân thủ tiêu chuẩn [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) và quy tắc đánh số phiên bản [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Truy vết kỹ thuật chi tiết (RCA, mã commit Git, biên lai kiểm thử) được lưu trữ song hành tại `docs/BUG_FIX_REGISTRY.md` và `PROJECT_CONTEXT/BANG_TONG_HOP_LOI_VA_KHAC_PHUC.md`.
 
-> 📌 **Current Build Stamp:** `2611280650`
+> 📌 **Current Build Stamp:** `2611280742`
 
 ---
 
@@ -56,7 +56,8 @@ sed -i '' "s/const CACHE_NAME = 'ptdtt-v[0-9]*'/const CACHE_NAME = 'ptdtt-v$NEW_
 ## [Unreleased]
 
 ### Added
-- Bỏ hiển thị số ca ở gợi ý Chẩn đoán và Phương pháp PT, giữ nguyên xếp loại PT của DVKT BVBD và bổ sung hộp thoại đối chiếu chọn DVKT tương đương khi lưu phương án tự nhập (`[FEAT-249]`, build `v2611280650`).
+- Khi người dùng nhập Chẩn đoán và click vào ô Phương pháp phẫu thuật, tự động gợi ý 5 DVKT BVBD phù hợp nhất kèm xếp loại PT (có phân biệt dấu trĩ/trị và đóng HMNT) (`[FEAT-250]`, build `v2611280742`).
+- Bỏ hiển thị số ca ở gợi ý Chẩn đoán và Phương pháp PT, giữ nguyên xếp loại PT của DVKT BVBD và bổ sung hộp thoại đối chiếu chọn DVKT tương đương khi lưu phương án tự nhập (`[FEAT-249]`, commit `7afb1fa`, build `v2611280650`).
 - Thiết kế lại form nhập liệu Lịch mổ tuần tối ưu thao tác đa thiết bị Mobile (Android/iPhone) & Laptop (Dual Form-Factor, 1-touch segmented & chips, Smart Doctor Chip Picker, Autocomplete độc lập, cảnh báo mềm phân cột, Lưu & thêm ca tiếp) (`[FEAT-248]`, commit `86669c7`, build `v2611280624`).
 - Bổ sung nguồn bệnh nhân (Cấp cứu/Phòng khám + chip BS cho nhập), tối ưu bảng nhập liệu Mobile/Laptop và cập nhật Tutorial 7 bước (`[FEAT-246]`, commit `2588f72`, build `v2611261952`).
 - Bổ sung nút Xóa ca chờ tư vấn (Zero-RM) và chuyển số điện thoại khi nhập ca tư vấn sang không bắt buộc (`[FEAT-245]`, commit `73f9404`, build `v2611261009`).

@@ -689,6 +689,101 @@ class TestFeat248SurgeryFormUx(unittest.TestCase):
         finally:
             ctx.close()
 
+    def test_13_feat250_diagnosis_recommends_5_bvbd_dvkt_on_method_click(self):
+        """TC-250-01: Focusing/clicking empty method after entering diagnosis recommends 5 matching BVBD DVKT items."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            res = page.evaluate(
+                """() => {
+                    const checkCase = (diag, app) => {
+                        SurgeryPage.openForm();
+                        document.querySelector(`.surg-approach-btn[data-approach="${app}"]`).click();
+                        const diagInp = document.querySelector('#modal input[name="diagnosis"]');
+                        const methodInp = document.querySelector('#modal input[name="method"]');
+                        diagInp.value = diag;
+                        methodInp.value = '';
+                        methodInp.focus();
+                        SurgeryPage._onAcInput('method', methodInp);
+                        const header = document.querySelector('#surg-ac-method .surg-ac-header')?.textContent?.trim() || '';
+                        const items = Array.from(document.querySelectorAll('#surg-ac-method .surg-ac-item')).map(el => ({
+                            text: el.querySelector('.surg-ac-text')?.textContent?.trim() || '',
+                            meta: el.querySelector('.surg-ac-meta')?.textContent?.trim() || '',
+                        }));
+                        return { header, count: items.length, items };
+                    };
+
+                    const c1 = checkCase('K đại tràng Sigma', 'noisoi');
+                    const c2 = checkCase('Trĩ độ III', 'mo');
+                    const c3 = checkCase('Rò hậu môn phức tạp', 'mo');
+                    const c4 = checkCase('Hồi tràng ra da / K trực tràng đã mổ', 'noisoi');
+
+                    // Test picking item 0 on c4 keeps diagnosis untouched and fills method + matchedClass + column hint
+                    document.querySelector('#surg-doc-chips-mainSurgeon .surg-doc-chip[data-doc-id="2"]').click();
+                    document.querySelector('#surg-ac-method .surg-ac-item').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                    const afterPick = {
+                        diagnosis: document.querySelector('#modal input[name="diagnosis"]').value,
+                        method: document.querySelector('#modal input[name="method"]').value,
+                        matchedClass: document.querySelector('#modal input[name="method"]').dataset.matchedClass || '',
+                        hintVisible: document.getElementById('surg-column-hint').style.display !== 'none',
+                    };
+                    return { c1, c2, c3, c4, afterPick };
+                }"""
+            )
+            # 1. K đại tràng Sigma
+            self.assertIn("5 DVKT BVBD", res["c1"]["header"])
+            self.assertEqual(res["c1"]["count"], 5)
+            c1_top_texts = " | ".join(x["text"].lower() for x in res["c1"]["items"])
+            self.assertTrue("đại tràng chậu hông" in c1_top_texts or "đại tràng trái" in c1_top_texts, res["c1"])
+            self.assertTrue(any(x["meta"] == "PT-ĐB" for x in res["c1"]["items"]), res["c1"])
+
+            # 2. Trĩ độ III (NO false match on điều trị teo thực quản!)
+            self.assertEqual(res["c2"]["count"], 5)
+            for item in res["c2"]["items"]:
+                low = item["text"].lower()
+                self.assertTrue("trĩ" in low or "longo" in low, f"Non-hemorrhoid leaked into Trĩ top 5: {item}")
+                self.assertNotIn("thực quản", low)
+
+            # 3. Rò hậu môn phức tạp
+            self.assertEqual(res["c3"]["count"], 5)
+            self.assertIn("rò hậu môn phức tạp", res["c3"]["items"][0]["text"].lower(), res["c3"])
+
+            # 4. Hồi tràng ra da / K trực tràng đã mổ -> Đóng HMNT first!
+            self.assertEqual(res["c4"]["count"], 5)
+            self.assertIn("đóng hậu môn nhân tạo", res["c4"]["items"][0]["text"].lower(), res["c4"])
+            self.assertEqual(res["afterPick"]["diagnosis"], "Hồi tràng ra da / K trực tràng đã mổ")
+            self.assertEqual(res["afterPick"]["method"], res["c4"]["items"][0]["text"])
+            self.assertTrue(res["afterPick"]["hintVisible"])
+        finally:
+            ctx.close()
+
+    def test_14_feat250_typing_in_method_switches_to_search_filter(self):
+        """TC-250-02: Typing keywords into method replaces diagnosis recommendation header with direct search filter."""
+        ctx, page = self._open_app_page("chromium", 1440, 900)
+        try:
+            page.evaluate(
+                """() => {
+                    SurgeryPage.openForm();
+                    document.querySelector('.surg-approach-btn[data-approach="mo"]').click();
+                    document.querySelector('#modal input[name="diagnosis"]').value = 'Rò hậu môn';
+                }"""
+            )
+            method_inp = page.locator('#modal input[name="method"]')
+            method_inp.click()
+            page.wait_for_selector("#surg-ac-method .surg-ac-header", state="visible")
+
+            method_inp.fill("thoat vi ben")
+            page.wait_for_selector("#surg-ac-method .surg-ac-item", state="visible")
+            res = page.evaluate(
+                """() => ({
+                    hasHeader: Boolean(document.querySelector('#surg-ac-method .surg-ac-header')),
+                    texts: Array.from(document.querySelectorAll('#surg-ac-method .surg-ac-text')).map(e => e.textContent.trim().toLowerCase()),
+                })"""
+            )
+            self.assertFalse(res["hasHeader"])
+            self.assertTrue(any("thoát vị bẹn" in t for t in res["texts"]), res["texts"])
+        finally:
+            ctx.close()
+
 
 if __name__ == "__main__":
     unittest.main()
